@@ -7,6 +7,9 @@ import { logDao } from '../dao/timescale/logDao';
 import { itemLogDao } from '../dao/timescale/itemLogDao';
 import { MqttTopics, sendMqtt } from './mqttUtil';
 import { ItemLogInsertParams } from '../models/timescale/itemLog';
+import fs from "fs";
+import path from "path";
+import colors from "ansi-colors";
 
 export interface LogHeader {
   traceId: string | null; // 외부에서 API를 호출했을때 사용 할 "외부용 추적 키 값" (보통 Front-end에서 생성함)
@@ -1071,4 +1074,91 @@ export const logging = {
       }
     },
   },
+  // IMCS_LOG: {
+  //   ACK_CERTIFICATE_FAILED(data: RobotTransport): void {
+  //     try {
+  //       const logLevel = 'info';
+
+  //       void logDao.insert({
+  //         facilityCode: null,
+  //         facilityName: null,
+  //         amrCode: null,
+  //         amrName: null,
+  //         logLevel: logLevel,
+  //         function: 'ACK_CERTIFICATE',
+  //         data: data,
+  //       });
+  //     } catch (error) {
+  //       console.log('logging.ACTION_ERROR', error);
+  //     }
+  //   },
+  //   TRANSPORT_COMMAND_LOG(data: RobotTransport): void {
+  //     try {
+  //       const logLevel = 'info';
+  //       const { acsDetail, ...body } = data;
+  //       const insertParams: ItemLogInsertParams = {
+  //         itemCode: acsDetail.itemCode,
+  //         facilityCode: acsDetail.facilityCode,
+  //         facilityName: acsDetail.facilityName,
+  //         amrCode: acsDetail.amrCode,
+  //         amrName: acsDetail.amrName,
+  //         topic: `MCS-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
+  //         subject: 'TRANSPORT_COMMAND',
+  //         body: body,
+  //       };
+  //       void itemLogDao.insert(insertParams);
+  //     } catch (error) {
+  //       console.log('logging.IMCS_LOG.TRaNSPORT_COMMAND_LOG', error);
+  //     }
+  //   },
+  //   ACK_MISSION_COMPLETED(data: { mission: string; acsDetail: AcsDetail }): void {
+  //     try {
+  //       const logLevel = 'info';
+  //       const { acsDetail, ...body } = data;
+  //       const insertParams: ItemLogInsertParams = {
+  //         itemCode: acsDetail.itemCode,
+  //         facilityCode: acsDetail.facilityCode,
+  //         facilityName: acsDetail.facilityName,
+  //         amrCode: acsDetail.amrCode,
+  //         amrName: acsDetail.amrName,
+  //         topic: `MCS-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
+  //         subject: 'ACK_MISSION_COMPLETED',
+  //         body: body,
+  //       };
+  //       void itemLogDao.insert(insertParams);
+  //     } catch (error) {
+  //       console.log('logging.ITEM_LOG.ACK_MISSION_COMPLETED', error);
+  //     }
+  //   },
+  // },
+};
+
+// KEPWARE 로깅
+const logFilePath = path.resolve(__dirname, "../logs/output.txt");
+
+// 콘솔 및 파일 출력 함수
+export function logToConsoleAndFile(data: string, color?: 'important' | 'green' | 'blue' | 'red' | 'yellow') {
+
+  if (color === 'green') {
+    console.log(colors.green(data), formatWithMilliseconds(new Date()));
+  } else if (color === 'blue') {
+    console.log(colors.blue(data), formatWithMilliseconds(new Date()));
+  } else if (color === 'red') {
+    console.log(colors.red(data), formatWithMilliseconds(new Date()));
+  } else if (color === 'yellow') {
+    console.log(colors.yellow(data), formatWithMilliseconds(new Date()));
+  } else if (color === 'important') {
+    console.log(colors.bgMagenta(data), formatWithMilliseconds(new Date()));
+  } else {
+    console.log(data, formatWithMilliseconds(new Date()));
+  }
+
+  // 로그 파일에 데이터 쓰기
+  fs.appendFileSync(logFilePath, data + formatWithMilliseconds(new Date()) + "\n", { encoding: "utf8" });
+}
+
+
+// 시간 포맷 함수
+export const formatWithMilliseconds = (date: Date) => {
+  return `${date.toDateString()} ${date.toTimeString().split(' ')[0]}.${date.getMilliseconds().toString().padStart(3, '0')} ${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
 };

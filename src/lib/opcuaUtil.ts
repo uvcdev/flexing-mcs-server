@@ -269,7 +269,7 @@ const opcuaClient = {
       console.log("🚀 ~ initKepserverex ~ subscriptionNodes:", subscriptionNodes)
 
       // 모니터링 할 노드 등록하고 'on.change' 이벤트 등록하기
-      // await this.monitorSubscriptionNodes(subscriptionNodes);
+      await this.monitorSubscriptionNodes(subscriptionNodes);
 
     } catch (error) {
 

@@ -139,3 +139,8 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 
 ## v0.1.1
 - `workOrderService.stateCheckAndEdit` code 값 예외처리
+
+# MBS 서버 구분
+
+## v0.2.0
+- MBS용 KEPWARE 초기세팅
