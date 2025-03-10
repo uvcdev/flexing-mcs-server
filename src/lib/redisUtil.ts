@@ -20,41 +20,6 @@ const redisConfig: RedisConfig = {
   header: process.env.REDIS_HEADER || 'ACS',
 };
 
-// export const RedisKeys = {
-//   keys: {
-//     workerStatus: 'feedback_worker_status',
-//     instructions: 'res_get_task',
-//     composeJobs: 'req_compose_job',
-//     infoAmr: 'info_amr',
-//     infoAmrById: 'info_amr_by_id',
-//     infoChargerById: 'info_charger_by_id',
-//     infoChargerByResource: 'info_charger_by_resource',
-//     amrRecentTask: 'amr_recent_task',
-//     amrRecentTaskById: 'amr_recent_task_by_id',
-//     amrCurrentCharger: 'amr_current_charger',
-//     alarmBattery: 'alarm_battery',
-//     alarmStatusToggle: 'alarm_status_toggle',
-//     workOrderById: 'work_order_by_id',
-//     setting: {
-//       name: 'setting',
-//       keys: {
-//         amrSetting: {
-//           name: 'amrSetting',
-//           settings: {
-//             newTaskMinBattery: 'newTaskMinBattery',
-//             chargingTaskMinBattery: 'chargingTaskMinBattery',
-//           },
-//         },
-//         logRetentionPeriod: 'logRetentionPeriod',
-//         assignmentPriority: 'assignmentPrioriry',
-//         workPriorityBoost: 'workPriorityBoost',
-//         dailyStartEndSchedule: 'dailyStartEndSchedule',
-//         nightlyStartEndSchedule: 'nightlyStartEndSchedule',
-//       },
-//     },
-//   },
-// };
-
 export enum RedisKeys {
   WorkerStatus = 'feedback_worker_status',
   Instructions = 'res_get_task',

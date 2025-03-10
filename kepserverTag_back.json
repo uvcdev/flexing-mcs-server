@@ -1,0 +1,76 @@
+{
+  "subscriptionNodes": [
+    {
+      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC11.Call_Request_total",
+      "displayName": "Call_Request_total",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "ST01_PLC01",
+      "tagGroup": "SC11"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC11.Call_Time_MonthDay",
+      "displayName": "Call_Time_MonthDay",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "ST01_PLC01",
+      "tagGroup": "SC11"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC11.Call_Time_Year",
+      "displayName": "Call_Time_Year",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "ST01_PLC01",
+      "tagGroup": "SC11"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC11.EQ_Code_01",
+      "displayName": "EQ_Code_01",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "ST01_PLC01",
+      "tagGroup": "SC11"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC11.EQ_Code_02",
+      "displayName": "EQ_Code_02",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "ST01_PLC01",
+      "tagGroup": "SC11"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC12.Call_Time_MonthDay",
+      "displayName": "Call_Time_MonthDay",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "ST01_PLC01",
+      "tagGroup": "SC12"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC12.Call_Time_Year",
+      "displayName": "Call_Time_Year",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "ST01_PLC01",
+      "tagGroup": "SC12"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC12.EQ_Code_01",
+      "displayName": "EQ_Code_01",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "ST01_PLC01",
+      "tagGroup": "SC12"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC12.EQ_Code_02",
+      "displayName": "EQ_Code_02",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "ST01_PLC01",
+      "tagGroup": "SC12"
+    }
+  ]
+}

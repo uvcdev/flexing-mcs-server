@@ -1,0 +1,292 @@
+{
+  "tags": [
+    {
+      "TAG_NAME": "EQ_Code_01",
+      "DESCRIPTION": "SC (Stack Cell)",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "UInt16",
+      "INPUT_TYPE": "PDEC"
+    },
+    {
+      "TAG_NAME": "EQ_Code_02",
+      "DESCRIPTION": "11 (1라인/투입)",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "UInt16",
+      "INPUT_TYPE": "PDEC"
+    },
+    {
+      "TAG_NAME": "Call_Time_Year",
+      "DESCRIPTION": "yyyy",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "UInt16",
+      "INPUT_TYPE": "PDEC"
+    },
+    {
+      "TAG_NAME": "Call_Time_MonthDay",
+      "DESCRIPTION": "mmdd",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "UInt16",
+      "INPUT_TYPE": "PDEC"
+    },
+    {
+      "TAG_NAME": "EQ_Manual",
+      "DESCRIPTION": "설비 수동/자동 상태 ( 0:자동,  1:수동 )",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "EQ_Auto",
+      "DESCRIPTION": "설비 수동/자동 상태 ( 0:수동,  1:자동 )",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "Call_Request",
+      "DESCRIPTION": "AMR 호출 신호",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "Call_Response",
+      "DESCRIPTION": "AMR 호출 응답 신호",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "Call_Request_Multi_1",
+      "DESCRIPTION": "AMR 다중 호출 신호",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "Call_Response_Multi_1",
+      "DESCRIPTION": "AMR 다중 호출 응답 신호",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "Call_Request_Multi_2",
+      "DESCRIPTION": "AMR 다중 호출 신호",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "Call_Response_Multi_2",
+      "DESCRIPTION": "AMR 다중 호출 응답 신호",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "Call_Cancel_Request",
+      "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "Call_Cancel_Response",
+      "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "Call_Priority",
+      "DESCRIPTION": "콜 우선 순위 여부 (0:정상, 1:우선 순위 콜)",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "Call_Robot_Assigned",
+      "DESCRIPTION": "콜 로봇 할당 여부 (0:콜 로봇 할당 없음, 1:콜 로봇 할당)",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "Boolean",
+      "INPUT_TYPE": "BIT"
+    },
+    {
+      "TAG_NAME": "Call_Count",
+      "DESCRIPTION": "콜 ID (1~9999, 1부터 순차 증가 9999 초과시 1로  초기화",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "UInt16",
+      "INPUT_TYPE": "PDEC"
+    },
+    {
+      "TAG_NAME": "Call_Response_Count",
+      "DESCRIPTION": "콜 응답 ID",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "1"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "UInt16",
+      "INPUT_TYPE": "PDEC"
+    }
+  ]
+}
