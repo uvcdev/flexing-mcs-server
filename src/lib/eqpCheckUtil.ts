@@ -5,7 +5,7 @@ import opcuaClient from "./opcuaUtil";
 export const useEqpCheckUtil = () => {
 
   // 태그 값이 변경 된 eqpNode값을 받는다.
-  const eqpTaskStatus = (eqpNode: EqpNode) => {
+  const eqpTaskStatus = async (eqpNode: EqpNode) => {
 
     console.log("🚀 ~ eqpTaskStatus ~ eqpNode:", eqpNode);
     const { channel, device, tagGroup } = eqpNode;
@@ -13,9 +13,29 @@ export const useEqpCheckUtil = () => {
     const changedEqpData = opcuaClient.dataState[channel][device][tagGroup];
     console.log("🚀 ~ eqpTaskStatus ~ changedEqpData:", changedEqpData)
 
+    // PLC 데이터 수집
+    await doWork()
+
+    // PLC 데이터 전송
+    await doSend()
+
+    // PLC 수집 데이터 처리
+    await doCheck()
+
+    // eqp to eqp 통신
+    await CallRegister()
+
+  }
+  const doWork = async () => {
+  }
+  const doSend = async () => {
+  }
+  const doCheck = async () => {
+  }
+  const CallRegister = async () => {
   }
 
-  return { eqpTaskStatus }
+  return { eqpTaskStatus, doWork, doSend, doCheck, CallRegister }
 }
 
 // console.log(eqpNode)

@@ -11,7 +11,7 @@ import path from "path";
 import {
   AttributeIds,
   DataValue,
-  ReadValueIdOptions,
+  // ReadValueIdOptions,
   TimestampsToReturn,
   NodeId,
   ClientMonitoredItemBase,
@@ -39,8 +39,16 @@ const userIdentity: UserIdentityInfoUserName = {
   userName: process.env.OPCUA_USERNAME || "",
   password: process.env.OPCUA_PASSWORD || "",
 };
+export interface ReadValueIdOptions {
+  nodeId?: string | NodeId | number;
+  attributeId?: number;
+  deviceName: string;
+  tagName: string;
+  // indexRange?: NumericRange;
+  // dataEncoding?: (QualifiedNameLike | null);
+}
 
-const opcuaClient = {
+export const opcuaClient = {
   client: OPCUAClient.create(kepserverConfig.clientOptions),
   session: null as ClientSession | null,
   subscription: null as ClientSubscription | null,
@@ -126,6 +134,8 @@ const opcuaClient = {
       return subscriptions.map((node: Subscription) => ({
         nodeId: node.nodeId,
         attributeId: AttributeIds.Value,
+        tagName: node.displayName,
+        deviceName: node.device
       }));
 
     } catch (error) {
@@ -146,9 +156,10 @@ const opcuaClient = {
       // 태그 정보들 불러오기
       this.tagsInfo = await loadTags("eqpConfig.json");
 
-      // 모니터링 등록록
+      // 모니터링 등록
       const monitoredItems = await this.subscription.monitorItems(
         subscriptionNodes,
+        // 0.5초마다 샘플링, 10개까지 보관하고 오래된 값이 자동으로 삭제
         { samplingInterval: 500, discardOldest: true, queueSize: 10 },
         TimestampsToReturn.Both
       );
@@ -169,7 +180,6 @@ const opcuaClient = {
     monitoredItems.on("changed", (monitoredItem: ClientMonitoredItemBase, dataValue: DataValue) => {
 
       try {
-
         const nodeId = monitoredItem.itemToMonitor.nodeId.value.toString();
         const value = dataValue.value.value;
 
@@ -177,7 +187,7 @@ const opcuaClient = {
 
         this.processMonitoredData(nodeId, value);
 
-        // 변경된 노드값 console로 출력해보는 함수수
+        // 변경된 노드값 console로 출력해보는 함수
         printDataState();
 
       } catch (error) {
@@ -245,8 +255,7 @@ const opcuaClient = {
         break;
     }
 
-
-    // // 변경된 데이터 값을 토대로 실행할 ACS의 fmsCheckUtil.ts 같은 함수
+    // 변경된 데이터 값을 토대로 실행할 ACS의 fmsCheckUtil.ts 같은 함수
     this.eqpCheckUtil.eqpTaskStatus(eqpNode);
 
   },

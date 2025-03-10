@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import { DataType, NodeId, AttributeIds, DataValue } from 'node-opcua-client';
 import { formatWithMilliseconds, logToConsoleAndFile } from './logging';
 import opcuaClient from './opcuaUtil';
+import { MqttTopics, sendMqtt } from './mqttUtil';
 
 export interface TagInfo {
   KEY: string;
@@ -228,6 +229,43 @@ export async function readTagValue(eqpNode: EqpNode) {
     return { statuscode: result!.statusCode, value: result!.value };
   } catch (error) {
     logToConsoleAndFile(`Error reading value from node: ${eqpNode.tagName}. Error: ${error}`, "red");
+    throw error;
+  }
+}
+
+// 전체 노드 읽는 함수
+export async function readTagValues() {
+  try {
+    const session = opcuaClient.session;
+
+    let result: DataValue;
+    // 모니터링 할 노드 목록 불러오기
+    const subscriptionNodes = opcuaClient.loadTagsAndCreateSubscriptionNodes();
+    console.log("🚀 ~ initKepserverex ~ subscriptionNodes1111:", subscriptionNodes)
+
+    // const nodeId = `ns=2;s=${eqpNode.channel}.${eqpNode.device}.${eqpNode.tagGroup}.${eqpNode.tagName}`;
+    if (session) {
+      while (true) {
+        try {
+          for (const node of subscriptionNodes) {
+            const dataValue = await session.read({
+              nodeId: node.nodeId,
+              attributeId: node.attributeId,  // node 객체에서 attributeId 사용
+            });
+            // console.log(`[${node.nodeId}] 실시간 태그 값: ${dataValue.value.value}`);
+
+            sendMqtt(`${MqttTopics.KepwareStatus}/${node.deviceName}/${node.tagName}`, JSON.stringify(dataValue.value.value));
+          }
+        } catch (readError) {
+          console.error("태그 값 읽기 오류:", readError);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1초마다 데이터 가져오기
+      }
+    }
+    return { statuscode: result!.statusCode, value: result!.value };
+  } catch (error) {
+    // logToConsoleAndFile(`Error reading value from node: ${eqpNode.tagName}. Error: ${error}`, "red");
     throw error;
   }
 }

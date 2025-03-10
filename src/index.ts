@@ -22,6 +22,10 @@ import { service as workOrderService } from './service/operation/workOrderServic
 import { makeinitDailyWorkOrderstatsScheduleSet } from './lib/scheduleUtil';
 
 import opcuaClient from './lib/opcuaUtil';
+import { logToConsoleAndFile } from "./lib/logging";
+
+
+import { readTagValues } from './lib/kepServerUtil';
 
 dotenv.config();
 
@@ -155,7 +159,6 @@ if (env === 'development') {
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerJson, { explorer: true }));
 }
 app.use(router);
-receiveMqtt(); // mqtt subscribe
 
 // catch 404 and forward to error handler
 app.use((req, res) => {
@@ -233,16 +236,17 @@ if (env === 'development') {
     try {
       // NODE-OPCUA <-> KEPServerex 연결 및 초기화
       await opcuaClient.initKepserverex();
-      // logToConsoleAndFile("KepServerEX initialization successful!", "green");
+      logToConsoleAndFile("KepServerEX initialization successful!", "green");
 
       // node 서버 실행
       // app.listen(port, () => {
       //   console.log(`Server is running on http://localhost:${port}`);
       // });
+      // kepware 상태 불러와서 mqtt 전송
+      await readTagValues();
 
     } catch (error) {
-      console.log('errorrrr')
-      // logToConsoleAndFile(`Unexpected error during initialization: ${error}`, "red");
+      logToConsoleAndFile(`Unexpected error during initialization: ${error}`, "red");
     }
 
   })();

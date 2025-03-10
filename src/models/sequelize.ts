@@ -24,7 +24,7 @@ const sequelize = new Sequelize(database, username, password, {
       requestTimeout: 30000,
     },
   },
-  logging: process.env.SEQUELIZE_LOGGING !== 'false',
+  logging: false,
 });
 
 const logSequelize = new Sequelize(logDbConfig.database, logDbConfig.username, logDbConfig.password, {
@@ -42,7 +42,7 @@ const logSequelize = new Sequelize(logDbConfig.database, logDbConfig.username, l
       requestTimeout: 15000,
     },
   },
-  logging: process.env.SEQUELIZE_LOGGING !== 'false',
+  logging: false,
 });
 export { sequelize, logSequelize };
 export default sequelize;

@@ -1,0 +1,166 @@
+{
+  "tags": [
+    {
+      "TAG_NAME": "Call_Request_total",
+      "DESCRIPTION": "AMR 호출 요청 관련 설비 신호",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "0"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "-1"
+        }
+      ],
+      "DATA_TYPE": "UInt16",
+      "INPUT_TYPE": "PDEC",
+      "CHILD_TAGS": [
+        {
+          "TAG_NAME": "Call_Request",
+          "DESCRIPTION": "AMR 호출 신호",
+          "TAG_DEV_INFO": [
+            {
+              "KEY": "SIZE",
+              "VALUE": "1"
+            },
+            {
+              "KEY": "BITPOINT",
+              "VALUE": "0"
+            }
+          ],
+          "DATA_TYPE": "Boolean",
+          "INPUT_TYPE": "BIT"
+        },
+        {
+          "TAG_NAME": "Call_Request_Multi_1",
+          "DESCRIPTION": "AMR 다중 호출 신호",
+          "TAG_DEV_INFO": [
+            {
+              "KEY": "SIZE",
+              "VALUE": "1"
+            },
+            {
+              "KEY": "BITPOINT",
+              "VALUE": "1"
+            }
+          ],
+          "DATA_TYPE": "Boolean",
+          "INPUT_TYPE": "BIT"
+        },
+        {
+          "TAG_NAME": "Call_Request_Multi_2",
+          "DESCRIPTION": "AMR 다중 호출 신호",
+          "TAG_DEV_INFO": [
+            {
+              "KEY": "SIZE",
+              "VALUE": "1"
+            },
+            {
+              "KEY": "BITPOINT",
+              "VALUE": "2"
+            }
+          ],
+          "DATA_TYPE": "Boolean",
+          "INPUT_TYPE": "BIT"
+        },
+        {
+          "TAG_NAME": "Call_Cancel_Request",
+          "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
+          "TAG_DEV_INFO": [
+            {
+              "KEY": "SIZE",
+              "VALUE": "1"
+            },
+            {
+              "KEY": "BITPOINT",
+              "VALUE": "8"
+            }
+          ],
+          "DATA_TYPE": "Boolean",
+          "INPUT_TYPE": "BIT"
+        },
+        {
+          "TAG_NAME": "Call_Priority",
+          "DESCRIPTION": "콜 우선 순위 여부 (0:정상, 1:우선 순위 콜)",
+          "TAG_DEV_INFO": [
+            {
+              "KEY": "SIZE",
+              "VALUE": "1"
+            },
+            {
+              "KEY": "BITPOINT",
+              "VALUE": "9"
+            }
+          ],
+          "DATA_TYPE": "Boolean",
+          "INPUT_TYPE": "BIT"
+        }
+      ]
+    },
+    {
+      "TAG_NAME": "EQ_Code_01",
+      "DESCRIPTION": "SC (Stack Cell)",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "0"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "UInt16",
+      "INPUT_TYPE": "ASCII"
+    },
+    {
+      "TAG_NAME": "EQ_Code_02",
+      "DESCRIPTION": "11 (1라인/투입)",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "0"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "0"
+        }
+      ],
+      "DATA_TYPE": "UInt16",
+      "INPUT_TYPE": "ASCII"
+    },
+    {
+      "TAG_NAME": "Call_Time_Year",
+      "DESCRIPTION": "yyyy",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "4"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "-1"
+        }
+      ],
+      "DATA_TYPE": "UInt16",
+      "INPUT_TYPE": "DEC"
+    },
+    {
+      "TAG_NAME": "Call_Time_MonthDay",
+      "DESCRIPTION": "mmdd",
+      "TAG_DEV_INFO": [
+        {
+          "KEY": "SIZE",
+          "VALUE": "4"
+        },
+        {
+          "KEY": "BITPOINT",
+          "VALUE": "-1"
+        }
+      ],
+      "DATA_TYPE": "UInt16",
+      "INPUT_TYPE": "DEC"
+    }
+  ]
+}
