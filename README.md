@@ -144,3 +144,4 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 
 ## v0.2.0
 - MBS용 KEPWARE 초기세팅
+- 설비 데이터 실시간으로 불러와서 mqtt 발송하는 기능 추가(`kepServerUtil.readTagValues`)

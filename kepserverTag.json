@@ -1,76 +1,148 @@
 {
   "subscriptionNodes": [
     {
-      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC11.Call_Request_total",
-      "displayName": "Call_Request_total",
-      "dataType": "UInt16",
-      "channel": "EQP",
-      "device": "ST01_PLC01",
-      "tagGroup": "SC11"
-    },
-    {
-      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC11.Call_Time_MonthDay",
-      "displayName": "Call_Time_MonthDay",
-      "dataType": "UInt16",
-      "channel": "EQP",
-      "device": "ST01_PLC01",
-      "tagGroup": "SC11"
-    },
-    {
-      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC11.Call_Time_Year",
-      "displayName": "Call_Time_Year",
-      "dataType": "UInt16",
-      "channel": "EQP",
-      "device": "ST01_PLC01",
-      "tagGroup": "SC11"
-    },
-    {
-      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC11.EQ_Code_01",
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.EQ_Code_01",
       "displayName": "EQ_Code_01",
       "dataType": "UInt16",
       "channel": "EQP",
-      "device": "ST01_PLC01",
-      "tagGroup": "SC11"
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
     },
     {
-      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC11.EQ_Code_02",
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.EQ_Code_02",
       "displayName": "EQ_Code_02",
       "dataType": "UInt16",
       "channel": "EQP",
-      "device": "ST01_PLC01",
-      "tagGroup": "SC11"
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
     },
     {
-      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC12.Call_Time_MonthDay",
-      "displayName": "Call_Time_MonthDay",
-      "dataType": "UInt16",
-      "channel": "EQP",
-      "device": "ST01_PLC01",
-      "tagGroup": "SC12"
-    },
-    {
-      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC12.Call_Time_Year",
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Time_Year",
       "displayName": "Call_Time_Year",
       "dataType": "UInt16",
       "channel": "EQP",
-      "device": "ST01_PLC01",
-      "tagGroup": "SC12"
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
     },
     {
-      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC12.EQ_Code_01",
-      "displayName": "EQ_Code_01",
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Time_MonthDay",
+      "displayName": "Call_Time_MonthDay",
       "dataType": "UInt16",
       "channel": "EQP",
-      "device": "ST01_PLC01",
-      "tagGroup": "SC12"
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
     },
     {
-      "nodeId": "ns=2;s=EQP.ST01_PLC01.SC12.EQ_Code_02",
-      "displayName": "EQ_Code_02",
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.EQ_Manual",
+      "displayName": "EQ_Manual",
       "dataType": "UInt16",
       "channel": "EQP",
-      "device": "ST01_PLC01",
-      "tagGroup": "SC12"
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.EQ_Auto",
+      "displayName": "EQ_Auto",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Request",
+      "displayName": "Call_Request",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Response",
+      "displayName": "Call_Response",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Request_Multi_1",
+      "displayName": "Call_Request_Multi_1",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Response_Multi_1",
+      "displayName": "Call_Response_Multi_1",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Request_Multi_2",
+      "displayName": "Call_Request_Multi_2",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Response_Multi_2",
+      "displayName": "Call_Response_Multi_2",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Cancel_Request",
+      "displayName": "Call_Cancel_Request",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Cancel_Response",
+      "displayName": "Call_Cancel_Response",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Priority",
+      "displayName": "Call_Priority",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Robot_Assigned",
+      "displayName": "Call_Robot_Assigned",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Count",
+      "displayName": "Call_Count",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
+    },
+    {
+      "nodeId": "ns=2;s=EQP.STACK01.LOAD-PORT.Call_Response_Count",
+      "displayName": "Call_Response_Count",
+      "dataType": "UInt16",
+      "channel": "EQP",
+      "device": "STACK01",
+      "tagGroup": "LOAD-PORT"
     }
   ]
 }
