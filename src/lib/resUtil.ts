@@ -10,6 +10,11 @@ export interface InsertedListResult {
   insertedIds: Array<number>;
 }
 
+// insertUpdate 응답 타입
+export interface InsertUpdatedResult {
+  insertedOrUpdatedId?: number;
+  created: boolean;
+}
 // insertUpdateList 응답 타입
 export interface ListInsertUpdatedResult {
   insertedIds?: Array<number>;
@@ -46,6 +51,15 @@ export interface UpdatedResult {
   updatedCount: number;
 }
 
+export interface UpdatedIdsResult {
+  updatedIds: number[];
+}
+// update 응답 타입
+export interface UpdatedAndDataResult {
+  updatedCount: number;
+  updatedData: Record<string, any>[];
+}
+
 // delete 응답 타입
 export interface DeletedResult {
   deletedCount: number;
@@ -57,8 +71,8 @@ export interface LoggedInResult {
 }
 
 // 프리스타일 응답 타입
-export interface FreeStyleResult {
-  result: unknown;
+export interface FreeStyleResult<T> {
+  result: T;
 }
 
 // 업로드 응답 타입
@@ -76,18 +90,18 @@ export type ResponseJson<T> = {
   code: string;
   message: string | null;
   data:
-    | InsertedResult
-    | BulkInsertedOrUpdatedResult
-    | SelectedInfoResult
-    | SelectedAllResult<T>
-    | SelectedListResult<T>
-    | UpdatedResult
-    | DeletedResult
-    | LoggedInResult
-    | FreeStyleResult
-    | UploadResult
-    | DownloadResult
-    | null;
+  | InsertedResult
+  | BulkInsertedOrUpdatedResult
+  | SelectedInfoResult
+  | SelectedAllResult<T>
+  | SelectedListResult<T>
+  | UpdatedResult
+  | DeletedResult
+  | LoggedInResult
+  | FreeStyleResult<T>
+  | UploadResult
+  | DownloadResult
+  | null;
   remark: unknown;
 };
 
@@ -279,7 +293,7 @@ export function makeResponseSuccess(result: unknown, type: responseType): Respon
 
     return resJson;
   } else if (type === responseType.FREESTYLE) {
-    const resultData = result as FreeStyleResult;
+    const resultData = result as FreeStyleResult<unknown>;
     resJson.message = 'Request is successfully done';
     resJson.data = resultData;
 

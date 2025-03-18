@@ -14,17 +14,17 @@ const sequelize = new Sequelize(database, username, password, {
   port,
   dialect,
   pool: {
-    max: 15,
+    max: 20,
     min: 0,
-    acquire: 30000,
-    idle: 10000,
+    acquire: 30000, // 최대 시간(밀리초) 동안 연결 시도를 하기 전에 풀이 시도를 포기하고 오류를 던짐
+    idle: 10000, // 연결이 해제되기 전에 유휴 상태로 있을 수 있는 최대 시간(밀리초)
   },
   dialectOptions: {
     options: {
-      requestTimeout: 5000,
+      requestTimeout: 30000,
     },
   },
-  logging: process.env.SEQUELIZE_LOGGING !== 'false',
+  logging: false,
 });
 
 const logSequelize = new Sequelize(logDbConfig.database, logDbConfig.username, logDbConfig.password, {
@@ -32,7 +32,7 @@ const logSequelize = new Sequelize(logDbConfig.database, logDbConfig.username, l
   port: logDbConfig.port,
   dialect: logDbConfig.dialect,
   pool: {
-    max: 15,
+    max: 20,
     min: 0,
     acquire: 30000,
     idle: 10000,
@@ -42,7 +42,7 @@ const logSequelize = new Sequelize(logDbConfig.database, logDbConfig.username, l
       requestTimeout: 15000,
     },
   },
-  logging: process.env.SEQUELIZE_LOGGING !== 'false',
+  logging: false,
 });
 export { sequelize, logSequelize };
 export default sequelize;

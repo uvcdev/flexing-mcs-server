@@ -88,7 +88,9 @@ export enum MqttTopics {
   AlarmClear = 'alarm/clear',
   IsAlive = 'is-alive',
   ItemLogging = 'item-logging',
-  WorkOrderStats = 'work-order-stats'
+  WorkOrderStats = 'work-order-stats',
+  // MBS용
+  KepwareStatus = 'kepware-status'
 }
 
 

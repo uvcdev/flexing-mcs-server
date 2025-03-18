@@ -10,7 +10,7 @@ import https from 'https';
 import fs from 'fs';
 import { logSequelize, sequelize } from './models';
 import { router } from './routes/index';
-import { logging, makeLogFormat } from './lib/logging';
+import { RequestLog, logging, makeLogFormat } from './lib/logging';
 import { responseCode as resCode, makeResponseError as resError, ErrorClass } from './lib/resUtil';
 import { receiveMqtt } from './lib/mqttUtil';
 import path from 'path';
@@ -20,6 +20,12 @@ import swaggerJson from '../src/swagger.json';
 import * as process from 'process';
 import { service as workOrderService } from './service/operation/workOrderService';
 import { makeinitDailyWorkOrderstatsScheduleSet } from './lib/scheduleUtil';
+
+import opcuaClient from './lib/opcuaUtil';
+import { logToConsoleAndFile } from "./lib/logging";
+
+
+import { readTagValues } from './lib/kepServerUtil';
 import { processMcs } from './lib/wms/index';
 
 dotenv.config();
@@ -62,7 +68,6 @@ const httpsOption = {
 };
 app.set('port', port);
 
-// sequelize sync 동작 (Table 자동 생성 옵션)
 if (env === 'production') {
   // production인 경우에만 자동 생성 한다. (개발시에는 POST {{url}}/tables 를 이용할 것)
   sequelize
@@ -98,6 +103,7 @@ if (env === 'production') {
   app.use(helmet());
   app.use(morgan('combined'));
   void (async () => {
+    // sequelize sync 동작 (Table 자동 생성 옵션)
     try {
       await sequelize.sync({ force: false }).then(async () => {
         logging.SYSTEM_LOG({
@@ -112,6 +118,10 @@ if (env === 'production') {
           },
         });
         console.log('Sequelize sync success');
+
+        // imcs 관련 redis 작성
+        // await useServerUtil().setRealOrderGroupId();
+        // await settingService.writeAllRedis();
       });
     } catch (error) {
       console.error('Unable to connect to the database:', error);
@@ -151,7 +161,16 @@ if (env === 'production') {
     } catch (error) {
       console.error(error);
     }
+
   })();
+}
+
+// NODE_ENV 환경에 따른 설정
+if (env === 'production') {
+  // 운영 환경 세팅
+  app.use(hpp());
+  app.use(helmet());
+  app.use(morgan('combined'));
 } else {
   // 개발/테스트 환경 세팅
   app.use(morgan('dev'));
@@ -173,7 +192,6 @@ if (env === 'development') {
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerJson, { explorer: true }));
 }
 app.use(router);
-receiveMqtt(); // mqtt subscribe
 
 // catch 404 and forward to error handler
 app.use((req, res) => {
@@ -194,6 +212,10 @@ const logMessage = {
   DB_PORT: process.env.DB_PORT,
   DB_DATABASE: process.env.DB_DATABASE,
   DB_DIALECT: process.env.DB_DIALECT,
+  LOG_DB_HOST: process.env.LOG_DB_HOST,
+  LOG_DB_PORT: process.env.LOG_DB_PORT,
+  LOG_DB_DATABASE: process.env.LOG_DB_DATABASE,
+  LOG_DB_DIALECT: process.env.LOG_DB_DIALECT,
   MQTT_HOST: process.env.MQTT_HOST,
   MQTT_PORT: process.env.MQTT_PORT,
   MQTT_TOPIC: process.env.MQTT_TOPIC,
@@ -232,6 +254,42 @@ if (httpsOption.key && httpsOption.cert) {
   });
 }
 
+
+// redis 초기 값 설정 (setting 등)
+if (env === 'development') {
+  // useRedisUtil().flushall();
+
+  Promise.all([])
+    .then(async () => {
+      // await useCacheDbUtil().redisInit();
+      // await settingService.writeAllRedis();
+      // await amrService.writeAllRedis();
+    })
+    .catch((error: Error) => {
+      console.log(error);
+    });
+
+  receiveMqtt(); // mqtt subscribe
+
+  void (async () => {
+    try {
+      // NODE-OPCUA <-> KEPServerex 연결 및 초기화
+      await opcuaClient.initKepserverex();
+      logToConsoleAndFile("KepServerEX initialization successful!", "green");
+
+      // node 서버 실행
+      // app.listen(port, () => {
+      //   console.log(`Server is running on http://localhost:${port}`);
+      // });
+      // kepware 상태 불러와서 mqtt 전송
+      await readTagValues();
+
+    } catch (error) {
+      logToConsoleAndFile(`Unexpected error during initialization: ${error}`, "red");
+    }
+
+  })();
+}
 
 if (process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true') {
   makeinitDailyWorkOrderstatsScheduleSet({ hour: 0, minute: 0, second: 0 })
