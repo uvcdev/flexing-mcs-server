@@ -20,6 +20,7 @@ import swaggerJson from '../src/swagger.json';
 import * as process from 'process';
 import { service as workOrderService } from './service/operation/workOrderService';
 import { makeinitDailyWorkOrderstatsScheduleSet } from './lib/scheduleUtil';
+import { processMcs } from './lib/wms/index';
 
 dotenv.config();
 
@@ -81,6 +82,9 @@ if (env === 'production') {
         },
       });
       console.log('Sequelize sync success');
+
+      // 여기에 redis 데이터 초기화 로직 추가
+      // ex) await settingService.writeAllRedis();
     })
     .catch((err: Error) => {
       console.error(err);
@@ -199,30 +203,62 @@ const logMessage = {
 
 // running http
 app.listen(app.get('port'), () => {
-  logging.SYSTEM_LOG({
-    title: `Server Running (http:${port})`,
-    message: {
-      ...logMessage,
-    },
-  });
+  // logging.SYSTEM_LOG({
+  //   title: `Server Running (http:${port})`,
+  //   message: {
+  //     ...logMessage,
+  //   },
+  // });
   console.log(`server is running on http port:${port}`);
+
+  // MCS 로직 실행
+  processMcs()
 });
 
 // running https
 if (httpsOption.key && httpsOption.cert) {
   const httpsServer = https.createServer({ key: httpsOption.key, cert: httpsOption.cert }, app);
   httpsServer.listen(httpsPort, () => {
-    logging.SYSTEM_LOG({
-      title: `Server Running (https:${httpsPort})`,
-      message: {
-        ...logMessage,
-      },
-    });
+    // logging.SYSTEM_LOG({
+    //   title: `Server Running (https:${httpsPort})`,
+    //   message: {
+    //     ...logMessage,
+    //   },
+    // });
     console.log(`server is running on http port:${httpsPort}`);
+
+    // MCS 로직 실행
+    processMcs()
   });
 }
 
 
-if(process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true'){
-  makeinitDailyWorkOrderstatsScheduleSet({hour: 0,minute: 0, second:0})
+if (process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true') {
+  makeinitDailyWorkOrderstatsScheduleSet({ hour: 0, minute: 0, second: 0 })
 }
+
+
+// 종료 핸들러
+// 프로그램이 종료되기전에 실행될 코드
+const gracefulShutdown = (signal: string) => {
+  console.log(`\n[${signal}] 서버 종료 중...`);
+
+  // 정리해야 할 로직 추가 (예: DB 연결 해제, 로그 저장 등)
+  setTimeout(() => {
+    console.log("서버 종료 완료.");
+    global.process.exit(0);
+  }, 1000); // 1초 후 종료 (비동기 작업이 있다면 고려)
+};
+
+// 정상 종료 이벤트 처리
+global.process.on("exit", () => gracefulShutdown("exit"));
+global.process.on("SIGINT", () => gracefulShutdown("SIGINT")); // Ctrl + C
+global.process.on("SIGTERM", () => gracefulShutdown("SIGTERM")); // PM2 등에서 종료 요청
+global.process.on("uncaughtException", (err) => {
+  console.error("예기치 않은 오류 발생:", err);
+  gracefulShutdown("uncaughtException");
+});
+global.process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Promise Rejection:", reason);
+  gracefulShutdown("unhandledRejection");
+});

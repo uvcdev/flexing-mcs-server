@@ -8,7 +8,7 @@ export interface FacilityAttributes {
   facilityGroupId: number;
   code: string;
   name: string;
-  system: 'WCS' | 'EQP';
+  system: 'WMS' | 'EQP';
   state: string | null;
   type: 'in' | 'out';
   serial: string | null;
@@ -18,6 +18,7 @@ export interface FacilityAttributes {
   active: boolean | null;
   alwaysFill: boolean | null;
   description: string | null;
+  isMissionOrderCapable: boolean | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -42,6 +43,7 @@ class Facility extends Model implements FacilityAttributes {
   public active!: FacilityAttributes['active'];
   public alwaysFill!: FacilityAttributes['alwaysFill'];
   public description!: FacilityAttributes['description'];
+  public isMissionOrderCapable!: FacilityAttributes['isMissionOrderCapable'];
   public readonly createdAt!: FacilityAttributes['createdAt'];
   public readonly updatedAt!: FacilityAttributes['updatedAt'];
   public readonly deletedAt!: FacilityAttributes['deletedAt'];
@@ -98,6 +100,10 @@ Facility.init(
     description: {
       type: DataTypes.STRING(255),
     },
+    isMissionOrderCapable: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     sequelize,
@@ -123,6 +129,7 @@ export interface FacilityInsertParams {
   floor: string | null;
   active: boolean;
   alwaysFill: boolean;
+  isMissionOrderCapable: boolean;
   description: string | null;
 }
 
@@ -188,6 +195,7 @@ export interface FacilityUpdateParams {
   active?: boolean;
   alwaysFill?: boolean;
   description?: string | null;
+  isMissionOrderCapable?: boolean;
 }
 
 // update state
@@ -217,6 +225,7 @@ export const FacilityAttributesInclude = [
   'active',
   'alwaysFill',
   'description',
+  'isMissionOrderCapable',
   'createdAt',
 ];
 

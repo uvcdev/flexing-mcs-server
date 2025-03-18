@@ -60,7 +60,7 @@ type MissionStateData = {
 type McsWorkOrderRequestType = {
   TX_ID: string;
   ZONE_ID: string;
-  TYPE: 'IN' | 'OUT'; // 반출 OUT, 반입 IN
+  TYPE: 'IN' | 'OUT' | 'MISSION'; // 반출 OUT, 반입 IN , 미션 MISSION
   EQP_ID: string;
   EQP_CALL_ID: string;
   PORT_ID: string;
@@ -73,7 +73,7 @@ type McsWorkOrderRequestType = {
 type McsCancelWorkOrderRequestType = {
   TX_ID: string;
   ZONE_ID: string;
-  TYPE: 'IN' | 'OUT'; // 반출 OUT, 반입 IN
+  TYPE: 'IN' | 'OUT' | 'MISSION'; // 반출 OUT, 반입 IN , 미션 MISSION
   EQP_ID: string;
   EQP_CALL_ID: string;
   PORT_ID: string;
