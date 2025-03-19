@@ -97,11 +97,10 @@ export interface SettingDeleteParams {
   id?: SettingAttributes['id'];
 }
 
-export type HeartBeatSetting = {
+export type WmsAckSetting = {
   system: string;
   type: string;
   data: {
-    intervalTimeSeconds: number; // 초, defalut: 5
     timeoutTimeSeconds: number; //  초, defalut: 30
     retryCount: number; // 횟수, defalut: 3 
   };

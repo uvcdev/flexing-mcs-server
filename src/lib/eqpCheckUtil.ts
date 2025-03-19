@@ -1,56 +1,273 @@
-import { EqpNode } from "./kepServerUtil";
+import { AttributeIds } from "node-opcua-client";
+import { heartbeat, readTagsValue, TagValue, updateTagValue, writeTagsValue } from "./kepServerUtil";
+import { logging } from "./logging";
 import opcuaClient from "./opcuaUtil";
 
+interface EQP_WCS {
+  EQP_ID: string;
+  EQP_CALL_ID: string;
+  WCS_CALL_ID?: string;
+}
 
 export const useEqpCheckUtil = () => {
 
-  // 태그 값이 변경 된 eqpNode값을 받는다.
-  const eqpTaskStatus = async (eqpNode: EqpNode) => {
-
-    console.log("🚀 ~ eqpTaskStatus ~ eqpNode:", eqpNode);
-    const { channel, device, tagGroup } = eqpNode;
-    // 해당 설비(SC11, SC12)에 해당하는 태그만 뽑아서 쓴다.
-    const changedEqpData = opcuaClient.dataState[channel][device][tagGroup];
-    console.log("🚀 ~ eqpTaskStatus ~ changedEqpData:", changedEqpData)
+  const eqpTaskStatus = async (targetTagInfo: TagValue) => {
 
     // PLC 데이터 수집
-    await doWork()
+    await doWork(targetTagInfo)
 
     // PLC 데이터 전송
-    await doSend()
+    await doSend(targetTagInfo)
 
     // PLC 수집 데이터 처리
-    await doCheck()
-
-    // eqp to eqp 통신
-    await CallRegister()
+    await doCheck(targetTagInfo)
 
   }
-  const doWork = async () => {
-  }
-  const doSend = async () => {
-  }
-  const doCheck = async () => {
-  }
-  const CallRegister = async () => {
+
+  const doWork = async (targetTagInfo: TagValue) => {
+    console.log("🚀 ~ doWork ~ targetTagInfo:", targetTagInfo)
   }
 
-  return { eqpTaskStatus, doWork, doSend, doCheck, CallRegister }
+  const doSend = async (targetTagInfo: TagValue) => {
+    console.log("🚀 ~ doSend ~ targetTagInfo:", targetTagInfo)
+  }
+
+  const doCheck = async (targetTagInfo: TagValue) => {
+    console.log("🚀 ~ doCheck ~ targetTagInfo:", targetTagInfo)
+
+    try {
+
+      // TAG_NAME에 따라 다른 함수 실행
+      switch (targetTagInfo.TAG_NAME) {
+        case 'Call_Request':
+          console.log(`Action Method Tag: Call_Request`);
+          await callRegister(targetTagInfo);
+          break;
+
+        case 'Call_Cancel':
+          console.log(`Action Method Tag: Call_Cancel`);
+          await callCancel(targetTagInfo);
+          break;
+
+        case 'Docking_Response':
+          console.log(`Action Method Tag: Docking_Response`);
+          await dockingStart(targetTagInfo);
+          break;
+
+        case 'Docking_Complete':
+          console.log(`Action Method Tag: Docking_Complete`);
+          await dockingComplete(targetTagInfo);
+          break;
+
+        case 'Docking_Failed':
+          console.log(`Action Method Tag: Docking_Failed`);
+          await dockingFailed(targetTagInfo);
+          break;
+      }
+
+    } catch (error) {
+      console.error("DoCheck error:", error);
+    }
+  }
+  // callRequestMulti1Value와 callRequestMulti2Value의 값을 기반으로 multiValue 결정
+  const determineMultiValue = (callRequestMulti1Value: string, callRequestMulti2Value: string): number => {
+    if (callRequestMulti1Value === "true" && callRequestMulti2Value === "true") {
+      return 3;
+    } else if (callRequestMulti1Value === "true") {
+      return 2;
+    } else {
+      return 1;
+    }
+  };
+  const createEQPCallId = async (targetKey: string, callCountValue: string, multiValue: number): Promise<string[] | null> => {
+    try {
+      // 설비코드 1 + 설비코드 2 + 콜 ID 시간1(년도) + 콜 ID시간2(월,일) + 콜ID(0~9999)
+      const EQCode01 = opcuaClient.tagMap.get(`${targetKey}.EQ_Code_01`);
+      const EQCode02 = opcuaClient.tagMap.get(`${targetKey}.EQ_Code_02`);
+      const callTimeYear = opcuaClient.tagMap.get(`${targetKey}.Call_Time_Year`);
+      const callTimeMonthDay = opcuaClient.tagMap.get(`${targetKey}.Call_Time_MonthDay`);
+
+      // 필요한 모든 nodeId들을 배열로 모음
+      const needNodeIds = [
+        EQCode01?.NODE_ID,
+        EQCode02?.NODE_ID,
+        callTimeYear?.NODE_ID,
+        callTimeMonthDay?.NODE_ID,
+      ].filter((nodeId): nodeId is string => nodeId !== undefined);
+
+      const readDatas = await readTagsValue(needNodeIds);
+
+      const needKeys = [
+        EQCode01?.TAG_NAME,
+        EQCode02?.TAG_NAME,
+        callTimeYear?.TAG_NAME,
+        callTimeMonthDay?.TAG_NAME,
+      ].filter((tagName): tagName is string => tagName !== undefined);
+
+      for (let i = 0; i < needKeys.length; i++) {
+        updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
+      }
+
+
+      const EQCode01Value = EQCode01?.value.toString() || "0";
+      const EQCode02Value = EQCode02?.value.toString() || "0";
+      const callTimeYearValue = callTimeYear?.value.toString() || "0";
+      const callTimeMonthDayValue = callTimeMonthDay?.value.toString() || "0";
+
+      // callTimeMonthDay 값을 4자릿수로 변환
+      const callTimeMonthDayStr = callTimeMonthDayValue.toString().padStart(4, '0');
+
+      const result = [];
+      for (let i = 0; i < multiValue; i++) {
+        const callId = EQCode01Value + EQCode02Value + callTimeYearValue + callTimeMonthDayStr + callCountValue + ((i >= 1) ? "_" + i.toString() : ""); console.log("🚀 ~ createEQPCallId ~ callId:", callId)
+        result.push(callId);
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error creating EQP Call ID:", error);
+      return null;
+    }
+  };
+
+
+  const callRegister = async (targetTagInfo: TagValue) => {
+
+
+    if (targetTagInfo.TAG_NAME !== "Call_Request") {
+      throw new Error(`Call_Request 태그가 아님. ${targetTagInfo.TAG_NAME}`);
+    }
+
+    if (targetTagInfo.value !== true) {
+      console.log(`Call_Request 태그가 0이 들어옴. ${targetTagInfo.value}`);
+      logging.SYSTEM_LOG({
+        title: "Call_Request 태그가 0이 들어옴.",
+        message: targetTagInfo.value
+      });
+      return;
+    }
+
+    const targetKey = targetTagInfo.TAGGROUP
+      ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
+      : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+    // 필요한 태그 값들 가져오기
+    const callType01 = opcuaClient.tagMap.get(`${targetKey}.Call_Type_01`);
+    const callPriority = opcuaClient.tagMap.get(`${targetKey}.Call_Priority`);
+    const callCount = opcuaClient.tagMap.get(`${targetKey}.Call_Count`);
+    const callRequestMulti1 = opcuaClient.tagMap.get(`${targetKey}.Call_Request_Multi_1`);
+    const callRequestMulti2 = opcuaClient.tagMap.get(`${targetKey}.Call_Request_Multi_2`);
+    // 필요한 모든 nodeId들을 배열로 모음
+    const needNodeIds = [
+      callType01?.NODE_ID,
+      callPriority?.NODE_ID,
+      callCount?.NODE_ID,
+      callRequestMulti1?.NODE_ID,
+      callRequestMulti2?.NODE_ID
+    ].filter((nodeId): nodeId is string => nodeId !== undefined);
+
+    const readDatas = await readTagsValue(needNodeIds);
+    const severStatus = await heartbeat()
+    console.log("🚀 ~ callRegister ~ severStatus:", severStatus)
+
+
+    const needKeys = [
+      callType01?.TAG_NAME,
+      callPriority?.TAG_NAME,
+      callCount?.TAG_NAME,
+      callRequestMulti1?.TAG_NAME,
+      callRequestMulti2?.TAG_NAME
+    ].filter((tagName): tagName is string => tagName !== undefined);
+
+    for (let i = 0; i < needKeys.length; i++) {
+      updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
+    }
+
+    const callType01Value = callType01?.value.toString() || "0";
+    const callPriorityValue = callPriority?.value.toString() || "0";
+    const callCountPrevValue = callCount?.prevValue.toString() || "0";
+    const callCountValue = callCount?.value.toString() || "0";
+    const callRequestMulti1Value = callRequestMulti1?.value.toString() || "0";
+    const callRequestMulti2Value = callRequestMulti2?.value.toString() || "0";
+
+
+    // 유효성 검사
+    if (callType01Value === "0" || callCountValue === "0") {
+      console.log(`callTypeValue가 0이거나 callCountValue가 0
+                  callType: ${callType01Value}, 
+                  callCount: ${callCountValue}
+                  `);
+
+      logging.SYSTEM_LOG({
+        title: "얘네가 다 0이 아니어야 되는데 0이 들어옴.",
+        message: `callType: ${callType01Value}, callCount: ${callCountValue}
+                  ` });
+
+      throw new Error(`callTypeValue가 0이거나 callCountValue가 0.
+                  callType: ${callType01Value}, 
+                  callCount: ${callCountValue}
+                  `);
+    }
+
+    // 우선순위 체크
+    // callPriorityValue === "1"
+    // 중복 콜 체크
+    // callCountPrevValue === callCountValue
+    // 다중 호출 체크
+    // callRequestMulti1Value === "1"
+    // callRequestMulti2Value === "1"
+
+
+    const multiValue = determineMultiValue(callRequestMulti1Value, callRequestMulti2Value);
+
+    const eqpCallId = await createEQPCallId(targetKey, callCountValue, multiValue);
+    console.log("🚀 ~ callRegister ~ eqpCallId:", eqpCallId)
+
+    const eqpWcsInfo: EQP_WCS[] = eqpCallId?.map((callId) => ({
+      EQP_ID: targetTagInfo.CHANNEL,
+      EQP_CALL_ID: callId
+    })) || [];
+
+    console.log("🚀 ~ consteqpWcsInfo:EQP_WCS[]=eqpCallId?.map ~ eqpWcsInfo:", eqpWcsInfo)
+    // WCS에 콜 등록 요청
+
+    console.log(`Call request sent to WCS. TYPE: ${callType01Value}, CallID: ${callCountValue}`);
+
+    // 1. EQP (LOAD_PORT 11 투입) to WMS - WMS입장에서 반출   call out api
+    // 2. EQP (UNLOAD_PORT 12 회수) to WMS - WMS입장에서 반입 call in api
+    // 3. EQP to EQP 
+
+
+    // 창고요청응답후 EQP에 호출응답신호
+    const callResponse = opcuaClient.tagMap.get(`${targetKey}.Call_Response`);
+    const callResponseWriteResult = await writeTagsValue([
+      {
+        nodeId: callResponse?.NODE_ID,
+        attributeId: AttributeIds.Value,
+        value: {
+          value: {
+            dataType: callResponse?.DATA_TYPE,
+            value: true
+          }
+        }
+      }
+    ]);
+  };
+
+  const callCancel = async (targetTagInfo: TagValue) => {
+    // 구현 필요
+  };
+
+  const dockingStart = async (targetTagInfo: TagValue) => {
+    // 구현 필요
+  };
+
+  const dockingComplete = async (targetTagInfo: TagValue) => {
+    // 구현 필요
+  };
+
+  const dockingFailed = async (targetTagInfo: TagValue) => {
+    // 구현 필요
+  };
+
+  return { eqpTaskStatus, doWork, doSend, doCheck, callRegister }
 }
-
-// console.log(eqpNode)
-// eqpNode: {
-//     channel: 'EQP',
-//     device: 'ST01_PLC01',
-//     tagGroup: 'SC12',
-//     tagName: 'EQ_Code_02'
-//   }
-
-
-// console.log(changedEqpData)
-// changedEqpData: {
-//     Call_Time_MonthDay: '0000',
-//     Call_Time_Year: '2033',
-//     EQ_Code_01: '00',
-//     EQ_Code_02: '00'
-//   }

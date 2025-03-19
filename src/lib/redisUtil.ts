@@ -46,7 +46,7 @@ export enum RedisSettingKeys {
   WorkPriorityBoost = `workPriorityBoost`, //작업 우선 순위 상향 설정 (기준시간: priorityBoostTimeLimit)
   DailyStartEndSchedule = `dailyStartEndSchedule`, // 주간 시업/종업
   NightlyStartEndSchedule = `nightlyStartEndSchedule`, // 야간 시업/종업
-  HeartBeatSetting = 'heartBeatSetting', // HeartBeat 관련 설정 
+  WmsAckSetting = 'wmsAckSetting', // WMS ACK 통신 관련 설정 
 }
 
 // export type AmrCurrentChargerTypes = {
