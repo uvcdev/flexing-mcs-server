@@ -166,9 +166,6 @@ export const useEqpCheckUtil = () => {
     ].filter((nodeId): nodeId is string => nodeId !== undefined);
 
     const readDatas = await readTagsValue(needNodeIds);
-    const severStatus = await heartbeat()
-    console.log("🚀 ~ callRegister ~ severStatus:", severStatus)
-
 
     const needKeys = [
       callType01?.TAG_NAME,
@@ -237,7 +234,7 @@ export const useEqpCheckUtil = () => {
     // 3. EQP to EQP 
 
 
-    // 창고요청응답후 EQP에 호출응답신호
+    // 창고요청응답후 EQP에 호출응답신호 ( writeTagsValue 테스트)
     const callResponse = opcuaClient.tagMap.get(`${targetKey}.Call_Response`);
     const callResponseWriteResult = await writeTagsValue([
       {

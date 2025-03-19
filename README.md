@@ -145,3 +145,11 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 ## v0.2.0
 - MBS용 KEPWARE 초기세팅
 - 설비 데이터 실시간으로 불러와서 mqtt 발송하는 기능 추가(`kepServerUtil.readTagValues`)
+
+## v0.2.0-ssb
+- KEPWARE - MCS 통신 로직 수정
+- KEPWARE TAG정보 읽기 스크립트 추가
+- KEPWARE 구독할 태그 선택 스크립트 추가
+- KEPWARE WORD타입 태그 [DEC, ASCII] 분류 스크립트 추가
+- WMS ACK heartbeat 설정값 추가
+- KEPWARE heartbeat 함수 추가가
