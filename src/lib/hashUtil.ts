@@ -1,5 +1,5 @@
 import passwordValidator from 'password-validator';
-import crypto from 'crypto';
+import crypto, { randomUUID } from 'crypto';
 
 // 패스워드 정책 체크
 export function checkPasswordValidator(password: string): boolean {
@@ -77,4 +77,10 @@ export function checkPasswordHash(password: string, encryptedPassword: string): 
       }
     });
   });
+}
+
+// 메세지 고유의 GUID 사용 필요성 때문에 추가
+// UUID 생성 함수
+export function generateUUIDNode() {
+  return randomUUID();
 }

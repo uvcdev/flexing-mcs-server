@@ -26,7 +26,8 @@ import { logToConsoleAndFile } from "./lib/logging";
 
 
 import { readTagValues } from './lib/kepServerUtil';
-import { processMcs } from './lib/wms/index';
+import { processMcs } from './lib/process/index';
+import { initAllRedisData } from './lib/redis/init';
 
 dotenv.config();
 
@@ -89,7 +90,7 @@ if (env === 'production') {
       console.log('Sequelize sync success');
 
       // 여기에 redis 데이터 초기화 로직 추가
-      // ex) await settingService.writeAllRedis();
+      initAllRedisData()
     })
     .catch((err: Error) => {
       console.error(err);
@@ -120,8 +121,7 @@ if (env === 'production') {
         console.log('Sequelize sync success');
 
         // imcs 관련 redis 작성
-        // await useServerUtil().setRealOrderGroupId();
-        // await settingService.writeAllRedis();
+        initAllRedisData()
       });
     } catch (error) {
       console.error('Unable to connect to the database:', error);
@@ -234,6 +234,9 @@ app.listen(app.get('port'), () => {
   console.log(`server is running on http port:${port}`);
 
   // MCS 로직 실행
+  initAllRedisData()
+  // 설비 정보 동기화
+  // WMS 정보 동기화
   processMcs()
 });
 
@@ -250,6 +253,7 @@ if (httpsOption.key && httpsOption.cert) {
     console.log(`server is running on http port:${httpsPort}`);
 
     // MCS 로직 실행
+    initAllRedisData()
     processMcs()
   });
 }

@@ -118,3 +118,8 @@ export const pushArrayWithPromise = (array: Array<any>, item: any) => {
     resolve();
   });
 };
+
+export const formatDetailedDateTime = (date: Date) => {
+  return dayjs(date).format('YYYY.MM.DD HH:mm:ss') + '.' +
+    String(date.getMilliseconds()).padStart(3, '0').substring(0, 2);
+};

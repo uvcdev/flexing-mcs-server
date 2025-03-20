@@ -145,3 +145,11 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 ## v0.2.0
 - MBS용 KEPWARE 초기세팅
 - 설비 데이터 실시간으로 불러와서 mqtt 발송하는 기능 추가(`kepServerUtil.readTagValues`)
+
+## v0.2.0-ljk
+- HEARTBEAT 로직 추가
+  - 주기적으로 서버 가동 상태를 확인하는 HEARTBEAT 로직 추가
+  - WMS Heartbeat 정보 수집 로직 추가 <span style="color:red"> - 동기화 로직은 추후 개발 예정 </span>
+
+- 기본 구조 추가
+  - MBS MQTT 관련하여 구독, 메세지 수신, 메시지 송신 로직 추가
