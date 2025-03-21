@@ -591,14 +591,14 @@ export const sendMqtt = (subTopic: string, message: string): void => {
 };
 
 // wms mqtt 메세지 발송
-export const sendMbsMqtt = (wmsTopic: string, header: mbsMqttHeader, body: mbsMqttBody, wmsName?: string | null): void => {
+export const sendMbsMqtt = (systemTopic: string, header: mbsMqttHeader, body: mbsMqttBody, systemName?: string | null): void => {
   if (mqttConfig.host !== '') {
     // mqtt host가 등록된 경우에만 발송한다.
     let sendTopic = wmsMqttTopic;
-    if (wmsName) {
-      sendTopic = sendTopic + '-' + wmsName
+    if (systemName) {
+      sendTopic = sendTopic + '-' + systemName
     }
-    sendTopic = sendTopic + '-' + wmsTopic
+    sendTopic = sendTopic + '-' + systemTopic
 
     const sendMessageObj: mbsMqttMesaage = {
       header: header,

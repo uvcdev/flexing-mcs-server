@@ -1,5 +1,7 @@
 import { separateMqttMessage, mbsMqttMesaage } from "../mqttUtil"
 
+const subTopic = 'TRANSFER'
+
 const transferInitiated = (wmsName: string) => {
   console.log('catch wmsTransferInitiated')
 }

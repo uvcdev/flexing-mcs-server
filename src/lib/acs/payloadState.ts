@@ -1,7 +1,7 @@
 import { separateMqttMessage, mbsMqttMesaage } from "../mqttUtil"
 
 const payloadState = (acsName: string) => {
-  console.log('catch acs AlarmReport')
+  console.log('catch acs payloadState')
 }
 
 

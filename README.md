@@ -153,3 +153,7 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 
 - 기본 구조 추가
   - MBS MQTT 관련하여 구독, 메세지 수신, 메시지 송신 로직 추가
+
+- ACK 기능 추가
+  - ACK 기본 기능들 추가 (`ack.ts`)
+  - 각 메세지에 대한 세부 내용은 개발 중에 추가 예정

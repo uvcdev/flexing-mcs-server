@@ -38,7 +38,9 @@ export enum RedisKeys {
   Setting = 'setting',
   InfoFacility = 'info_facility',
   InfoFacilityById = 'info_facility_by_id',
-  Heartbeat = 'heartbeat'
+  // MBS
+  Heartbeat = 'heartbeat',
+  RemainingAckCommandByCmdId = 'remaining_ack_command_by_cmd_id'
 }
 export enum RedisSettingKeys {
   AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정
@@ -47,6 +49,7 @@ export enum RedisSettingKeys {
   WorkPriorityBoost = `workPriorityBoost`, //작업 우선 순위 상향 설정 (기준시간: priorityBoostTimeLimit)
   DailyStartEndSchedule = `dailyStartEndSchedule`, // 주간 시업/종업
   NightlyStartEndSchedule = `nightlyStartEndSchedule`, // 야간 시업/종업
+  WmsAckSetting = 'wmsAckSetting', // WMS ACK 통신 관련 설정
 }
 
 // export type AmrCurrentChargerTypes = {

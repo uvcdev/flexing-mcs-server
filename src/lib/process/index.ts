@@ -6,6 +6,7 @@ dotenv.config();
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { sendAllHeartbeat } from '../heartbeat/sendHeartbeat';
 import { checkSystemConnectionStatus } from '../heartbeat/checkHeartbeat';
+import { checkRemainingAckCommand } from './ack';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
 
@@ -19,6 +20,9 @@ export const processMcs = async () => {
     }
     // System 연결 상태 확인 ( Heartbeat )
     await checkSystemConnectionStatus()
+
+    // ACK 응답 여부 확인 ( ACK )
+    await checkRemainingAckCommand()
 
     // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
 

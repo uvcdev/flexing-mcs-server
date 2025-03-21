@@ -1,7 +1,7 @@
 import { separateMqttMessage, mbsMqttMesaage } from "../mqttUtil"
 
 const ackMissionCommand = (acsName: string) => {
-  console.log('catch acs AlarmReport')
+  console.log('catch acs ackMissionCommand')
 }
 
 export const acsAckMissionCommand = (acsName: string, messageJson: mbsMqttMesaage) => {

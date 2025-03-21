@@ -123,3 +123,10 @@ export const formatDetailedDateTime = (date: Date) => {
   return dayjs(date).format('YYYY.MM.DD HH:mm:ss') + '.' +
     String(date.getMilliseconds()).padStart(3, '0').substring(0, 2);
 };
+
+export const isCurrentTimeFasterThanAnySeconds = (referenceTime: Date, anySeconds: number) => {
+  const currentTime = new Date();
+  const timeDifference = currentTime.getTime() - referenceTime.getTime();
+
+  return timeDifference >= (1000 * anySeconds)
+}
