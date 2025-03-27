@@ -11,7 +11,7 @@ import path from "path";
 import {
   AttributeIds,
   DataValue,
-  // ReadValueIdOptions,
+  ReadValueIdOptions,
   TimestampsToReturn,
   NodeId,
   ClientMonitoredItemBase,
@@ -22,15 +22,10 @@ import { registerClientEvents } from "../events/kepserverClientEvents";
 import { registerSubscriptionEvents } from '../events/kepserverSubscriptionEvents';
 import {
   Tag,
-  loadTags,
-  parseWordToAscii,
-  extractBitsFromWord,
-  checkFormatSize,
-  printDataState,
-  parseNodeId,
-  DataState,
-  initializeDataState,
-  Subscription
+  TagValue,
+  updateTagValue,
+  MonitorTagValue,
+  MonitorTag
 } from './kepServerUtil';
 import { useEqpCheckUtil } from './eqpCheckUtil';
 
@@ -39,23 +34,14 @@ const userIdentity: UserIdentityInfoUserName = {
   userName: process.env.OPCUA_USERNAME || "",
   password: process.env.OPCUA_PASSWORD || "",
 };
-export interface ReadValueIdOptions {
-  nodeId?: string | NodeId | number;
-  attributeId?: number;
-  deviceName: string;
-  tagName: string;
-  // indexRange?: NumericRange;
-  // dataEncoding?: (QualifiedNameLike | null);
-}
 
 export const opcuaClient = {
   client: OPCUAClient.create(kepserverConfig.clientOptions),
   session: null as ClientSession | null,
   subscription: null as ClientSubscription | null,
-  dataState: {} as DataState,
-  tagsInfo: null as Tag[] | null,
-  observableData: {} as Record<string, any>,
   eqpCheckUtil: useEqpCheckUtil(),
+  allTagNodeIds: new Map<string, MonitorTag>(),
+  tagMap: new Map<string, TagValue>(),
 
   // KEPServerEx에 연결하는 함수
   async connectToKepserverex(): Promise<void> {
@@ -120,22 +106,20 @@ export const opcuaClient = {
 
   },
 
-  // 구독할 태그들 kepserverTag.json에서 읽어와서 구독할 노드 배열 생성 및 dataState변수 초기화
+  // kepserverTag.json에서 SUBSCRIPTION===true인 태그들만 배열에 담아 반환
   loadTagsAndCreateSubscriptionNodes(): ReadValueIdOptions[] {
     const subscriptionsPath = path.resolve(__dirname, "../../kepserverTag.json");
 
     try {
       const fileContent = fs.readFileSync(subscriptionsPath, "utf8");
-      const subscriptions: Subscription[] = JSON.parse(fileContent)['subscriptionNodes'];
+      const allTags: Tag[] = JSON.parse(fileContent)['MBS']
+      const subscriptions: string[] = allTags
+        .filter((tag: Tag) => tag.SUBSCRIPTION === true) // SUBSCRIPTION이 true인 것만 필터링
+        .map((tag: Tag) => tag.NODE_ID); // NODE_ID만 추출
 
-      // 태그 값들 담아둘 dataState객체 변수 초기화
-      this.dataState = initializeDataState(subscriptions);
-
-      return subscriptions.map((node: Subscription) => ({
-        nodeId: node.nodeId,
-        attributeId: AttributeIds.Value,
-        tagName: node.displayName,
-        deviceName: node.device
+      return subscriptions.map((nodeId: string) => ({
+        nodeId: nodeId,
+        attributeId: AttributeIds.Value
       }));
 
     } catch (error) {
@@ -153,8 +137,6 @@ export const opcuaClient = {
     }
 
     try {
-      // 태그 정보들 불러오기
-      this.tagsInfo = await loadTags("eqpConfig.json");
 
       // 모니터링 등록
       const monitoredItems = await this.subscription.monitorItems(
@@ -181,14 +163,15 @@ export const opcuaClient = {
 
       try {
         const nodeId = monitoredItem.itemToMonitor.nodeId.value.toString();
-        const value = dataValue.value.value;
+        const value = dataValue;
 
         logToConsoleAndFile(`Changed Tag Data\nNodeId: ${nodeId}, Value: ${value}`, "important");
 
-        this.processMonitoredData(nodeId, value);
+        // 변경된 태그 데이터 값 처리
+        const targetTagInfo = updateTagValue(nodeId, value);
 
-        // 변경된 노드값 console로 출력해보는 함수
-        printDataState();
+        // 변경된 데이터 값을 토대로 실행할 ACS의 fmsCheckUtil.ts 같은 함수
+        this.eqpCheckUtil.eqpTaskStatus(targetTagInfo);
 
       } catch (error) {
         logToConsoleAndFile(`Error handling changed event: ${error}`, "red");
@@ -196,70 +179,6 @@ export const opcuaClient = {
 
     });
   },
-
-  // 변경된 태그 데이터 값 처리
-  processMonitoredData(nodeId: string, value: any): void {
-
-    let targetTagInfo = null;
-
-    // nodeId를 통해 channel, device, tag_group, tag명을 나눠서 유추하는 함수
-    // nodeId = EQP.ST01_PLC01.SC11.EQ_Code_02
-    // channel = EQP
-    // device = ST01_PLC01
-    // tagGroup = SC11
-    // tag = EQ_Code_02
-    const eqpNode = parseNodeId(nodeId);
-
-    if (!eqpNode) {
-
-      const errorMessage = `Invalid Node ID format detected: "${nodeId}". Unable to process the provided value: "${value}".`;
-      logToConsoleAndFile(errorMessage, "yellow");
-      throw new Error(errorMessage);
-    }
-
-    const { channel, device, tagGroup, tagName } = eqpNode;
-
-    if (this.tagsInfo) {
-      targetTagInfo = this.tagsInfo.find((tag) => tag.TAG_NAME === tagName);
-    }
-
-    if (!targetTagInfo) {
-
-      const errorMessage = `No Tag found with name: ${nodeId}, ${value}`;
-      logToConsoleAndFile(errorMessage, "yellow");
-      throw new Error(errorMessage);
-    }
-
-    switch (targetTagInfo.INPUT_TYPE) {
-      case "ASCII":
-        this.dataState[channel][device][tagGroup][tagName] = parseWordToAscii(value);
-        break;
-      case "PDEC":
-        if (targetTagInfo.CHILD_TAGS) {
-          const results = extractBitsFromWord(value, targetTagInfo.CHILD_TAGS);
-          results.forEach((result) => {
-            this.dataState[channel][device][tagGroup][result.tagName] = result.value;
-          });
-        } else {
-          console.log(`No CHILD_TAGS with name: ${nodeId}`);
-        }
-        break;
-      case "DEC":
-        this.dataState[channel][device][tagGroup][tagName] = checkFormatSize(value, targetTagInfo);
-        break;
-      case "BIT":
-        this.dataState[channel][device][tagGroup][tagName] = value;
-        break;
-      default:
-        logToConsoleAndFile(`Unhandled type for nodeId:: ${nodeId}, ${value}`, "yellow");
-        break;
-    }
-
-    // 변경된 데이터 값을 토대로 실행할 ACS의 fmsCheckUtil.ts 같은 함수
-    this.eqpCheckUtil.eqpTaskStatus(eqpNode);
-
-  },
-
 
   async initKepserverex(): Promise<void> {
 
@@ -275,7 +194,6 @@ export const opcuaClient = {
 
       // 모니터링 할 노드 목록 불러오기
       const subscriptionNodes = this.loadTagsAndCreateSubscriptionNodes();
-      console.log("🚀 ~ initKepserverex ~ subscriptionNodes:", subscriptionNodes)
 
       // 모니터링 할 노드 등록하고 'on.change' 이벤트 등록하기
       await this.monitorSubscriptionNodes(subscriptionNodes);
