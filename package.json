@@ -1,6 +1,6 @@
 {
   "name": "flexing-mcs-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,10 @@
     "start": "npx tsc && node build",
     "min": "tsc-watch --onSuccess \"node build/index.js\"",
     "swagger-autogen": "ts-node ./src/swagger/swagger.ts",
-    "obfuscate": "javascript-obfuscator ./build --output ./obfuscated --config ./obfuscation-config.js"
+    "obfuscate": "javascript-obfuscator ./build --output ./obfuscated --config ./obfuscation-config.js",
+    "sync-kepware": "ts-node ./src/scripts/getNodesFromKepware.ts",
+    "update-subscription": "ts-node ./src/scripts/updateSubscription.ts",
+    "update-input-type": "ts-node ./src/scripts/updateInputType.ts"
   },
   "author": "",
   "license": "ISC",

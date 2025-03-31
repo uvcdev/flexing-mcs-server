@@ -24,8 +24,6 @@ import { makeinitDailyWorkOrderstatsScheduleSet } from './lib/scheduleUtil';
 import opcuaClient from './lib/opcuaUtil';
 import { logToConsoleAndFile } from "./lib/logging";
 
-
-import { readTagValues } from './lib/kepServerUtil';
 import { processMcs } from './lib/process/index';
 import { initAllRedisData } from './lib/redis/init';
 import { initTagData, monitorTagData } from './lib/kepServerUtil';

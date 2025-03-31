@@ -166,3 +166,6 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 - WMS ACK heartbeat 설정값 추가
 - KEPWARE heartbeat 함수 추가가
 
+## v0.2.1
+- 버전승인: `v0.2.0-ssb`
+- 버전승인: `v0.2.0-ljk`

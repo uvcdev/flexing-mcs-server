@@ -1,0 +1,2 @@
+Successfully connected to OPC UA server!
+Connected to KepServerEX!
