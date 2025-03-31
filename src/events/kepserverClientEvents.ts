@@ -2,7 +2,7 @@ import { OPCUAClient } from "node-opcua-client";
 import { logToConsoleAndFile } from "../lib/logging";
 
 export function registerClientEvents(client: OPCUAClient): void {
-  console.log("🚀 ~ registerClientEvents ~ client:", client)
+  // console.log("🚀 ~ registerClientEvents ~ client:", client)
 
   // OPC UA 클라이언트가 서버에 성공적으로 연결되었을 때 호출
   client.on("connected", () => {
