@@ -1134,7 +1134,44 @@ export const logging = {
 };
 
 // KEPWARE 로깅
+
+// 로그 파일 경로 설정
 const logFilePath = path.resolve(__dirname, "../logs/output.txt");
+
+// 로그 디렉토리 경로 추출
+const logDirPath = path.dirname(logFilePath);
+
+// 디렉토리 존재 여부 확인 및 생성 함수
+function ensureDirectoryExistence(dirPath: string) {
+  if (fs.existsSync(dirPath)) {
+    return true;
+  }
+
+  // 상위 디렉토리 재귀적으로 생성
+  ensureDirectoryExistence(path.dirname(dirPath));
+
+  // 디렉토리 생성
+  fs.mkdirSync(dirPath);
+  console.log(`디렉토리 생성됨: ${dirPath}`);
+  return true;
+}
+
+// 로그 파일 및 디렉토리 생성 확인
+try {
+  // 디렉토리 확인 및 생성
+  ensureDirectoryExistence(logDirPath);
+
+  // 파일이 존재하지 않으면 빈 파일 생성
+  if (!fs.existsSync(logFilePath)) {
+    fs.writeFileSync(logFilePath, '');
+    console.log(`로그 파일 생성됨: ${logFilePath}`);
+  }
+
+  // 여기에 로그 파일을 사용하는 나머지 코드 작성...
+
+} catch (err: any) {
+  console.error(`로그 파일 생성 중 오류 발생: ${err.message}`);
+}
 
 // 콘솔 및 파일 출력 함수
 export function logToConsoleAndFile(data: string, color?: 'important' | 'green' | 'blue' | 'red' | 'yellow') {

@@ -10,6 +10,22 @@ import { service as workOrderService } from '../service/operation/workOrderServi
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { WorkOrderAttributesDeep } from 'models/operation/workOrder';
 import { useWorkOrderStatsUtil } from './workOrderUtil';
+import { mqttSubscribeWmsTopics } from '../constant/mqttSubscribeTopic';
+import { mqttSubscribeAcsTopics } from '../constant/mqttSubscribeTopic';
+import { checkConnectionWmsHeartbeat } from './heartbeat/checkHeartbeat';
+import { generateUUIDNode } from './hashUtil';
+import { formatDetailedDateTime } from './usefullToolUtil';
+import { wmsCall } from './wms/call';
+import { wmsTransfer } from './wms/transfer';
+import { wmsCarrier } from './wms/carrier';
+import { wmsPort } from './wms/port';
+import { wmsCrane } from './wms/crane';
+import { wmsBranch } from './wms/branch';
+import { wmsAlarm } from './wms/alarm';
+import { acsPayloadState } from './acs/payloadState';
+import { acsMissionState } from './acs/missionState';
+import { acsAlarmState } from './acs/alarmState';
+import { acsAckMissionCommand } from './acs/ackMissionCommand';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -60,7 +76,7 @@ type MissionStateData = {
 type McsWorkOrderRequestType = {
   TX_ID: string;
   ZONE_ID: string;
-  TYPE: 'IN' | 'OUT'; // 반출 OUT, 반입 IN
+  TYPE: 'IN' | 'OUT' | 'MISSION'; // 반출 OUT, 반입 IN , 미션 MISSION
   EQP_ID: string;
   EQP_CALL_ID: string;
   PORT_ID: string;
@@ -73,7 +89,7 @@ type McsWorkOrderRequestType = {
 type McsCancelWorkOrderRequestType = {
   TX_ID: string;
   ZONE_ID: string;
-  TYPE: 'IN' | 'OUT'; // 반출 OUT, 반입 IN
+  TYPE: 'IN' | 'OUT' | 'MISSION'; // 반출 OUT, 반입 IN , 미션 MISSION
   EQP_ID: string;
   EQP_CALL_ID: string;
   PORT_ID: string;
@@ -93,9 +109,20 @@ export enum MqttTopics {
   KepwareStatus = 'kepware-status'
 }
 
+export interface mbsMqttHeader {
+  id: string;
+  time: string;
+  subject: string;
+}
 
+export interface mbsMqttBody {
+  [key: string]: any;
+}
 
-
+export interface mbsMqttMesaage {
+  header: mbsMqttHeader;
+  body: mbsMqttBody;
+}
 
 
 // broker에 접속될 클라이언트 아이디(unique필요)
@@ -109,6 +136,11 @@ const options: IClientOptions = {
 
 const client = mqtt.connect(options);
 const topic = mqttConfig.topic;
+const wmsMqttTopic = process.env.MQTT_WMS_TOPIC || 'MCS'
+const mqttSubscribeWmsTopicList: string[] = mqttSubscribeWmsTopics || []
+const mqttSubscribeAcsTopicList: string[] = mqttSubscribeAcsTopics || []
+const wmsList: string[] = process.env.WMS_LIST?.split(',') || []
+const acsList: string[] = process.env.ACS_LIST?.split(',') || []
 
 // 10초마다 서버 상태 acs로 보내기
 if (mqttConfig.host !== '') {
@@ -185,6 +217,72 @@ export const receiveMqtt = (): void => {
           });
         }
       });
+
+      // MBS WMS 구독
+      for (let i = 0; i < wmsList.length; i++) {
+        const wmsName = wmsList[i]
+        for (let j = 0; j < mqttSubscribeWmsTopicList.length; j++) {
+          const subscribeTopicName = mqttSubscribeWmsTopicList[j];
+          client.subscribe(`${wmsName}${subscribeTopicName}`, (err) => {
+            logging.MQTT_LOG({
+              title: 'mqtt subscribe',
+              topic,
+              message: null,
+            });
+
+            if (err) {
+              logging.MQTT_ERROR({
+                title: 'mqtt subscribe error',
+                topic,
+                message: null,
+                error: err,
+              });
+            }
+          });
+        }
+      }
+
+      // MBS ACS 구독
+      for (let i = 0; i < acsList.length; i++) {
+        const acsName = acsList[i]
+        for (let j = 0; j < mqttSubscribeAcsTopicList.length; j++) {
+          const subscribeTopicName = mqttSubscribeAcsTopicList[j];
+          client.subscribe(`${acsName}${subscribeTopicName}`, (err) => {
+            logging.MQTT_LOG({
+              title: 'mqtt subscribe',
+              topic,
+              message: null,
+            });
+
+            if (err) {
+              logging.MQTT_ERROR({
+                title: 'mqtt subscribe error',
+                topic,
+                message: null,
+                error: err,
+              });
+            }
+          });
+        }
+      }
+
+      // // 전체 구독
+      // client.subscribe('#', (err) => {
+      //   logging.MQTT_LOG({
+      //     title: 'mqtt subscribe',
+      //     topic,
+      //     message: null,
+      //   });
+
+      //   if (err) {
+      //     logging.MQTT_ERROR({
+      //       title: 'mqtt subscribe error',
+      //       topic,
+      //       message: null,
+      //       error: err,
+      //     });
+      //   }
+      // });
     });
 
     // 메세지 수신
@@ -392,6 +490,64 @@ export const receiveMqtt = (): void => {
             }
           }
         }
+        // MBS
+        const mbsTopicSplit = messageTopic.split('-')
+        if (mbsTopicSplit) {
+          const systemTopic = mbsTopicSplit[0];
+          const subTopic = mbsTopicSplit[1];
+          const message = messageOrg.toString();
+          const messageJson = JSON.parse(message);
+          if (mbsTopicSplit.length === 2) {
+            // WMS HEARTBEAT 수집
+            if (wmsList.includes(systemTopic) && subTopic === 'HEARTBEAT') {
+              checkConnectionWmsHeartbeat(systemTopic, messageJson)
+
+              logging.MQTT_LOG({
+                title: 'wms heartbeat',
+                topic: messageTopic,
+                message: messageJson,
+              });
+            }
+          } else if (mbsTopicSplit.length === 3) {
+            const logicTopic = mbsTopicSplit[2];
+            logging.MQTT_LOG({
+              title: `${mbsTopicSplit} ${logicTopic}`,
+              topic: messageTopic,
+              message: messageJson,
+            });
+            // WMS
+            if (wmsList.includes(systemTopic)) {
+              if (logicTopic === 'CALL') {
+                wmsCall(systemTopic, messageJson)
+              } else if (logicTopic === 'TRANSFER') {
+                wmsTransfer(systemTopic, messageJson)
+              } else if (logicTopic === 'CARRIER') {
+                wmsCarrier(systemTopic, messageJson)
+              } else if (logicTopic === 'PORT') {
+                wmsPort(systemTopic, messageJson)
+              } else if (logicTopic === 'CRANE') {
+                wmsCrane(systemTopic, messageJson)
+              } else if (logicTopic === 'BRANCH') {
+                wmsBranch(systemTopic, messageJson)
+              } else if (logicTopic === 'ALARM') {
+                wmsAlarm(systemTopic, messageJson)
+              }
+            }
+            // ACS 
+            else if (acsList.includes(systemTopic)) {
+              if (logicTopic === 'PAYLOAD_STATE') {
+                acsPayloadState(systemTopic, messageJson)
+              } else if (logicTopic === 'MISSION_STATE') {
+                acsMissionState(systemTopic, messageJson)
+              } else if (logicTopic === 'ALARM_STATE') {
+                acsAlarmState(systemTopic, messageJson)
+              } else if (logicTopic === 'ACK_MISSION_COMMAND') {
+                acsAckMissionCommand(systemTopic, messageJson)
+              }
+            }
+          }
+        }
+
       } catch (err) {
         logging.MQTT_ERROR({
           title: 'mqtt message error',
@@ -433,3 +589,55 @@ export const sendMqtt = (subTopic: string, message: string): void => {
     }
   }
 };
+
+// wms mqtt 메세지 발송
+export const sendMbsMqtt = (systemTopic: string, header: mbsMqttHeader, body: mbsMqttBody, systemName?: string | null): void => {
+  if (mqttConfig.host !== '') {
+    // mqtt host가 등록된 경우에만 발송한다.
+    let sendTopic = wmsMqttTopic;
+    if (systemName) {
+      sendTopic = sendTopic + '-' + systemName
+    }
+    sendTopic = sendTopic + '-' + systemTopic
+
+    const sendMessageObj: mbsMqttMesaage = {
+      header: header,
+      body: body
+    }
+    const sendMessage = JSON.stringify(sendMessageObj)
+
+    try {
+      client.publish(sendTopic, sendMessage);
+    } catch (err) {
+      logging.MQTT_ERROR({
+        title: 'mqtt send to wms error',
+        topic: topic,
+        message: sendMessage,
+        error: err,
+      });
+    }
+  }
+};
+
+export const makeMbsMqttHeader = (subject: string): mbsMqttHeader => {
+  const id = generateUUIDNode();
+  const time = formatDetailedDateTime(new Date());
+
+  return {
+    id: id,
+    time: time,
+    subject: subject
+  }
+}
+
+export const separateMqttMessage = (messageJson: mbsMqttMesaage) => {
+  const messageId = messageJson.header.id;
+  const subject = messageJson.header.subject;
+  const messageBody = messageJson.body;
+
+  return {
+    messageId,
+    subject,
+    messageBody,
+  }
+}

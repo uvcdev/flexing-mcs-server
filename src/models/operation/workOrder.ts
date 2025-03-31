@@ -14,40 +14,43 @@ export interface WorkOrderAttributes {
   itemId: number | null;
   level: number | null;
   state:
-    | 'registered'
-    | 'preReregistered'
-    | 'reregistered'
-    | 'pending1'
-    | 'pending2'
-    | 'assigned1'
-    | 'assigned2'
-    | 'working1'
-    | 'working2'
-    | 'docking1'
-    | 'docking2'
-    | 'lift1'
-    | 'lift2'
-    | 'canceled1'
-    | 'canceled2'
-    | 'aborted1'
-    | 'aborted2'
-    | 'failed1'
-    | 'failed2'
-    | 'completed1'
-    | 'completed2'
-    | 'dryrunCanceled'
-    | 'userCanceled'
-    | 'forceCanceled'
-    | 'facilityCanceled';
+  | 'registered'
+  | 'preReregistered'
+  | 'reregistered'
+  | 'pending1'
+  | 'pending2'
+  | 'assigned1'
+  | 'assigned2'
+  | 'working1'
+  | 'working2'
+  | 'docking1'
+  | 'docking2'
+  | 'lift1'
+  | 'lift2'
+  | 'canceled1'
+  | 'canceled2'
+  | 'aborted1'
+  | 'aborted2'
+  | 'failed1'
+  | 'failed2'
+  | 'completed1'
+  | 'completed2'
+  | 'dryrunCanceled'
+  | 'userCanceled'
+  | 'forceCanceled'
+  | 'facilityCanceled';
   isClosed: boolean;
   fromStartDate: Date | null;
   fromEndDate: Date | null;
+  missionStartDate: Date | null;
+  missionEndDate: Date | null;
   toStartDate: Date | null;
   toEndDate: Date | null;
   cancelUserId: number | null;
   cancelDate: Date | null;
   description: string | null;
-  type: 'IN' | 'OUT';
+  type: 'IN' | 'OUT' | 'MISSION'; // 반출 OUT, 반입 IN , 미션 MISSION
+  isMissionOrder: boolean;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -70,12 +73,15 @@ class WorkOrder extends Model implements WorkOrderAttributes {
   public isClosed!: WorkOrderAttributes['isClosed'];
   public fromStartDate!: WorkOrderAttributes['fromStartDate'];
   public fromEndDate!: WorkOrderAttributes['fromEndDate'];
+  public missionStartDate!: WorkOrderAttributes['missionStartDate'];
+  public missionEndDate!: WorkOrderAttributes['missionEndDate'];
   public toStartDate!: WorkOrderAttributes['toStartDate'];
   public toEndDate!: WorkOrderAttributes['toEndDate'];
   public cancelUserId!: WorkOrderAttributes['cancelUserId'];
   public cancelDate!: WorkOrderAttributes['cancelDate'];
   public description!: WorkOrderAttributes['description'];
   public type!: WorkOrderAttributes['type'];
+  public isMissionOrder!: WorkOrderAttributes['isMissionOrder'];
   public readonly createdAt!: WorkOrderAttributes['createdAt'];
   public readonly updatedAt!: WorkOrderAttributes['updatedAt'];
   public readonly deletedAt!: WorkOrderAttributes['deletedAt'];
@@ -122,6 +128,12 @@ WorkOrder.init(
     fromEndDate: {
       type: DataTypes.DATE,
     },
+    missionStartDate: {
+      type: DataTypes.DATE,
+    },
+    missionEndDate: {
+      type: DataTypes.DATE,
+    },
     toStartDate: {
       type: DataTypes.DATE,
     },
@@ -139,6 +151,10 @@ WorkOrder.init(
     },
     type: {
       type: DataTypes.STRING(3),
+    },
+    isMissionOrder: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
   },
   {
@@ -167,6 +183,7 @@ export interface WorkOrderInsertParams {
   cancelDate: Date | null;
   description: string | null;
   type: WorkOrderAttributes['type'];
+  isMissionOrder?: boolean;
 }
 export interface ImcsWorkOrderInsertParams {
   newItemId?: number | null;
@@ -201,6 +218,7 @@ export interface WorkOrderSelectListParams {
   cancelUserId?: number | null;
   cancelDate?: Date | null;
   type?: string | null;
+  isMissionOrder?: boolean | string | null;
   createdAtFrom?: Date | null;
   createdAtTo?: Date | null;
   limit?: number;
@@ -243,10 +261,13 @@ export interface WorkOrderUpdateParams {
   isClosed?: boolean;
   fromStartDate?: Date | null;
   fromEndDate?: Date | null;
+  missionStartDate?: Date | null;
+  missionEndDate?: Date | null;
   toStartDate?: Date | null;
   toEndDate?: Date | null;
   cancelUserId?: number | null;
   cancelDate?: Date | null;
+  isMissionOrder?: boolean;
   description?: string | null;
   type?: string | null;
 }
@@ -262,10 +283,13 @@ export interface WorkOrderUpdateByCodeParams {
   isClosed?: boolean;
   fromStartDate?: Date | null;
   fromEndDate?: Date | null;
+  missionStartDate?: Date | null;
+  missionEndDate?: Date | null;
   toStartDate?: Date | null;
   toEndDate?: Date | null;
   cancelUserId?: number | null;
   cancelDate?: Date | null;
+  isMissionOrder?: boolean;
   description?: string | null;
   type?: string | null;
 }
@@ -288,12 +312,15 @@ export const WorkOrderAttributesInclude = [
   'isClosed',
   'fromStartDate',
   'fromEndDate',
+  'missionStartDate',
+  'missionEndDate',
   'toStartDate',
   'toEndDate',
   'cancelUserId',
   'cancelDate',
   'description',
   'type',
+  'isMissionOrder',
   'createdAt',
 ];
 

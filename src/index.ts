@@ -25,6 +25,9 @@ import opcuaClient from './lib/opcuaUtil';
 import { logToConsoleAndFile } from "./lib/logging";
 
 
+import { readTagValues } from './lib/kepServerUtil';
+import { processMcs } from './lib/process/index';
+import { initAllRedisData } from './lib/redis/init';
 import { initTagData, monitorTagData } from './lib/kepServerUtil';
 
 dotenv.config();
@@ -69,6 +72,38 @@ app.set('port', port);
 
 if (env === 'production') {
   // production인 경우에만 자동 생성 한다. (개발시에는 POST {{url}}/tables 를 이용할 것)
+  sequelize
+    .sync({
+      force: false,
+    })
+    .then(() => {
+      logging.SYSTEM_LOG({
+        title: 'Sequelize Table Sync',
+        message: {
+          DB_HOST: process.env.DB_HOST,
+          DB_PORT: process.env.DB_PORT,
+          DB_DATABASE: process.env.DB_DATABASE,
+          DB_ID: process.env.DB_ID,
+          DB_PASS: '******',
+          DB_DIALECT: process.env.DB_DIALECT,
+        },
+      });
+      console.log('Sequelize sync success');
+
+      // 여기에 redis 데이터 초기화 로직 추가
+      initAllRedisData()
+    })
+    .catch((err: Error) => {
+      console.error(err);
+    });
+}
+
+// NODE_ENV 환경에 따른 설정
+if (env === 'production') {
+  // 운영 환경 세팅
+  app.use(hpp());
+  app.use(helmet());
+  app.use(morgan('combined'));
   void (async () => {
     // sequelize sync 동작 (Table 자동 생성 옵션)
     try {
@@ -87,8 +122,7 @@ if (env === 'production') {
         console.log('Sequelize sync success');
 
         // imcs 관련 redis 작성
-        // await useServerUtil().setRealOrderGroupId();
-        // await settingService.writeAllRedis();
+        initAllRedisData()
       });
     } catch (error) {
       console.error('Unable to connect to the database:', error);
@@ -192,26 +226,36 @@ const logMessage = {
 
 // running http
 app.listen(app.get('port'), () => {
-  logging.SYSTEM_LOG({
-    title: `Server Running (http:${port})`,
-    message: {
-      ...logMessage,
-    },
-  });
+  // logging.SYSTEM_LOG({
+  //   title: `Server Running (http:${port})`,
+  //   message: {
+  //     ...logMessage,
+  //   },
+  // });
   console.log(`server is running on http port:${port}`);
+
+  // MCS 로직 실행
+  initAllRedisData()
+  // 설비 정보 동기화
+  // WMS 정보 동기화
+  processMcs()
 });
 
 // running https
 if (httpsOption.key && httpsOption.cert) {
   const httpsServer = https.createServer({ key: httpsOption.key, cert: httpsOption.cert }, app);
   httpsServer.listen(httpsPort, () => {
-    logging.SYSTEM_LOG({
-      title: `Server Running (https:${httpsPort})`,
-      message: {
-        ...logMessage,
-      },
-    });
+    // logging.SYSTEM_LOG({
+    //   title: `Server Running (https:${httpsPort})`,
+    //   message: {
+    //     ...logMessage,
+    //   },
+    // });
     console.log(`server is running on http port:${httpsPort}`);
+
+    // MCS 로직 실행
+    initAllRedisData()
+    processMcs()
   });
 }
 
@@ -255,3 +299,29 @@ if (env === 'development') {
 if (process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true') {
   makeinitDailyWorkOrderstatsScheduleSet({ hour: 0, minute: 0, second: 0 })
 }
+
+
+// 종료 핸들러
+// 프로그램이 종료되기전에 실행될 코드
+const gracefulShutdown = (signal: string) => {
+  console.log(`\n[${signal}] 서버 종료 중...`);
+
+  // 정리해야 할 로직 추가 (예: DB 연결 해제, 로그 저장 등)
+  setTimeout(() => {
+    console.log("서버 종료 완료.");
+    global.process.exit(0);
+  }, 1000); // 1초 후 종료 (비동기 작업이 있다면 고려)
+};
+
+// 정상 종료 이벤트 처리
+global.process.on("exit", () => gracefulShutdown("exit"));
+global.process.on("SIGINT", () => gracefulShutdown("SIGINT")); // Ctrl + C
+global.process.on("SIGTERM", () => gracefulShutdown("SIGTERM")); // PM2 등에서 종료 요청
+global.process.on("uncaughtException", (err) => {
+  console.error("예기치 않은 오류 발생:", err);
+  gracefulShutdown("uncaughtException");
+});
+global.process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Promise Rejection:", reason);
+  gracefulShutdown("unhandledRejection");
+});
