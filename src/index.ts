@@ -28,6 +28,7 @@ import { logToConsoleAndFile } from "./lib/logging";
 import { readTagValues } from './lib/kepServerUtil';
 import { processMcs } from './lib/process/index';
 import { initAllRedisData } from './lib/redis/init';
+import { initTagData, monitorTagData } from './lib/kepServerUtil';
 
 dotenv.config();
 
@@ -277,16 +278,16 @@ if (env === 'development') {
 
   void (async () => {
     try {
+
+      // 초기 태그 데이터 초기화
+      await initTagData();
+
       // NODE-OPCUA <-> KEPServerex 연결 및 초기화
       await opcuaClient.initKepserverex();
       logToConsoleAndFile("KepServerEX initialization successful!", "green");
 
-      // node 서버 실행
-      // app.listen(port, () => {
-      //   console.log(`Server is running on http://localhost:${port}`);
-      // });
       // kepware 상태 불러와서 mqtt 전송
-      await readTagValues();
+      await monitorTagData();
 
     } catch (error) {
       logToConsoleAndFile(`Unexpected error during initialization: ${error}`, "red");

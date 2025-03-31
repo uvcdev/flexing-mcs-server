@@ -157,3 +157,12 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 - ACK 기능 추가
   - ACK 기본 기능들 추가 (`ack.ts`)
   - 각 메세지에 대한 세부 내용은 개발 중에 추가 예정
+
+## v0.2.0-ssb
+- KEPWARE - MCS 통신 로직 수정
+- KEPWARE TAG정보 읽기 스크립트 추가
+- KEPWARE 구독할 태그 선택 스크립트 추가
+- KEPWARE WORD타입 태그 [DEC, ASCII] 분류 스크립트 추가
+- WMS ACK heartbeat 설정값 추가
+- KEPWARE heartbeat 함수 추가가
+

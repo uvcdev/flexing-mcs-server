@@ -105,6 +105,7 @@ export type WmsAckSetting = {
     retryCount: number; // 횟수, defalut: 3 
   };
 };
+
 /* 인터페이스 정의 끝 */
 
 export default Setting;
