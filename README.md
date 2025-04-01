@@ -169,3 +169,7 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 ## v0.2.1
 - 버전승인: `v0.2.0-ssb`
 - 버전승인: `v0.2.0-ljk`
+
+
+## v0.2.1-cyk
+- src\index.ts 구조 변경
