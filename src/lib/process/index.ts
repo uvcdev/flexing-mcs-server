@@ -7,28 +7,42 @@ import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { sendAllHeartbeat } from '../heartbeat/sendHeartbeat';
 import { checkSystemConnectionStatus } from '../heartbeat/checkHeartbeat';
 import { checkRemainingAckCommand } from './ack';
+import { useEqpCheckUtil } from '../eqpCheckUtil';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
+const heapUse = () => {
+  const memoryUsage = process.memoryUsage();
+  const heapUsedMB = (memoryUsage.heapUsed / 1024 / 1024).toFixed(2);
+  const heapTotalMB = (memoryUsage.heapTotal / 1024 / 1024).toFixed(2);
 
+  console.log(`heap use: ${heapUsedMB} MB / ${heapTotalMB} MB`);
+}
 let counter = 0;
 export const processMcs = async () => {
   try {
     counter++;
-    // wms heartbeat 전송 ( n초마다 실행 )
+    if (counter % 2 === 0) heapUse()
+
+    // WMS 관련 프로세스
     if (counter % 5 === 0) {
-      sendAllHeartbeat();
+      sendAllHeartbeat();                 // wms heartbeat 전송 ( n초마다 실행 )
     }
-    // System 연결 상태 확인 ( Heartbeat )
-    await checkSystemConnectionStatus()
+    await checkSystemConnectionStatus()   // System 연결 상태 확인 ( Heartbeat )
+    await checkRemainingAckCommand()      // ACK 응답 여부 확인 ( ACK )
 
-    // ACK 응답 여부 확인 ( ACK )
-    await checkRemainingAckCommand()
+    // MCS 관련 프로세스
+    // PLC 데이터 수집
+    // await collectPlcData()
 
-    // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
+    // PLC 데이터 전송
+    // await sendPlcData()
 
-    // Call 처리 함수 ( runningWorkOderCalls )
+    // 수집 데이터 처리
+    // await checkplcData()
 
-    // To 작업 처리 함수
+    //  () - 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
+    //  () - Call 처리 함수 ( runningWorkOderCalls )
+    //  () - To 작업 처리 함수
   } catch (error) {
     console.error("Error in processMcs:", error);
     // 에러 로깅 또는 알림 처리

@@ -300,7 +300,7 @@ export const receiveMqtt = (): void => {
           //   message: messageOrg.toString(),
           // });
 
-          // 1. imcs에서  메세지 처리
+          // imcs에서 오는 메세지 처리
           if (serverTopic === 'imcs') {
             if (topicSplit.length === 3 && topicSplit[2] === 'workorder') {
               const messageJson = JSON.parse(message);
@@ -409,7 +409,7 @@ export const receiveMqtt = (): void => {
             }
           }
 
-          // acs에서
+          // acs에서 오는 메세지 처리
           if (serverTopic === 'acs') {
             // item-logging 메세지 처리
             if (topicSplit.length === 3 && topicSplit[1] === 'item-logging') {
@@ -515,7 +515,7 @@ export const receiveMqtt = (): void => {
               topic: messageTopic,
               message: messageJson,
             });
-            // WMS
+            // WMS에서 오는 메세지 처리
             if (wmsList.includes(systemTopic)) {
               if (logicTopic === 'CALL') {
                 wmsCall(systemTopic, messageJson)
@@ -533,7 +533,7 @@ export const receiveMqtt = (): void => {
                 wmsAlarm(systemTopic, messageJson)
               }
             }
-            // ACS 
+            // ACS에서 오는 메세지 처리
             else if (acsList.includes(systemTopic)) {
               if (logicTopic === 'PAYLOAD_STATE') {
                 acsPayloadState(systemTopic, messageJson)

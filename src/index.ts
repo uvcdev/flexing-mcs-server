@@ -21,12 +21,12 @@ import * as process from 'process';
 import { service as workOrderService } from './service/operation/workOrderService';
 import { makeinitDailyWorkOrderstatsScheduleSet } from './lib/scheduleUtil';
 
-import opcuaClient from './lib/opcuaUtil';
+import opcuaUtil from './lib/opcuaUtil';
 import { logToConsoleAndFile } from "./lib/logging";
 
 import { processMcs } from './lib/process/index';
 import { initAllRedisData } from './lib/redis/init';
-import { initTagData, monitorTagData } from './lib/kepServerUtil';
+import { useKepServerUtil } from './lib/kepServerUtil';
 
 dotenv.config();
 
@@ -232,11 +232,11 @@ if (env === 'development') {
 
       // =====🔥kepserver 관련🔥=====
       // 초기 태그 데이터 초기화
-      await initTagData();
+      await useKepServerUtil().initTagData();
       // NODE-OPCUA <-> KEPServerex 연결 및 초기화
-      await opcuaClient.initKepserverex();
-      // kepware 상태 불러와서 mqtt 전송
-      await monitorTagData();
+      await opcuaUtil.initKepserverex();
+      // // kepware 상태 불러와서 mqtt 전송
+      await useKepServerUtil().monitorTagData();
     })
     .catch((error: Error) => {
       console.log(error);

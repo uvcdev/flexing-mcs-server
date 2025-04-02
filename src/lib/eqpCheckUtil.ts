@@ -1,7 +1,7 @@
 import { AttributeIds } from "node-opcua-client";
-import { heartbeat, readTagsValue, TagValue, updateTagValue, writeTagsValue } from "./kepServerUtil";
+import { TagValue, useKepServerUtil } from "./kepServerUtil";
 import { logging } from "./logging";
-import opcuaClient from "./opcuaUtil";
+import opcuaUtil from "./opcuaUtil";
 
 interface EQP_WCS {
   EQP_ID: string;
@@ -10,7 +10,7 @@ interface EQP_WCS {
 }
 
 export const useEqpCheckUtil = () => {
-
+  const kepServerUtil = useKepServerUtil()
   const eqpTaskStatus = async (targetTagInfo: TagValue) => {
 
     // PLC 데이터 수집
@@ -21,19 +21,18 @@ export const useEqpCheckUtil = () => {
 
     // PLC 수집 데이터 처리
     await doCheck(targetTagInfo)
-
   }
 
   const doWork = async (targetTagInfo: TagValue) => {
-    console.log("🚀 ~ doWork ~ targetTagInfo:", targetTagInfo)
+    // console.log("🚀 ~ doWork ~ targetTagInfo:", targetTagInfo)
   }
 
   const doSend = async (targetTagInfo: TagValue) => {
-    console.log("🚀 ~ doSend ~ targetTagInfo:", targetTagInfo)
+    // console.log("🚀 ~ doSend ~ targetTagInfo:", targetTagInfo)
   }
 
   const doCheck = async (targetTagInfo: TagValue) => {
-    console.log("🚀 ~ doCheck ~ targetTagInfo:", targetTagInfo)
+    // console.log("🚀 ~ doCheck ~ targetTagInfo:", targetTagInfo)
 
     try {
 
@@ -82,10 +81,10 @@ export const useEqpCheckUtil = () => {
   const createEQPCallId = async (targetKey: string, callCountValue: string, multiValue: number): Promise<string[] | null> => {
     try {
       // 설비코드 1 + 설비코드 2 + 콜 ID 시간1(년도) + 콜 ID시간2(월,일) + 콜ID(0~9999)
-      const EQCode01 = opcuaClient.tagMap.get(`${targetKey}.EQ_Code_01`);
-      const EQCode02 = opcuaClient.tagMap.get(`${targetKey}.EQ_Code_02`);
-      const callTimeYear = opcuaClient.tagMap.get(`${targetKey}.Call_Time_Year`);
-      const callTimeMonthDay = opcuaClient.tagMap.get(`${targetKey}.Call_Time_MonthDay`);
+      const EQCode01 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_01`);
+      const EQCode02 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_02`);
+      const callTimeYear = opcuaUtil.tagMap.get(`${targetKey}.Call_Time_Year`);
+      const callTimeMonthDay = opcuaUtil.tagMap.get(`${targetKey}.Call_Time_MonthDay`);
 
       // 필요한 모든 nodeId들을 배열로 모음
       const needNodeIds = [
@@ -95,7 +94,7 @@ export const useEqpCheckUtil = () => {
         callTimeMonthDay?.NODE_ID,
       ].filter((nodeId): nodeId is string => nodeId !== undefined);
 
-      const readDatas = await readTagsValue(needNodeIds);
+      const readDatas = await kepServerUtil.readTagsValue(needNodeIds);
 
       const needKeys = [
         EQCode01?.TAG_NAME,
@@ -105,7 +104,7 @@ export const useEqpCheckUtil = () => {
       ].filter((tagName): tagName is string => tagName !== undefined);
 
       for (let i = 0; i < needKeys.length; i++) {
-        updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
+        kepServerUtil.updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
       }
 
 
@@ -132,8 +131,6 @@ export const useEqpCheckUtil = () => {
 
 
   const callRegister = async (targetTagInfo: TagValue) => {
-
-
     if (targetTagInfo.TAG_NAME !== "Call_Request") {
       throw new Error(`Call_Request 태그가 아님. ${targetTagInfo.TAG_NAME}`);
     }
@@ -151,11 +148,11 @@ export const useEqpCheckUtil = () => {
       ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
       : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
     // 필요한 태그 값들 가져오기
-    const callType01 = opcuaClient.tagMap.get(`${targetKey}.Call_Type_01`);
-    const callPriority = opcuaClient.tagMap.get(`${targetKey}.Call_Priority`);
-    const callCount = opcuaClient.tagMap.get(`${targetKey}.Call_Count`);
-    const callRequestMulti1 = opcuaClient.tagMap.get(`${targetKey}.Call_Request_Multi_1`);
-    const callRequestMulti2 = opcuaClient.tagMap.get(`${targetKey}.Call_Request_Multi_2`);
+    const callType01 = opcuaUtil.tagMap.get(`${targetKey}.Call_Type_01`);
+    const callPriority = opcuaUtil.tagMap.get(`${targetKey}.Call_Priority`);
+    const callCount = opcuaUtil.tagMap.get(`${targetKey}.Call_Count`);
+    const callRequestMulti1 = opcuaUtil.tagMap.get(`${targetKey}.Call_Request_Multi_1`);
+    const callRequestMulti2 = opcuaUtil.tagMap.get(`${targetKey}.Call_Request_Multi_2`);
     // 필요한 모든 nodeId들을 배열로 모음
     const needNodeIds = [
       callType01?.NODE_ID,
@@ -165,7 +162,7 @@ export const useEqpCheckUtil = () => {
       callRequestMulti2?.NODE_ID
     ].filter((nodeId): nodeId is string => nodeId !== undefined);
 
-    const readDatas = await readTagsValue(needNodeIds);
+    const readDatas = await kepServerUtil.readTagsValue(needNodeIds);
 
     const needKeys = [
       callType01?.TAG_NAME,
@@ -176,7 +173,7 @@ export const useEqpCheckUtil = () => {
     ].filter((tagName): tagName is string => tagName !== undefined);
 
     for (let i = 0; i < needKeys.length; i++) {
-      updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
+      kepServerUtil.updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
     }
 
     const callType01Value = callType01?.value.toString() || "0";
@@ -235,8 +232,8 @@ export const useEqpCheckUtil = () => {
 
 
     // 창고요청응답후 EQP에 호출응답신호 ( writeTagsValue 테스트)
-    const callResponse = opcuaClient.tagMap.get(`${targetKey}.Call_Response`);
-    const callResponseWriteResult = await writeTagsValue([
+    const callResponse = opcuaUtil.tagMap.get(`${targetKey}.Call_Response`);
+    const callResponseWriteResult = await kepServerUtil.writeTagsValue([
       {
         nodeId: callResponse?.NODE_ID,
         attributeId: AttributeIds.Value,

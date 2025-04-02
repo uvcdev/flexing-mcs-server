@@ -20,13 +20,7 @@ import {
 import { logToConsoleAndFile } from './logging';
 import { registerClientEvents } from "../events/kepserverClientEvents";
 import { registerSubscriptionEvents } from '../events/kepserverSubscriptionEvents';
-import {
-  Tag,
-  TagValue,
-  updateTagValue,
-  MonitorTagValue,
-  MonitorTag
-} from './kepServerUtil';
+import { MonitorTag, Tag, TagValue, useKepServerUtil } from './kepServerUtil';
 import { useEqpCheckUtil } from './eqpCheckUtil';
 
 const userIdentity: UserIdentityInfoUserName = {
@@ -35,7 +29,7 @@ const userIdentity: UserIdentityInfoUserName = {
   password: process.env.OPCUA_PASSWORD || "",
 };
 
-export const opcuaClient = {
+export const opcuaUtil = {
   client: OPCUAClient.create(kepserverConfig.clientOptions),
   session: null as ClientSession | null,
   subscription: null as ClientSubscription | null,
@@ -165,10 +159,10 @@ export const opcuaClient = {
         const nodeId = monitoredItem.itemToMonitor.nodeId.value.toString();
         const value = dataValue;
 
-        logToConsoleAndFile(`Changed Tag Data\nNodeId: ${nodeId}, Value: ${value}`, "important");
+        logToConsoleAndFile(`Changed Tag Data\nNodeId: ${nodeId}, Value: ${value.value}`);
 
         // 변경된 태그 데이터 값 처리
-        const targetTagInfo = updateTagValue(nodeId, value);
+        const targetTagInfo = useKepServerUtil().updateTagValue(nodeId, value);
 
         // 변경된 데이터 값을 토대로 실행할 ACS의 fmsCheckUtil.ts 같은 함수
         this.eqpCheckUtil.eqpTaskStatus(targetTagInfo);
@@ -209,4 +203,4 @@ export const opcuaClient = {
 
 };
 
-export default opcuaClient;
+export default opcuaUtil;
