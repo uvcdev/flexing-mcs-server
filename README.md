@@ -169,3 +169,11 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 ## v0.2.1
 - 버전승인: `v0.2.0-ssb`
 - 버전승인: `v0.2.0-ljk`
+
+## v0.2.1-ljk
+- trackingLog 테이블 추가
+  - 기존에 timescale에서 작성하려는 의도와 다르게 빈번한 업데이트 때문에 RDB 에서 생성으로 변경
+  - CRUD 기능 생성
+
+- itemLog 테이블 컬럼 추가
+  - itemLog 테이블이 trackingLog 하위 개념으로 포함되기 때문에 itemLog에 trackingLogId 컬럼 추가
