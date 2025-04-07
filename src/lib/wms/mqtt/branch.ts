@@ -1,4 +1,4 @@
-import { separateMqttMessage, mbsMqttMesaage } from "../mqttUtil"
+import { separateMqttMessage, mbsMqttMesaage } from "../../mqttUtil"
 
 const branchInfoRep = (wmsName: string) => {
   console.log('catch wms BranchInfoRep')

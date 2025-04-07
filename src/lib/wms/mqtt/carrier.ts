@@ -1,4 +1,4 @@
-import { separateMqttMessage, mbsMqttMesaage } from "../mqttUtil"
+import { separateMqttMessage, mbsMqttMesaage } from "../../mqttUtil"
 
 const carrierTransferring = (wmsName: string) => {
   console.log('catch wmsCallRequest')
