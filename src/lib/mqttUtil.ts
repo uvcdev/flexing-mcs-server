@@ -106,7 +106,8 @@ export enum MqttTopics {
   ItemLogging = 'item-logging',
   WorkOrderStats = 'work-order-stats',
   // MBS용
-  KepwareStatus = 'kepware-status'
+  KepwareStatus = 'kepware-status',
+  ServerStatus = 'server-status'
 }
 
 export interface mbsMqttHeader {

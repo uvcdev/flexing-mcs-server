@@ -10,7 +10,7 @@ import https from 'https';
 import fs from 'fs';
 import { logSequelize, sequelize } from './models';
 import { router } from './routes/index';
-import { RequestLog, logging, makeLogFormat } from './lib/logging';
+import { ActionLog, RequestLog, logging, makeLogFormat } from './lib/logging';
 import { responseCode as resCode, makeResponseError as resError, ErrorClass } from './lib/resUtil';
 import { receiveMqtt } from './lib/mqttUtil';
 import path from 'path';
@@ -19,7 +19,7 @@ import swaggerJson from '../src/swagger.json';
 
 import * as process from 'process';
 import { service as workOrderService } from './service/operation/workOrderService';
-import { makeinitDailyWorkOrderstatsScheduleSet } from './lib/scheduleUtil';
+import { makeinitDailyWorkOrderstatsScheduleSet, makeSendServerStatusInterval } from './lib/scheduleUtil';
 
 import opcuaClient from './lib/opcuaUtil';
 import { logToConsoleAndFile } from "./lib/logging";
@@ -293,9 +293,22 @@ if (env === 'development') {
 
   })();
 }
+try {
+  if (process.env.SCHEDULER_SERVER_STATUS === 'true') {
+    makeSendServerStatusInterval({ second: Number(process.env.SERVER_STATUS_CHECK_TIME || 1) })
+  }
+  if (process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true') {
+    makeinitDailyWorkOrderstatsScheduleSet({ hour: 0, minute: 0, second: 0 })
+  }
 
-if (process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true') {
-  makeinitDailyWorkOrderstatsScheduleSet({ hour: 0, minute: 0, second: 0 })
+} catch (err) {
+  const actionLog: ActionLog = {
+    filename: 'index.ts-scheduleUtil',
+    params: null,
+    result: null,
+    error: err,
+  };
+  logging.ACTION_ERROR({ ...actionLog, params: null, error: err });
 }
 
 

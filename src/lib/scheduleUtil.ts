@@ -5,6 +5,7 @@ import * as schedule from 'node-schedule';
 import { Request } from 'express';
 import { RequestLog, logging, makeLogFormat } from './logging';
 import { service as workOrderService } from '../service/operation/workOrderService';
+import { useServerUtil } from './serverUtil';
 
 const req: RequestLog = {
   method: '',
@@ -16,6 +17,16 @@ const req: RequestLog = {
   body: '',
 };
 const logFormat = makeLogFormat(req);
+
+// 서버상태 전송 인터벌
+export const makeSendServerStatusInterval = (params: { second: number }): void => {
+  void useServerUtil().getRAMUsage();
+  void useServerUtil().getCPUUsage();
+  void useServerUtil().sendStatus();
+  setInterval(() => {
+    void useServerUtil().sendStatus();
+  }, params.second * 1000);
+};
 
 export const makeinitDailyWorkOrderstatsScheduleSet = (params: { hour: number; minute: number; second: number }): void => {
   const rule = new schedule.RecurrenceRule();
