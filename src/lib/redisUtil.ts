@@ -50,6 +50,7 @@ export enum RedisSettingKeys {
   DailyStartEndSchedule = `dailyStartEndSchedule`, // 주간 시업/종업
   NightlyStartEndSchedule = `nightlyStartEndSchedule`, // 야간 시업/종업
   WmsAckSetting = 'wmsAckSetting', // WMS ACK 통신 관련 설정
+  LanguageSetting = 'languageSetting', // 언어 설정
 }
 
 // export type AmrCurrentChargerTypes = {

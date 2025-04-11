@@ -172,3 +172,4 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 
 ## v0.2.1-ssb
 - CPU 사용량(%), RAM 사용량(%) 체크 후 MQTT 전송 로직 추가
+- 시스템관리 : 다국어처리 설정 타입 추가

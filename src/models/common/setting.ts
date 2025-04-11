@@ -106,6 +106,13 @@ export type WmsAckSetting = {
   };
 };
 
+export type LanguageSetting = {
+  system: string;
+  type: string;
+  data: {
+    language: 'korean' | 'english' | 'spanish';
+  };
+};
 /* 인터페이스 정의 끝 */
 
 export default Setting;
