@@ -93,7 +93,7 @@ export const useServerUtil = () => {
 
       const percent = ((Number(rssMB) / Number(totalMemMB)) * 100).toFixed(2);
 
-      console.log(`🧠 RAM 사용량: (${rssMB} / ${totalMemMB}) MB (${percent}%)`);
+      console.log(`RAM 사용량: (${rssMB} / ${totalMemMB}) MB (${percent}%)`);
 
       serverStatus.ramUsage = Number(percent);
 
@@ -125,7 +125,7 @@ export const useServerUtil = () => {
       const rawPercent = (usedCPUTimeMS / elapsedMS) * 100;
       const normalizedPercent = rawPercent / os.cpus().length;
 
-      console.log(`💻 CPU 사용량: ${normalizedPercent.toFixed(2)}%`);
+      console.log(`CPU 사용량: ${normalizedPercent.toFixed(2)}%`);
 
       serverStatus.cpuUsage = Number(normalizedPercent.toFixed(2));
 
