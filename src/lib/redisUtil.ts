@@ -40,7 +40,10 @@ export enum RedisKeys {
   InfoFacilityById = 'info_facility_by_id',
   // MBS
   Heartbeat = 'heartbeat',
-  RemainingAckCommandByCmdId = 'remaining_ack_command_by_cmd_id'
+  ReceivedAckCommandByCmdId = 'received_ack_command_by_cmd_id',
+  RemainingAckCommandByCmdId = 'remaining_ack_command_by_cmd_id',
+  BeforeSendOutCallInfoForWms = 'before_send_out_callinfo_for_wms',
+  BeforeSendInCallInfoForWms = 'before_send_in_callinfo_for_wms'
 }
 export enum RedisSettingKeys {
   AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

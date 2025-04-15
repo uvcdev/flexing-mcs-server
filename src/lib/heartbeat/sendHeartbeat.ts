@@ -12,10 +12,10 @@ const redisUtil = useRedisUtil();
 const sendMcsHeartbeat = () => {
   const topic = 'HEARTBEAT'
 
-  const mqttHeader = makeMbsMqttHeader('HEARTBEAT')
+  const mqttHeader = makeMbsMqttHeader(topic)
   // mqtt Body의 Cmd_Id는 변경 가능성 높음
   const mqttBody: mbsMqttBody = {
-    Cmd_Id: mqttHeader.id
+    Cmd_ID: mqttHeader.id
   }
 
   // mcs heartbeat 업데이트

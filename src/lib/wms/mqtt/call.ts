@@ -1,7 +1,13 @@
 import { separateMqttMessage, mbsMqttMesaage } from "../../mqttUtil"
+import { setReceivedAckCommand } from "../../process/ack"
 
-const callRequest = (wmsName: string) => {
+const systemTopic = 'CALL'
+
+const callRequest = (wmsName: string, messageMessage: mbsMqttMesaage) => {
   console.log('catch wmsCallRequest')
+
+  // set GetAckCommandByCmdId - Call Request
+  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
 }
 
 const ackCallInfo = (wmsName: string) => {
@@ -23,7 +29,7 @@ export const wmsCall = (wmsName: string, messageJson: mbsMqttMesaage) => {
   console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
 
   if (subject === 'CALL_REQUEST') {
-    callRequest(wmsName)
+    callRequest(wmsName, messageJson)
   } else if (subject === 'ACK_CALL_INFO') {
     ackCallInfo(wmsName)
   } else if (subject === 'ACK_CANCEL_CALL_INFO') {

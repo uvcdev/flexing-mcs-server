@@ -26,6 +26,7 @@ import { acsPayloadState } from './acs/payloadState';
 import { acsMissionState } from './acs/missionState';
 import { acsAlarmState } from './acs/alarmState';
 import { acsAckMissionCommand } from './acs/ackMissionCommand';
+import { wmsOnline } from './wms/mqtt/online';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -531,6 +532,8 @@ export const receiveMqtt = (): void => {
                 wmsBranch(systemTopic, messageJson)
               } else if (logicTopic === 'ALARM') {
                 wmsAlarm(systemTopic, messageJson)
+              } else if (logicTopic === 'ONLINE') {
+                wmsOnline(systemTopic, messageJson)
               }
             }
             // ACS 
