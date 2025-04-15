@@ -117,6 +117,7 @@ export interface mbsMqttHeader {
 }
 
 export interface mbsMqttBody {
+  Cmd_ID?: string;
   [key: string]: any;
 }
 
