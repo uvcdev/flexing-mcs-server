@@ -40,7 +40,10 @@ export enum RedisKeys {
   InfoFacilityById = 'info_facility_by_id',
   // MBS
   Heartbeat = 'heartbeat',
+  ReceivedAckCommandByCmdId = 'received_ack_command_by_cmd_id',
   RemainingAckCommandByCmdId = 'remaining_ack_command_by_cmd_id',
+  BeforeSendOutCallInfoForWms = 'before_send_out_callinfo_for_wms',
+  BeforeSendInCallInfoForWms = 'before_send_in_callinfo_for_wms',
   InfoChangedTagById = 'info_charged_tag_by_id'
 }
 export enum RedisSettingKeys {

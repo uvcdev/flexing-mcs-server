@@ -6,7 +6,8 @@ dotenv.config();
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { sendAllHeartbeat } from '../heartbeat/sendHeartbeat';
 import { checkSystemConnectionStatus } from '../heartbeat/checkHeartbeat';
-import { checkRemainingAckCommand } from './ack';
+import { checkReceivedAckCommand, checkRemainingAckCommand } from './ack';
+import { checkInCallInfoForWms } from './call';
 import { useEqpCheckUtil } from '../eqpCheckUtil';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
@@ -29,20 +30,17 @@ export const processMcs = async () => {
       // sendAllHeartbeat();                 // wms heartbeat 전송 ( n초마다 실행 )
     }
 
-    // await checkSystemConnectionStatus()   // System 연결 상태 확인 ( Heartbeat )
-    // await checkRemainingAckCommand()      // ACK 응답 여부 확인 ( ACK )
+    // 수집한 ack 데이터 처리 ( ACK )
+    await checkReceivedAckCommand()
 
-    // MCS 관련 프로세스
-    // todo: 서버 재시작 됐을 때 기존 콜 유지하는 로직 추가..?
+    // ACK 응답 여부 확인 ( ACK )
+    await checkRemainingAckCommand()
 
-    // PLC 데이터 수집
-    // await collectPlcData()
-
-    // PLC 데이터 전송
-    // await sendPlcData()
-
-    // 수집 데이터 처리
-    // await checkplcData()
+    // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
+    // 1. 창고(반출) -> 설비(입고) - before out call 
+    await checkInCallInfoForWms()
+    // 2. 창고(반입) -> 설비(반출) - ~~
+    // await checkOutCallInfoForWms()
 
     //  () - 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
     //  () - Call 처리 함수 ( runningWorkOderCalls )

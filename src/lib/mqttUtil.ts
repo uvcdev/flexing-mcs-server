@@ -15,17 +15,18 @@ import { mqttSubscribeAcsTopics } from '../constant/mqttSubscribeTopic';
 import { checkConnectionWmsHeartbeat } from './heartbeat/checkHeartbeat';
 import { generateUUIDNode } from './hashUtil';
 import { formatDetailedDateTime } from './usefullToolUtil';
-import { wmsCall } from './wms/call';
-import { wmsTransfer } from './wms/transfer';
-import { wmsCarrier } from './wms/carrier';
-import { wmsPort } from './wms/port';
-import { wmsCrane } from './wms/crane';
-import { wmsBranch } from './wms/branch';
-import { wmsAlarm } from './wms/alarm';
+import { wmsCall } from './wms/mqtt/call';
+import { wmsTransfer } from './wms/mqtt/transfer';
+import { wmsCarrier } from './wms/mqtt/carrier';
+import { wmsPort } from './wms/mqtt/port';
+import { wmsCrane } from './wms/mqtt/crane';
+import { wmsBranch } from './wms/mqtt/branch';
+import { wmsAlarm } from './wms/mqtt/alarm';
 import { acsPayloadState } from './acs/payloadState';
 import { acsMissionState } from './acs/missionState';
 import { acsAlarmState } from './acs/alarmState';
 import { acsAckMissionCommand } from './acs/ackMissionCommand';
+import { wmsOnline } from './wms/mqtt/online';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -118,6 +119,7 @@ export interface mbsMqttHeader {
 }
 
 export interface mbsMqttBody {
+  Cmd_ID?: string;
   [key: string]: any;
 }
 
@@ -533,6 +535,8 @@ export const receiveMqtt = (): void => {
                 wmsBranch(systemTopic, messageJson)
               } else if (logicTopic === 'ALARM') {
                 wmsAlarm(systemTopic, messageJson)
+              } else if (logicTopic === 'ONLINE') {
+                wmsOnline(systemTopic, messageJson)
               }
             }
             // ACS에서 오는 메세지 처리

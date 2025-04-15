@@ -33,6 +33,9 @@ import { router as logRouter } from './timescale/log';
 import { router as systemLogRouter } from './timescale/systemLog';
 import { router as itemLogRouter } from './timescale/itemLog';
 
+// MBS
+import { router as trackingLogRouter } from './common/trackingLog';
+
 dotenv.config();
 
 const router = express.Router();
@@ -209,5 +212,6 @@ router.use('/work-orders', workOrderRouter);
 router.use('/logs', logRouter);
 router.use('/system-logs', systemLogRouter);
 router.use('/item-logs', itemLogRouter);
+router.use('/tracking-logs', trackingLogRouter);
 
 export { router };

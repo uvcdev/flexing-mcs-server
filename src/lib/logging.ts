@@ -154,6 +154,7 @@ type LocationsData = {
 type MissionState =
   | 'MISSION_INITIATED'
   | 'AMR_ASSIGNED'
+  | 'AMR_UNASSIGNED'
   | 'AMR_ARRIVED'
   | 'AMR_ACQUIRE_STARTED'
   | 'AMR_ACQUIRE_COMPLETED'
@@ -163,7 +164,12 @@ type MissionState =
   | 'AMR_UNASSIGNED'
   | 'MISSION_COMPLETED'
   | 'MISSION_CANCELED'
-  | 'MISSION_FAILED';
+  | 'MISSION_FAILED'
+  | 'MISSION_PAUSED'
+  | 'MISSION_RESUMED'
+  | 'CHARGING_MISSION_INITIATED'
+  | 'CHARGING_STARTED'
+  | 'CHARGING_MISSION_COMPLETED';
 
 type MissionStateData = {
   mission: string;
