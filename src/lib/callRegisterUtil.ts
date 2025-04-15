@@ -124,17 +124,15 @@ export const useCallRegisterUtil = () => {
     // const multiValue = determineMultiValue(callRequestMulti1Value, callRequestMulti2Value);
 
     const eqpCallId = await createEQPCallId(targetKey, callCountValue, multiValue);
-    const eqpWcsInfo: EQP_WCS[] = eqpCallId?.map((eqpCallId) => ({
-      EQP_ID: eqpCallId.toString().substring(0, 4),  // 앞의 4자리
-      EQP_CALL_ID: eqpCallId
+    const eqpWcsInfo: EQP_WCS[] = eqpCallId?.map((callId) => ({
+      EQP_ID: callId.toString().substring(0, 4),  // 앞의 4자리
+      EQP_CALL_ID: callId
     })) || [];
 
-    // callMatchingInfo redis에 매칭한 값들 저장
     // todo0: 로그 저장
     console.log("🚀 ~ consteqpWcsInfo:EQP_WCS[]=eqpCallId?.map ~ eqpWcsInfo:", eqpWcsInfo)
-    // todo1: 설비로부터 수신한 CALL 정보 저장
+    // todo1: 설비로부터 수신한 CALL 정보 저장 (callMatchingInfo redis에 매칭한 값들 저장)
     // {
-    //   Cmd_ID: ,
     //   Call_ID: eqpWcsInfo.EQP_CALL_ID,
     //   Call_Type: callType01Value,
     //   Caller: eqpWcsInfo.EQP_ID,
@@ -142,14 +140,18 @@ export const useCallRegisterUtil = () => {
     //   Call_Priority: callPriorityValue === 'true' ? '99' : '50'
     // }
 
-    // todo2: facility.isMissionOrderCapable 값에 따른 toJob / missionJob 판단 필요
+    // todo2: facility.isMissionOrderCapable 값에 따른 toJob / missionJob 판단해서
+    // missonJob 이면 toJob 
+
+    // eqp-eqp / eqp-wms 를 콜 발생하는 설비에 다중으로 매핑해주는 방법은 어떤지...
+    // eqpWcsInfo.EQP_CALL_ID로 ACS_info_facility_by_serial 로 조회해서 컬럼 값이 설비인지 
     // 1. EQP (LOAD_PORT 11 투입) to WMS - WMS입장에서 반출   call out api
     // 2. EQP (UNLOAD_PORT 12 회수) to WMS - WMS입장에서 반입 call in api
     // 3. EQP to EQP 
 
     console.log(`Call request sent to WCS. TYPE: ${callType01Value}, CallID: ${callCountValue}`);
 
-    // todo4: 창고로부터 ACK 오면 EQP_Call_Save 함수 실행
+    // todo4: 창고로부터 ACK 오면 EQP_Call_Save 함수와 같은 기능 실행
     const callResponse = opcuaUtil.tagMap.get(`${targetKey}.Call_Response`);
     const callResponseWriteResult = await kepServerUtil.writeTagsValue([
       {
