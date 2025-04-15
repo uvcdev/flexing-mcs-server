@@ -102,11 +102,13 @@ export enum MqttTopics {
   Docking = 'docking',
   AlarmRegist = 'alarm/regist',
   AlarmClear = 'alarm/clear',
-  IsAlive = 'is-alive',
-  ItemLogging = 'item-logging',
-  WorkOrderStats = 'work-order-stats',
+  IsAlive = 'is_alive',
+  ItemLogging = 'item_logging',
+  WorkOrderStats = 'work_order_stats',
   // MBS용
-  KepwareStatus = 'kepware-status'
+  KepwareStatus = 'kepware_status',
+  // 설비 등록시 사용
+  InsertFacilityInfo = 'facility_info'
 }
 
 export interface mbsMqttHeader {

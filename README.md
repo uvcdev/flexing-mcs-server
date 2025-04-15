@@ -173,3 +173,10 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 
 ## v0.2.1-cyk
 - src\index.ts 구조 변경
+- acs에서 설비 등록/수정 시 mcs 설비 데이터 연동
+- 설비, 작업지시 테이블에 mission order 인지 컬럼 추가
+```sql
+ALTER TABLE public.facilities ADD is_mission_order_capable bool NULL DEFAULT false;
+ALTER TABLE public.work_orders ADD is_mission_order bool NULL DEFAULT false;
+```
+- kepware `Call_Request` 값에 따른 처리 로직 적용

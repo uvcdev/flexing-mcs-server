@@ -85,16 +85,23 @@ export const useKepServerUtil = () => {
         // 태그 값 쓰기
         statusCodes = await session.write(data);
       }
+      logging.KEPWARE_LOG({
+        action: 'TAG_WRITE',
+        tag: null,
+        value: JSON.parse(JSON.stringify(data)),
+        message: `writing value from kepServerUtil.writeTagsValue`,
+        error: null,
+      });
       return statusCodes;
     } catch (error) {
       logToConsoleAndFile(`Error writing value to node: ${data}. Error: ${error}`, "red");
-      // logging.KEPWARE_ERROR({
-      //   action: 'TAG_WRITE',
-      //   tag: data.toString(),
-      //   value: null,
-      //   message: `Error writing value from kepServerUtil.writeTagsValue`,
-      //   error: error,
-      // });
+      logging.KEPWARE_ERROR({
+        action: 'TAG_WRITE',
+        tag: data.toString(),
+        value: null,
+        message: `Error writing value from kepServerUtil.writeTagsValue`,
+        error: error,
+      });
       throw error;
     }
   }
@@ -118,63 +125,54 @@ export const useKepServerUtil = () => {
       return result;
     } catch (error) {
       logToConsoleAndFile(`Error reading value from node: ${nodeIds}. Error: ${error}`, "red");
-      // logging.KEPWARE_ERROR({
-      //   action: 'TAG_READ',
-      //   tag: null,
-      //   value: null,
-      //   message: `Error reading value from kepServerUtil.readTagsValue`,
-      //   error: error,
-      // });
+      logging.KEPWARE_ERROR({
+        action: 'TAG_READ',
+        tag: null,
+        value: null,
+        message: `Error reading value from kepServerUtil.readTagsValue`,
+        error: error,
+      });
       throw error;
     }
   }
 
   // 전체 노드 읽는 함수
   const monitorTagData = async () => {
-    try {
-      const session = opcuaUtil.session;
-
-      if (session) {
-        while (true) {
-          try {
-            opcuaUtil.allTagNodeIds.forEach(async (value, key) => {
-              const result: Record<string, any> = {};
-
-              const readValueIdOptions = value.readValueIdOptions;
-              const tagValue = value.tagValue;
-
-              const dataValues = await session.read(readValueIdOptions);
-
-              dataValues.forEach((dataValue, index) => {
-                tagValue[index].value = dataValue.value.value;
-                result[tagValue[index].key] = tagValue[index].value;
-              });
-
-              // 결과 객체 MQTT로 전송
-              sendMqtt(`${MqttTopics.KepwareStatus}/${key}`, JSON.stringify(result));
-            });
-          } catch (readError) {
-            console.error("태그 값 읽기 오류:", readError);
-            logging.MQTT_ERROR({
-              title: 'Error reading value from kepServerUtil.monitorTagData',
-              topic: `${MqttTopics.KepwareStatus}`,
-              message: null,
-              error: readError,
-            });
-          }
-          await new Promise(resolve => setTimeout(resolve, kepwareStatusIntervalTime * 1000)); // n 초마다 데이터 가져오기
+    while (true) {
+      let session = opcuaUtil.session;
+      try {
+        if (!session) {
+          await opcuaUtil.createSession();
+          if (!session) continue; // 세션이 없으면 다시 루프
         }
+
+        for (const [key, value] of opcuaUtil.allTagNodeIds.entries()) {
+          const result: Record<string, any> = {};
+          const readValueIdOptions = value.readValueIdOptions;
+          const tagValue = value.tagValue;
+
+          const dataValues = await session.read(readValueIdOptions);
+
+          dataValues.forEach((dataValue, index) => {
+            tagValue[index].value = dataValue.value.value;
+            result[tagValue[index].key] = tagValue[index].value;
+          });
+
+          // MQTT로 결과 전송
+          sendMqtt(`${MqttTopics.KepwareStatus}/${key}`, JSON.stringify(result));
+        }
+      } catch (error) {
+        logging.MQTT_ERROR({
+          title: "Error reading value from kepServerUtil.monitorTagData",
+          topic: `${MqttTopics.KepwareStatus}`,
+          message: null,
+          error: error,
+        });
+
+        session = null; // 세션 초기화 (다음 루프에서 재연결 시도)
       }
-    } catch (error) {
-      logToConsoleAndFile(`Error reading value from node  Error: ${error}`, "red");
-      // logging.KEPWARE_ERROR({
-      //   action: 'TAG_READ',
-      //   tag: null,
-      //   value: null,
-      //   message: `Error reading value from kepServerUtil.monitorTagData`,
-      //   error: error,
-      // });
-      throw error;
+
+      await new Promise(resolve => setTimeout(resolve, kepwareStatusIntervalTime * 1000)); // n초 후 반복
     }
   }
 
@@ -195,13 +193,13 @@ export const useKepServerUtil = () => {
       return result;
     } catch (error) {
       logToConsoleAndFile(`Error reading value from node: i=2256. Error: ${error}`, "red");
-      // logging.KEPWARE_ERROR({
-      //   action: 'TAG_READ',
-      //   tag: null,
-      //   value: null,
-      //   message: `Error reading value from kepServerUtil.heartbeat`,
-      //   error: error,
-      // });
+      logging.KEPWARE_ERROR({
+        action: 'TAG_READ',
+        tag: null,
+        value: null,
+        message: `Error reading value from kepServerUtil.heartbeat`,
+        error: error,
+      });
       throw error;
     }
   }
@@ -209,7 +207,6 @@ export const useKepServerUtil = () => {
   const initTagData = async () => {
     const allTagsStringData = await loadTags(path.join(__dirname, '../../kepserverTag.json'));
     const allTags: Tag[] = JSON.parse(allTagsStringData)['MBS'];
-
     // // tagMap 초기화
     opcuaUtil.tagMap.clear();
     // 각 태그에 대해 Map 엔트리 생성
@@ -253,6 +250,12 @@ export const useKepServerUtil = () => {
         });
       }
     });
+    logging.KEPWARE_LOG({
+      action: 'TAG_SUBSCRIBE',
+      tag: JSON.parse(JSON.stringify(allTags)),
+      value: null,
+      message: `subscribing value from kepServerUtil.initTagData`,
+    });
   }
 
   // 변경된 태그 데이터 값 처리
@@ -266,13 +269,13 @@ export const useKepServerUtil = () => {
     if (!targetTagInfo) {
       const errorMessage = `No Tag found with name: ${nodeId}, ${value}`;
       logToConsoleAndFile(errorMessage, "red");
-      // logging.KEPWARE_ERROR({
-      //   action: 'TAG_WRITE',
-      //   tag: null,
-      //   value: null,
-      //   message: `Error writing value from kepServerUtil.updateTagValue`,
-      //   error: errorMessage,
-      // });
+      logging.KEPWARE_ERROR({
+        action: 'TAG_WRITE',
+        tag: null,
+        value: null,
+        message: `Error writing value from kepServerUtil.updateTagValue`,
+        error: errorMessage,
+      });
       throw null;
     }
 
@@ -298,13 +301,13 @@ export const useKepServerUtil = () => {
       default:
         const errorMessage = `Unhandled type for nodeId:: ${nodeId}, ${value}`;
         logToConsoleAndFile(errorMessage, "yellow");
-        // logging.KEPWARE_ERROR({
-        //   action: 'TAG_SUBSCRIBE',
-        //   tag: null,
-        //   value: null,
-        //   message: `Error subscribing value from kepServerUtil.updateTagValue`,
-        //   error: errorMessage,
-        // });
+        logging.KEPWARE_ERROR({
+          action: 'TAG_SUBSCRIBE',
+          tag: null,
+          value: null,
+          message: `Error subscribing value from kepServerUtil.updateTagValue`,
+          error: errorMessage,
+        });
         break;
     }
 

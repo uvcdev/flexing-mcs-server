@@ -17,7 +17,7 @@ type RedisConfig = {
 const redisConfig: RedisConfig = {
   host: process.env.REDIS_HOST || '',
   port: Number(process.env.REDIS_PORT || 6379),
-  header: process.env.REDIS_HEADER || 'ACS',
+  header: process.env.REDIS_HEADER || 'MCS',
 };
 
 export enum RedisKeys {
@@ -40,7 +40,8 @@ export enum RedisKeys {
   InfoFacilityById = 'info_facility_by_id',
   // MBS
   Heartbeat = 'heartbeat',
-  RemainingAckCommandByCmdId = 'remaining_ack_command_by_cmd_id'
+  RemainingAckCommandByCmdId = 'remaining_ack_command_by_cmd_id',
+  InfoChangedTagById = 'info_charged_tag_by_id'
 }
 export enum RedisSettingKeys {
   AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

@@ -223,20 +223,26 @@ if (env === 'development') {
 
   Promise.all([])
     .then(async () => {
+      // =====🔥MCS 관련🔥=====
       // MCS 로직 실행
       await initAllRedisData()
+
       // 설비 정보 동기화
 
       // WMS 정보 동기화
       await processMcs()
 
+
       // =====🔥kepserver 관련🔥=====
       // 초기 태그 데이터 초기화
       await useKepServerUtil().initTagData();
+
       // NODE-OPCUA <-> KEPServerex 연결 및 초기화
       await opcuaUtil.initKepserverex();
-      // // kepware 상태 불러와서 mqtt 전송
+
+      // PLC 데이터 수집 (kepware 상태 불러와서 mqtt 전송)
       await useKepServerUtil().monitorTagData();
+
     })
     .catch((error: Error) => {
       console.log(error);

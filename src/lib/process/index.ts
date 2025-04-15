@@ -21,16 +21,20 @@ let counter = 0;
 export const processMcs = async () => {
   try {
     counter++;
+
     if (counter % 2 === 0) heapUse()
 
     // WMS 관련 프로세스
     if (counter % 5 === 0) {
-      sendAllHeartbeat();                 // wms heartbeat 전송 ( n초마다 실행 )
+      // sendAllHeartbeat();                 // wms heartbeat 전송 ( n초마다 실행 )
     }
-    await checkSystemConnectionStatus()   // System 연결 상태 확인 ( Heartbeat )
-    await checkRemainingAckCommand()      // ACK 응답 여부 확인 ( ACK )
+
+    // await checkSystemConnectionStatus()   // System 연결 상태 확인 ( Heartbeat )
+    // await checkRemainingAckCommand()      // ACK 응답 여부 확인 ( ACK )
 
     // MCS 관련 프로세스
+    // todo: 서버 재시작 됐을 때 기존 콜 유지하는 로직 추가..?
+
     // PLC 데이터 수집
     // await collectPlcData()
 

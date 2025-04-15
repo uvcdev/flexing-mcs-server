@@ -55,6 +55,14 @@ interface MqttLogFormat {
   message: unknown;
   error?: unknown;
 }
+
+interface RedisLogFormat {
+  key: string;
+  value: string;
+  message: unknown;
+  error?: unknown;
+}
+
 type WsLogFormat = {
   // WebSocket 로그에 필요한 필드들을 정의
   // 예시:
@@ -1085,71 +1093,104 @@ export const logging = {
       }
     },
   },
-  // KEPWARE_LOG(kepwareLog: KepwareLogFormat): void {
-  //   try {
-  //     const logLevel = 'info';
+  KEPWARE_LOG(kepwareLog: KepwareLogFormat): void {
+    try {
+      const logLevel = 'info';
+      void logDao.insert({
+        facilityCode: null,
+        facilityName: null,
+        amrCode: null,
+        amrName: null,
+        logLevel: logLevel,
+        function: 'KEPWARE_LOG',
+        data: kepwareLog,
+      });
+    } catch (error) {
+      console.log('logging.KEPWARE_LOG', error);
+    }
+  },
+  KEPWARE_DEBUG(kepwareLog: KepwareLogFormat): void {
+    try {
+      const logLevel = 'debug';
 
-  //     void logDao.insert({
-  //       facilityCode: null,
-  //       facilityName: null,
-  //       amrCode: null,
-  //       amrName: null,
-  //       logLevel: logLevel,
-  //       function: 'KEPWARE_LOG',
-  //       data: kepwareLog,
-  //     });
-  //   } catch (error) {
-  //     console.log('logging.KEPWARE_LOG', error);
-  //   }
-  // },
-  // KEPWARE_DEBUG(kepwareLog: KepwareLogFormat): void {
-  //   try {
-  //     const logLevel = 'debug';
+      void logDao.insert({
+        facilityCode: null,
+        facilityName: null,
+        amrCode: null,
+        amrName: null,
+        logLevel: logLevel,
+        function: 'KEPWARE_DEBUG',
+        data: kepwareLog,
+      });
+    } catch (error) {
+      console.log('logging.KEPWARE_DEBUG', error);
+    }
+  },
+  KEPWARE_ERROR(kepwareLog: KepwareLogFormat): void {
+    try {
+      const logLevel = 'error';
+      const newData = {
+        message: JSON.parse(JSON.stringify(kepwareLog.message)),
+        error: kepwareLog.error,
+      };
 
-  //     void logDao.insert({
-  //       facilityCode: null,
-  //       facilityName: null,
-  //       amrCode: null,
-  //       amrName: null,
-  //       logLevel: logLevel,
-  //       function: 'KEPWARE_DEBUG',
-  //       data: kepwareLog,
-  //     });
-  //   } catch (error) {
-  //     console.log('logging.KEPWARE_DEBUG', error);
-  //   }
-  // },
-  // KEPWARE_ERROR(kepwareLog: KepwareLogFormat): void {
-  //   try {
-  //     const logLevel = 'error';
-  //     const newData = {
-  //       message: JSON.parse(kepwareLog.message),
-  //       error: kepwareLog.error,
-  //     };
+      const logFormat = {
+        kepwareLog: {
+          ...newData,
+          error: {
+            message: kepwareLog.error instanceof Error ? kepwareLog.error.message : '',
+            stack: kepwareLog.error instanceof Error ? kepwareLog.error.stack : '',
+          },
+        },
+      };
 
-  //     const logFormat = {
-  //       kepwareLog: {
-  //         ...newData,
-  //         error: {
-  //           message: kepwareLog.error instanceof Error ? kepwareLog.error.message : '',
-  //           stack: kepwareLog.error instanceof Error ? kepwareLog.error.stack : '',
-  //         },
-  //       },
-  //     };
+      void logDao.insert({
+        facilityCode: null,
+        facilityName: null,
+        amrCode: null,
+        amrName: null,
+        logLevel: logLevel,
+        function: 'KEPWARE_ERROR',
+        data: logFormat,
+      });
+    } catch (error) {
+      console.log('logging.KEPWARE_ERROR', error);
+    }
+  },
+  REDIS_LOG(redisLog: RedisLogFormat): void {
+    try {
+      const logLevel = 'info';
 
-  //     void logDao.insert({
-  //       facilityCode: null,
-  //       facilityName: null,
-  //       amrCode: null,
-  //       amrName: null,
-  //       logLevel: logLevel,
-  //       function: 'KEPWARE_ERROR',
-  //       data: logFormat,
-  //     });
-  //   } catch (error) {
-  //     console.log('logging.KEPWARE_ERROR', error);
-  //   }
-  // },
+      void logDao.insert({
+        facilityCode: null,
+        facilityName: null,
+        amrCode: null,
+        amrName: null,
+        logLevel: logLevel,
+        function: 'REDIS_LOG',
+        data: redisLog,
+      });
+    } catch (error) {
+      console.log('logging.REDIS_LOG', error);
+    }
+  },
+  REDIS_DEBUG(redisLog: RedisLogFormat): void {
+    try {
+      const logLevel = 'debug';
+
+      void logDao.insert({
+        facilityCode: null,
+        facilityName: null,
+        amrCode: null,
+        amrName: null,
+        logLevel: logLevel,
+        function: 'REDIS_DEBUG',
+        data: redisLog,
+      });
+    } catch (error) {
+      console.log('logging.REDIS_DEBUG', error);
+    }
+  },
 };
 
 // KEPWARE 로깅
