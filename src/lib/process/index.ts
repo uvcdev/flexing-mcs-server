@@ -8,6 +8,7 @@ import { sendAllHeartbeat } from '../heartbeat/sendHeartbeat';
 import { checkSystemConnectionStatus } from '../heartbeat/checkHeartbeat';
 import { checkReceivedAckCommand, checkRemainingAckCommand } from './ack';
 import { checkInCallInfoForWms } from './call';
+import { useCallRegisterUtil } from "../callRegisterUtil";
 import { useEqpCheckUtil } from '../eqpCheckUtil';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
@@ -31,18 +32,22 @@ export const processMcs = async () => {
     }
 
     // 수집한 ack 데이터 처리 ( ACK )
-    await checkReceivedAckCommand()
+    // await checkReceivedAckCommand()
 
     // ACK 응답 여부 확인 ( ACK )
-    await checkRemainingAckCommand()
+    // await checkRemainingAckCommand()
 
     // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
     // 1. 창고(반출) -> 설비(입고) - before out call 
-    await checkInCallInfoForWms()
+    // await checkInCallInfoForWms()
     // 2. 창고(반입) -> 설비(반출) - ~~
     // await checkOutCallInfoForWms()
 
-    //  () - 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
+    // ACK_CALL_INFO 판단해서 콜 정보 저장과 EQP에 응답 데이터 Write
+    await useCallRegisterUtil().checkCallSave()
+    // todo4: 창고로부터 ACK 오면 EQP_Call_Save 함수와 같은 기능 실행
+
+
     //  () - Call 처리 함수 ( runningWorkOderCalls )
     //  () - To 작업 처리 함수
   } catch (error) {

@@ -229,16 +229,16 @@ const service = {
     let result: InsertedResult;
     try {
       redisUtil.del(RedisKeys.InfoFacilityById);
-      // redisUtil.del(RedisKeys.InfoFacilityByResource);
-      // redisUtil.del(RedisKeys.InfoFacilityBySerial);
+      redisUtil.del(RedisKeys.InfoFacilityByResource);
+      redisUtil.del(RedisKeys.InfoFacilityBySerial);
       const facilityList = await facilityDao.selectList({});
       facilityList.rows.forEach((facility) => {
         const facilityDeep = facility as FacilityAttributesDeep;
         const facilityString = JSON.stringify(facilityDeep);
         redisUtil.hset(RedisKeys.InfoFacilityById, facilityDeep.id.toString(), facilityString);
-        // if (facilityDeep.serial) {
-        //   redisUtil.hset(RedisKeys.InfoFacilityBySerial, facilityDeep.serial, facilityString);
-        // }
+        if (facilityDeep.serial) {
+          redisUtil.hset(RedisKeys.InfoFacilityBySerial, facilityDeep.serial, facilityString);
+        }
         // if (facilityDeep.Location?.tag) {
         //   redisUtil.hset(RedisKeys.InfoFacilityByResource, facilityDeep.Location?.tag, facilityString);
         // }
@@ -278,9 +278,9 @@ const service = {
       if (facilityDeep?.active === true) {
         const facilityInfoRedisString = JSON.stringify(facilityInfo);
         redisUtil.hset(RedisKeys.InfoFacilityById, facilityDeep.id.toString(), facilityInfoRedisString);
-        // if (facilityDeep?.serial) {
-        //   redisUtil.hset(RedisKeys.InfoFacilityBySerial, facilityDeep.serial, facilityInfoRedisString);
-        // }
+        if (facilityDeep?.serial) {
+          redisUtil.hset(RedisKeys.InfoFacilityBySerial, facilityDeep.serial, facilityInfoRedisString);
+        }
         // if (facilityDeep?.Location?.tag) {
         //   redisUtil.hset(RedisKeys.InfoFacilityByResource, facilityDeep.Location?.tag, facilityInfoRedisString);
         // }

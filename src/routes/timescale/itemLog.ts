@@ -128,7 +128,7 @@ router.get('/', isLoggedIn, async (req: Request<unknown, unknown, unknown, ItemL
       amrName: req.query.amrName,
       topic: req.query.topic,
       subject: req.query.subject,
-      trackingLogId: req.query.trackingLogId,
+      // trackingLogId: req.query.trackingLogId,
       createdAtFrom: req.query.createdAtFrom,
       createdAtTo: req.query.createdAtTo,
       limit: Number(req.query.limit || 'NaN'),

@@ -98,18 +98,17 @@ type McsCancelWorkOrderRequestType = {
 };
 
 export enum MqttTopics {
-  WorkerStatus = 'feedback_worker_status',
-  WorkHistory = 'work_history',
-  Docking = 'docking',
+  // WorkerStatus = 'feedback_worker_status',
+  // WorkHistory = 'work_history',
+  // Docking = 'docking',
+  // AlarmClear = 'alarm/clear',
+  // ItemLogging = 'item_logging',
   AlarmRegist = 'alarm/regist',
-  AlarmClear = 'alarm/clear',
   IsAlive = 'is_alive',
-  ItemLogging = 'item_logging',
   WorkOrderStats = 'work_order_stats',
+  InsertFacilityInfo = 'facility_info',
   // MBS용
-  KepwareStatus = 'kepware_status',
-  // 설비 등록시 사용
-  InsertFacilityInfo = 'facility_info'
+  KepwareStatus = 'kepware_status'
 }
 
 export interface mbsMqttHeader {
@@ -491,6 +490,33 @@ export const receiveMqtt = (): void => {
                 const params = messageJson as WorkOrderAttributesDeep;
                 await workOrderService.stateCheckAndEdit(params, makeLogFormat({} as RequestLog));
               }
+            }
+          }
+
+          // mcs에서 오는 메세지 처리
+          if (serverTopic === 'mcs') {
+            try {
+              // item-logging 메세지 처리
+              if (topicSplit.length === 2 && topicSplit[1] === 'workorder') {
+                const messageJson = JSON.parse(message);
+                console.log("🚀 ~ client.on ~ messageJson:", messageJson)
+                logging.MQTT_LOG({
+                  title: 'mcs workorder',
+                  topic: messageTopic,
+                  message: messageJson,
+                });
+                await workOrderService.regWorkOrder(messageJson);
+                console.log('###4');
+                sendMqtt('acs/workorder', message);
+              }
+            } catch (error) {
+              console.log('왜 안되는지 알려줘야지')
+              logging.MQTT_ERROR({
+                title: 'mqtt message error from mcs/workorder',
+                topic: messageTopic,
+                message: messageOrg.toString(),
+                error: error,
+              });
             }
           }
         }

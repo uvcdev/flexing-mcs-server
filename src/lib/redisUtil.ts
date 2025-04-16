@@ -21,38 +21,45 @@ const redisConfig: RedisConfig = {
 };
 
 export enum RedisKeys {
-  WorkerStatus = 'feedback_worker_status',
-  Instructions = 'res_get_task',
-  ComposeJobs = 'req_compose_job',
-  InfoAmr = 'info_amr',
+  // 미사용
+  // WorkerStatus = 'feedback_worker_status',
+  // Instructions = 'res_get_task',
+  // ComposeJobs = 'req_compose_job',
+  // InfoAmr = 'info_amr',
+  // InfoChargerById = 'info_charger_by_id',
+  // InfoChargerByResource = 'info_charger_by_resource',
+  // AmrRecentTask = 'amr_recent_task',
+  // AmrRecentTaskById = 'amr_recent_task_by_id',
+  // AmrCurrentCharger = 'amr_current_charger',
+  // AlarmBattery = 'alarm_battery',
+  // WorkOrderById = 'work_order_by_id',
+  // OrdersByFacilityId = 'orders_by_facility_id',
+  // InfoFacility = 'info_facility',  
+
+  // 기존
   InfoAmrById = 'info_amr_by_id',
-  InfoChargerById = 'info_charger_by_id',
-  InfoChargerByResource = 'info_charger_by_resource',
-  AmrRecentTask = 'amr_recent_task',
-  AmrRecentTaskById = 'amr_recent_task_by_id',
-  AmrCurrentCharger = 'amr_current_charger',
-  AlarmBattery = 'alarm_battery',
   AlarmStatusToggle = 'alarm_status_toggle',
-  WorkOrderById = 'work_order_by_id',
-  OrdersByFacilityId = 'orders_by_facility_id',
   Setting = 'setting',
-  InfoFacility = 'info_facility',
   InfoFacilityById = 'info_facility_by_id',
+  InfoFacilityBySerial = 'info_facility_by_serial',
+  InfoFacilityByResource = 'info_facility_by_resource',
   // MBS
-  Heartbeat = 'heartbeat',
-  ReceivedAckCommandByCmdId = 'received_ack_command_by_cmd_id',
-  RemainingAckCommandByCmdId = 'remaining_ack_command_by_cmd_id',
-  BeforeSendOutCallInfoForWms = 'before_send_out_callinfo_for_wms',
-  BeforeSendInCallInfoForWms = 'before_send_in_callinfo_for_wms',
-  InfoChangedTagById = 'info_charged_tag_by_id'
+  Heartbeat = 'heartbeat',   // HEARTBEAT 리스트
+  ReceivedAckCommandBySubjectCmdId = 'received_ack_command_by_subject_cmd_id',    // MQTT로 받은 WMS 데이터
+  RemainingAckCommandBySubjectCmdId = 'remaining_ack_command_by_subject_cmd_id',  // MQTT로 WMS에 보낸 데이터 ( ACK 판단 유무 )
+  InfoOutCallByCallId = 'info_out_call_by_call_id',         // out 설비에서 발생한 콜 ( WMS에 CALLINFO 요청 전 )
+  InfoAckOutCallByCallId = 'info_ack_out_call_by_call_id',  // out 설비 콜 중 WMS에서 ACK_CALLINFO를 받은 콜 
+  InfoInCallByCallId = 'info_in_call_by_call_id',           // in 설비에서 발생한 콜 ( WMS에 CALLINFO 요청 전 )
+  InfoAckInCallByCallId = 'info_ack_in_call_by_call_id',     // in 설비 콜 중 WMS에서 ACK_CALLINFO를 받은 콜 
+  InfoChangedTagById = 'info_changed_tag_by_id',
 }
 export enum RedisSettingKeys {
-  AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정
-  LogRetentionPeriod = `logRetentionPeriod`, // 로그 저장 기간, mcslog, acslog
-  AssignmentPrioriry = 'assignmentPrioriry', // 작업-로봇 할당 우선 순위 설정 (작업레벨 우선: workLevel(1), 배터리 우선: batteryLevel(2), 거리 우선: distance(3))
-  WorkPriorityBoost = `workPriorityBoost`, //작업 우선 순위 상향 설정 (기준시간: priorityBoostTimeLimit)
-  DailyStartEndSchedule = `dailyStartEndSchedule`, // 주간 시업/종업
-  NightlyStartEndSchedule = `nightlyStartEndSchedule`, // 야간 시업/종업
+  // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정
+  // LogRetentionPeriod = `logRetentionPeriod`, // 로그 저장 기간, mcslog, acslog
+  // AssignmentPrioriry = 'assignmentPrioriry', // 작업-로봇 할당 우선 순위 설정 (작업레벨 우선: workLevel(1), 배터리 우선: batteryLevel(2), 거리 우선: distance(3))
+  // WorkPriorityBoost = `workPriorityBoost`, //작업 우선 순위 상향 설정 (기준시간: priorityBoostTimeLimit)
+  // DailyStartEndSchedule = `dailyStartEndSchedule`, // 주간 시업/종업
+  // NightlyStartEndSchedule = `nightlyStartEndSchedule`, // 야간 시업/종업
   WmsAckSetting = 'wmsAckSetting', // WMS ACK 통신 관련 설정
 }
 

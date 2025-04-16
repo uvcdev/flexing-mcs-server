@@ -187,3 +187,10 @@ ALTER TABLE public.facilities ADD is_mission_order_capable bool NULL DEFAULT fal
 ALTER TABLE public.work_orders ADD is_mission_order bool NULL DEFAULT false;
 ```
 - kepware `Call_Request` 값에 따른 처리 로직 적용
+  - mission 결정지 작업지시 생성 로직 적용
+```sql
+ALTER TABLE public.work_orders ADD mission_start_date timestamptz NULL;
+ALTER TABLE public.work_orders ADD mission_end_date timestamptz NULL;
+
+```
+- 

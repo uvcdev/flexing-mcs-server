@@ -29,16 +29,16 @@ export interface beforeSendInCallInfoForWms extends CallInfoBody {
 // Redis에 있는 리스트 중 출고 정보 CallInfo를 전송 해야 하는 경우 확인
 // WMS 입장에서 in은 창고 배출 , WMS 입장에서 in은 창고 입고
 export const checkInCallInfoForWms = async () => {
-  const beforeSendInCallInfoForWmsList = await redisUtil.hgetAllObject<beforeSendInCallInfoForWms>(RedisKeys.BeforeSendInCallInfoForWms) || [];
+  // const beforeSendInCallInfoForWmsList = await redisUtil.hgetAllObject<beforeSendInCallInfoForWms>(RedisKeys.BeforeSendInCallInfoForWms) || [];
 
-  for (let i = 0, length = beforeSendInCallInfoForWmsList.length; i < length; i++) {
-    const beforeSendInCallInfoForWmsInfo = { ...beforeSendInCallInfoForWmsList[i] }
-    const systemName = beforeSendInCallInfoForWmsInfo.systemName || 'WMS';
+  // for (let i = 0, length = beforeSendInCallInfoForWmsList.length; i < length; i++) {
+  //   const beforeSendInCallInfoForWmsInfo = { ...beforeSendInCallInfoForWmsList[i] }
+  //   const systemName = beforeSendInCallInfoForWmsInfo.systemName || 'WMS';
 
-    delete beforeSendInCallInfoForWmsInfo['systemName']
+  //   delete beforeSendInCallInfoForWmsInfo['systemName']
 
-    sendInCallInfoForWms(beforeSendInCallInfoForWmsInfo, systemName)
-  }
+  //   sendInCallInfoForWms(beforeSendInCallInfoForWmsInfo, systemName)
+  // }
 }
 
 // ack 에 대한 send in call info 도 추가하기 위해서 해당 함수 분리
