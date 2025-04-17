@@ -6,7 +6,7 @@ import { logSequelize } from '../sequelize';
 // 기본 interface
 export interface ItemLogAttributes {
   id: number;
-  trackingLogId: number;
+  // trackingLogId: number;
   itemCode: string | null;
   facilityCode: string | null;
   facilityName: string | null;
@@ -41,7 +41,7 @@ type ItemLogSubjectType =
 
 class ItemLog extends Model implements ItemLogAttributes {
   public readonly id!: ItemLogAttributes['id'];
-  public trackingLogId!: ItemLogAttributes['trackingLogId'];
+  // public trackingLogId!: ItemLogAttributes['trackingLogId'];
   public itemCode!: ItemLogAttributes['itemCode'];
   public facilityCode!: ItemLogAttributes['facilityCode'];
   public facilityName!: ItemLogAttributes['facilityName'];
@@ -65,9 +65,9 @@ ItemLog.init(
       type: DataTypes.DATE,
       primaryKey: true,
     },
-    trackingLogId: {
-      type: DataTypes.INTEGER(),
-    },
+    // trackingLogId: {
+    //   type: DataTypes.INTEGER(),
+    // },
     itemCode: {
       type: DataTypes.STRING(500),
     },
@@ -110,7 +110,7 @@ ItemLog.init(
 
 // insert
 export interface ItemLogInsertParams {
-  trackingLogId?: number | null;
+  // trackingLogId?: number | null;
   itemCode?: string | null;
   facilityCode: string | null;
   facilityName: string | null;
@@ -123,7 +123,7 @@ export interface ItemLogInsertParams {
 
 // selectList
 export interface ItemLogSelectListParams {
-  trackingLogId?: number | null;
+  // trackingLogId?: number | null;
   itemCode?: string | null;
   facilityCode?: string | null;
   facilityName?: string | null;

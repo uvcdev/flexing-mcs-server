@@ -141,7 +141,7 @@
       "DESCRIPTION": "AMR 호출 응답 신호",
       "DATA_TYPE": "Boolean",
       "ADDRESS": "K1010.00",
-      "SUBSCRIPTION": true,
+      "SUBSCRIPTION": false,
       "INPUT_TYPE": "Bool"
     },
     {
@@ -201,7 +201,7 @@
       "DESCRIPTION": "mmdd",
       "DATA_TYPE": "UInt16",
       "ADDRESS": "K0006",
-      "SUBSCRIPTION": false,
+      "SUBSCRIPTION": true,
       "INPUT_TYPE": "DEC"
     },
     {
@@ -213,7 +213,7 @@
       "DESCRIPTION": "yyyy",
       "DATA_TYPE": "UInt16",
       "ADDRESS": "K0004",
-      "SUBSCRIPTION": false,
+      "SUBSCRIPTION": true,
       "INPUT_TYPE": "DEC"
     },
     {
@@ -621,8 +621,8 @@
       "DESCRIPTION": "SC (Stack Cell)",
       "DATA_TYPE": "UInt16",
       "ADDRESS": "K0000",
-      "SUBSCRIPTION": false,
-      "INPUT_TYPE": "DEC"
+      "SUBSCRIPTION": true,
+      "INPUT_TYPE": "ASCII"
     },
     {
       "NODE_ID": "ns=2;s=EQP.STACK01.LOAD-PORT.EQ_Code_02",
@@ -633,8 +633,8 @@
       "DESCRIPTION": "11 (1라인/투입)",
       "DATA_TYPE": "UInt16",
       "ADDRESS": "K0002",
-      "SUBSCRIPTION": false,
-      "INPUT_TYPE": "DEC"
+      "SUBSCRIPTION": true,
+      "INPUT_TYPE": "ASCII"
     },
     {
       "NODE_ID": "ns=2;s=EQP.STACK01.LOAD-PORT.EQ_Manual",
@@ -1005,7 +1005,7 @@
       "DESCRIPTION": "AMR 호출 응답 신호",
       "DATA_TYPE": "Boolean",
       "ADDRESS": "K1110.00",
-      "SUBSCRIPTION": true,
+      "SUBSCRIPTION": false,
       "INPUT_TYPE": "Bool"
     },
     {
@@ -1065,7 +1065,7 @@
       "DESCRIPTION": "mmdd",
       "DATA_TYPE": "UInt16",
       "ADDRESS": "K0106",
-      "SUBSCRIPTION": false,
+      "SUBSCRIPTION": true,
       "INPUT_TYPE": "DEC"
     },
     {
@@ -1077,7 +1077,7 @@
       "DESCRIPTION": "yyyy",
       "DATA_TYPE": "UInt16",
       "ADDRESS": "K0104",
-      "SUBSCRIPTION": false,
+      "SUBSCRIPTION": true,
       "INPUT_TYPE": "DEC"
     },
     {
@@ -1485,8 +1485,8 @@
       "DESCRIPTION": "SC (Stack Cell)",
       "DATA_TYPE": "UInt16",
       "ADDRESS": "K0100",
-      "SUBSCRIPTION": false,
-      "INPUT_TYPE": "DEC"
+      "SUBSCRIPTION": true,
+      "INPUT_TYPE": "ASCII"
     },
     {
       "NODE_ID": "ns=2;s=EQP.STACK01.UNLOAD-PORT.EQ_Code_02",
@@ -1497,8 +1497,8 @@
       "DESCRIPTION": "12 (1라인/회수)",
       "DATA_TYPE": "UInt16",
       "ADDRESS": "K0102",
-      "SUBSCRIPTION": false,
-      "INPUT_TYPE": "DEC"
+      "SUBSCRIPTION": true,
+      "INPUT_TYPE": "ASCII"
     },
     {
       "NODE_ID": "ns=2;s=EQP.STACK01.UNLOAD-PORT.EQ_Manual",

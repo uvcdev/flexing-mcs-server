@@ -177,3 +177,20 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 
 - itemLog 테이블 컬럼 추가
   - itemLog 테이블이 trackingLog 하위 개념으로 포함되기 때문에 itemLog에 trackingLogId 컬럼 추가
+
+## v0.2.1-cyk
+- src\index.ts 구조 변경
+- acs에서 설비 등록/수정 시 mcs 설비 데이터 연동
+- 설비, 작업지시 테이블에 mission order 인지 컬럼 추가
+```sql
+ALTER TABLE public.facilities ADD is_mission_order_capable bool NULL DEFAULT false;
+ALTER TABLE public.work_orders ADD is_mission_order bool NULL DEFAULT false;
+```
+- kepware `Call_Request` 값에 따른 처리 로직 적용
+  - mission 결정지 작업지시 생성 로직 적용
+```sql
+ALTER TABLE public.work_orders ADD mission_start_date timestamptz NULL;
+ALTER TABLE public.work_orders ADD mission_end_date timestamptz NULL;
+
+```
+- 

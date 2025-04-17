@@ -109,7 +109,7 @@ const service = {
     try {
       let result: InsertedResult;
       // 품목 조회해서 없을 경우 insert
-      const itemCode = `${params.CALL_ID}${(params.TAG_ID && `&${params.TAG_ID}`) || ''}`;
+      const itemCode = params.CALL_TYPE;
 
       const existItem = await itemDao.selectOneCode({ code: itemCode });
       if (!existItem) {

@@ -150,7 +150,7 @@ WorkOrder.init(
       type: DataTypes.STRING(255),
     },
     type: {
-      type: DataTypes.STRING(3),
+      type: DataTypes.STRING(10),
     },
     isMissionOrder: {
       type: DataTypes.BOOLEAN,

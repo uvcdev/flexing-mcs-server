@@ -210,8 +210,8 @@ router.put(
       logging.REQUEST_PARAM(logFormat);
 
       // 입력값 체크
-      if (!(typeof params.facilityGroupId === 'number' && params.facilityGroupId > 0) || !params.code || !params.name) {
-        const err = new ErrorClass(resCode.BAD_REQUEST_NOTNULL, 'Not allowed null (facilityGroupId, code, name)');
+      if (!params.code || !params.name) {
+        const err = new ErrorClass(resCode.BAD_REQUEST_NOTNULL, 'Not allowed null (code, name)');
 
         const resJson = resError(err);
         logging.RESPONSE_DATA(logFormat, resJson);

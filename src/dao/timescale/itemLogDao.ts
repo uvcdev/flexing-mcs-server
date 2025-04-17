@@ -80,12 +80,12 @@ const itemLogDao = {
     // DB에 넘길 최종 쿼리 세팅
     const setQuery: ItemLogSelectListQuery = {};
     // 1. where조건 세팅
-    if (params.trackingLogId) {
-      setQuery.where = {
-        ...setQuery.where,
-        trackingLogId: params.trackingLogId, // '=' 검색
-      }
-    }
+    // if (params.trackingLogId) {
+    //   setQuery.where = {
+    //     ...setQuery.where,
+    //     trackingLogId: params.trackingLogId, // '=' 검색
+    //   }
+    // }
     if (params.itemCode) {
       setQuery.where = {
         ...setQuery.where,
