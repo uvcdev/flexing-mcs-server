@@ -10,7 +10,7 @@ import { logging } from './logging';
 import opcuaUtil from "./opcuaUtil";
 import { EQP_WCS } from "./eqpCheckUtil";
 import { RedisKeys, useRedisUtil } from "./redisUtil";
-import { beforeSendInCallInfoForWms } from "./process/call";
+import { CallInfoForWms } from "./process/wmsCallInfo";
 // export type WorkOrderStats = {
 //   id: number;
 //   code: string;
@@ -284,12 +284,12 @@ export const useCallRegisterUtil = () => {
     // CallCancel();
 
     // 시리얼 기준 설비레디스 가져와서 
-    const ackInCallList = await redisUtil.hgetAllObject<beforeSendInCallInfoForWms>(RedisKeys.InfoAckInCallByCallId) || [];
+    const ackInCallList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.InfoAckInCallByCallId) || [];
     for (let i = 0, length = ackInCallList.length; i < length; i++) {
       const ackInCallInfo = ackInCallList[i]
     }
 
-    const ackOutCallList = await redisUtil.hgetAllObject<beforeSendInCallInfoForWms>(RedisKeys.InfoAckOutCallByCallId) || [];
+    const ackOutCallList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.InfoAckOutCallByCallId) || [];
     for (let i = 0, length = ackOutCallList.length; i < length; i++) {
       const ackOutCallInfo = ackOutCallList[i]
     }
@@ -306,15 +306,15 @@ export const useCallRegisterUtil = () => {
     //   }
     // ]);
 
-    // const beforeSendInCallInfoForWmsList = await redisUtil.hgetAllObject<beforeSendInCallInfoForWms>(RedisKeys.BeforeSendInCallInfoForWms) || [];
+    // const CallInfoForWmsList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.CallInfoForWms) || [];
 
-    // for (let i = 0, length = beforeSendInCallInfoForWmsList.length; i < length; i++) {
-    //   const beforeSendInCallInfoForWmsInfo = { ...beforeSendInCallInfoForWmsList[i] }
-    //   const systemName = beforeSendInCallInfoForWmsInfo.systemName || 'WMS';
+    // for (let i = 0, length = CallInfoForWmsList.length; i < length; i++) {
+    //   const CallInfoForWmsInfo = { ...CallInfoForWmsList[i] }
+    //   const systemName = CallInfoForWmsInfo.systemName || 'WMS';
 
-    //   delete beforeSendInCallInfoForWmsInfo['systemName']
+    //   delete CallInfoForWmsInfo['systemName']
 
-    //   // sendInCallInfoForWms(beforeSendInCallInfoForWmsInfo, systemName)
+    //   // sendInCallInfoForWms(CallInfoForWmsInfo, systemName)
     // }
   }
   return { callRegister, checkCallSave };
