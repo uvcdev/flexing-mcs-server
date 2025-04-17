@@ -39,11 +39,13 @@ export enum RedisKeys {
   InfoFacility = 'info_facility',
   InfoFacilityById = 'info_facility_by_id',
   // MBS
-  Heartbeat = 'heartbeat',
-  ReceivedAckCommandByCmdId = 'received_ack_command_by_cmd_id',
-  RemainingAckCommandByCmdId = 'remaining_ack_command_by_cmd_id',
-  BeforeSendOutCallInfoForWms = 'before_send_out_callinfo_for_wms',
-  BeforeSendInCallInfoForWms = 'before_send_in_callinfo_for_wms'
+  Heartbeat = 'heartbeat',   // HEARTBEAT 리스트
+  ReceivedAckCommandBySubjectCmdId = 'received_ack_command_by_subject_cmd_id',    // MQTT로 받은 WMS 데이터
+  RemainingAckCommandBySubjectCmdId = 'remaining_ack_command_by_subject_cmd_id',  // MQTT로 WMS에 보낸 데이터 ( ACK 판단 유무 )
+  InfoOutCallByCallId = 'info_out_call_by_call_id',         // out 설비에서 발생한 콜 ( WMS에 CALLINFO 요청 전 )
+  InfoAckOutCallByCallId = 'info_ack_out_call_by_call_id',  // out 설비 콜 중 WMS에서 ACK_CALLINFO를 받은 콜 
+  InfoInCallByCallId = 'info_in_call_by_call_id',           // in 설비에서 발생한 콜 ( WMS에 CALLINFO 요청 전 )
+  InfoAckInCallByCallId = 'info_ack_in_call_by_call_id'     // in 설비 콜 중 WMS에서 ACK_CALLINFO를 받은 콜 
 }
 export enum RedisSettingKeys {
   AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

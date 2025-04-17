@@ -103,6 +103,7 @@ export type WmsAckSetting = {
   data: {
     timeoutTimeSeconds: number; //  초, defalut: 30
     retryCount: number; // 횟수, defalut: 3 
+    retryTimeLimit: number; // 분 default: 60
   };
 };
 

@@ -130,3 +130,13 @@ export const isCurrentTimeFasterThanAnySeconds = (referenceTime: Date, anySecond
 
   return timeDifference >= (1000 * anySeconds)
 }
+
+export const isCurrentTimeFasterThanAnyMinutes = (referenceTime: Date, anyMinutes: number) => {
+  const currentTime = new Date();
+  const timeDifference = currentTime.getTime() - referenceTime.getTime();
+
+  console.log('timeDifference', timeDifference , 'anyMinutes', anyMinutes)
+
+
+  return timeDifference >= (1000 * 60 * anyMinutes);
+};

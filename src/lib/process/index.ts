@@ -6,8 +6,8 @@ dotenv.config();
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { sendAllHeartbeat } from '../heartbeat/sendHeartbeat';
 import { checkSystemConnectionStatus } from '../heartbeat/checkHeartbeat';
-import { checkReceivedAckCommand, checkRemainingAckCommand } from './ack';
-import { checkInCallInfoForWms } from './call';
+import { checkReceivedAckCommand, checkRemainingAckCommand } from './wmsAck';
+import { checkCallInfoForWms } from './wmsCallInfo';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
 
@@ -29,10 +29,10 @@ export const processMcs = async () => {
     await checkRemainingAckCommand()
 
     // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
-    // 1. 창고(반출) -> 설비(입고) - before out call 
-    await checkInCallInfoForWms()
+    // 1. 창고(반출) -> 설비(입고) - CALLINFO는 창고 기준 반출만 사용한다.  
+    await checkCallInfoForWms()
     // 2. 창고(반입) -> 설비(반출) - ~~
-    // await checkOutCallInfoForWms()
+
 
     // Call 처리 함수 ( runningWorkOderCalls )
 
