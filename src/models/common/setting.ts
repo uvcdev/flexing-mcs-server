@@ -97,13 +97,14 @@ export interface SettingDeleteParams {
   id?: SettingAttributes['id'];
 }
 
-export type WmsAckSetting = {
+export type WmsCommandSetting = {
   system: string;
   type: string;
   data: {
     timeoutTimeSeconds: number; //  초, defalut: 30
     retryCount: number; // 횟수, defalut: 3 
     retryTimeLimit: number; // 분 default: 60
+    retryWaitTimeMinutes: number; // 분 default: 5 -> n분 뒤에 재요청
   };
 };
 

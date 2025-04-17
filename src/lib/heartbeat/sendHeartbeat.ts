@@ -1,4 +1,4 @@
-import { makeMbsMqttHeader, sendMqtt, sendMbsMqtt, mbsMqttBody, mbsMqttHeader } from "../mqttUtil";
+import { makeMbsMqttHeader, sendMqtt, sendMbsMqtt, MbsMqttBody, MbsMqttHeader } from "../mqttUtil";
 import { generateUUIDNode } from "../hashUtil"
 import { formatDetailedDateTime } from "../usefullToolUtil";
 import { RedisKeys, useRedisUtil } from '../redisUtil';
@@ -14,7 +14,7 @@ const sendMcsHeartbeat = () => {
 
   const mqttHeader = makeMbsMqttHeader(topic)
   // mqtt Body의 Cmd_Id는 변경 가능성 높음
-  const mqttBody: mbsMqttBody = {
+  const mqttBody: MbsMqttBody = {
     Cmd_ID: mqttHeader.id
   }
 

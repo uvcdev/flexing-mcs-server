@@ -1,9 +1,9 @@
-import { separateMqttMessage, mbsMqttMesaage } from "../../mqttUtil"
-import { setReceivedAckCommand } from "../../process/ack"
+import { separateMqttMessage, MbsMqttMesaage } from "../../mqttUtil"
+import { setReceivedAckCommand } from "../../process/wmsAck"
 
 const systemTopic = 'PORT'
 
-const portPresenceStatust = (wmsName: string, messageMessage: mbsMqttMesaage) => {
+const portPresenceStatust = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsPortPresenceStatust')
 
   setReceivedAckCommand(systemTopic, wmsName, messageMessage)
@@ -14,10 +14,10 @@ const ackReqPortStateList = (wmsName: string) => {
 }
 
 
-export const wmsPort = (wmsName: string, messageJson: mbsMqttMesaage) => {
+export const wmsPort = (wmsName: string, messageJson: MbsMqttMesaage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
 
-  console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
+  // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
 
   if (subject === 'PORT_PRESENCE_STATUS') {
     portPresenceStatust(wmsName, messageJson)

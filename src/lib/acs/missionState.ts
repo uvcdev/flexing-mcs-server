@@ -1,5 +1,5 @@
-import { separateMqttMessage, mbsMqttMesaage } from "../mqttUtil"
-import { sendAckToWms } from "../process/ack";
+import { separateMqttMessage, MbsMqttMesaage } from "../mqttUtil"
+import { sendAckToWms } from "../process/wmsAck";
 
 const topic = 'MISSION_STATE'
 
@@ -39,7 +39,7 @@ export interface MissionFailed {
   mission: string;
 }
 
-const missionState = (acsName: string, messageJson: mbsMqttMesaage) => {
+const missionState = (acsName: string, messageJson: MbsMqttMesaage) => {
   console.log('catch acs missionState')
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
   // acs 물류 로그 저장
@@ -55,7 +55,7 @@ const allMissionState = (acsName: string) => {
   console.log('catch acs allMissionState')
 }
 
-const missionCompleted = (acsName: string, messageJson: mbsMqttMesaage) => {
+const missionCompleted = (acsName: string, messageJson: MbsMqttMesaage) => {
   console.log('catch acs missionCompleted')
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
   // acs 물류 로그 저장
@@ -67,7 +67,7 @@ const missionCompleted = (acsName: string, messageJson: mbsMqttMesaage) => {
   sendAckToWms(topic, subject, ackBody, acsName)
 }
 
-const missionFailed = (acsName: string, messageJson: mbsMqttMesaage) => {
+const missionFailed = (acsName: string, messageJson: MbsMqttMesaage) => {
   console.log('catch acs missionFailed')
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
   // acs 물류 로그 저장
@@ -80,10 +80,10 @@ const missionFailed = (acsName: string, messageJson: mbsMqttMesaage) => {
 }
 
 
-export const acsMissionState = (acsName: string, messageJson: mbsMqttMesaage) => {
+export const acsMissionState = (acsName: string, messageJson: MbsMqttMesaage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
 
-  console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
+  // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
 
   if (subject === 'MISSION_STATE') {
     missionState(acsName, messageJson)

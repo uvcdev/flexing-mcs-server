@@ -1,12 +1,12 @@
-import { WmsAckSetting } from "../../models/common/setting";
+import { WmsCommandSetting } from "../../models/common/setting";
 import { logging } from "../logging";
-import { makeMbsMqttHeader, mbsMqttBody, mbsMqttMesaage, sendMbsMqtt } from "../mqttUtil";
+import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from "../mqttUtil";
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from "../redisUtil";
 import { formatDetailedDateTime, isCurrentTimeFasterThanAnyMinutes, isCurrentTimeFasterThanAnySeconds } from "../usefullToolUtil";
 
 const redisUtil = useRedisUtil();
 
-const wmsAckSettingDefaultValue = {
+const WmsCommandSettingDefaultValue = {
   timeoutTimeSeconds: 30,     // 재시도 주기 시간  ( 초 )
   retryCount: 3,              // 기본 재시도 알람 기준 횟수
   retryTimeLimit: 60          // 재시도 MAX LIMIT 시간 ( 분 )
@@ -20,18 +20,18 @@ export interface RemainingAckCommand {
   updatedTime: Date;         // 업데이트 되는 시간
   systemTopic: string;       // systemTopic : CALL, PORT ...
   systemName: string;
-  message: mbsMqttMesaage;
+  message: MbsMqttMesaage;
 }
 
 export interface ReceivedAckCommand {
   subjectCmdId: string;      // [subject]-[Cmc_ID]
   systemTopic: string;       // systemTopic : CALL, PORT ...
   systemName: string;
-  message: mbsMqttMesaage;
+  message: MbsMqttMesaage;
 }
 
 // wms
-export const sendAckToWms = (topic: string, subject: string, ackBody: mbsMqttBody, systemName: string) => {
+export const sendAckToWms = (topic: string, subject: string, ackBody: MbsMqttBody, systemName: string) => {
   const mqttHeader = makeMbsMqttHeader(subject);
   if (systemName) {
     sendMbsMqtt(topic, mqttHeader, ackBody, systemName)
@@ -42,13 +42,13 @@ export const sendAckToWms = (topic: string, subject: string, ackBody: mbsMqttBod
 
 // Set remainingAckCommand
 // MCS에서 WMS으로 보내는 MQTT 정보들에 대한 데이터 관리
-export const setRemainingAckCommand = (systemTopic: string, systemName: string, mqttMessage: mbsMqttMesaage) => {
+export const setRemainingAckCommand = (systemTopic: string, systemName: string, mqttMessage: MbsMqttMesaage) => {
   const cmdId = mqttMessage.body.Cmd_ID || null
   const subject = mqttMessage.header.subject || ''
 
   if (!cmdId) {
     logging.ACTION_ERROR({
-      filename: 'ack.ts',
+      filename: 'wmsAck.ts',
       error: `Cmd Id ${cmdId} is invalid `,
       params: null,
       result: false,
@@ -58,7 +58,7 @@ export const setRemainingAckCommand = (systemTopic: string, systemName: string, 
 
   if (!subject || subject === '') {
     logging.ACTION_ERROR({
-      filename: 'ack.ts',
+      filename: 'wmsAck.ts',
       error: `Subject ${subject} is invalid `,
       params: null,
       result: false,
@@ -83,13 +83,13 @@ export const setRemainingAckCommand = (systemTopic: string, systemName: string, 
 }
 
 // WMS에서 MCS로 들어온 데이터들에 대한 관리
-export const setReceivedAckCommand = (systemTopic: string, systemName: string, mqttMessage: mbsMqttMesaage) => {
+export const setReceivedAckCommand = (systemTopic: string, systemName: string, mqttMessage: MbsMqttMesaage) => {
   const cmdId = mqttMessage.body.Cmd_ID || null
   const subject = mqttMessage.header.subject || ''
 
   if (!cmdId) {
     logging.ACTION_ERROR({
-      filename: 'ack.ts',
+      filename: 'wmsAck.ts',
       error: `Cmd Id ${cmdId} is invalid `,
       params: null,
       result: false,
@@ -99,7 +99,7 @@ export const setReceivedAckCommand = (systemTopic: string, systemName: string, m
 
   if (!subject || subject === '') {
     logging.ACTION_ERROR({
-      filename: 'ack.ts',
+      filename: 'wmsAck.ts',
       error: `Subject ${subject} is invalid `,
       params: null,
       result: false,
@@ -165,10 +165,10 @@ export const checkRemainingAckCommand = async () => {
 
   const remainingAckCommandList = await redisUtil.hgetAllObject<RemainingAckCommand>(RedisKeys.RemainingAckCommandBySubjectCmdId) || [];
 
-  const wmsAckSetting = await redisUtil.hgetObject<WmsAckSetting>(RedisKeys.Setting, RedisSettingKeys.WmsAckSetting);
-  const ackTimeoutTimeSeconds = Number(wmsAckSetting?.data.timeoutTimeSeconds) || wmsAckSettingDefaultValue.timeoutTimeSeconds;
-  const ackRetryCount = Number(wmsAckSetting?.data.retryCount) || wmsAckSettingDefaultValue.retryCount;
-  const ackRetryTimeLimit = Number(wmsAckSetting?.data.retryTimeLimit) || wmsAckSettingDefaultValue.retryTimeLimit;
+  const WmsCommandSetting = await redisUtil.hgetObject<WmsCommandSetting>(RedisKeys.Setting, RedisSettingKeys.WmsCommandSetting);
+  const ackTimeoutTimeSeconds = Number(WmsCommandSetting?.data.timeoutTimeSeconds) || WmsCommandSettingDefaultValue.timeoutTimeSeconds;
+  const ackRetryCount = Number(WmsCommandSetting?.data.retryCount) || WmsCommandSettingDefaultValue.retryCount;
+  const ackRetryTimeLimit = Number(WmsCommandSetting?.data.retryTimeLimit) || WmsCommandSettingDefaultValue.retryTimeLimit;
 
   for (let i = 0; i < remainingAckCommandList.length; i++) {
     const remainingAckCommand = remainingAckCommandList[i];
@@ -176,7 +176,7 @@ export const checkRemainingAckCommand = async () => {
     const remainingAckCommandUpdatedDate = new Date(remainingAckCommand.updatedTime)
 
     // 생성 시간이 ackRetryTimeLimit 이후라면 해당 레디스 데이터 삭제 후 재전송 없앰
-    if (isCurrentTimeFasterThanAnyMinutes(remainingAckCommandCreatedDate, ackRetryTimeLimit)){
+    if (isCurrentTimeFasterThanAnyMinutes(remainingAckCommandCreatedDate, ackRetryTimeLimit)) {
       const remainingAckCommandKey = remainingAckCommand.subjectCmdId
 
       deleteRemainingAckCommand(remainingAckCommandKey)
@@ -184,7 +184,7 @@ export const checkRemainingAckCommand = async () => {
 
     // count가 setting의 retryCount 와 같은 경우 알람 발생
     // count보다 넘어가도 정해진 시간동안 계속 
-    if (Number(remainingAckCommand.count) === ackRetryCount+1 && remainingAckCommand.alarmStatus === false) {
+    if (Number(remainingAckCommand.count) === ackRetryCount + 1 && remainingAckCommand.alarmStatus === false) {
       // 알람 발생 - 알람 발생 => 해당 알람 발생 이후 만약 ack가 들어오면 알람 해제를 해줘야함
       // TODO - 알람 발생 로직 추가
       console.log("알람 발생")
@@ -218,15 +218,15 @@ const basicAckSubtopicList = [
   'TRANSFER_PAUSED',
   'TRANSFER_RESUMED',
   'TRANSFER_COMPLETED',
-  'CARRIER_TRANSFERRING', 
-  'CARRIER_IDREAD', 
-  'CARRIER_WAITIN', 
-  'CARRIER_WAITOUT', 
-  'CARRIER_STORED', 
-  'CARRIER_REMOVED', 
-  'CARRIER_INSTALL_COMPLETED', 
-  'CARRIER_REMOVE_COMPLETED', 
-  'PORT_PRESENCE_STATUS', 
+  'CARRIER_TRANSFERRING',
+  'CARRIER_IDREAD',
+  'CARRIER_WAITIN',
+  'CARRIER_WAITOUT',
+  'CARRIER_STORED',
+  'CARRIER_REMOVED',
+  'CARRIER_INSTALL_COMPLETED',
+  'CARRIER_REMOVE_COMPLETED',
+  'PORT_PRESENCE_STATUS',
   'CRANE_ACTIVE',
   'CRANE_IDLE',
   'FORK_ACTIVE',
@@ -248,28 +248,28 @@ export const checkReceivedAckCommand = async () => {
   for (let i = 0; i < receivedAckCommandList.length; i++) {
     const receivedAckCommand = receivedAckCommandList[i];
     const receivedAckCommandSubtopic = receivedAckCommand.message.header.subject
-    if (basicAckSubtopicList.includes(receivedAckCommandSubtopic)){
+    if (basicAckSubtopicList.includes(receivedAckCommandSubtopic)) {
       basicAckForInterfaceTest(receivedAckCommand, receivedAckCommandSubtopic)
-    } else if ( logicAckSubtopicList.includes(receivedAckCommandSubtopic)) {
+    } else if (logicAckSubtopicList.includes(receivedAckCommandSubtopic)) {
 
     } else {
 
     }
 
-    
+
   }
 }
 
 // interface 테스트 단순 회신을 위한 함수
-const basicAckForInterfaceTest =  (ackCommand: ReceivedAckCommand , subtopic: string) => {
-  if(!ackCommand.message.body.Cmd_ID){
+const basicAckForInterfaceTest = (ackCommand: ReceivedAckCommand, subtopic: string) => {
+  if (!ackCommand.message.body.Cmd_ID) {
     return;
   }
 
   const systemTopic = ackCommand.systemTopic
   const newSubtopic = `ACK_${subtopic}`
   const mqttHeader = makeMbsMqttHeader(newSubtopic)
-  const mqttBody: mbsMqttBody = {
+  const mqttBody: MbsMqttBody = {
     Cmd_ID: ackCommand.message.body.Cmd_ID,
     HCACK: "4"
   }
@@ -277,6 +277,6 @@ const basicAckForInterfaceTest =  (ackCommand: ReceivedAckCommand , subtopic: st
   const subjectCmdId = `${subtopic}-${ackCommand.message.body.Cmd_ID}`
 
   sendMbsMqtt(systemTopic, mqttHeader, mqttBody, ackCommand.systemName);
-  
+
   deleteReceivedAckCommand(subjectCmdId)
 }

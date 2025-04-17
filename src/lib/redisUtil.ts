@@ -42,6 +42,7 @@ export enum RedisKeys {
   Heartbeat = 'heartbeat',   // HEARTBEAT 리스트
   ReceivedAckCommandBySubjectCmdId = 'received_ack_command_by_subject_cmd_id',    // MQTT로 받은 WMS 데이터
   RemainingAckCommandBySubjectCmdId = 'remaining_ack_command_by_subject_cmd_id',  // MQTT로 WMS에 보낸 데이터 ( ACK 판단 유무 )
+  AbortedCommandForRetryBySubjectCmdId = 'aborted_command_for_retry_by_subject_cmd_id',  // 특정 이유로 n 분 뒤에 재전송 할 Command
   InfoOutCallByCallId = 'info_out_call_by_call_id',         // out 설비에서 발생한 콜 ( WMS에 CALLINFO 요청 전 )
   InfoAckOutCallByCallId = 'info_ack_out_call_by_call_id',  // out 설비 콜 중 WMS에서 ACK_CALLINFO를 받은 콜 
   InfoInCallByCallId = 'info_in_call_by_call_id',           // in 설비에서 발생한 콜 ( WMS에 CALLINFO 요청 전 )
@@ -54,7 +55,7 @@ export enum RedisSettingKeys {
   WorkPriorityBoost = `workPriorityBoost`, //작업 우선 순위 상향 설정 (기준시간: priorityBoostTimeLimit)
   DailyStartEndSchedule = `dailyStartEndSchedule`, // 주간 시업/종업
   NightlyStartEndSchedule = `nightlyStartEndSchedule`, // 야간 시업/종업
-  WmsAckSetting = 'wmsAckSetting', // WMS ACK 통신 관련 설정
+  WmsCommandSetting = 'WmsCommandSetting', // WMS ACK 통신 관련 설정
 }
 
 // export type AmrCurrentChargerTypes = {

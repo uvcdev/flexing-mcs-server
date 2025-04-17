@@ -8,6 +8,7 @@ import { sendAllHeartbeat } from '../heartbeat/sendHeartbeat';
 import { checkSystemConnectionStatus } from '../heartbeat/checkHeartbeat';
 import { checkReceivedAckCommand, checkRemainingAckCommand } from './wmsAck';
 import { checkCallInfoForWms } from './wmsCallInfo';
+import { checkAbortedCommandForRetry } from './wmsCommon';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
 
@@ -27,6 +28,9 @@ export const processMcs = async () => {
 
     // ACK 응답 여부 확인 ( ACK )
     await checkRemainingAckCommand()
+
+    // Aborted 된 작업 재전송 여부 확인
+    await checkAbortedCommandForRetry()
 
     // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
     // 1. 창고(반출) -> 설비(입고) - CALLINFO는 창고 기준 반출만 사용한다.  
