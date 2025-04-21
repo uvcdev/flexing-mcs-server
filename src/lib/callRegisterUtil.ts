@@ -10,7 +10,7 @@ import { logging } from './logging';
 import opcuaUtil from "./opcuaUtil";
 import { EQP_WCS } from "./eqpCheckUtil";
 import { RedisKeys, useRedisUtil } from "./redisUtil";
-import { CallInfoForWms } from "./process/call";
+import { CallInfoForWms } from "./process/wmsCallInfo";
 import { useWorkOrderUtil } from "./workOrderUtil";
 export type EqpCallStats = {
   CALL_ID: string;
@@ -234,14 +234,16 @@ export const useCallRegisterUtil = () => {
     // TODO: 동일 EQP ID에 존재하는 레거시 콜들 전부 삭제
     // CallCancel();
 
-    // 로봇할당 값 켜주기
+    // 시리얼 기준 설비레디스 가져와서
+    const ackInCallList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.InfoAckInCallByCallId) || [];
+    for (let i = 0, length = ackInCallList.length; i < length; i++) {
+      const ackInCallInfo = ackInCallList[i]
+    }
 
-    // 작업 생성 가능 레디스 조회해서 작업 생성
-    // const ackInCallList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.InfoAckInCallByCallId) || [];
-    // for (let i = 0, length = ackInCallList.length; i < length; i++) {
-    //   const ackInCallInfo = ackInCallList[i]
-    // }
-
+    const ackOutCallList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.InfoAckOutCallByCallId) || [];
+    for (let i = 0, length = ackOutCallList.length; i < length; i++) {
+      const ackOutCallInfo = ackOutCallList[i]
+    }
     // const callResponseWriteResult = await kepServerUtil.writeTagsValue([
     //   {
     //     nodeId: callResponse?.NODE_ID,
@@ -255,8 +257,16 @@ export const useCallRegisterUtil = () => {
     //   }
     // ]);
 
-    // 실제로 작업 생성?
+    // const CallInfoForWmsList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.CallInfoForWms) || [];
 
+    // for (let i = 0, length = CallInfoForWmsList.length; i < length; i++) {
+    //   const CallInfoForWmsInfo = { ...CallInfoForWmsList[i] }
+    //   const systemName = CallInfoForWmsInfo.systemName || 'WMS';
+
+    //   delete CallInfoForWmsInfo['systemName']
+
+    //   // sendInCallInfoForWms(CallInfoForWmsInfo, systemName)
+    // }
   }
   return { callRegister, checkCallSave };
 };

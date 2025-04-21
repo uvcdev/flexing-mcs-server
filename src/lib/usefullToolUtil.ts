@@ -130,3 +130,14 @@ export const isCurrentTimeFasterThanAnySeconds = (referenceTime: Date, anySecond
 
   return timeDifference >= (1000 * anySeconds)
 }
+
+export const isCurrentTimeFasterThanAnyMinutes = (referenceTime: Date, anyMinutes: number) => {
+  const currentTime = new Date();
+  const timeDifference = currentTime.getTime() - referenceTime.getTime();
+
+  return timeDifference >= (1000 * 60 * anyMinutes);
+};
+
+export const removeAckPrefix = (input: string): string => {
+  return input.replace(/^ACK_/, '');
+};

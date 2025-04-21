@@ -111,20 +111,20 @@ export enum MqttTopics {
   KepwareStatus = 'kepware_status'
 }
 
-export interface mbsMqttHeader {
+export interface MbsMqttHeader {
   id: string;
   time: string;
   subject: string;
 }
 
-export interface mbsMqttBody {
+export interface MbsMqttBody {
   Cmd_ID?: string;
   [key: string]: any;
 }
 
-export interface mbsMqttMesaage {
-  header: mbsMqttHeader;
-  body: mbsMqttBody;
+export interface MbsMqttMesaage {
+  header: MbsMqttHeader;
+  body: MbsMqttBody;
 }
 
 
@@ -623,7 +623,7 @@ export const sendMqtt = (subTopic: string, message: string): void => {
 };
 
 // wms mqtt 메세지 발송
-export const sendMbsMqtt = (systemTopic: string, header: mbsMqttHeader, body: mbsMqttBody, systemName?: string | null): void => {
+export const sendMbsMqtt = (systemTopic: string, header: MbsMqttHeader, body: MbsMqttBody, systemName?: string | null): void => {
   if (mqttConfig.host !== '') {
     // mqtt host가 등록된 경우에만 발송한다.
     let sendTopic = wmsMqttTopic;
@@ -632,7 +632,7 @@ export const sendMbsMqtt = (systemTopic: string, header: mbsMqttHeader, body: mb
     }
     sendTopic = sendTopic + '-' + systemTopic
 
-    const sendMessageObj: mbsMqttMesaage = {
+    const sendMessageObj: MbsMqttMesaage = {
       header: header,
       body: body
     }
@@ -651,7 +651,7 @@ export const sendMbsMqtt = (systemTopic: string, header: mbsMqttHeader, body: mb
   }
 };
 
-export const makeMbsMqttHeader = (subject: string): mbsMqttHeader => {
+export const makeMbsMqttHeader = (subject: string): MbsMqttHeader => {
   const id = generateUUIDNode();
   const time = formatDetailedDateTime(new Date());
 
@@ -662,7 +662,7 @@ export const makeMbsMqttHeader = (subject: string): mbsMqttHeader => {
   }
 }
 
-export const separateMqttMessage = (messageJson: mbsMqttMesaage) => {
+export const separateMqttMessage = (messageJson: MbsMqttMesaage) => {
   const messageId = messageJson.header.id;
   const subject = messageJson.header.subject;
   const messageBody = messageJson.body;

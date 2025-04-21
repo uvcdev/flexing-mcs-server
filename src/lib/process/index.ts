@@ -6,8 +6,9 @@ dotenv.config();
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { sendAllHeartbeat } from '../heartbeat/sendHeartbeat';
 import { checkSystemConnectionStatus } from '../heartbeat/checkHeartbeat';
-import { checkReceivedAckCommand, checkRemainingAckCommand } from './ack';
-import { checkInCallInfoForWms } from './call';
+import { checkReceivedAckCommand, checkRemainingAckCommand } from './wmsAck';
+import { checkCallInfoForWms } from './wmsCallInfo';
+import { checkAbortedCommandForRetry } from './wmsCommon';
 import { useCallRegisterUtil } from "../callRegisterUtil";
 import { useEqpCheckUtil } from '../eqpCheckUtil';
 
@@ -35,18 +36,23 @@ export const processMcs = async () => {
     // await checkReceivedAckCommand()
 
     // ACK 응답 여부 확인 ( ACK )
-    // await checkRemainingAckCommand()
+    await checkRemainingAckCommand()
+
+    // Aborted 된 작업 재전송 여부 확인
+    await checkAbortedCommandForRetry()
 
     // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
-    // 1. 창고(반출) -> 설비(입고) - before out call 
-    // await checkInCallInfoForWms()
+    // 1. 창고(반출) -> 설비(입고) - CALLINFO는 창고 기준 반출만 사용한다.  
+    await checkCallInfoForWms()
     // 2. 창고(반입) -> 설비(반출) - ~~
-    // await checkOutCallInfoForWms()
+
 
     // ACK_CALL_INFO 판단해서 콜 정보 저장과 EQP에 응답 데이터 Write
     await useCallRegisterUtil().checkCallSave()
     // todo4: 창고로부터 ACK 오면 EQP_Call_Save 함수와 같은 기능 실행
 
+
+    // Call 처리 함수 ( runningWorkOderCalls )
 
     //  () - Call 처리 함수 ( runningWorkOderCalls )
     //  () - To 작업 처리 함수
