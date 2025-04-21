@@ -20,24 +20,24 @@ export interface CallInfoBody {
   callPriority: string;  // Call 우선 순위 ex) 99  ( 1 ~ 99 -> PLC Call Priority Bit On : 99, Off :1)
 }
 
-// beforeSendInCallInfoForWms 는 설비 반입 (창고 반출) 콜 중 아직 처리되지 않은 콜 목록임
+// CallInfoForWms 는 설비 반입 (창고 반출) 콜 중 아직 처리되지 않은 콜 목록임
 // key 값은 EQP CALL ID
-export interface beforeSendInCallInfoForWms extends CallInfoBody {
+export interface CallInfoForWms extends CallInfoBody {
   systemName?: string;    // 설비랑 상호작용 하는 창고 이름
 }
 
 // Redis에 있는 리스트 중 출고 정보 CallInfo를 전송 해야 하는 경우 확인
 // WMS 입장에서 in은 창고 배출 , WMS 입장에서 in은 창고 입고
 export const checkInCallInfoForWms = async () => {
-  // const beforeSendInCallInfoForWmsList = await redisUtil.hgetAllObject<beforeSendInCallInfoForWms>(RedisKeys.BeforeSendInCallInfoForWms) || [];
+  // const CallInfoForWmsList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.CallInfoForWms) || [];
 
-  // for (let i = 0, length = beforeSendInCallInfoForWmsList.length; i < length; i++) {
-  //   const beforeSendInCallInfoForWmsInfo = { ...beforeSendInCallInfoForWmsList[i] }
-  //   const systemName = beforeSendInCallInfoForWmsInfo.systemName || 'WMS';
+  // for (let i = 0, length = CallInfoForWmsList.length; i < length; i++) {
+  //   const CallInfoForWmsInfo = { ...CallInfoForWmsList[i] }
+  //   const systemName = CallInfoForWmsInfo.systemName || 'WMS';
 
-  //   delete beforeSendInCallInfoForWmsInfo['systemName']
+  //   delete CallInfoForWmsInfo['systemName']
 
-  //   sendInCallInfoForWms(beforeSendInCallInfoForWmsInfo, systemName)
+  //   sendInCallInfoForWms(CallInfoForWmsInfo, systemName)
   // }
 }
 
