@@ -299,6 +299,15 @@ export interface WorkOrderDeleteParams {
   id?: number;
 }
 
+export interface PendingWorkOrderAttributes {
+  callId?: string;
+  fromFacilityName?: string;
+  toFacilityName?: string;
+  itemName?: string;
+  type: 'IN' | 'OUT' | 'MISSION';
+  isMissionOrder?: boolean;
+}
+
 // include attributes
 export const WorkOrderAttributesInclude = [
   'id',

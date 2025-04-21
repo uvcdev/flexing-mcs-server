@@ -1,6 +1,7 @@
 import { logging } from "../../logging"
 import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody } from "../../mqttUtil"
 import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand } from "../../process/wmsAck"
+import { CallInfoBody } from "../../process/wmsCallInfo"
 import { setAbortedCommandForRetry } from "../../process/wmsCommon"
 import { RedisKeys, useRedisUtil } from "../../redisUtil"
 import { removeAckPrefix } from "../../usefullToolUtil"
@@ -50,7 +51,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
   }
 
   const eqpCallId = remainingCommandInfo.message.body.Call_ID
-  const callInfoData = remainingCommandInfo.message.body
+  const callInfoData = remainingCommandInfo.message.body as CallInfoBody
 
   // 2. CALLINFO에 해당하는 RemainingAckCommandBySubjectCmdId 삭제
   deleteRemainingAckCommand(remainingAckCommandSubjectCmdId)
@@ -61,7 +62,6 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
     // 물류 로그 기록, InfoAckInCallByCallId 레디스 기록
     case '4':
       // 물류 로그 기록
-
       // InfoAckInCallByCallId 레디스 기록
       redisUtil.hset(RedisKeys.InfoAckInCallByCallId, eqpCallId, JSON.stringify(callInfoData))
 
