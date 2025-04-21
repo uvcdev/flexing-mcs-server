@@ -194,3 +194,8 @@ ALTER TABLE public.work_orders ADD mission_end_date timestamptz NULL;
 
 ```
 - 
+
+## v0.2.2-ljk
+- 설비 입고, 창고 출고 로직 마무리
+  - TOPIC: PORT 관련 로직 추가
+  - CALLINFO 코드 오류 수정
