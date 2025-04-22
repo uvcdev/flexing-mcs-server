@@ -27,6 +27,7 @@ import { acsMissionState } from './acs/missionState';
 import { acsAlarmState } from './acs/alarmState';
 import { acsAckMissionCommand } from './acs/ackMissionCommand';
 import { wmsOnline } from './wms/mqtt/online';
+import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/wmsBranch';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -489,6 +490,25 @@ export const receiveMqtt = (): void => {
               } else {
                 const params = messageJson as WorkOrderAttributesDeep;
                 await workOrderService.stateCheckAndEdit(params, makeLogFormat({} as RequestLog));
+              }
+            }
+            // AMR 미션 결정지 도착
+            if (topicSplit.length === 3 && topicSplit[1] === 'mission-order') {
+              const itemCode = topicSplit[2];
+
+              const messageJson = JSON.parse(message);
+              logging.MQTT_DEBUG({
+                title: 'imcs message - mission order',
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                // void itemLogDao.insert(messageJson);
+                // mission order 수집 구역
+                await receiveBranchInfoFromACS(messageJson as MqttBranchInfoDataFromAcs)
+              } catch (error) {
+                console.log('logging.missionOrder', error);
               }
             }
           }

@@ -7,11 +7,15 @@ import { formatDetailedDateTime, isCurrentTimeFasterThanAnyMinutes, isCurrentTim
 const redisUtil = useRedisUtil();
 
 const WmsCommandSettingDefaultValue = {
-  timeoutTimeSeconds: 30,     // 재시도 주기 시간  ( 초 )
+  // timeoutTimeSeconds: 30,     // 재시도 주기 시간  ( 초 )
+  timeoutTimeSeconds: 300,     // 재시도 주기 시간  ( 초 )
   retryCount: 3,              // 기본 재시도 알람 기준 횟수
   retryTimeLimit: 60          // 재시도 MAX LIMIT 시간 ( 분 )
 }
 
+export interface DeletedData {
+  [key: string]: any;
+}
 export interface RemainingAckCommand {
   subjectCmdId: string;      // [subject]-[Cmc_ID]
   count: number;             // 호출 회수
@@ -21,6 +25,7 @@ export interface RemainingAckCommand {
   systemTopic: string;       // systemTopic : CALL, PORT ...
   systemName: string;
   message: MbsMqttMesaage;
+  deletedData?: DeletedData
 }
 
 export interface ReceivedAckCommand {
@@ -42,7 +47,7 @@ export const sendAckToWms = (topic: string, subject: string, ackBody: MbsMqttBod
 
 // Set remainingAckCommand
 // MCS에서 WMS으로 보내는 MQTT 정보들에 대한 데이터 관리
-export const setRemainingAckCommand = (systemTopic: string, systemName: string, mqttMessage: MbsMqttMesaage) => {
+export const setRemainingAckCommand = (systemTopic: string, systemName: string, mqttMessage: MbsMqttMesaage, deletedData?: DeletedData) => {
   const cmdId = mqttMessage.body.Cmd_ID || null
   const subject = mqttMessage.header.subject || ''
 
@@ -77,6 +82,7 @@ export const setRemainingAckCommand = (systemTopic: string, systemName: string, 
     systemName: systemName,
     systemTopic: systemTopic,
     message: mqttMessage,
+    deletedData: deletedData || {},
   }
 
   redisUtil.hset(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId, JSON.stringify(remainingAckCommand))

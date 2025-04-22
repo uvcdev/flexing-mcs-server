@@ -18,7 +18,7 @@ export interface CallInfoBody {
   Call_Type: string;      // Call 호출 요청 기종  ex) 99  ( 0~65537 )
   Caller: string;        // Call 호출 PLC  ex) BM170  ( EQP NAME )
   Call_Quantity: string;  // Call 요청 수량 ex) 1   ( 1 ~ 99 -> 부품창고 : 2, BMA창고 :1 사용 )
-  Call_priority: string;  // Call 우선 순위 ex) 99  ( 1 ~ 99 -> PLC Call Priority Bit On : 99, Off :1)
+  Call_Priority: string;  // Call 우선 순위 ex) 99  ( 1 ~ 99 -> PLC Call Priority Bit On : 99, Off :1)
 }
 
 // 창고 콜 정보 인터페이스 (공통) - 설비 반입/반출 콜 중 아직 처리되지 않은 콜 목록
@@ -36,22 +36,23 @@ export const checkCallInfoForWms = async () => {
 
     delete callInfo['systemName'];
 
-    sendCallInfoForWms(callInfo, systemName);
+    sendCallInfoToWms(callInfo, systemName);
   }
 };
 
 // 공통 함수: 콜 정보를 WMS로 전송하는 함수
-const sendCallInfoForWms = (callInfo: CallInfoBody, systemName: string) => {
+const sendCallInfoToWms = (callInfo: CallInfoBody, systemName: string) => {
   const topic = 'CALL';
+  const subject = 'CALL_INFO'
 
   const callInfoData = { ...callInfo };
   // 처음 들어온 정보는 cmd id가 존재하지 않음, 이미 있는 메세지는 cmdid 존재 (cmdid 동일하게 재요청)
   if (callInfoData.Cmd_ID === '') {
-    callInfo.Cmd_ID = generateUUIDNode();
+    callInfoData.Cmd_ID = generateUUIDNode();
   }
 
   // CallInfo MQTT 전송 전 유효성 검사
-  if (!callInfo.Cmd_ID || callInfo.Cmd_ID === '') {
+  if (!callInfoData.Cmd_ID || callInfoData.Cmd_ID === '') {
     // cmdId는 필수 값이기 때문에 없으면 에러 발생
     logging.ACTION_ERROR({
       filename: `call.ts - CallInfo`,
@@ -73,11 +74,14 @@ const sendCallInfoForWms = (callInfo: CallInfoBody, systemName: string) => {
     return;
   }
 
-  const mqttHeader = makeMbsMqttHeader(topic);
+  const mqttHeader = makeMbsMqttHeader(subject);
   const mqttBody: MbsMqttBody = callInfoData;
 
   // CALLINFO MQTT 데이터 전송
   sendMbsMqtt(topic, mqttHeader, mqttBody, systemName);
+
+  // CALLINFO 보내고 나서 해당 redis 값 삭제
+  deleteInfoInCallByCallId(callInfoData.Call_ID)
 
   // CALLINFO에 대한 ack 초기값 설정
   setRemainingAckCommand(topic, systemName, { header: mqttHeader, body: mqttBody });
@@ -85,3 +89,17 @@ const sendCallInfoForWms = (callInfo: CallInfoBody, systemName: string) => {
   // ITEM LOG 기록
   // TODO - 물류 로그에 대한 redis 값 업데이트
 };
+
+
+// ACK 명령을 입력 받아서 remainingAckCommand 삭제
+export const deleteInfoInCallByCallId = (callId: string) => {
+  // logging 처리는 이 함수를 사용하는 쪽에서 사용
+  // TODO-ljk) ack 유효성 검사는 로직이 잡히면 추가될 예정 
+  redisUtil.hdel(RedisKeys.InfoInCallByCallId, callId);
+}
+
+export const deleteInfoAckInCallByCallId = (callId: string) => {
+  // logging 처리는 이 함수를 사용하는 쪽에서 사용
+  // TODO-ljk) ack 유효성 검사는 로직이 잡히면 추가될 예정 
+  redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId);
+}

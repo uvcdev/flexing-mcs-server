@@ -197,3 +197,8 @@ ALTER TABLE public.work_orders ADD mission_end_date timestamptz NULL;
 ```sql
 ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 ```
+
+## v0.2.2-ljk
+- 설비 입고, 창고 출고 로직 마무리
+  - TOPIC: PORT 관련 로직 추가
+  - CALLINFO 코드 오류 수정

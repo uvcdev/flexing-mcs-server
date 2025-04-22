@@ -12,6 +12,7 @@ import { checkAbortedCommandForRetry } from './wmsCommon';
 import { useCallRegisterUtil } from "../callRegisterUtil";
 import { useEqpCheckUtil } from '../eqpCheckUtil';
 import { useWorkOrderUtil } from '../workOrderUtil';
+import { checkBranchInfoReqForWms } from './wmsBranch';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
 const heapUse = () => {
@@ -19,7 +20,7 @@ const heapUse = () => {
   const heapUsedMB = (memoryUsage.heapUsed / 1024 / 1024).toFixed(2);
   const heapTotalMB = (memoryUsage.heapTotal / 1024 / 1024).toFixed(2);
 
-  console.log(`heap use: ${heapUsedMB} MB / ${heapTotalMB} MB`);
+  // console.log(`heap use: ${heapUsedMB} MB / ${heapTotalMB} MB`);
 }
 let counter = 0;
 export const processMcs = async () => {
@@ -34,7 +35,7 @@ export const processMcs = async () => {
     }
 
     // 수집한 ack 데이터 처리 ( ACK )
-    // await checkReceivedAckCommand()
+    await checkReceivedAckCommand()
 
     // ACK 응답 여부 확인 ( ACK )
     await checkRemainingAckCommand()
@@ -45,8 +46,8 @@ export const processMcs = async () => {
     // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
     // 1. 창고(반출) -> 설비(입고) - CALLINFO는 창고 기준 반출만 사용한다.  
     await checkCallInfoForWms()
-    // 2. 창고(반입) -> 설비(반출) - ~~
-
+    // 2. 창고(반입) -> 설비(반출) - BRANCH_INFO_REQ 는 창고 기준 반입만 사용한다. ( 창고 반입은 모두 미션 결정지 )
+    await checkBranchInfoReqForWms()
 
     // ACK_CALL_INFO 판단해서 콜 정보 저장과 EQP에 응답 데이터 Write
     // await useCallRegisterUtil().checkCallSave()
