@@ -64,6 +64,8 @@ const portPresenceStatus = async (wmsName: string, messageMessage: MbsMqttMesaag
     toFacilityName: portId,
     type: 'IN',
     isMissionOrder: false,
+    callPriority: infoAckInCallByCallId.Call_Priority,
+    callType: infoAckInCallByCallId.Call_Type
   }
 
   // pending workOrder 레디스 정보 저장

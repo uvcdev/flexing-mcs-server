@@ -95,6 +95,9 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
         toFacilityName: carrierInfo.NewDest,
         type: 'OUT',
         isMissionOrder: true,
+        // TODO - CALL 정보 수집되는 것 보고 결정 예정
+        callPriority: '',
+        callType: carrierInfo.Call_Type,
       }
 
       redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder))

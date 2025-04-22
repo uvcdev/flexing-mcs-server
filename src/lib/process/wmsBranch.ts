@@ -51,6 +51,18 @@ export interface DeletedBranchInfoReq {
   workOrderId?: number;
 }
 
+export interface MqttBranchInfoDataFromAcs {
+  workOrderCode: string;
+  workOrderId: string;
+  amrName: string;
+  missionOrderCode: string;
+  waitPointCode: string;
+  carrierId: string;
+  carrierState: string;
+  callType: string;
+  mode: 'auto' | 'manual'
+}
+
 // 공통 함수: Redis에서 미션 결정지 콜 정보를 확인하고 처리하는 함수
 export const checkBranchInfoReqForWms = async () => {
   const branchInfoList = await redisUtil.hgetAllObject<BranchInfoReqForWms>(RedisKeys.InfoOutCallByCallId) || [];
@@ -131,4 +143,42 @@ export const deleteInfoAckOutCallByCallId = (callId: string) => {
   // logging 처리는 이 함수를 사용하는 쪽에서 사용
   // TODO-ljk) ack 유효성 검사는 로직이 잡히면 추가될 예정 
   redisUtil.hdel(RedisKeys.InfoAckOutCallByCallId, callId);
+}
+
+// 미션 오더 수집 후 해당 데이터 Redis로 수집
+export const receiveBranchInfoFromACS = async (branchInfoMqttMessage: MqttBranchInfoDataFromAcs) => {
+  if (branchInfoMqttMessage.mode === 'auto') {
+    const callId = branchInfoMqttMessage.workOrderCode?.split('$')[0] || ''
+
+    if (!callId || callId === '') {
+      logging.ACTION_ERROR({
+        filename: `wmsBranch.ts - receiveBranchInfoFromACS`,
+        error: `callId(${callId}) is invalid value`,
+        params: null,
+        result: false,
+      });
+    }
+
+    const branchInfoReqForWmsParams: BranchInfoReqForWms = {
+      Cmd_ID: '',
+      Call_ID: callId,
+      AMRID: branchInfoMqttMessage.amrName,
+      MissionID: branchInfoMqttMessage.workOrderCode,
+      CurrentLocation: branchInfoMqttMessage.waitPointCode,
+      CarrierList: [
+        {
+          CarrierID: branchInfoMqttMessage.carrierId,
+          CarrierState: branchInfoMqttMessage.carrierState,
+          Call_Type: branchInfoMqttMessage.callType
+        }
+      ]
+
+    }
+    redisUtil.hset(RedisKeys.InfoOutCallByCallId, callId, JSON.stringify(branchInfoReqForWmsParams))
+  }
+  // 수동 작업 지시 미션 결정지에서는 어떻게 처리 할까 ...
+  else if (branchInfoMqttMessage.mode === 'manual') {
+
+  }
+
 }

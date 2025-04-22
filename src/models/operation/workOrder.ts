@@ -306,6 +306,8 @@ export interface PendingWorkOrderAttributes {
   itemName?: string;
   type: 'IN' | 'OUT' | 'MISSION';
   isMissionOrder?: boolean;
+  callPriority?: string;
+  callType?: string;
 }
 
 // include attributes
