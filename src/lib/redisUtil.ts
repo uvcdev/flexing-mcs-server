@@ -53,6 +53,7 @@ export enum RedisKeys {
   InfoInCallByCallId = 'info_in_call_by_call_id',           // in 설비에서 발생한 콜 ( WMS에 CALLINFO 요청 전 )
   InfoAckInCallByCallId = 'info_ack_in_call_by_call_id',     // in 설비 콜 중 WMS에서 ACK_CALLINFO를 받은 콜 
   InfoChangedTagById = 'info_changed_tag_by_id',
+  InfoPendingWorkOrderByCallId = 'info_pending_work_order_by_call_id'
 }
 export enum RedisSettingKeys {
   // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

@@ -5,6 +5,9 @@ import Facility from 'models/operation/facility';
 import Amr from 'models/common/amr';
 import { calculateDurationInSeconds } from './dateUtil';
 import { EqpCallStats } from "./callRegisterUtil";
+import { RedisKeys, useRedisUtil } from './redisUtil';
+import { service as workOrderService } from '../service/operation/workOrderService';
+import { logging } from './logging';
 export type WorkOrderStats = {
   id: number;
   code: string;
@@ -27,7 +30,7 @@ const dailyWorkOrderStats: DailyWorkOrderStats = {
   Amr: {},
 };
 
-type McsWorkOrderRequestType = {
+export type McsWorkOrderRequestType = {
   TX_ID: string;
   ZONE_ID: string;
   TYPE: 'IN' | 'OUT' | 'MISSION'; // 반출 OUT, 반입 IN , 미션 MISSION
@@ -41,24 +44,76 @@ type McsWorkOrderRequestType = {
   IS_MISSION_ORDER: string; // 작업 지시의 mission order 여부
 };
 
+export type McsPendingWorkOrderRequestType = {
+  callId: string;
+  fromFacilityName: string;
+  toFacilityName: string;
+  type: 'IN' | 'OUT' | 'MISSION';
+  typeofisMissionOrder: string;
+  callPriority: string;
+  callType: string;
+};
+
 export const useWorkOrderUtil = () => {
+  const redisUtil = useRedisUtil();
+  // MissionWorkOrder 는 바로 작업 생성
   const createMissionWorkOrder = async (callInfo: EqpCallStats) => {
     const params: McsWorkOrderRequestType =
     {
+      TX_ID: "",
+      ZONE_ID: "",
       TYPE: 'MISSION',
-      CALL_ID: callInfo.CALL_ID, // 작업지시코드 뒤 4자리
       EQP_ID: callInfo.Caller,
       EQP_CALL_ID: callInfo.EQP_CALL_ID,
-      PORT_ID: callInfo.Caller,
+      PORT_ID: '',
+      CALL_ID: callInfo.CALL_ID, // 작업지시코드 뒤 4자리
+      TAG_ID: "",
       CALL_PRIORITY: callInfo.Call_Priority,
       CALL_TYPE: callInfo.Call_Type,
       IS_MISSION_ORDER: 'true',
-      TAG_ID: "",
-      TX_ID: "",
-      ZONE_ID: ""
     }
+  }
+  const createWorkOrder = async () => {
+    const workOrderList = await redisUtil.hgetAllObject<McsPendingWorkOrderRequestType>(RedisKeys.InfoPendingWorkOrderByCallId);
+    console.log("🚀 ~ createWorkOrder ~ workOrderList:", workOrderList)
+    if (workOrderList) {
+      for (const workOrder of workOrderList) {
+        const params: McsWorkOrderRequestType =
+        {
+          TYPE: workOrder.type,
+          CALL_ID: parseInt(workOrder.callId.toString().slice(-4), 10).toString(), // 작업지시코드 뒤 4자리
+          EQP_ID: workOrder.fromFacilityName,
+          EQP_CALL_ID: workOrder.callId,
+          PORT_ID: workOrder.type === 'OUT' ? workOrder.toFacilityName : '', // 있어야함
+          CALL_PRIORITY: workOrder.callPriority,
+          CALL_TYPE: workOrder.callType,
+          IS_MISSION_ORDER: workOrder.type === 'MISSION' ? 'true' : 'false',
+          TAG_ID: "",
+          TX_ID: "",
+          ZONE_ID: ""
+        }
+        // sendMqtt('workorder', JSON.stringify(params));
+        const message = JSON.stringify(params)
+        const messageJson = JSON.parse(message)
+        const messageTopic = 'acs/workorder'
 
-    sendMqtt('workorder', JSON.stringify(params));
+        console.log("🚀 ~ createWorkOrder ~ messageJson:", messageJson)
+        await workOrderService.regWorkOrder(messageJson);
+
+        try {
+          sendMqtt(messageTopic, message);
+        } catch (err) {
+          logging.MQTT_ERROR({
+            title: 'mqtt message error',
+            topic: messageTopic,
+            message: messageJson,
+            error: err,
+          });
+        }
+
+        redisUtil.hdel(RedisKeys.InfoPendingWorkOrderByCallId, params.EQP_CALL_ID);
+      }
+    }
   }
   const initializeWorkOrderStats = (id: number, code: string, system: string, name: string): WorkOrderStats => ({
     id,
@@ -194,5 +249,5 @@ export const useWorkOrderUtil = () => {
     sendMqtt(MqttTopics.WorkOrderStats, JSON.stringify(getStats()))
   };
 
-  return { createMissionWorkOrder, getStats, setStats, setInitStats, initStats, sendStats };
+  return { createMissionWorkOrder, createWorkOrder, getStats, setStats, setInitStats, initStats, sendStats };
 };

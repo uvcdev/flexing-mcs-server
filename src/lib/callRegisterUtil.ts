@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { AttributeIds } from "node-opcua-client";
 import { WorkOrderAttributesDeep, WorkOrderUpdateByCodeParams } from 'models/operation/workOrder';
-import { MqttTopics, sendMqtt } from './mqttUtil';
 import Facility, { FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
 import Amr from 'models/common/amr';
 import { calculateDurationInSeconds } from './dateUtil';
@@ -9,9 +8,10 @@ import { TagValue, useKepServerUtil } from "./kepServerUtil";
 import { logging } from './logging';
 import opcuaUtil from "./opcuaUtil";
 import { EQP_WCS } from "./eqpCheckUtil";
+import { formatToDateCode } from "./usefullToolUtil";
 import { RedisKeys, useRedisUtil } from "./redisUtil";
 import { CallInfoForWms } from "./process/wmsCallInfo";
-import { useWorkOrderUtil } from "./workOrderUtil";
+import { useWorkOrderUtil, McsWorkOrderRequestType } from "./workOrderUtil";
 export type EqpCallStats = {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -148,8 +148,9 @@ export const useCallRegisterUtil = () => {
       const callInfoString = JSON.stringify(callInfo);
       // 미션결정지 여부 판단
       if (facilityInfo?.isMissionOrderCapable) {
-        // 작업생성 가능 레디스에 저장
+        // useWorkOrderUtil().createMissionWorkOrder()
         // await redisUtil.hset(RedisKeys.InfoAckOutCallByCallId, callInfo.EQP_CALL_ID, callInfoString);
+
       } else {
         if (facilityInfo?.type === 'in') {
           await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.EQP_CALL_ID, callInfoString);
@@ -214,7 +215,7 @@ export const useCallRegisterUtil = () => {
       const callTimeMonthDayValue = callTimeMonthDay?.value.toString() || "0";
 
       // callTimeMonthDay 값을 4자릿수로 변환
-      const callTimeMonthDayStr = callTimeMonthDayValue.toString().padStart(4, '0');
+      const callTimeMonthDayStr = formatToDateCode(Number(callTimeMonthDayValue)).toString()
       const callCountValueStr = callCountValue.toString().padStart(4, '0');
 
       const result = [];
@@ -223,7 +224,6 @@ export const useCallRegisterUtil = () => {
         result.push(callId);
       }
 
-      console.log("🚀 ~ createEQPCallId ~ result:", result)
       return result;
     } catch (error) {
       console.error("Error creating EQP Call ID:", error);
@@ -233,17 +233,19 @@ export const useCallRegisterUtil = () => {
   const checkCallSave = async () => {
     // TODO: 동일 EQP ID에 존재하는 레거시 콜들 전부 삭제
     // CallCancel();
+    // const processCallList = async (redisKey: string): Promise<void> => {
+    //   const callList = await redisUtil.hgetAllObject<McsWorkOrderRequestType>(redisKey) || [];
+    //   callList.forEach((callInfo) => {
+    //     useWorkOrderUtil().createWorkOrder(callInfo);
+    //   });
+    // };
 
-    // 시리얼 기준 설비레디스 가져와서
-    const ackInCallList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.InfoAckInCallByCallId) || [];
-    for (let i = 0, length = ackInCallList.length; i < length; i++) {
-      const ackInCallInfo = ackInCallList[i]
-    }
+    // await processCallList(RedisKeys.InfoAckInCallByCallId);
+    // await processCallList(RedisKeys.InfoAckOutCallByCallId);
 
-    const ackOutCallList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.InfoAckOutCallByCallId) || [];
-    for (let i = 0, length = ackOutCallList.length; i < length; i++) {
-      const ackOutCallInfo = ackOutCallList[i]
-    }
+    const pendingWorkOrderList = await redisUtil.hgetAllObject<WorkOrderAttributesDeep>(RedisKeys.InfoPendingWorkOrderByCallId);
+
+    // write call_response
     // const callResponseWriteResult = await kepServerUtil.writeTagsValue([
     //   {
     //     nodeId: callResponse?.NODE_ID,
@@ -256,17 +258,6 @@ export const useCallRegisterUtil = () => {
     //     }
     //   }
     // ]);
-
-    // const CallInfoForWmsList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.CallInfoForWms) || [];
-
-    // for (let i = 0, length = CallInfoForWmsList.length; i < length; i++) {
-    //   const CallInfoForWmsInfo = { ...CallInfoForWmsList[i] }
-    //   const systemName = CallInfoForWmsInfo.systemName || 'WMS';
-
-    //   delete CallInfoForWmsInfo['systemName']
-
-    //   // sendInCallInfoForWms(CallInfoForWmsInfo, systemName)
-    // }
   }
   return { callRegister, checkCallSave };
 };

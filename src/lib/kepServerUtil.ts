@@ -51,20 +51,17 @@ export interface Subscription {
 
 // WORD 타입 태그에서 ASCII 값을 추출하는 함수
 const parseWordToAscii = (value: number): string | number => {
-  // 16진수로 해석하기 위해 10진수로 입력된 값을 16진수로 변환
-  const hexValue = parseInt(value.toString(), 16);
-
-  if (hexValue < 0 || hexValue > 0xFFFF) {
-    throw new Error("Input must be a 2-byte integer (0 ~ 65535)");
+  if (typeof value !== 'number' || value < 0 || value > 0xFFFF) {
+    throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
   }
 
-  const highByte = (hexValue >> 8) & 0xFF;
-  const lowByte = hexValue & 0xFF;
+  const lowByte = (value >> 8) & 0xFF;  // 반대로!
+  const highByte = value & 0xFF;
 
-  const highAscii = String.fromCharCode(highByte);
-  const lowAscii = String.fromCharCode(lowByte);
+  const char1 = String.fromCharCode(lowByte);
+  const char2 = String.fromCharCode(highByte);
 
-  return highAscii + lowAscii;
+  return char1 + char2;
 }
 const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
 
