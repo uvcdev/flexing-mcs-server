@@ -2,7 +2,7 @@ import { PendingWorkOrderAttributes } from "../../../models/operation/workOrder"
 import { logging } from "../../logging";
 import { separateMqttMessage, MbsMqttMesaage } from "../../mqttUtil"
 import { setReceivedAckCommand } from "../../process/wmsAck"
-import { CallInfoBody } from "../../process/wmsCallInfo";
+import { CallInfoBody, deleteInfoAckInCallByCallId } from "../../process/wmsCallInfo";
 import { RedisKeys, useRedisUtil } from "../../redisUtil";
 
 const systemTopic = 'PORT'
@@ -69,7 +69,8 @@ const portPresenceStatus = async (wmsName: string, messageMessage: MbsMqttMesaag
   // pending workOrder 레디스 정보 저장
   redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder))
   // infoAckInCallByCallId 정보 삭제
-  redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
+  // redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
+  deleteInfoAckInCallByCallId(callId)
   // 물류 로그 저장 - 포트 지정 완료
 }
 

@@ -50,7 +50,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
     return
   }
 
-  const eqpCallId = remainingCommandInfo.message.body.Call_ID
+  const callId = remainingCommandInfo.message.body.Call_ID
   const callInfoData = remainingCommandInfo.message.body as CallInfoBody
 
   // 2. CALLINFO에 해당하는 RemainingAckCommandBySubjectCmdId 삭제
@@ -63,8 +63,14 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
     case '4':
       // 물류 로그 기록
       // InfoAckInCallByCallId 레디스 기록
-      redisUtil.hset(RedisKeys.InfoAckInCallByCallId, eqpCallId, JSON.stringify(callInfoData))
+      redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(callInfoData))
 
+      logging.ACTION_INFO({
+        filename: `call.ts - ackBranchInfoReq`,
+        error: `[HCACK = ${hcack}] CallId (${callId}) Command executed successfully - comment : ${ackComment}`,
+        params: null,
+        result: true,
+      });
       break;
 
     // hcack = 0 : Command가 이미 실행 되었음
@@ -96,7 +102,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
     case '2':
       logging.ACTION_ERROR({
         filename: `call.ts - ackCallInfo`,
-        error: `[HCACK = ${hcack}] CallId (${eqpCallId}) Execution not possible at this time - comment : ${ackComment}`,
+        error: `[HCACK = ${hcack}] CallId (${callId}) Execution not possible at this time - comment : ${ackComment}`,
         params: null,
         result: false,
       });
@@ -159,7 +165,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
     case '51':
       logging.ACTION_ERROR({
         filename: `call.ts - ackCallInfo`,
-        error: `[HCACK = ${hcack}] CallId (${eqpCallId}) execution unavailable due to insufficient inventory - comment : ${ackComment}`,
+        error: `[HCACK = ${hcack}] CallId (${callId}) execution unavailable due to insufficient inventory - comment : ${ackComment}`,
         params: null,
         result: false,
       });
@@ -171,7 +177,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
     case '52':
       logging.ACTION_ERROR({
         filename: `call.ts - ackCallInfo`,
-        error: `[HCACK = ${hcack}] CallId (${eqpCallId}) execution planned with pending inventory replenishment - comment : ${ackComment}`,
+        error: `[HCACK = ${hcack}] CallId (${callId}) execution planned with pending inventory replenishment - comment : ${ackComment}`,
         params: null,
         result: false,
       });

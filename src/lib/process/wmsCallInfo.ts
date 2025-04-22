@@ -97,3 +97,9 @@ export const deleteInfoInCallByCallId = (callId: string) => {
   // TODO-ljk) ack 유효성 검사는 로직이 잡히면 추가될 예정 
   redisUtil.hdel(RedisKeys.InfoInCallByCallId, callId);
 }
+
+export const deleteInfoAckInCallByCallId = (callId: string) => {
+  // logging 처리는 이 함수를 사용하는 쪽에서 사용
+  // TODO-ljk) ack 유효성 검사는 로직이 잡히면 추가될 예정 
+  redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId);
+}
