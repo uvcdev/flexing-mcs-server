@@ -35,11 +35,11 @@ import { Transaction } from 'sequelize';
 import { sequelize } from '../../models';
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import dayjs from 'dayjs';
-import { DailyWorkOrderStats, WorkOrderStats, useWorkOrderStatsUtil } from '../../lib/workOrderUtil';
+import { DailyWorkOrderStats, WorkOrderStats, useWorkOrderUtil } from '../../lib/workOrderUtil';
 import { calculateDurationInSeconds } from '../../lib/dateUtil';
 
 let accessToken = '';
-const workOrderStatsUtil = useWorkOrderStatsUtil()
+const workOrderStatsUtil = useWorkOrderUtil()
 
 const service = {
   // insert

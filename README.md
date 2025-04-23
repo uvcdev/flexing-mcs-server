@@ -191,9 +191,12 @@ ALTER TABLE public.work_orders ADD is_mission_order bool NULL DEFAULT false;
 ```sql
 ALTER TABLE public.work_orders ADD mission_start_date timestamptz NULL;
 ALTER TABLE public.work_orders ADD mission_end_date timestamptz NULL;
-
 ```
-- 
+- linked_eqp_ids 컬럼 추가
+  - 콜이 발생되되는 설비 기준에서 EQP-EQP 통신인 경우 연결될 설비 id 지정하는 컬럼
+```sql
+ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
+```
 
 ## v0.2.2-ljk
 - 설비 입고, 창고 출고 로직 마무리

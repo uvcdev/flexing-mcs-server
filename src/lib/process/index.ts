@@ -11,6 +11,7 @@ import { checkCallInfoForWms } from './wmsCallInfo';
 import { checkAbortedCommandForRetry } from './wmsCommon';
 import { useCallRegisterUtil } from "../callRegisterUtil";
 import { useEqpCheckUtil } from '../eqpCheckUtil';
+import { useWorkOrderUtil } from '../workOrderUtil';
 import { checkBranchInfoReqForWms } from './wmsBranch';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
@@ -51,8 +52,7 @@ export const processMcs = async () => {
     // ACK_CALL_INFO 판단해서 콜 정보 저장과 EQP에 응답 데이터 Write
     await useCallRegisterUtil().checkCallSave()
     // todo4: 창고로부터 ACK 오면 EQP_Call_Save 함수와 같은 기능 실행
-
-
+    await useWorkOrderUtil().createWorkOrder()
     // Call 처리 함수 ( runningWorkOderCalls )
 
     //  () - Call 처리 함수 ( runningWorkOderCalls )

@@ -6,22 +6,23 @@ import { useCallRegisterUtil } from "./callRegisterUtil";
 
 export interface EQP_WCS {
   EQP_ID: string;
+  CALL_ID: string;
   EQP_CALL_ID: string;
   WCS_CALL_ID?: string;
 }
 
 export const useEqpCheckUtil = () => {
-  const eqpTaskStatus = async (targetTagInfo: TagValue) => {
+  // const eqpTaskStatus = async (targetTagInfo: TagValue) => {
 
-    // // PLC 데이터 수집
-    // await doWork(targetTagInfo)
+  //   // // PLC 데이터 수집
+  //   // await doWork(targetTagInfo)
 
-    // // PLC 데이터 전송
-    // await doSend(targetTagInfo)
+  //   // // PLC 데이터 전송
+  //   // await doSend(targetTagInfo)
 
-    // PLC 수집 데이터 처리
-    await doCheck(targetTagInfo)
-  }
+  //   // PLC 수집 데이터 처리
+  //   // await doCheck(targetTagInfo)
+  // }
 
   const doWork = async () => {
     // console.log("🚀 ~ doWork ~ targetTagInfo:", targetTagInfo)
@@ -31,7 +32,7 @@ export const useEqpCheckUtil = () => {
     // console.log("🚀 ~ doSend ~ targetTagInfo:", targetTagInfo)
   }
 
-  const doCheck = async (targetTagInfo: TagValue) => {
+  const eqpTaskStatus = async (targetTagInfo: TagValue) => {
     try {
       // TAG_NAME에 따라 다른 함수 실행
       switch (targetTagInfo.TAG_NAME) {
@@ -260,5 +261,5 @@ export const useEqpCheckUtil = () => {
     // 구현 필요
   };
 
-  return { eqpTaskStatus, doWork, doSend, doCheck }
+  return { eqpTaskStatus }
 }

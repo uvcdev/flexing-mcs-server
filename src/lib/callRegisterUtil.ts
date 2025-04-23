@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { AttributeIds } from "node-opcua-client";
 import { WorkOrderAttributesDeep, WorkOrderUpdateByCodeParams } from 'models/operation/workOrder';
-import { MqttTopics, sendMqtt } from './mqttUtil';
 import Facility, { FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
 import Amr from 'models/common/amr';
 import { calculateDurationInSeconds } from './dateUtil';
@@ -9,41 +8,17 @@ import { TagValue, useKepServerUtil } from "./kepServerUtil";
 import { logging } from './logging';
 import opcuaUtil from "./opcuaUtil";
 import { EQP_WCS } from "./eqpCheckUtil";
+import { formatToDateCode } from "./usefullToolUtil";
 import { RedisKeys, useRedisUtil } from "./redisUtil";
 import { CallInfoForWms } from "./process/wmsCallInfo";
-// export type WorkOrderStats = {
-//   id: number;
-//   code: string;
-//   system?: string;
-//   serial?: string;
-//   name: string;
-//   totalCreated: number;
-//   totalCompleted: number;
-//   averageDuration: number;
-//   totalDuration: number;
-// };
-
-// export type DailyWorkOrderStats = {
-//   Facility: Record<number, WorkOrderStats>;
-//   Amr: Record<number, WorkOrderStats>;
-// };
-
-// const dailyWorkOrderStats: DailyWorkOrderStats = {
-//   Facility: {},
-//   Amr: {},
-// };
-type McsWorkOrderRequestType = {
-  TX_ID: string;
-  ZONE_ID: string;
-  TYPE: 'IN' | 'OUT' | 'MISSION'; // 반출 OUT, 반입 IN , 미션 MISSION
-  EQP_ID: string;
-  EQP_CALL_ID: string;
-  PORT_ID: string;
+import { useWorkOrderUtil, McsWorkOrderRequestType } from "./workOrderUtil";
+export type EqpCallStats = {
   CALL_ID: string;
-  TAG_ID: string;
-  CALL_PRIORITY: string;
-  CALL_TYPE: string; // 배터리 타입 PLC 맵에서 콜타입 이라 명명
-  IS_MISSION_ORDER: string; // 작업 지시의 mission order 여부
+  EQP_CALL_ID: string;
+  Call_Type: string;
+  Caller: string;
+  Call_Quantity: number;
+  Call_Priority: string;
 };
 
 export const useCallRegisterUtil = () => {
@@ -60,6 +35,7 @@ export const useCallRegisterUtil = () => {
       return;
     }
 
+    // ##### 1. EQP-EQP 통신으로 인한 작업 생성
     const targetKey = targetTagInfo.TAGGROUP
       ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
       : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
@@ -146,26 +122,22 @@ export const useCallRegisterUtil = () => {
     const multiValue = 1
     // const multiValue = determineMultiValue(callRequestMulti1Value, callRequestMulti2Value);
 
+
+
+    // ##### 2. EQP-WMS 통신으로 인한 작업 생성
     const eqpCallId = await createEQPCallId(targetKey, callCountValue, multiValue);
     const eqpWcsInfo: EQP_WCS[] = eqpCallId?.map((callId) => ({
       EQP_ID: callId.toString().substring(0, 4),  // 앞의 4자리
-      EQP_CALL_ID: callId // 작업지시코드
+      EQP_CALL_ID: parseInt(callId.toString().slice(-4), 10).toString(),  // 뒤뒤의 4자리
+      CALL_ID: callId // 작업지시코드
     })) || [];
 
-    // todo0: 로그 저장
+    // TODO: 로그 저장
     console.log("🚀 ~ consteqpWcsInfo:EQP_WCS[]=eqpCallId?.map ~ eqpWcsInfo:", eqpWcsInfo)
 
-    // facility.isMissionOrderCapable 값에 따라 missionJob / toJob 판단
-
-
-    // todo1: 미션결정지인 경우 작업지시 바로 만들고 (mcs mqtt 바로 작성)
-
-
-    // todo2: 창고로 바로 가는 작업인 경우 설비로부터 수신한 CALL 정보 저장
-    //        (callMatchingInfo redis에 매칭한 값들 저장)
-    const callInfoList = eqpWcsInfo.map((info) => ({
-      CALL_ID: parseInt(info.EQP_CALL_ID.toString().slice(-4), 10).toString(),
+    const callInfoList: EqpCallStats[] = eqpWcsInfo.map((info) => ({
       EQP_CALL_ID: info.EQP_CALL_ID,
+      CALL_ID: info.CALL_ID,
       Call_Type: 'N0961',
       Caller: info.EQP_ID,
       Call_Quantity: 1,
@@ -175,43 +147,26 @@ export const useCallRegisterUtil = () => {
     for (const callInfo of callInfoList) {
       const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, callInfo.Caller || '')
       const callInfoString = JSON.stringify(callInfo);
-
+      // 미션결정지 여부 판단
       if (facilityInfo?.isMissionOrderCapable) {
-        // missionJob 생성
-        const params: McsWorkOrderRequestType =
-        {
-          TYPE: 'MISSION',
-          CALL_ID: callInfo.CALL_ID, // 작업지시코드 뒤 4자리
-          EQP_ID: callInfo.Caller,
-          EQP_CALL_ID: callInfo.EQP_CALL_ID,
-          PORT_ID: callInfo.Caller,
-          CALL_PRIORITY: callInfo.Call_Priority,
-          CALL_TYPE: callInfo.Call_Type,
-          IS_MISSION_ORDER: 'true',
-          TAG_ID: "",
-          TX_ID: "",
-          ZONE_ID: ""
-        }
-        console.log('params123', params)
-        sendMqtt('workorder', JSON.stringify(params));
+        // useWorkOrderUtil().createMissionWorkOrder()
+        // await redisUtil.hset(RedisKeys.InfoAckOutCallByCallId, callInfo.EQP_CALL_ID, callInfoString);
+
       } else {
-        // toJob 생성
         if (facilityInfo?.type === 'in') {
-          await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.EQP_CALL_ID, callInfoString);
+          await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.CALL_ID, callInfoString);
         } else {
-          await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.EQP_CALL_ID, callInfoString);
+          await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
         }
         // TODO: call_info redis 삭제 시점 확인 필요
       }
-
-
     }
+
+    // ##### 3. 도착지와 통신 없이 바로 작업 생성
 
     // eqp-eqp / eqp-wms 를 콜 발생하는 설비에 다중으로 매핑해주는 방법은 어떤지...
     // eqpWcsInfo.EQP_CALL_ID로 ACS_info_facility_by_serial 로 조회해서 컬럼 값이 설비인지 
-    // 1. EQP (LOAD_PORT 11 투입) to WMS - WMS입장에서 반출   call out api
-    // 2. EQP (UNLOAD_PORT 12 회수) to WMS - WMS입장에서 반입 call in api
-    // 3. EQP to EQP 
+
 
     console.log(`Call request sent to WCS. TYPE: ${callType01Value}, CallID: ${callCountValue}`);
   }
@@ -230,8 +185,6 @@ export const useCallRegisterUtil = () => {
       // 설비코드 1 + 설비코드 2 + 콜 ID 시간1(년도) + 콜 ID시간2(월,일) + 콜ID(0~9999)
       const EQCode01 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_01`);
       const EQCode02 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_02`);
-      console.log("🚀 ~ createEQPCallId ~ EQCode01:", EQCode01)
-      console.log("🚀 ~ createEQPCallId ~ EQCode02:", EQCode02)
       const callTimeYear = opcuaUtil.tagMap.get(`${targetKey}.Call_Time_Year`);
       const callTimeMonthDay = opcuaUtil.tagMap.get(`${targetKey}.Call_Time_MonthDay`);
 
@@ -263,7 +216,7 @@ export const useCallRegisterUtil = () => {
       const callTimeMonthDayValue = callTimeMonthDay?.value.toString() || "0";
 
       // callTimeMonthDay 값을 4자릿수로 변환
-      const callTimeMonthDayStr = callTimeMonthDayValue.toString().padStart(4, '0');
+      const callTimeMonthDayStr = formatToDateCode(Number(callTimeMonthDayValue)).toString()
       const callCountValueStr = callCountValue.toString().padStart(4, '0');
 
       const result = [];
@@ -272,7 +225,6 @@ export const useCallRegisterUtil = () => {
         result.push(callId);
       }
 
-      console.log("🚀 ~ createEQPCallId ~ result:", result)
       return result;
     } catch (error) {
       console.error("Error creating EQP Call ID:", error);
@@ -282,17 +234,19 @@ export const useCallRegisterUtil = () => {
   const checkCallSave = async () => {
     // TODO: 동일 EQP ID에 존재하는 레거시 콜들 전부 삭제
     // CallCancel();
+    // const processCallList = async (redisKey: string): Promise<void> => {
+    //   const callList = await redisUtil.hgetAllObject<McsWorkOrderRequestType>(redisKey) || [];
+    //   callList.forEach((callInfo) => {
+    //     useWorkOrderUtil().createWorkOrder(callInfo);
+    //   });
+    // };
 
-    // 시리얼 기준 설비레디스 가져와서 
-    const ackInCallList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.InfoAckInCallByCallId) || [];
-    for (let i = 0, length = ackInCallList.length; i < length; i++) {
-      const ackInCallInfo = ackInCallList[i]
-    }
+    // await processCallList(RedisKeys.InfoAckInCallByCallId);
+    // await processCallList(RedisKeys.InfoAckOutCallByCallId);
 
-    const ackOutCallList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.InfoAckOutCallByCallId) || [];
-    for (let i = 0, length = ackOutCallList.length; i < length; i++) {
-      const ackOutCallInfo = ackOutCallList[i]
-    }
+    const pendingWorkOrderList = await redisUtil.hgetAllObject<WorkOrderAttributesDeep>(RedisKeys.InfoPendingWorkOrderByCallId);
+
+    // write call_response
     // const callResponseWriteResult = await kepServerUtil.writeTagsValue([
     //   {
     //     nodeId: callResponse?.NODE_ID,
@@ -305,17 +259,6 @@ export const useCallRegisterUtil = () => {
     //     }
     //   }
     // ]);
-
-    // const CallInfoForWmsList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.CallInfoForWms) || [];
-
-    // for (let i = 0, length = CallInfoForWmsList.length; i < length; i++) {
-    //   const CallInfoForWmsInfo = { ...CallInfoForWmsList[i] }
-    //   const systemName = CallInfoForWmsInfo.systemName || 'WMS';
-
-    //   delete CallInfoForWmsInfo['systemName']
-
-    //   // sendInCallInfoForWms(CallInfoForWmsInfo, systemName)
-    // }
   }
   return { callRegister, checkCallSave };
 };

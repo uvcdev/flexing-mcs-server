@@ -9,7 +9,7 @@ dotenv.config();
 import { service as workOrderService } from '../service/operation/workOrderService';
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { WorkOrderAttributesDeep } from 'models/operation/workOrder';
-import { useWorkOrderStatsUtil } from './workOrderUtil';
+import { useWorkOrderUtil } from './workOrderUtil';
 import { mqttSubscribeWmsTopics } from '../constant/mqttSubscribeTopic';
 import { mqttSubscribeAcsTopics } from '../constant/mqttSubscribeTopic';
 import { checkConnectionWmsHeartbeat } from './heartbeat/checkHeartbeat';
