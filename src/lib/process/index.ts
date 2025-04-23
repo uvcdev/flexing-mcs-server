@@ -19,7 +19,7 @@ const heapUse = () => {
   const heapUsedMB = (memoryUsage.heapUsed / 1024 / 1024).toFixed(2);
   const heapTotalMB = (memoryUsage.heapTotal / 1024 / 1024).toFixed(2);
 
-  // console.log(`heap use: ${heapUsedMB} MB / ${heapTotalMB} MB`);
+  console.log(`heap use: ${heapUsedMB} MB / ${heapTotalMB} MB`);
 }
 let counter = 0;
 export const processMcs = async () => {
@@ -49,7 +49,7 @@ export const processMcs = async () => {
     await checkBranchInfoReqForWms()
 
     // ACK_CALL_INFO 판단해서 콜 정보 저장과 EQP에 응답 데이터 Write
-    // await useCallRegisterUtil().checkCallSave()
+    await useCallRegisterUtil().checkCallSave()
     // todo4: 창고로부터 ACK 오면 EQP_Call_Save 함수와 같은 기능 실행
 
 
