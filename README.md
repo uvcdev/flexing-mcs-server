@@ -202,3 +202,11 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 - 설비 입고, 창고 출고 로직 마무리
   - TOPIC: PORT 관련 로직 추가
   - CALLINFO 코드 오류 수정
+
+- Tracking Log
+  - 물류 로그 기본 로직 구현
+  - Tracking Log 테이블 수정
+
+- Item Log
+  - 하위 물류 로그 기본 로직 구현
+  - Tracking Log 테이블 수정

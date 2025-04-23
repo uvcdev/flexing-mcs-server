@@ -12,6 +12,7 @@ import { formatToDateCode } from "./usefullToolUtil";
 import { RedisKeys, useRedisUtil } from "./redisUtil";
 import { CallInfoForWms } from "./process/wmsCallInfo";
 import { useWorkOrderUtil, McsWorkOrderRequestType } from "./workOrderUtil";
+import { initTrackingLogRedis } from "./process/trackingLog";
 export type EqpCallStats = {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -147,6 +148,8 @@ export const useCallRegisterUtil = () => {
     for (const callInfo of callInfoList) {
       const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, callInfo.Caller || '')
       const callInfoString = JSON.stringify(callInfo);
+      // init TrackingLog 
+      await initTrackingLogRedis(callInfo)
       // 미션결정지 여부 판단
       if (facilityInfo?.isMissionOrderCapable) {
         // useWorkOrderUtil().createMissionWorkOrder()

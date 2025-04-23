@@ -1,5 +1,7 @@
+import { TrackingLogRedisUpdateParams } from "../../../models/common/trackingLog"
 import { logging } from "../../logging"
 import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody } from "../../mqttUtil"
+import { editTrackingLogRedis } from "../../process/trackingLog"
 import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand } from "../../process/wmsAck"
 import { CallInfoBody } from "../../process/wmsCallInfo"
 import { setAbortedCommandForRetry } from "../../process/wmsCommon"
@@ -71,6 +73,23 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         params: null,
         result: true,
       });
+
+      const trackingLogSubject = 'ACK_CALL_INFO'
+      const trackingLogDetail = 'ACK_CALL_INFO'
+      const trackingLogState = 'PROCESSING'
+      const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+        callId: callId,
+        subject: trackingLogSubject,
+        detail: trackingLogDetail,
+        state: trackingLogState,
+        startFacility: callInfoData.Caller,
+        destFacility: null,
+        assignedRobot: null,
+        value: null,
+        description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`
+      }
+      await editTrackingLogRedis(trackingLogUpdateData)
+
       break;
 
     // hcack = 0 : Command가 이미 실행 되었음

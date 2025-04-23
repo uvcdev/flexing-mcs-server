@@ -13,6 +13,7 @@ import { useCallRegisterUtil } from "../callRegisterUtil";
 import { useEqpCheckUtil } from '../eqpCheckUtil';
 import { useWorkOrderUtil } from '../workOrderUtil';
 import { checkBranchInfoReqForWms } from './wmsBranch';
+import { sendTrackingLogs } from './trackingLog';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
 const heapUse = () => {
@@ -33,6 +34,8 @@ export const processMcs = async () => {
     if (counter % 5 === 0) {
       // sendAllHeartbeat();                 // wms heartbeat 전송 ( n초마다 실행 )
     }
+    // 현재 진행 중인 물류 로그 전송
+    await sendTrackingLogs()
 
     // 수집한 ack 데이터 처리 ( ACK )
     await checkReceivedAckCommand()

@@ -2,6 +2,7 @@ import { Model, DataTypes, WhereOptions, Order } from 'sequelize';
 // import { ItemLogSequelize } from '../sequelize';
 import { UserAttributes } from '../common/user';
 import { logSequelize } from '../sequelize';
+import { TrackingLogSubjectType } from '../common/trackingLog';
 
 // 기본 interface
 export interface ItemLogAttributes {
@@ -13,7 +14,7 @@ export interface ItemLogAttributes {
   amrName: string | null;
   floor: string | null;
   topic: string | null;
-  subject: ItemLogSubjectType;
+  subject: ItemLogSubjectType | null;
   body: Record<string, any> | null;
   // MBS 추가본
   trackingLogId: number | null;
@@ -41,7 +42,10 @@ type ItemLogSubjectType =
   | 'MISSION_FAILED'
   | 'ALARM_REPORT'
   | 'ALARM_CLEAR'
-  | 'ACK_MISSION_COMMAND';
+  | 'ACK_MISSION_COMMAND'
+  // MBS 추가
+  | TrackingLogSubjectType
+  ;
 
 class ItemLog extends Model implements ItemLogAttributes {
   public readonly id!: ItemLogAttributes['id'];
@@ -134,8 +138,9 @@ export interface ItemLogInsertParams {
   facilityName: string | null;
   amrCode: string | null;
   amrName: string | null;
-  topic: string;
-  subject: ItemLogAttributes['subject'];
+  floor?: string | null;
+  topic: string | null;
+  subject: ItemLogAttributes['subject'] | null;
   body: Record<string, any> | null;
   trackingLogId?: number | null;
   state?: string | null;

@@ -1,6 +1,6 @@
 import { Model, DataTypes, WhereOptions, Order, JSON } from 'sequelize';
 import { sequelize } from '../sequelize';
-import { ItemLogAttributes } from '../timescale/itemLog';
+import { ItemLogAttributes, ItemLogInsertParams } from '../timescale/itemLog';
 
 export interface TrackingLogAttributes {
   id: number;
@@ -22,7 +22,13 @@ export interface TrackingLogAttributes {
 }
 
 // Subject 내용은 물류 로그 작성 하면서 추가 예정
-type TrackingLogSubjectType =
+export type TrackingLogSubjectType =
+  'CALL_CREATED' |  // 콜 발생
+  'CALL_INFO' |     // 콜 INFO 호출 
+  'CALL_RESPONSE' |  // 콜에 대한 호출 응답
+  'ACK_CALL_INFO' |  // ACK_CALL_INFO
+  'PORT_ASSIGNED' |  // 포트 배정 완료
+  'WORK_ORDER_CREATED' |    // 작업지시 생성 
   'CALL_ID' |
   'CALL_REQUEST' |
   'CALL_RESPONSE' |
@@ -31,7 +37,7 @@ type TrackingLogSubjectType =
   'WMS_PORT_ID';
 
 // 진행 상태 추가 필요시 추가 적용 예정
-type TrackingLogState = 'PUBLISHED' | 'PROCESSING' | 'COMPLETED' | 'ABORTED';   // 시작 전 , 진행 중 , 완료 , 중단
+export type TrackingLogState = 'PUBLISHED' | 'PROCESSING' | 'COMPLETED' | 'ABORTED' | 'PAUSED' | 'ERROR';   // 시작 전 , 진행 중 , 완료 , 중단
 
 class TrackingLog extends Model implements TrackingLogAttributes {
   public readonly id!: TrackingLogAttributes['id'];
@@ -184,11 +190,12 @@ export interface TrackingLogSelectInfoByCallIdParams {
 // update
 export interface TrackingLogUpdateParams {
   // 검색
-  id?: TrackingLogAttributes['id'];
+  id: TrackingLogAttributes['id'];
   code?: TrackingLogAttributes['code'];
   callId?: TrackingLogAttributes['callId'];
   // 업데이트 내용
   callType?: TrackingLogAttributes['callType'];
+  eqpCallId?: TrackingLogAttributes['eqpCallId'];
   subject?: TrackingLogAttributes['subject'];
   detail?: TrackingLogAttributes['detail'];
   state?: TrackingLogAttributes['state'];
@@ -204,10 +211,25 @@ export interface TrackingLogDeleteParams {
   id?: TrackingLogAttributes['id'];
 }
 
-export interface TrackingLogRedisAttributes extends TrackingLogAttributes {
-  itemLogList: Array<ItemLogAttributes>
+export interface TrackingLogRedisAttributes extends Omit<TrackingLogAttributes, 'createdAt' | 'updatedAt' | 'deletedAt'> {
+  // itemLogList: Array<ItemLogAttributes>;
+  itemLogList: Array<ItemLogInsertParams>;
+  createdDateTime: string;
+  updatedDateTime: string;
 }
 
+export interface TrackingLogRedisUpdateParams {
+  callId?: TrackingLogAttributes['callId'];
+  subject?: TrackingLogAttributes['subject'];
+  detail?: TrackingLogAttributes['detail'];
+  state?: TrackingLogAttributes['state'];
+  startFacility?: TrackingLogAttributes['startFacility'];
+  destFacility?: TrackingLogAttributes['destFacility'];
+  assignedRobot?: TrackingLogAttributes['assignedRobot'];
+  value?: TrackingLogAttributes['value'];
+  description?: TrackingLogAttributes['description'];
+  location?: string;
+}
 /* 인터페이스 정의 끝 */
 
 export default TrackingLog;
