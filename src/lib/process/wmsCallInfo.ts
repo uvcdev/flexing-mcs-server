@@ -1,3 +1,4 @@
+import { EqpCallStats } from "../callRegisterUtil";
 import { generateUUIDNode } from "../hashUtil";
 import { logging } from "../logging";
 import { makeMbsMqttHeader, MbsMqttBody, sendMbsMqtt } from "../mqttUtil";
@@ -28,15 +29,27 @@ export interface CallInfoForWms extends CallInfoBody {
 
 // 공통 함수: Redis에서 콜 정보를 확인하고 처리하는 함수
 export const checkCallInfoForWms = async () => {
-  const callInfoList = await redisUtil.hgetAllObject<CallInfoForWms>(RedisKeys.InfoInCallByCallId) || [];
+  const callInfoList = await redisUtil.hgetAllObject<EqpCallStats>(RedisKeys.InfoInCallByCallId) || [];
+  console.log("🚀 ~ checkCallInfoForWms ~ callInfoList:", callInfoList)
 
   for (let i = 0, length = callInfoList.length; i < length; i++) {
     const callInfo = { ...callInfoList[i] };
-    const systemName = callInfo.systemName || 'WMS';
+    // const systemName = callInfo.systemName || 'WMS';
+    const systemName = 'WMS';
 
-    delete callInfo['systemName'];
+    const wmsCallInfo: CallInfoForWms = {
+      Call_ID: callInfo.CALL_ID,
+      Call_Priority: callInfo.Call_Priority,
+      Call_Quantity: (callInfo.Call_Quantity).toString(),
+      Call_Type: callInfo.Call_Type,
+      Caller: callInfo.Caller,
+      Cmd_ID: '',
+    }
 
-    sendCallInfoToWms(callInfo, systemName);
+
+    // delete callInfo['systemName'];
+
+    sendCallInfoToWms(wmsCallInfo, systemName);
   }
 };
 
@@ -47,7 +60,8 @@ const sendCallInfoToWms = (callInfo: CallInfoBody, systemName: string) => {
 
   const callInfoData = { ...callInfo };
   // 처음 들어온 정보는 cmd id가 존재하지 않음, 이미 있는 메세지는 cmdid 존재 (cmdid 동일하게 재요청)
-  if (callInfoData.Cmd_ID === '') {
+  if (callInfoData.Cmd_ID === '' || !callInfoData.Cmd_ID) {
+    console.log("🚀 ~ sendCallInfoToWms ~ callInfoData:", callInfoData)
     callInfoData.Cmd_ID = generateUUIDNode();
   }
 
@@ -62,7 +76,7 @@ const sendCallInfoToWms = (callInfo: CallInfoBody, systemName: string) => {
     });
     return;
   }
-
+  console.log('systemName123', systemName)
   if (!systemName) {
     // 해당 메세지에 대한 systemName은 필수 값이기 때문에 없으면 에러 발생
     logging.ACTION_ERROR({
@@ -75,10 +89,12 @@ const sendCallInfoToWms = (callInfo: CallInfoBody, systemName: string) => {
   }
 
   const mqttHeader = makeMbsMqttHeader(subject);
+  console.log("🚀 ~ sendCallInfoToWms ~ mqttHeader:", mqttHeader)
   const mqttBody: MbsMqttBody = callInfoData;
 
   // CALLINFO MQTT 데이터 전송
   sendMbsMqtt(topic, mqttHeader, mqttBody, systemName);
+  console.log("🚀 ~ sendCallInfoToWms ~ callInfoData:", callInfoData)
 
   // CALLINFO 보내고 나서 해당 redis 값 삭제
   deleteInfoInCallByCallId(callInfoData.Call_ID)
@@ -93,8 +109,10 @@ const sendCallInfoToWms = (callInfo: CallInfoBody, systemName: string) => {
 
 // ACK 명령을 입력 받아서 remainingAckCommand 삭제
 export const deleteInfoInCallByCallId = (callId: string) => {
+  console.log("🚀 ~ deleteInfoInCallByCallId ~ callId:", callId)
   // logging 처리는 이 함수를 사용하는 쪽에서 사용
   // TODO-ljk) ack 유효성 검사는 로직이 잡히면 추가될 예정 
+
   redisUtil.hdel(RedisKeys.InfoInCallByCallId, callId);
 }
 

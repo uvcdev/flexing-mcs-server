@@ -6,6 +6,7 @@ import { useCallRegisterUtil } from "./callRegisterUtil";
 
 export interface EQP_WCS {
   EQP_ID: string;
+  CALL_ID: string;
   EQP_CALL_ID: string;
   WCS_CALL_ID?: string;
 }

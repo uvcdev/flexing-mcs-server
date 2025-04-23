@@ -128,15 +128,16 @@ export const useCallRegisterUtil = () => {
     const eqpCallId = await createEQPCallId(targetKey, callCountValue, multiValue);
     const eqpWcsInfo: EQP_WCS[] = eqpCallId?.map((callId) => ({
       EQP_ID: callId.toString().substring(0, 4),  // 앞의 4자리
-      EQP_CALL_ID: callId // 작업지시코드
+      EQP_CALL_ID: parseInt(callId.toString().slice(-4), 10).toString(),  // 뒤뒤의 4자리
+      CALL_ID: callId // 작업지시코드
     })) || [];
 
     // TODO: 로그 저장
     console.log("🚀 ~ consteqpWcsInfo:EQP_WCS[]=eqpCallId?.map ~ eqpWcsInfo:", eqpWcsInfo)
 
     const callInfoList: EqpCallStats[] = eqpWcsInfo.map((info) => ({
-      CALL_ID: parseInt(info.EQP_CALL_ID.toString().slice(-4), 10).toString(),
       EQP_CALL_ID: info.EQP_CALL_ID,
+      CALL_ID: info.CALL_ID,
       Call_Type: 'N0961',
       Caller: info.EQP_ID,
       Call_Quantity: 1,
@@ -153,9 +154,9 @@ export const useCallRegisterUtil = () => {
 
       } else {
         if (facilityInfo?.type === 'in') {
-          await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.EQP_CALL_ID, callInfoString);
+          await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.CALL_ID, callInfoString);
         } else {
-          await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.EQP_CALL_ID, callInfoString);
+          await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
         }
         // TODO: call_info redis 삭제 시점 확인 필요
       }
