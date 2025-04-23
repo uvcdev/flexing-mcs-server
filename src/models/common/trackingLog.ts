@@ -1,41 +1,50 @@
 import { Model, DataTypes, WhereOptions, Order, JSON } from 'sequelize';
 import { sequelize } from '../sequelize';
+import { ItemLogAttributes } from '../timescale/itemLog';
 
 export interface TrackingLogAttributes {
   id: number;
-  logId: string | null;
-  code: string | null;
-  callId: string | null;
-  callType: string | null;
-  subject: string | null;
-  state: TrackingLogState;
-  startFacility: string | null;
-  destFacility: string | null;
-  assignedRobot: string | null;
-  type: TrackingLogType;
-  value: string | null;
+  code: string | null;           // log code - uuid 사용 예정
+  callId: string | null;         // mcs call id
+  callType: string | null;       // 출발 설비 기준 call type 
+  eqpCallId: string | null;      // 출발 설비 기준 call 번호
+  subject: TrackingLogSubjectType | null;        // 물류 로그 subject 정보 ex ) LOAD_COMMAND , MISSION_STATE ... 
+  detail: string | null;         // subject의 detail 정보 ex ) subject : MISSION_STATE , detail : AMR_ASSIGNED
+  state: TrackingLogState | null;       // 물류 로그 진행 상태
+  startFacility: string | null;  // 출발 설비 명 
+  destFacility: string | null;   // 도착 설비 명 - 창고 쪽 포트도 도착 설비 명임
+  assignedRobot: string | null;  // 작업 할당 된 AMR 명 
+  value: string | null;          // 사용 데이터 값 
   description: string | null;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt: Date | null;
+  deletedAt: Date | null
 }
 
-type TrackingLogType = 'CALL_ID' | 'CALL_REQUEST' | 'CALL_RESPONSE' | 'WORK_ORDER' | 'WMS_CALL_ID' | 'WMS_PORT_ID';
+// Subject 내용은 물류 로그 작성 하면서 추가 예정
+type TrackingLogSubjectType =
+  'CALL_ID' |
+  'CALL_REQUEST' |
+  'CALL_RESPONSE' |
+  'WORK_ORDER' |
+  'WMS_CALL_ID' |
+  'WMS_PORT_ID';
 
-type TrackingLogState = 'PROCESS' | 'PUBLISHED'
+// 진행 상태 추가 필요시 추가 적용 예정
+type TrackingLogState = 'PUBLISHED' | 'PROCESSING' | 'COMPLETED' | 'ABORTED';   // 시작 전 , 진행 중 , 완료 , 중단
 
 class TrackingLog extends Model implements TrackingLogAttributes {
   public readonly id!: TrackingLogAttributes['id'];
-  public logId!: TrackingLogAttributes['logId'];
   public code!: TrackingLogAttributes['code'];
   public callId!: TrackingLogAttributes['callId'];
   public callType!: TrackingLogAttributes['callType'];
+  public eqpCallId!: TrackingLogAttributes['eqpCallId'];
   public subject!: TrackingLogAttributes['subject'];
+  public detail!: TrackingLogAttributes['detail'];
   public state!: TrackingLogAttributes['state'];
   public startFacility!: TrackingLogAttributes['startFacility'];
   public destFacility!: TrackingLogAttributes['destFacility'];
   public assignedRobot!: TrackingLogAttributes['assignedRobot'];
-  public type!: TrackingLogAttributes['type'];
   public value!: TrackingLogAttributes['value'];
   public description!: TrackingLogAttributes['description'];
   public readonly createdAt!: TrackingLogAttributes['createdAt'];
@@ -50,19 +59,22 @@ TrackingLog.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    logId: {
+    code: {
       type: DataTypes.STRING(50),
     },
-    code: {
-      type: DataTypes.STRING(20),
-    },
     callId: {
-      type: DataTypes.STRING(20),
+      type: DataTypes.STRING(30),
     },
     callType: {
       type: DataTypes.STRING(20),
     },
+    eqpCallId: {
+      type: DataTypes.STRING(10),
+    },
     subject: {
+      type: DataTypes.STRING(20),
+    },
+    detail: {
       type: DataTypes.STRING(20),
     },
     state: {
@@ -77,11 +89,8 @@ TrackingLog.init(
     assignedRobot: {
       type: DataTypes.STRING(20),
     },
-    type: {
-      type: DataTypes.STRING(50),
-    },
     value: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.STRING(255),
     },
     description: {
       type: DataTypes.STRING(255),
@@ -100,31 +109,31 @@ TrackingLog.init(
 /* 인터페이스 정의 시작 */
 // insert
 export interface TrackingLogInsertParams {
-  logId: number;
   code: string | null;
   callId: string | null;
   callType: string | null;
+  eqpCallId: string | null;
   subject: string | null;
-  state: string | null;
+  detail: string | null;
+  state: TrackingLogState | null;
   startFacility: string | null;
   destFacility: string | null;
   assignedRobot: string | null;
-  type: string | null;
   value: string | null;
   description: string | null;
 }
 
 export interface TrackingLogUpsertParams {
-  logId?: number;
   code?: string | null;
   callId?: string | null;
   callType?: string | null;
-  subject?: string | null;
-  state?: string | null;
+  eqpCallId?: string | null;
+  subject?: TrackingLogSubjectType | null;
+  detail?: string | null;
+  state?: TrackingLogState | null;
   startFacility?: string | null;
   destFacility?: string | null;
   assignedRobot?: string | null;
-  type?: string | null;
   value?: string | null;
   description?: string | null;
 }
@@ -132,6 +141,8 @@ export interface TrackingLogUpsertParams {
 
 export interface TrackingLogSelectListParams {
   ids?: Array<number> | null;
+  code?: string;
+  callId?: string;
   callType?: string;
   startFacility?: string;
   destFacility?: string;
@@ -177,12 +188,13 @@ export interface TrackingLogUpdateParams {
   code?: TrackingLogAttributes['code'];
   callId?: TrackingLogAttributes['callId'];
   // 업데이트 내용
+  callType?: TrackingLogAttributes['callType'];
   subject?: TrackingLogAttributes['subject'];
-  state?: TrackingLogAttributes['state'] | null;
+  detail?: TrackingLogAttributes['detail'];
+  state?: TrackingLogAttributes['state'];
   startFacility?: TrackingLogAttributes['startFacility'];
   destFacility?: TrackingLogAttributes['destFacility'];
   assignedRobot?: TrackingLogAttributes['assignedRobot'];
-  type?: TrackingLogAttributes['type'];
   value?: TrackingLogAttributes['value'];
   description?: TrackingLogAttributes['description'];
 }
@@ -190,6 +202,10 @@ export interface TrackingLogUpdateParams {
 // delete
 export interface TrackingLogDeleteParams {
   id?: TrackingLogAttributes['id'];
+}
+
+export interface TrackingLogRedisAttributes extends TrackingLogAttributes {
+  itemLogList: Array<ItemLogAttributes>
 }
 
 /* 인터페이스 정의 끝 */

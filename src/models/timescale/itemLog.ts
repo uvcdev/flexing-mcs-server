@@ -6,7 +6,6 @@ import { logSequelize } from '../sequelize';
 // 기본 interface
 export interface ItemLogAttributes {
   id: number;
-  // trackingLogId: number;
   itemCode: string | null;
   facilityCode: string | null;
   facilityName: string | null;
@@ -16,6 +15,11 @@ export interface ItemLogAttributes {
   topic: string | null;
   subject: ItemLogSubjectType;
   body: Record<string, any> | null;
+  // MBS 추가본
+  trackingLogId: number | null;
+  state: string | null;  // 기존에 body에 있던 state
+  location: string | null; // 발생 위치 창고 (WMS, MW01) , 설비 ( SP11, SP12 ) , AMR ( AMR_01 )...
+  message: string | null;
   createdAt: Date;
 }
 
@@ -51,6 +55,10 @@ class ItemLog extends Model implements ItemLogAttributes {
   public topic!: ItemLogAttributes['topic'];
   public subject!: ItemLogAttributes['subject'];
   public body!: ItemLogAttributes['body'];
+  public trackingLogId!: ItemLogAttributes['trackingLogId'];
+  public state!: ItemLogAttributes['state'];
+  public location!: ItemLogAttributes['location'];
+  public message!: ItemLogAttributes['message'];
   public readonly createdAt!: ItemLogAttributes['createdAt'];
 }
 
@@ -65,9 +73,6 @@ ItemLog.init(
       type: DataTypes.DATE,
       primaryKey: true,
     },
-    // trackingLogId: {
-    //   type: DataTypes.INTEGER(),
-    // },
     itemCode: {
       type: DataTypes.STRING(500),
     },
@@ -95,6 +100,19 @@ ItemLog.init(
     floor: {
       type: DataTypes.STRING(10),
     },
+    // MBS 추가본
+    trackingLogId: {
+      type: DataTypes.INTEGER,
+    },
+    state: {
+      type: DataTypes.STRING(50),
+    },
+    location: {
+      type: DataTypes.STRING(50),
+    },
+    message: {
+      type: DataTypes.TEXT,
+    }
   },
   {
     sequelize: logSequelize,
@@ -119,6 +137,10 @@ export interface ItemLogInsertParams {
   topic: string;
   subject: ItemLogAttributes['subject'];
   body: Record<string, any> | null;
+  trackingLogId?: number | null;
+  state?: string | null;
+  location?: string | null;
+  message?: string | null;
 }
 
 // selectList
@@ -133,6 +155,7 @@ export interface ItemLogSelectListParams {
   topic?: string | null;
   subject?: string | null;
   body?: string | null;
+  trackingLogId?: string | null;
   createdAtFrom?: Date | null;
   createdAtTo?: Date | null;
   limit?: number;

@@ -69,6 +69,18 @@ const dao = {
         id: params.ids, // '=' 검색
       };
     }
+    if (params.code) {
+      setQuery.where = {
+        ...setQuery.where,
+        code: { [Op.like]: `%${params.code}%` }, // 'like' 검색
+      };
+    }
+    if (params.callId) {
+      setQuery.where = {
+        ...setQuery.where,
+        callId: { [Op.like]: `%${params.callId}%` }, // 'like' 검색
+      };
+    }
     if (params.callType) {
       setQuery.where = {
         ...setQuery.where,

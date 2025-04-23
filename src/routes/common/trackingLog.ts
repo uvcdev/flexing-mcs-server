@@ -34,23 +34,23 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, TrackingLogIn
   try {
     // 요청 파라미터
     const params: TrackingLogInsertParams = {
-      logId: req.body.logId,
       code: req.body.code,
       callId: req.body.callId,
+      eqpCallId: req.body.eqpCallId,
       callType: req.body.callType,
       subject: req.body.subject,
+      detail: req.body.detail,
       state: req.body.state,
       startFacility: req.body.startFacility,
       destFacility: req.body.destFacility,
       assignedRobot: req.body.assignedRobot,
-      type: req.body.type,
       value: req.body.value,
       description: req.body.description,
     };
     logging.REQUEST_PARAM(logFormat);
 
     // 입력값 체크
-    if (!params.logId || !params.code || !params.callId) {
+    if (!params.code || !params.callId) {
       const err = new ErrorClass(resCode.BAD_REQUEST_NOTNULL, 'Not allowed null (name, code)');
 
       const resJson = resError(err);
@@ -111,6 +111,8 @@ router.get('/', isLoggedIn, async (req: Request<unknown, unknown, unknown, Track
     // 요청 파라미터
     const params: TrackingLogSelectListParams = {
       ids: req.query.ids,
+      code: req.query.code,
+      callId: req.query.callId,
       callType: req.query.callType,
       startFacility: req.query.startFacility,
       destFacility: req.query.destFacility,
