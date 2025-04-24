@@ -17,7 +17,9 @@ export const checkConnectionWmsHeartbeat = (wmsName: string, message: string) =>
 }
 
 export const checkSystemConnectionStatus = async () => {
+
   const systemHeartbeatList = await redisUtil.hgetAllObject<HeartbeatInfo>(RedisKeys.Heartbeat) || [];
+  console.log("🚀 ~ checkSystemConnectionStatus ~ systemHeartbeatList:", systemHeartbeatList)
 
   for (let i = 0, length = systemHeartbeatList.length; i < length; i++) {
     const systemHeartbeatInfo = systemHeartbeatList[i];

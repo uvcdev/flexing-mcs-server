@@ -17,17 +17,12 @@ import {
   ClientMonitoredItemBase,
   ClientMonitoredItemGroup
 } from "node-opcua-client";
-import { logToConsoleAndFile } from './logging';
+import { logging, logToConsoleAndFile } from './logging';
 import { registerClientEvents } from "../events/kepserverClientEvents";
 import { registerSubscriptionEvents } from '../events/kepserverSubscriptionEvents';
-import {
-  Tag,
-  TagValue,
-  updateTagValue,
-  MonitorTagValue,
-  MonitorTag
-} from './kepServerUtil';
+import { MonitorTag, Tag, TagValue, useKepServerUtil } from './kepServerUtil';
 import { useEqpCheckUtil } from './eqpCheckUtil';
+import { RedisKeys, useRedisUtil } from "./redisUtil";
 
 const userIdentity: UserIdentityInfoUserName = {
   type: 1,
@@ -35,7 +30,7 @@ const userIdentity: UserIdentityInfoUserName = {
   password: process.env.OPCUA_PASSWORD || "",
 };
 
-export const opcuaClient = {
+export const opcuaUtil = {
   client: OPCUAClient.create(kepserverConfig.clientOptions),
   session: null as ClientSession | null,
   subscription: null as ClientSubscription | null,
@@ -44,21 +39,50 @@ export const opcuaClient = {
   tagMap: new Map<string, TagValue>(),
 
   // KEPServerEx에 연결하는 함수
-  async connectToKepserverex(): Promise<void> {
-    // 연결 이벤트 등록
-    registerClientEvents(this.client);
-    try {
-      // KEPServerEx에 연결
-      console.log('connect request', kepserverConfig.endpointUrl)
-      await this.client.connect(kepserverConfig.endpointUrl);
-      console.log('connect completed')
-      // logToConsoleAndFile("Connected to KepServerEX!", "green");
 
-    } catch (error) {
-      console.log('연결할 때 에러')
-      // logToConsoleAndFile(`Failed to connect: ${error}`, "red");
+  // async connectToKepserverex(): Promise<void> {
+  //   // 연결 이벤트 등록
+  //   registerClientEvents(this.client);
+  //   try {
+  //     // KEPServerEx에 연결
+  //     // console.log('connect request', kepserverConfig.endpointUrl)
+  //     await this.client.connect(kepserverConfig.endpointUrl);
+  //     // console.log('connect completed')
+  //     // logToConsoleAndFile("Connected to KepServerEX!", "green");
+
+  //   } catch (error) {
+  //     logToConsoleAndFile(`Failed to connect: ${error}`, "red");
+  //   }
+  // },
+  async connectToKepserverex(maxRetries = Infinity, retryInterval = 5000): Promise<void> {
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+      try {
+        // 연결 이벤트 등록
+        registerClientEvents(this.client);
+
+        // KEPServerEX에 연결 시도
+        await this.client.connect(kepserverConfig.endpointUrl);
+
+        logToConsoleAndFile("Connected to KepServerEX!", "green");
+
+        return; // 연결 성공 시 함수 종료
+
+      } catch (error) {
+        console.error(`Kepware 연결 실패 (${attempt + 1}회차):`, error);
+        logToConsoleAndFile(`Failed to connect: ${error}`, "red");
+
+        attempt++;
+
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, retryInterval));
+        } else {
+          console.error("연결 중단");
+          break;
+        }
+      }
     }
-
   },
 
   // Session 생성하는 함수
@@ -136,6 +160,11 @@ export const opcuaClient = {
       return;
     }
 
+    if (subscriptionNodes.length === 0) {
+      logToConsoleAndFile("No subscription nodes to monitor!", "red");
+      return;
+    }
+
     try {
 
       // 모니터링 등록
@@ -158,20 +187,46 @@ export const opcuaClient = {
 
   // 'on.changed' 이벤트 등록 함수
   registerChangeEvent(monitoredItems: ClientMonitoredItemGroup): void {
-
     monitoredItems.on("changed", (monitoredItem: ClientMonitoredItemBase, dataValue: DataValue) => {
-
       try {
+        // const eqpCheckUtil = useEqpCheckUtil();
+        const redisUtil = useRedisUtil();
         const nodeId = monitoredItem.itemToMonitor.nodeId.value.toString();
         const value = dataValue;
+        console.log("🚀 ~ monitoredItems.on ~ value:", value)
+        const targetTagInfo = useKepServerUtil().updateTagValue(nodeId, value);
 
-        logToConsoleAndFile(`Changed Tag Data\nNodeId: ${nodeId}, Value: ${value}`, "important");
+        logToConsoleAndFile(`Changed Tag Data NodeId: ${nodeId} ${value.value.value}`);
+        logging.KEPWARE_LOG({
+          action: 'TAG_WRITE',
+          tag: nodeId,
+          value: value.value.value,
+          message: `changing value from opcuaUtil.registerChangeEvent`,
+        });
 
-        // 변경된 태그 데이터 값 처리
-        const targetTagInfo = updateTagValue(nodeId, value);
+        // 변경되는 값 저장
+        redisUtil.hset(RedisKeys.InfoChangedTagById, nodeId, JSON.stringify(targetTagInfo));
+        logging.REDIS_LOG({
+          key: nodeId,
+          value: value.value.value,
+          message: `changing value from opcuaUtil.registerChangeEvent`,
+        });
 
-        // 변경된 데이터 값을 토대로 실행할 ACS의 fmsCheckUtil.ts 같은 함수
-        this.eqpCheckUtil.eqpTaskStatus(targetTagInfo);
+        if (targetTagInfo) {
+          // 변경된 데이터 값을 기준으로 판단하는 함수
+          this.eqpCheckUtil.eqpTaskStatus(targetTagInfo);
+        }
+
+        // if (targetTagInfo) {
+        //   const handler = eqpCheckUtil.tagHandlers[nodeId as keyof typeof eqpCheckUtil.tagHandlers];
+
+        //   if (handler) {
+        //     handler(targetTagInfo);
+        //   } else {
+        //     console.error(`No handler found for TAG_NAME: ${targetTagInfo.TAG_NAME}`);
+        //   }
+        //   // this.eqpCheckUtil.eqpTaskStatus(targetTagInfo);
+        // }
 
       } catch (error) {
         logToConsoleAndFile(`Error handling changed event: ${error}`, "red");
@@ -183,8 +238,8 @@ export const opcuaClient = {
   async initKepserverex(): Promise<void> {
 
     try {
-      // KEPServerEx에 연결
-      await this.connectToKepserverex();
+      // KEPServerEx에 연결 (최대 10회, 5초마다 연결시도)
+      await this.connectToKepserverex(10, 5000);
 
       // Session 생성
       await this.createSession();
@@ -209,4 +264,4 @@ export const opcuaClient = {
 
 };
 
-export default opcuaClient;
+export default opcuaUtil;

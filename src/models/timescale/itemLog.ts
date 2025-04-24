@@ -2,6 +2,7 @@ import { Model, DataTypes, WhereOptions, Order } from 'sequelize';
 // import { ItemLogSequelize } from '../sequelize';
 import { UserAttributes } from '../common/user';
 import { logSequelize } from '../sequelize';
+import { TrackingLogSubjectType } from '../common/trackingLog';
 
 // 기본 interface
 export interface ItemLogAttributes {
@@ -13,8 +14,13 @@ export interface ItemLogAttributes {
   amrName: string | null;
   floor: string | null;
   topic: string | null;
-  subject: ItemLogSubjectType;
+  subject: ItemLogSubjectType | null;
   body: Record<string, any> | null;
+  // MBS 추가본
+  trackingLogId: number | null;
+  state: string | null;  // 기존에 body에 있던 state
+  location: string | null; // 발생 위치 창고 (WMS, MW01) , 설비 ( SP11, SP12 ) , AMR ( AMR_01 )...
+  message: string | null;
   createdAt: Date;
 }
 
@@ -36,10 +42,14 @@ type ItemLogSubjectType =
   | 'MISSION_FAILED'
   | 'ALARM_REPORT'
   | 'ALARM_CLEAR'
-  | 'ACK_MISSION_COMMAND';
+  | 'ACK_MISSION_COMMAND'
+  // MBS 추가
+  | TrackingLogSubjectType
+  ;
 
 class ItemLog extends Model implements ItemLogAttributes {
   public readonly id!: ItemLogAttributes['id'];
+  // public trackingLogId!: ItemLogAttributes['trackingLogId'];
   public itemCode!: ItemLogAttributes['itemCode'];
   public facilityCode!: ItemLogAttributes['facilityCode'];
   public facilityName!: ItemLogAttributes['facilityName'];
@@ -49,6 +59,10 @@ class ItemLog extends Model implements ItemLogAttributes {
   public topic!: ItemLogAttributes['topic'];
   public subject!: ItemLogAttributes['subject'];
   public body!: ItemLogAttributes['body'];
+  public trackingLogId!: ItemLogAttributes['trackingLogId'];
+  public state!: ItemLogAttributes['state'];
+  public location!: ItemLogAttributes['location'];
+  public message!: ItemLogAttributes['message'];
   public readonly createdAt!: ItemLogAttributes['createdAt'];
 }
 
@@ -90,6 +104,19 @@ ItemLog.init(
     floor: {
       type: DataTypes.STRING(10),
     },
+    // MBS 추가본
+    trackingLogId: {
+      type: DataTypes.INTEGER,
+    },
+    state: {
+      type: DataTypes.STRING(50),
+    },
+    location: {
+      type: DataTypes.STRING(50),
+    },
+    message: {
+      type: DataTypes.TEXT,
+    }
   },
   {
     sequelize: logSequelize,
@@ -105,18 +132,25 @@ ItemLog.init(
 
 // insert
 export interface ItemLogInsertParams {
+  // trackingLogId?: number | null;
   itemCode?: string | null;
   facilityCode: string | null;
   facilityName: string | null;
   amrCode: string | null;
   amrName: string | null;
-  topic: string;
-  subject: ItemLogAttributes['subject'];
+  floor?: string | null;
+  topic: string | null;
+  subject: ItemLogAttributes['subject'] | null;
   body: Record<string, any> | null;
+  trackingLogId?: number | null;
+  state?: string | null;
+  location?: string | null;
+  message?: string | null;
 }
 
 // selectList
 export interface ItemLogSelectListParams {
+  // trackingLogId?: number | null;
   itemCode?: string | null;
   facilityCode?: string | null;
   facilityName?: string | null;
@@ -126,6 +160,7 @@ export interface ItemLogSelectListParams {
   topic?: string | null;
   subject?: string | null;
   body?: string | null;
+  trackingLogId?: string | null;
   createdAtFrom?: Date | null;
   createdAtTo?: Date | null;
   limit?: number;

@@ -35,11 +35,11 @@ import { Transaction } from 'sequelize';
 import { sequelize } from '../../models';
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import dayjs from 'dayjs';
-import { DailyWorkOrderStats, WorkOrderStats, useWorkOrderStatsUtil } from '../../lib/workOrderUtil';
+import { DailyWorkOrderStats, WorkOrderStats, useWorkOrderUtil } from '../../lib/workOrderUtil';
 import { calculateDurationInSeconds } from '../../lib/dateUtil';
 
 let accessToken = '';
-const workOrderStatsUtil = useWorkOrderStatsUtil()
+const workOrderStatsUtil = useWorkOrderUtil()
 
 const service = {
   // insert
@@ -109,7 +109,7 @@ const service = {
     try {
       let result: InsertedResult;
       // 품목 조회해서 없을 경우 insert
-      const itemCode = `${params.CALL_ID}${(params.TAG_ID && `&${params.TAG_ID}`) || ''}`;
+      const itemCode = params.CALL_TYPE;
 
       const existItem = await itemDao.selectOneCode({ code: itemCode });
       if (!existItem) {

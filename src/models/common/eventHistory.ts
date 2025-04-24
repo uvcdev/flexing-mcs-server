@@ -8,7 +8,7 @@ import { UserAttributes } from './user';
 export interface EventHistoryAttributes {
   id: number;
   userId: number;
-  action: 'Create' | 'BulkCreate' | 'SelectList' | 'SelectInfo' | 'Update' | 'Delete';
+  action: 'Create' | 'BulkCreate' | 'SelectList' | 'SelectInfo' | 'Update' | 'Delete' | 'Write';
   tableName: string;
   tablePks: Array<number> | null;
   requestLog: JSON;

@@ -9,23 +9,25 @@ dotenv.config();
 import { service as workOrderService } from '../service/operation/workOrderService';
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { WorkOrderAttributesDeep } from 'models/operation/workOrder';
-import { useWorkOrderStatsUtil } from './workOrderUtil';
+import { useWorkOrderUtil } from './workOrderUtil';
 import { mqttSubscribeWmsTopics } from '../constant/mqttSubscribeTopic';
 import { mqttSubscribeAcsTopics } from '../constant/mqttSubscribeTopic';
 import { checkConnectionWmsHeartbeat } from './heartbeat/checkHeartbeat';
 import { generateUUIDNode } from './hashUtil';
 import { formatDetailedDateTime } from './usefullToolUtil';
-import { wmsCall } from './wms/call';
-import { wmsTransfer } from './wms/transfer';
-import { wmsCarrier } from './wms/carrier';
-import { wmsPort } from './wms/port';
-import { wmsCrane } from './wms/crane';
-import { wmsBranch } from './wms/branch';
-import { wmsAlarm } from './wms/alarm';
+import { wmsCall } from './wms/mqtt/call';
+import { wmsTransfer } from './wms/mqtt/transfer';
+import { wmsCarrier } from './wms/mqtt/carrier';
+import { wmsPort } from './wms/mqtt/port';
+import { wmsCrane } from './wms/mqtt/crane';
+import { wmsBranch } from './wms/mqtt/branch';
+import { wmsAlarm } from './wms/mqtt/alarm';
 import { acsPayloadState } from './acs/payloadState';
 import { acsMissionState } from './acs/missionState';
 import { acsAlarmState } from './acs/alarmState';
 import { acsAckMissionCommand } from './acs/ackMissionCommand';
+import { wmsOnline } from './wms/mqtt/online';
+import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/wmsBranch';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -97,32 +99,34 @@ type McsCancelWorkOrderRequestType = {
 };
 
 export enum MqttTopics {
-  WorkerStatus = 'feedback_worker_status',
-  WorkHistory = 'work_history',
-  Docking = 'docking',
+  // WorkerStatus = 'feedback_worker_status',
+  // WorkHistory = 'work_history',
+  // Docking = 'docking',
+  // AlarmClear = 'alarm/clear',
+  // ItemLogging = 'item_logging',
   AlarmRegist = 'alarm/regist',
-  AlarmClear = 'alarm/clear',
-  IsAlive = 'is-alive',
-  ItemLogging = 'item-logging',
-  WorkOrderStats = 'work-order-stats',
+  IsAlive = 'is_alive',
+  WorkOrderStats = 'work_order_stats',
+  InsertFacilityInfo = 'facility_info',
   // MBS용
-  KepwareStatus = 'kepware-status',
-  ServerStatus = 'server-status'
+  KepwareStatus = 'kepware_status',
+  ServerStatus = 'server_status'
 }
 
-export interface mbsMqttHeader {
+export interface MbsMqttHeader {
   id: string;
   time: string;
   subject: string;
 }
 
-export interface mbsMqttBody {
+export interface MbsMqttBody {
+  Cmd_ID?: string;
   [key: string]: any;
 }
 
-export interface mbsMqttMesaage {
-  header: mbsMqttHeader;
-  body: mbsMqttBody;
+export interface MbsMqttMesaage {
+  header: MbsMqttHeader;
+  body: MbsMqttBody;
 }
 
 
@@ -301,7 +305,7 @@ export const receiveMqtt = (): void => {
           //   message: messageOrg.toString(),
           // });
 
-          // 1. imcs에서  메세지 처리
+          // imcs에서 오는 메세지 처리
           if (serverTopic === 'imcs') {
             if (topicSplit.length === 3 && topicSplit[2] === 'workorder') {
               const messageJson = JSON.parse(message);
@@ -410,7 +414,7 @@ export const receiveMqtt = (): void => {
             }
           }
 
-          // acs에서
+          // acs에서 오는 메세지 처리
           if (serverTopic === 'acs') {
             // item-logging 메세지 처리
             if (topicSplit.length === 3 && topicSplit[1] === 'item-logging') {
@@ -489,6 +493,52 @@ export const receiveMqtt = (): void => {
                 await workOrderService.stateCheckAndEdit(params, makeLogFormat({} as RequestLog));
               }
             }
+            // AMR 미션 결정지 도착
+            if (topicSplit.length === 3 && topicSplit[1] === 'mission-order') {
+              const itemCode = topicSplit[2];
+
+              const messageJson = JSON.parse(message);
+              logging.MQTT_DEBUG({
+                title: 'imcs message - mission order',
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                // void itemLogDao.insert(messageJson);
+                // mission order 수집 구역
+                await receiveBranchInfoFromACS(messageJson as MqttBranchInfoDataFromAcs)
+              } catch (error) {
+                console.log('logging.missionOrder', error);
+              }
+            }
+          }
+
+          // mcs에서 오는 메세지 처리
+          if (serverTopic === 'mcs') {
+            try {
+              // item-logging 메세지 처리
+              if (topicSplit.length === 2 && topicSplit[1] === 'workorder') {
+                const messageJson = JSON.parse(message);
+                console.log("🚀 ~ client.on ~ messageJson:", messageJson)
+                logging.MQTT_LOG({
+                  title: 'mcs workorder',
+                  topic: messageTopic,
+                  message: messageJson,
+                });
+                await workOrderService.regWorkOrder(messageJson);
+                console.log('###4');
+                sendMqtt('acs/workorder', message);
+              }
+            } catch (error) {
+              console.log('왜 안되는지 알려줘야지')
+              logging.MQTT_ERROR({
+                title: 'mqtt message error from mcs/workorder',
+                topic: messageTopic,
+                message: messageOrg.toString(),
+                error: error,
+              });
+            }
           }
         }
         // MBS
@@ -516,7 +566,7 @@ export const receiveMqtt = (): void => {
               topic: messageTopic,
               message: messageJson,
             });
-            // WMS
+            // WMS에서 오는 메세지 처리
             if (wmsList.includes(systemTopic)) {
               if (logicTopic === 'CALL') {
                 wmsCall(systemTopic, messageJson)
@@ -532,9 +582,11 @@ export const receiveMqtt = (): void => {
                 wmsBranch(systemTopic, messageJson)
               } else if (logicTopic === 'ALARM') {
                 wmsAlarm(systemTopic, messageJson)
+              } else if (logicTopic === 'ONLINE') {
+                wmsOnline(systemTopic, messageJson)
               }
             }
-            // ACS 
+            // ACS에서 오는 메세지 처리
             else if (acsList.includes(systemTopic)) {
               if (logicTopic === 'PAYLOAD_STATE') {
                 acsPayloadState(systemTopic, messageJson)
@@ -592,7 +644,7 @@ export const sendMqtt = (subTopic: string, message: string): void => {
 };
 
 // wms mqtt 메세지 발송
-export const sendMbsMqtt = (systemTopic: string, header: mbsMqttHeader, body: mbsMqttBody, systemName?: string | null): void => {
+export const sendMbsMqtt = (systemTopic: string, header: MbsMqttHeader, body: MbsMqttBody, systemName?: string | null): void => {
   if (mqttConfig.host !== '') {
     // mqtt host가 등록된 경우에만 발송한다.
     let sendTopic = wmsMqttTopic;
@@ -601,7 +653,7 @@ export const sendMbsMqtt = (systemTopic: string, header: mbsMqttHeader, body: mb
     }
     sendTopic = sendTopic + '-' + systemTopic
 
-    const sendMessageObj: mbsMqttMesaage = {
+    const sendMessageObj: MbsMqttMesaage = {
       header: header,
       body: body
     }
@@ -620,7 +672,7 @@ export const sendMbsMqtt = (systemTopic: string, header: mbsMqttHeader, body: mb
   }
 };
 
-export const makeMbsMqttHeader = (subject: string): mbsMqttHeader => {
+export const makeMbsMqttHeader = (subject: string): MbsMqttHeader => {
   const id = generateUUIDNode();
   const time = formatDetailedDateTime(new Date());
 
@@ -631,7 +683,7 @@ export const makeMbsMqttHeader = (subject: string): mbsMqttHeader => {
   }
 }
 
-export const separateMqttMessage = (messageJson: mbsMqttMesaage) => {
+export const separateMqttMessage = (messageJson: MbsMqttMesaage) => {
   const messageId = messageJson.header.id;
   const subject = messageJson.header.subject;
   const messageBody = messageJson.body;

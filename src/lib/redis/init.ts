@@ -1,6 +1,7 @@
 import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { formatDetailedDateTime } from '../usefullToolUtil';
 import { service as settingService } from '../../service/common/settingService';
+import { service as facilityService } from '../../service/operation/facilityService';
 
 export interface HeartbeatInfo {
   systemName: string;
@@ -31,4 +32,5 @@ const initHeartbeatRedisData = () => {
 export const initAllRedisData = async () => {
   initHeartbeatRedisData()
   await settingService.redisInit()
+  await facilityService.writeAllRedis();
 }

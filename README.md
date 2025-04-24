@@ -170,6 +170,48 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 - 버전승인: `v0.2.0-ssb`
 - 버전승인: `v0.2.0-ljk`
 
+## v0.2.1-ljk
+- trackingLog 테이블 추가
+  - 기존에 timescale에서 작성하려는 의도와 다르게 빈번한 업데이트 때문에 RDB 에서 생성으로 변경
+  - CRUD 기능 생성
+
+- itemLog 테이블 컬럼 추가
+  - itemLog 테이블이 trackingLog 하위 개념으로 포함되기 때문에 itemLog에 trackingLogId 컬럼 추가
+
+## v0.2.1-cyk
+- src\index.ts 구조 변경
+- acs에서 설비 등록/수정 시 mcs 설비 데이터 연동
+- 설비, 작업지시 테이블에 mission order 인지 컬럼 추가
+```sql
+ALTER TABLE public.facilities ADD is_mission_order_capable bool NULL DEFAULT false;
+ALTER TABLE public.work_orders ADD is_mission_order bool NULL DEFAULT false;
+```
+- kepware `Call_Request` 값에 따른 처리 로직 적용
+  - mission 결정지 작업지시 생성 로직 적용
+```sql
+ALTER TABLE public.work_orders ADD mission_start_date timestamptz NULL;
+ALTER TABLE public.work_orders ADD mission_end_date timestamptz NULL;
+```
+- linked_eqp_ids 컬럼 추가
+  - 콜이 발생되되는 설비 기준에서 EQP-EQP 통신인 경우 연결될 설비 id 지정하는 컬럼
+```sql
+ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
+```
+
+## v0.2.2-ljk
+- 설비 입고, 창고 출고 로직 마무리
+  - TOPIC: PORT 관련 로직 추가
+  - CALLINFO 코드 오류 수정
+
+- Tracking Log
+  - 물류 로그 기본 로직 구현
+  - Tracking Log 테이블 수정
+
+- Item Log
+  - 하위 물류 로그 기본 로직 구현
+  - Tracking Log 테이블 수정
+
 ## v0.2.1-ssb
 - CPU 사용량(%), RAM 사용량(%) 체크 후 MQTT 전송 로직 추가
 - 시스템관리 : 다국어처리 설정 타입 추가
+- PLC 값 변경 API 추가

@@ -55,6 +55,14 @@ interface MqttLogFormat {
   message: unknown;
   error?: unknown;
 }
+
+interface RedisLogFormat {
+  key: string;
+  value: string;
+  message: unknown;
+  error?: unknown;
+}
+
 type WsLogFormat = {
   // WebSocket 로그에 필요한 필드들을 정의
   // 예시:
@@ -64,6 +72,17 @@ type WsLogFormat = {
 };
 
 type CacheLogFormat = {
+  message: string;
+  error?: unknown;
+};
+
+// kepware 전용 로그
+type KepwareLogFormat = {
+  action: 'TAG_READ' | 'TAG_WRITE' | 'TAG_SUBSCRIBE' | 'ERROR'
+  tag: string | null,        // 태그명
+  value: string | null,      // 태그 값
+  // quality: string,    // 데이터 품질 (예: 'Good', 'Bad')
+  // timestamp: string,  // 발생 시간
   message: string;
   error?: unknown;
 };
@@ -135,6 +154,7 @@ type LocationsData = {
 type MissionState =
   | 'MISSION_INITIATED'
   | 'AMR_ASSIGNED'
+  | 'AMR_UNASSIGNED'
   | 'AMR_ARRIVED'
   | 'AMR_ACQUIRE_STARTED'
   | 'AMR_ACQUIRE_COMPLETED'
@@ -144,7 +164,12 @@ type MissionState =
   | 'AMR_UNASSIGNED'
   | 'MISSION_COMPLETED'
   | 'MISSION_CANCELED'
-  | 'MISSION_FAILED';
+  | 'MISSION_FAILED'
+  | 'MISSION_PAUSED'
+  | 'MISSION_RESUMED'
+  | 'CHARGING_MISSION_INITIATED'
+  | 'CHARGING_STARTED'
+  | 'CHARGING_MISSION_COMPLETED';
 
 type MissionStateData = {
   mission: string;
@@ -1074,63 +1099,104 @@ export const logging = {
       }
     },
   },
-  // IMCS_LOG: {
-  //   ACK_CERTIFICATE_FAILED(data: RobotTransport): void {
-  //     try {
-  //       const logLevel = 'info';
+  KEPWARE_LOG(kepwareLog: KepwareLogFormat): void {
+    try {
+      const logLevel = 'info';
+      void logDao.insert({
+        facilityCode: null,
+        facilityName: null,
+        amrCode: null,
+        amrName: null,
+        logLevel: logLevel,
+        function: 'KEPWARE_LOG',
+        data: kepwareLog,
+      });
+    } catch (error) {
+      console.log('logging.KEPWARE_LOG', error);
+    }
+  },
+  KEPWARE_DEBUG(kepwareLog: KepwareLogFormat): void {
+    try {
+      const logLevel = 'debug';
 
-  //       void logDao.insert({
-  //         facilityCode: null,
-  //         facilityName: null,
-  //         amrCode: null,
-  //         amrName: null,
-  //         logLevel: logLevel,
-  //         function: 'ACK_CERTIFICATE',
-  //         data: data,
-  //       });
-  //     } catch (error) {
-  //       console.log('logging.ACTION_ERROR', error);
-  //     }
-  //   },
-  //   TRANSPORT_COMMAND_LOG(data: RobotTransport): void {
-  //     try {
-  //       const logLevel = 'info';
-  //       const { acsDetail, ...body } = data;
-  //       const insertParams: ItemLogInsertParams = {
-  //         itemCode: acsDetail.itemCode,
-  //         facilityCode: acsDetail.facilityCode,
-  //         facilityName: acsDetail.facilityName,
-  //         amrCode: acsDetail.amrCode,
-  //         amrName: acsDetail.amrName,
-  //         topic: `MCS-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
-  //         subject: 'TRANSPORT_COMMAND',
-  //         body: body,
-  //       };
-  //       void itemLogDao.insert(insertParams);
-  //     } catch (error) {
-  //       console.log('logging.IMCS_LOG.TRaNSPORT_COMMAND_LOG', error);
-  //     }
-  //   },
-  //   ACK_MISSION_COMPLETED(data: { mission: string; acsDetail: AcsDetail }): void {
-  //     try {
-  //       const logLevel = 'info';
-  //       const { acsDetail, ...body } = data;
-  //       const insertParams: ItemLogInsertParams = {
-  //         itemCode: acsDetail.itemCode,
-  //         facilityCode: acsDetail.facilityCode,
-  //         facilityName: acsDetail.facilityName,
-  //         amrCode: acsDetail.amrCode,
-  //         amrName: acsDetail.amrName,
-  //         topic: `MCS-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
-  //         subject: 'ACK_MISSION_COMPLETED',
-  //         body: body,
-  //       };
-  //       void itemLogDao.insert(insertParams);
-  //     } catch (error) {
-  //       console.log('logging.ITEM_LOG.ACK_MISSION_COMPLETED', error);
-  //     }
-  //   },
-  // },
+      void logDao.insert({
+        facilityCode: null,
+        facilityName: null,
+        amrCode: null,
+        amrName: null,
+        logLevel: logLevel,
+        function: 'KEPWARE_DEBUG',
+        data: kepwareLog,
+      });
+    } catch (error) {
+      console.log('logging.KEPWARE_DEBUG', error);
+    }
+  },
+  KEPWARE_ERROR(kepwareLog: KepwareLogFormat): void {
+    try {
+      const logLevel = 'error';
+      const newData = {
+        message: JSON.parse(JSON.stringify(kepwareLog.message)),
+        error: kepwareLog.error,
+      };
+
+      const logFormat = {
+        kepwareLog: {
+          ...newData,
+          error: {
+            message: kepwareLog.error instanceof Error ? kepwareLog.error.message : '',
+            stack: kepwareLog.error instanceof Error ? kepwareLog.error.stack : '',
+          },
+        },
+      };
+
+      void logDao.insert({
+        facilityCode: null,
+        facilityName: null,
+        amrCode: null,
+        amrName: null,
+        logLevel: logLevel,
+        function: 'KEPWARE_ERROR',
+        data: logFormat,
+      });
+    } catch (error) {
+      console.log('logging.KEPWARE_ERROR', error);
+    }
+  },
+  REDIS_LOG(redisLog: RedisLogFormat): void {
+    try {
+      const logLevel = 'info';
+
+      void logDao.insert({
+        facilityCode: null,
+        facilityName: null,
+        amrCode: null,
+        amrName: null,
+        logLevel: logLevel,
+        function: 'REDIS_LOG',
+        data: redisLog,
+      });
+    } catch (error) {
+      console.log('logging.REDIS_LOG', error);
+    }
+  },
+  REDIS_DEBUG(redisLog: RedisLogFormat): void {
+    try {
+      const logLevel = 'debug';
+
+      void logDao.insert({
+        facilityCode: null,
+        facilityName: null,
+        amrCode: null,
+        amrName: null,
+        logLevel: logLevel,
+        function: 'REDIS_DEBUG',
+        data: redisLog,
+      });
+    } catch (error) {
+      console.log('logging.REDIS_DEBUG', error);
+    }
+  },
 };
 
 // KEPWARE 로깅
