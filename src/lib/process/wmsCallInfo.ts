@@ -115,7 +115,7 @@ const sendCallInfoToWms = async (callInfo: CallInfoBody, systemName: string) => 
     value: null,
     description: `Facility ${callInfo.Caller} requested CALLINFO to WMS ${systemName} with call number ${callInfoData.Call_ID}`
   }
-  await editTrackingLogRedis(trackingLogUpdateData)
+  await editTrackingLogRedis(trackingLogUpdateData, (callInfoData.Call_ID).slice(-4), 'SUCCESS', callInfo.Caller)
 };
 
 

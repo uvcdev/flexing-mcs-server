@@ -80,7 +80,7 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     location: callInfo.Caller,
     message: `Call published: ${eqpCallId} from ${callInfo.Caller}`,
     callId: callInfo.CALL_ID,
-    value: callInfo.EQP_CALL_ID,
+    value: (callInfo.EQP_CALL_ID).padStart(4, '0'),
     resultStatus: 'SUCCESS',
     createdDateTime: dateNow
   }
@@ -134,7 +134,7 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
   redisUtil.hset(RedisKeys.InfoTrackingLogByCallId, callInfo.CALL_ID, JSON.stringify(trackingLogRedisBody));
 }
 
-export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRedisUpdateParams, value?: string, resultStatus?: string) => {
+export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRedisUpdateParams, value?: string, resultStatus?: string, location?: string) => {
   // 필수 값 확인 
   const callId = trackingLogUpdateData.callId;
 
@@ -241,7 +241,7 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
     body: null,
     trackingLogId: infoTrackingLogByCallId.id,
     state: trackingLogUpdateData.detail ? trackingLogUpdateData.detail : null,
-    location: trackingLogUpdateData.location ? trackingLogUpdateData.location : null,
+    location: location,
     message: trackingLogUpdateData.description ? trackingLogUpdateData.description : null,
     callId: infoTrackingLogByCallId.callId,
     value: value,

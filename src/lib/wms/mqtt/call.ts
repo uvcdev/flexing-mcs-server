@@ -98,7 +98,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         value: null,
         description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`
       }
-      await editTrackingLogRedis(trackingLogUpdateData)
+      await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
 
       break;
 
