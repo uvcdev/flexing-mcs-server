@@ -235,13 +235,13 @@ if (env === 'development') {
 
       // =====🔥kepserver 관련🔥=====
       // 초기 태그 데이터 초기화
-      // await useKepServerUtil().initTagData();
+      await useKepServerUtil().initTagData();
 
       // NODE-OPCUA <-> KEPServerex 연결 및 초기화
-      // await opcuaUtil.initKepserverex();
+      await opcuaUtil.initKepserverex();
 
       // PLC 데이터 수집 (kepware 상태 불러와서 mqtt 전송)
-      // await useKepServerUtil().monitorTagData();
+      await useKepServerUtil().monitorTagData();
 
     })
     .catch((error: Error) => {

@@ -2,7 +2,7 @@ import { PendingWorkOrderAttributes } from "../../../models/operation/workOrder"
 import { logging } from "../../logging";
 import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody } from "../../mqttUtil"
 import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand } from "../../process/wmsAck"
-import { BranchInfoReqBody, DeletedBranchInfoReq, deleteInfoAckOutCallByCallId } from "../../process/wmsBranch";
+import { BranchInfoReqBody, DeletedBranchInfoReq, deleteInfoAckMissionCallByCallId, deleteInfoAckOutCallByCallId } from "../../process/wmsBranch";
 import { setAbortedCommandForRetry } from "../../process/wmsCommon";
 import { RedisKeys, useRedisUtil } from "../../redisUtil";
 import { removeAckPrefix } from "../../usefullToolUtil";
@@ -29,7 +29,7 @@ interface BranchInfoRepBody extends MbsMqttBody {
   CarrierList: Array<BranchInfoRepCarrierInfo>
 }
 
-interface InfoAckOutCallAttributes extends BranchInfoReqBody, DeletedBranchInfoReq {
+interface InfoBranchCallAttributes extends BranchInfoReqBody, DeletedBranchInfoReq {
 
 }
 
@@ -41,7 +41,11 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
   const resultCode = carrierInfo.ResultCode
 
   // RedisKeys.InfoAckOutCallByCallId 데이터
-  const infoAckOutCallByCallId = await redisUtil.hgetObject<InfoAckOutCallAttributes>(RedisKeys.InfoAckOutCallByCallId, callId) || null
+  const infoAckOutCallByCallId = await redisUtil.hgetObject<InfoBranchCallAttributes>(RedisKeys.InfoAckOutCallByCallId, callId) || null
+
+  const infoAckMissionCallByCallId = await redisUtil.hgetObject<InfoBranchCallAttributes>(RedisKeys.InfoAckMissionCallByCallId, callId) || null
+
+  const branchInfoRepData = infoAckOutCallByCallId || infoAckMissionCallByCallId;
 
   // 2. BRANCH_INFO_REP 의 ACK HCACK = 4 처리 ( ACK = 4는 특수한 경우 빼고는 전부 전송한다. MCS 서버에서만 에러날 수 있게 작업해야함 )
   setReceivedAckCommand(systemTopic, wmsName, messageMessage)
@@ -67,10 +71,10 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
     return
   }
 
-  if (!infoAckOutCallByCallId) {
+  if (!branchInfoRepData) {
     logging.ACTION_ERROR({
       filename: `branch.ts - branchInfoRep`,
-      error: `[infoAckOutCallByCallId] infoAckOutCallByCallId must not be empty`,
+      error: `[branchInfoRepData] branchInfoRepData must not be empty`,
       params: null,
       result: false,
     });
@@ -78,7 +82,11 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
   }
 
   // 4. InfoAckOutCallByCallId 정보 삭제
-  deleteInfoAckOutCallByCallId(callId)
+  if (branchInfoRepData.isMissionOrder) {
+    deleteInfoAckMissionCallByCallId(callId)
+  } else {
+    deleteInfoAckOutCallByCallId(callId)
+  }
 
   // 5. ResultCode 별 분기 처리
   switch (resultCode) {
@@ -87,20 +95,30 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
     case '4':
       // 이 부분이 조금 애매함 -> 근데 정보 조합을 맞추려면 이름으로 판단 하는게 좋을듯
       // 수동 작업 지시 같은 경우는 어떻게 하지 ?? 흠 .... 이건 고민 조금 더 해봐야할듯 ?
-      const prefixFromFacilityName = callId.substring(0, 4)
 
-      const infoPendingWorkOrder: PendingWorkOrderAttributes = {
-        callId: callId,
-        fromFacilityName: prefixFromFacilityName,
-        toFacilityName: carrierInfo.NewDest,
-        type: 'OUT',
-        isMissionOrder: true,
-        // TODO - CALL 정보 수집되는 것 보고 결정 예정
-        callPriority: '',
-        callType: carrierInfo.Call_Type,
+      // 미션 오더인 경우
+      if (branchInfoRepData.isMissionOrder) {
+        // 미션 오더 MQTT 전송
+        // TODO MQTT 데이터 전송
+      }
+      // 설비에서 만든 out 콜인 경우 
+      else {
+        const prefixFromFacilityName = callId.substring(0, 4)
+
+        const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+          callId: callId,
+          fromFacilityName: prefixFromFacilityName,
+          toFacilityName: carrierInfo.NewDest,
+          type: 'OUT',
+          isMissionOrder: false,
+          // TODO - CALL 정보 수집되는 것 보고 결정 예정
+          callPriority: '',
+          callType: carrierInfo.Call_Type,
+        }
+
+        redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder))
       }
 
-      redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder))
       break;
     // ResultCode = 11 : 목적지 상태 이상 (Dest Error)
     case '11':
@@ -193,7 +211,7 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
   const branchInfoData = remainingCommandInfo.message.body as BranchInfoReqBody
   const branchDeletedInfoData = remainingCommandInfo.deletedData || {}
 
-  const infoAckOutCallData: InfoAckOutCallAttributes = { ...branchInfoData, ...branchDeletedInfoData }
+  const infoAckOutCallData: InfoBranchCallAttributes = { ...branchInfoData, ...branchDeletedInfoData }
 
   // 2. Branch_info_req 에 해당하는 RemainingAckCommandBySubjectCmdId 삭제
   deleteRemainingAckCommand(remainingAckCommandSubjectCmdId)
@@ -204,7 +222,11 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
     case '4':
       // 물류 로그 기록
       // InfoAckOutCallByCallId 레디스 기록
-      redisUtil.hset(RedisKeys.InfoAckOutCallByCallId, callId, JSON.stringify(infoAckOutCallData))
+      if (infoAckOutCallData.isMissionOrder) {
+        redisUtil.hset(RedisKeys.InfoAckMissionCallByCallId, callId, JSON.stringify(infoAckOutCallData))
+      } else {
+        redisUtil.hset(RedisKeys.InfoAckOutCallByCallId, callId, JSON.stringify(infoAckOutCallData))
+      }
       // 정상 처리 시, 별도의 로직 존재하지 않음 ( ACK 받은 것만 인지 할 수 있으면 됨 - remainingCommandInfo 삭제 )
       logging.ACTION_INFO({
         filename: `branch.ts - ackBranchInfoReq`,

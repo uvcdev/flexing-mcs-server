@@ -75,7 +75,7 @@ export const useWorkOrderUtil = () => {
   }
   const createWorkOrder = async () => {
     const workOrderList = await redisUtil.hgetAllObject<McsPendingWorkOrderRequestType>(RedisKeys.InfoPendingWorkOrderByCallId);
-    console.log("🚀 ~ createWorkOrder ~ workOrderList:", workOrderList)
+    // console.log("🚀 ~ createWorkOrder ~ workOrderList:", workOrderList)
     if (workOrderList) {
       for (const workOrder of workOrderList) {
         const params: McsWorkOrderRequestType =
@@ -97,7 +97,7 @@ export const useWorkOrderUtil = () => {
         const messageJson = JSON.parse(message)
         const messageTopic = 'acs/workorder'
 
-        console.log("🚀 ~ createWorkOrder ~ messageJson:", messageJson)
+        // console.log("🚀 ~ createWorkOrder ~ messageJson:", messageJson)
         await workOrderService.regWorkOrder(messageJson);
 
         try {

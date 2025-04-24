@@ -20,6 +20,7 @@ export interface EqpCallStats {
   Caller: string;
   Call_Quantity: number;
   Call_Priority: string;
+  SYSTEM_NAME?: string;
 };
 
 export interface EqpCallStatsForAck extends EqpCallStats {

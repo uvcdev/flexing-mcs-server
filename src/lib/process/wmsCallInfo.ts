@@ -35,7 +35,7 @@ export const checkCallInfoForWms = async () => {
 
   for (let i = 0, length = callInfoList.length; i < length; i++) {
     const callInfo = { ...callInfoList[i] };
-    // const systemName = callInfo.systemName || 'WMS';
+    // const systemName = callInfo.SYSTEM_NAME || 'WMS';
     const systemName = 'WMS';
 
     const wmsCallInfo: CallInfoForWms = {

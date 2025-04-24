@@ -4,6 +4,7 @@ import { logging } from "../logging";
 import { makeMbsMqttHeader, MbsMqttBody, sendMbsMqtt } from "../mqttUtil";
 import { RedisKeys, useRedisUtil } from "../redisUtil";
 import { setRemainingAckCommand } from "./wmsAck";
+import { EqpCallStats } from "../callRegisterUtil";
 
 
 const redisUtil = useRedisUtil();
@@ -47,8 +48,9 @@ export interface BranchInfoReqForWms extends BranchInfoReqBody {
 }
 
 export interface DeletedBranchInfoReq {
-  workOrderCode?: string;
-  workOrderId?: number;
+  isMissionOrder?: boolean;
+  workOrderCode?: string | null;
+  workOrderId?: number | null;
 }
 
 export interface MqttBranchInfoDataFromAcs {
@@ -64,14 +66,15 @@ export interface MqttBranchInfoDataFromAcs {
 }
 
 // 공통 함수: Redis에서 미션 결정지 콜 정보를 확인하고 처리하는 함수
-export const checkBranchInfoReqForWms = async () => {
-  const branchInfoList = await redisUtil.hgetAllObject<BranchInfoReqForWms>(RedisKeys.InfoOutCallByCallId) || [];
+export const checkMissionBranchInfoReqForWms = async () => {
+  const missionBranchInfoList = await redisUtil.hgetAllObject<BranchInfoReqForWms>(RedisKeys.InfoMissionCallByCallId) || [];
 
-  for (let i = 0, length = branchInfoList.length; i < length; i++) {
-    const branchInfo = { ...branchInfoList[i] };
+  for (let i = 0, length = missionBranchInfoList.length; i < length; i++) {
+    const branchInfo = { ...missionBranchInfoList[i] };
     const systemName = branchInfo.systemName || 'WMS';
 
     const deletedBranchInfoReqInfo: DeletedBranchInfoReq = {
+      isMissionOrder: true,
       workOrderCode: branchInfo.workOrderCode,
       workOrderId: branchInfo.workOrderId,
     }
@@ -79,6 +82,40 @@ export const checkBranchInfoReqForWms = async () => {
     delete branchInfo['systemName'];
     delete branchInfo['workOrderCode'];
     delete branchInfo['workOrderId'];
+
+    sendBranchInfoToWms(branchInfo, systemName, deletedBranchInfoReqInfo);
+  }
+};
+
+// 공통 함수: Redis에서 OUT 콜 정보를 확인하고 처리하는 함수
+export const checkOutBranchInfoReqForWms = async () => {
+  const outBranchInfoList = await redisUtil.hgetAllObject<EqpCallStats>(RedisKeys.InfoOutCallByCallId) || [];
+
+  for (let i = 0, length = outBranchInfoList.length; i < length; i++) {
+    const outCallInfo = outBranchInfoList[i];
+
+    const branchInfo: BranchInfoReqBody = {
+      Cmd_ID: '',
+      Call_ID: outCallInfo.CALL_ID,
+      MissionID: outCallInfo.CALL_ID,
+      AMRID: '',
+      CurrentLocation: outCallInfo.Caller,
+      CarrierList: [
+        {
+          CarrierID: '',
+          CarrierState: '',
+          Call_Type: outCallInfo.Call_Type
+        }
+      ]
+    }
+    // const systemName = callInfo.SYSTEM_NAME || 'WMS';
+    const systemName = 'WMS';
+
+    const deletedBranchInfoReqInfo: DeletedBranchInfoReq = {
+      isMissionOrder: false,
+      workOrderCode: null,
+      workOrderId: null,
+    }
 
     sendBranchInfoToWms(branchInfo, systemName, deletedBranchInfoReqInfo);
   }
@@ -124,7 +161,11 @@ const sendBranchInfoToWms = (branchInfo: BranchInfoReqBody, systemName: string, 
   sendMbsMqtt(topic, mqttHeader, mqttBody, systemName);
 
   // CALLINFO 보내고 나서 해당 redis 값 삭제
-  deleteInfoOutCallByCallId(branchInfoData.Call_ID)
+  if (deletedBranchInfoReqInfo.isMissionOrder) {
+    deleteInfoMissionCallByCallId(branchInfoData.Call_ID)
+  } else {
+    deleteInfoOutCallByCallId(branchInfoData.Call_ID)
+  }
 
   // CALLINFO에 대한 ack 초기값 설정
   setRemainingAckCommand(topic, systemName, { header: mqttHeader, body: mqttBody }, deletedBranchInfoReqInfo);
@@ -143,6 +184,18 @@ export const deleteInfoAckOutCallByCallId = (callId: string) => {
   // logging 처리는 이 함수를 사용하는 쪽에서 사용
   // TODO-ljk) ack 유효성 검사는 로직이 잡히면 추가될 예정 
   redisUtil.hdel(RedisKeys.InfoAckOutCallByCallId, callId);
+}
+
+export const deleteInfoMissionCallByCallId = (callId: string) => {
+  // logging 처리는 이 함수를 사용하는 쪽에서 사용
+  // TODO-ljk) ack 유효성 검사는 로직이 잡히면 추가될 예정 
+  redisUtil.hdel(RedisKeys.InfoMissionCallByCallId, callId);
+}
+
+export const deleteInfoAckMissionCallByCallId = (callId: string) => {
+  // logging 처리는 이 함수를 사용하는 쪽에서 사용
+  // TODO-ljk) ack 유효성 검사는 로직이 잡히면 추가될 예정 
+  redisUtil.hdel(RedisKeys.InfoAckMissionCallByCallId, callId);
 }
 
 // 미션 오더 수집 후 해당 데이터 Redis로 수집
@@ -174,11 +227,15 @@ export const receiveBranchInfoFromACS = async (branchInfoMqttMessage: MqttBranch
       ]
 
     }
-    redisUtil.hset(RedisKeys.InfoOutCallByCallId, callId, JSON.stringify(branchInfoReqForWmsParams))
+    redisUtil.hset(RedisKeys.InfoMissionCallByCallId, callId, JSON.stringify(branchInfoReqForWmsParams))
   }
   // 수동 작업 지시 미션 결정지에서는 어떻게 처리 할까 ...
   else if (branchInfoMqttMessage.mode === 'manual') {
 
   }
 
+}
+
+// 미션 오더 결과를 ACS에 데이터 송신
+export const sendBranchInfoToACS = async (branchInfoMqttMessage: MqttBranchInfoDataFromAcs) => {
 }
