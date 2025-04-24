@@ -13,13 +13,17 @@ import { RedisKeys, useRedisUtil } from "./redisUtil";
 import { CallInfoForWms } from "./process/wmsCallInfo";
 import { useWorkOrderUtil, McsWorkOrderRequestType } from "./workOrderUtil";
 import { initTrackingLogRedis } from "./process/trackingLog";
-export type EqpCallStats = {
+export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
   Call_Type: string;
   Caller: string;
   Call_Quantity: number;
   Call_Priority: string;
+};
+
+export interface EqpCallStatsForAck extends EqpCallStats {
+  Cmd_ID: string;
 };
 
 export const useCallRegisterUtil = () => {

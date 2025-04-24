@@ -1,4 +1,5 @@
 import { TrackingLogRedisUpdateParams } from "../../../models/common/trackingLog"
+import { EqpCallStatsForAck } from "../../callRegisterUtil"
 import { logging } from "../../logging"
 import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody } from "../../mqttUtil"
 import { editTrackingLogRedis } from "../../process/trackingLog"
@@ -65,7 +66,16 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
     case '4':
       // 물류 로그 기록
       // InfoAckInCallByCallId 레디스 기록
-      redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(callInfoData))
+      const infoAckInCallByCallIdData: EqpCallStatsForAck = {
+        Cmd_ID: callInfoData.Cmd_ID,
+        CALL_ID: callInfoData.Call_ID,
+        EQP_CALL_ID: callId.slice(-4),
+        Call_Type: callInfoData.Call_Type,
+        Caller: callInfoData.Caller,
+        Call_Priority: callInfoData.Call_Priority,
+        Call_Quantity: Number(callInfoData.Call_Quantity) || 1
+      }
+      redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData))
 
       logging.ACTION_INFO({
         filename: `call.ts - ackBranchInfoReq`,
