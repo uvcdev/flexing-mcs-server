@@ -64,6 +64,7 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
   }
 
   // item Log insert
+  const dateNow = formatDetailedDateTime(new Date());
   const itemLogInsertParams: ItemLogInsertParams = {
     itemCode: null,
     facilityCode: null,
@@ -77,7 +78,11 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     trackingLogId: trackingLogId,
     state: subject,
     location: callInfo.Caller,
-    message: `Call published: ${eqpCallId} from ${callInfo.Caller}`
+    message: `Call published: ${eqpCallId} from ${callInfo.Caller}`,
+    callId: callInfo.CALL_ID,
+    value: callInfo.EQP_CALL_ID,
+    resultStatus: 'SUCCESS',
+    createdDateTime: dateNow
   }
 
   // Item Log Insert
@@ -102,8 +107,6 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
   //     result: false,
   //   });
   // }
-
-  const dateNow = formatDetailedDateTime(new Date());
 
   const itemLogList = [{ ...itemLogInsertParams }];
 
@@ -131,9 +134,12 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
   redisUtil.hset(RedisKeys.InfoTrackingLogByCallId, callInfo.CALL_ID, JSON.stringify(trackingLogRedisBody));
 }
 
-export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRedisUpdateParams) => {
+export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRedisUpdateParams, value?: string, resultStatus?: string) => {
   // 필수 값 확인 
   const callId = trackingLogUpdateData.callId;
+
+  // Redis 값 업데이트
+  const dateNow = formatDetailedDateTime(new Date());
 
   if (!callId) {
     logging.ACTION_ERROR({
@@ -236,13 +242,14 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
     trackingLogId: infoTrackingLogByCallId.id,
     state: trackingLogUpdateData.detail ? trackingLogUpdateData.detail : null,
     location: trackingLogUpdateData.location ? trackingLogUpdateData.location : null,
-    message: trackingLogUpdateData.description ? trackingLogUpdateData.description : null
+    message: trackingLogUpdateData.description ? trackingLogUpdateData.description : null,
+    callId: infoTrackingLogByCallId.callId,
+    value: value,
+    resultStatus: resultStatus,
+    createdDateTime: dateNow,
   }
   // Item Log Insert
   void itemLogDao.insert(itemLogInsertParams);
-
-  // Redis 값 업데이트
-  const dateNow = formatDetailedDateTime(new Date());
 
   const itemLogList = [...infoTrackingLogByCallId.itemLogList];
 
@@ -279,8 +286,8 @@ export const sendTrackingLogs = async () => {
 
     const facilityCode = infoTrackingLogByFacilityCode.startFacility;
 
-    console.log('i', i, 'infoTrackingLogByFacilityCode', infoTrackingLogByFacilityCode)
+    // console.log('i', i, 'infoTrackingLogByFacilityCode', infoTrackingLogByFacilityCode)
 
-    sendMqtt(`acs/trackingLog/${facilityCode}`, JSON.stringify(infoTrackingLogByFacilityCode))
+    sendMqtt(`tracking_log/${facilityCode}`, JSON.stringify(infoTrackingLogByFacilityCode))
   }
 }
