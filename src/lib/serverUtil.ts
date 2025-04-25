@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { MqttTopics, sendMqtt } from './mqttUtil';
 import os from 'os';
+import { cpu, mem } from 'node-os-utils';
 
 export type ServerStatus = {
   // mcs: boolean;
@@ -38,7 +39,7 @@ const serverStatus: ServerStatus = {
 // };
 export const useServerUtil = () => {
   const getStatus = () => serverStatus;
-  const sendStatus = () => {
+  const sendStatus = async () => {
     // 현재시간 - mcs, fms 신호 최근 시간이 env설정값보다 크면 false 아니면 true
     // const now = new Date();
     // if (serverStatus.fmsTime && now.getTime() - serverStatus.fmsTime.getTime() > Number(checkTimes.fms) * 1000) {
@@ -50,6 +51,10 @@ export const useServerUtil = () => {
     // if (serverStatus.dbTime && now.getTime() - serverStatus.dbTime.getTime() > Number(checkTimes.db) * 1000) {
     //   serverStatus.db = false;
     // }
+    const ramUsage = await getRAMUsage();
+    const cpuUsage = await getCPUUsage();
+    serverStatus.ramUsage = ramUsage;
+    serverStatus.cpuUsage = cpuUsage;
     sendMqtt(MqttTopics.ServerStatus, JSON.stringify(serverStatus));
   };
   // const setStatusTime = (type: 'mcs' | 'fms' | 'db' | 'dryrun' | 'startOfDay' | 'endOfDay', time: Date | null) => {
@@ -84,55 +89,21 @@ export const useServerUtil = () => {
   //   if (orderGroupList.rows.length > 0) serverStatus.realOrderGroupId = orderGroupList.rows[0].id;
   // };
 
-  const getRAMUsage = () => {
-    const totalMemMB = (os.totalmem() / 1024 / 1024).toFixed(2);
+  const getRAMUsage = async () => {
+    const memory = await mem.info();
+    const totalMemMB = (memory.totalMemMb).toFixed(2);
+    const usedMemMB = (memory.usedMemMb).toFixed(2);
+    const percent = memory.usedMemPercentage.toFixed(2);
 
-    setInterval(() => {
-      const memory = process.memoryUsage();
-      const rssMB = (memory.rss / 1024 / 1024).toFixed(2);
+    console.log(`시스템 RAM 사용량: (${usedMemMB} / ${totalMemMB}) MB (${percent}%)`);
 
-      const percent = ((Number(rssMB) / Number(totalMemMB)) * 100).toFixed(2);
-
-      console.log(`RAM 사용량: (${rssMB} / ${totalMemMB}) MB (${percent}%)`);
-
-      serverStatus.ramUsage = Number(percent);
-
-    }, 2000);
+    return Number(percent);
   };
 
-  const getCPUUsage = () => {
-
-    let lastUsage = process.cpuUsage();
-    let lastTime = process.hrtime();
-
-    setInterval(() => {
-
-      const nowUsage = process.cpuUsage();
-      const nowTime = process.hrtime();
-
-      const elapsedUsage = {
-        user: nowUsage.user - lastUsage.user,
-        system: nowUsage.system - lastUsage.system,
-      };
-
-      const elapsedTime = [
-        nowTime[0] - lastTime[0],
-        nowTime[1] - lastTime[1],
-      ];
-
-      const elapsedMS = elapsedTime[0] * 1000 + elapsedTime[1] / 1e6;
-      const usedCPUTimeMS = (elapsedUsage.user + elapsedUsage.system) / 1000;
-      const rawPercent = (usedCPUTimeMS / elapsedMS) * 100;
-      const normalizedPercent = rawPercent / os.cpus().length;
-
-      console.log(`CPU 사용량: ${normalizedPercent.toFixed(2)}%`);
-
-      serverStatus.cpuUsage = Number(normalizedPercent.toFixed(2));
-
-      lastUsage = nowUsage;
-      lastTime = nowTime;
-    }, 2000);
-
+  const getCPUUsage = async () => {
+    const cpuUsage = await cpu.usage();
+    console.log(`시스템 CPU 사용량: ${cpuUsage.toFixed(2)}%`);
+    return Number(cpuUsage.toFixed(2));
   };
 
   return { getStatus, sendStatus, getRAMUsage, getCPUUsage };

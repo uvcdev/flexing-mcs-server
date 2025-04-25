@@ -110,7 +110,7 @@ export enum MqttTopics {
   InsertFacilityInfo = 'facility_info',
   // MBS용
   KepwareStatus = 'kepware_status',
-  ServerStatus = 'server_status'
+  ServerStatus = 'server/status'
 }
 
 export interface MbsMqttHeader {

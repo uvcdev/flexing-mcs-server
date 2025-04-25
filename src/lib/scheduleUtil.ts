@@ -20,8 +20,8 @@ const logFormat = makeLogFormat(req);
 
 // 서버상태 전송 인터벌
 export const makeSendServerStatusInterval = (params: { second: number }): void => {
-  void useServerUtil().getRAMUsage();
-  void useServerUtil().getCPUUsage();
+  // void useServerUtil().getRAMUsage();
+  // void useServerUtil().getCPUUsage();
   void useServerUtil().sendStatus();
   setInterval(() => {
     void useServerUtil().sendStatus();
