@@ -45,6 +45,7 @@ const dao = {
         });
     });
   },
+  // bulkInsert 까지 사용할 일 없음 => 프론트에서 임의로 로그 추가 할 일 없음.
   bulkInsert(paramList: Array<TrackingLogUpsertParams>): Promise<BulkInsertedOrUpdatedResult> {
     return new Promise((resolve, reject) => {
       TrackingLog.bulkCreate(paramList, {

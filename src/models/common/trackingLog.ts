@@ -8,6 +8,7 @@ export interface TrackingLogAttributes {
   callId: string | null;         // mcs call id
   callType: string | null;       // 출발 설비 기준 call type 
   eqpCallId: string | null;      // 출발 설비 기준 call 번호
+  transferId: string | null;     // 창고에서 사용하는 물류 로그 ( transfer initated 단계에서 생성됨 )
   subject: TrackingLogSubjectType | null;        // 물류 로그 subject 정보 ex ) LOAD_COMMAND , MISSION_STATE ... 
   detail: string | null;         // subject의 detail 정보 ex ) subject : MISSION_STATE , detail : AMR_ASSIGNED
   state: TrackingLogState | null;       // 물류 로그 진행 상태
@@ -26,7 +27,10 @@ export type TrackingLogSubjectType =
   'CALL_CREATED' |  // 콜 발생
   'CALL_INFO' |     // 콜 INFO 호출 
   'CALL_RESPONSE' |  // 콜에 대한 호출 응답
-  'ACK_CALL_INFO' |  // ACK_CALL_INFO
+  'ACK_CALL_INFO_WMS' |  // ACK_CALL_INFO_WMS - 창고로부터 받은 응답
+  'ACK_CALL_INFO_PLC' |  // ACK_CALL_INFO_PLC - 설비에서 호출 응답 시
+  'TRANSFER_INITIATED' |  // Transfer 시작
+
   'PORT_ASSIGNED' |  // 포트 배정 완료
   'WORK_ORDER_CREATED' |    // 작업지시 생성 
   'CALL_ID' |
@@ -45,6 +49,7 @@ class TrackingLog extends Model implements TrackingLogAttributes {
   public callId!: TrackingLogAttributes['callId'];
   public callType!: TrackingLogAttributes['callType'];
   public eqpCallId!: TrackingLogAttributes['eqpCallId'];
+  public transferId!: TrackingLogAttributes['transferId'];
   public subject!: TrackingLogAttributes['subject'];
   public detail!: TrackingLogAttributes['detail'];
   public state!: TrackingLogAttributes['state'];
@@ -76,6 +81,9 @@ TrackingLog.init(
     },
     eqpCallId: {
       type: DataTypes.STRING(10),
+    },
+    transferId: {
+      type: DataTypes.STRING(50),
     },
     subject: {
       type: DataTypes.STRING(20),
@@ -119,6 +127,7 @@ export interface TrackingLogInsertParams {
   callId: string | null;
   callType: string | null;
   eqpCallId: string | null;
+  transferId: string | null;
   subject: string | null;
   detail: string | null;
   state: TrackingLogState | null;
@@ -134,6 +143,7 @@ export interface TrackingLogUpsertParams {
   callId?: string | null;
   callType?: string | null;
   eqpCallId?: string | null;
+  transferId?: string | null;
   subject?: TrackingLogSubjectType | null;
   detail?: string | null;
   state?: TrackingLogState | null;
@@ -196,6 +206,7 @@ export interface TrackingLogUpdateParams {
   // 업데이트 내용
   callType?: TrackingLogAttributes['callType'];
   eqpCallId?: TrackingLogAttributes['eqpCallId'];
+  transferId?: TrackingLogAttributes['transferId'];
   subject?: TrackingLogAttributes['subject'];
   detail?: TrackingLogAttributes['detail'];
   state?: TrackingLogAttributes['state'];
@@ -221,6 +232,7 @@ export interface TrackingLogRedisAttributes extends Omit<TrackingLogAttributes, 
 export interface TrackingLogRedisUpdateParams {
   callId?: TrackingLogAttributes['callId'];
   subject?: TrackingLogAttributes['subject'];
+  transferId?: TrackingLogAttributes['transferId'];
   detail?: TrackingLogAttributes['detail'];
   state?: TrackingLogAttributes['state'];
   startFacility?: TrackingLogAttributes['startFacility'];

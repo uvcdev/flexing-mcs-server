@@ -34,6 +34,11 @@ const portPresenceStatus = async (wmsName: string, messageMessage: MbsMqttMesaag
   // infoAckInfoCallByCallId 랑 매칭되는 정보 조회
   const infoAckInCallByCallId = await redisUtil.hgetObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId, callId) || null
 
+  // info ACk Info 가 있는 경우
+  // 창고 정상 입고 시나리오
+
+  // info ACK Info 가 없는 경우
+  // 창고 재반입 시나리오
   if (!infoAckInCallByCallId) {
     logging.ACTION_ERROR({
       filename: `port.ts - portPresenceStatus`,

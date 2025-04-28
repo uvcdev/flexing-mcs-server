@@ -1,12 +1,41 @@
+import { TrackingLogRedisAttributes, TrackingLogRedisUpdateParams } from "../../../models/common/trackingLog";
 import { separateMqttMessage, MbsMqttMesaage } from "../../mqttUtil"
+import { editTrackingLogRedis } from "../../process/trackingLog";
 import { setReceivedAckCommand } from "../../process/wmsAck"
+import { RedisKeys, useRedisUtil } from "../../redisUtil";
 
 const systemTopic = 'TRANSFER'
 
-const transferInitiated = (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const redisUtil = useRedisUtil();
+
+const transferInitiated = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsTransferInitiated')
 
+  const callId = messageMessage.body.Call_ID;
+  const transferId = messageMessage.body.TransferID;
+
+  // 단순 Hcack = 4 기록
   setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+
+  // Item Log 생성
+  const trackingLogInfoByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, callId);
+
+  const trackingLogSubject = 'TRANSFER_INITIATED'
+  const trackingLogDetail = 'TRANSFER_INITIATED'
+  const trackingLogState = 'PROCESSING'
+  const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+    callId: callId,
+    subject: trackingLogSubject,
+    detail: trackingLogDetail,
+    state: trackingLogState,
+    startFacility: trackingLogInfoByCallId?.startFacility,
+    transferId: transferId,
+    destFacility: null,
+    assignedRobot: null,
+    value: null,
+    description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`
+  }
+  await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
 }
 
 const transferCancelCompleted = (wmsName: string, messageMessage: MbsMqttMesaage) => {

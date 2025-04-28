@@ -84,8 +84,8 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: true,
       });
 
-      const trackingLogSubject = 'ACK_CALL_INFO'
-      const trackingLogDetail = 'ACK_CALL_INFO'
+      const trackingLogSubject = 'ACK_CALL_INFO_WMS'
+      const trackingLogDetail = 'ACK_CALL_INFO_WMS'
       const trackingLogState = 'PROCESSING'
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,
@@ -93,6 +93,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         detail: trackingLogDetail,
         state: trackingLogState,
         startFacility: callInfoData.Caller,
+        transferId: null,
         destFacility: null,
         assignedRobot: null,
         value: null,
