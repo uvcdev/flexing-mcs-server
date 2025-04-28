@@ -91,20 +91,21 @@ export const useServerUtil = () => {
 
   const getRAMUsage = async () => {
     const memory = await mem.info();
-    const totalMemMB = (memory.totalMemMb).toFixed(2);
-    const usedMemMB = (memory.usedMemMb).toFixed(2);
-    const percent = memory.usedMemPercentage.toFixed(2);
+    const totalMemMB = Math.floor(memory.totalMemMb);
+    const usedMemMB = Math.floor(memory.usedMemMb);
+    const percent = Math.floor(memory.usedMemPercentage);
 
-    console.log(`시스템 RAM 사용량: (${usedMemMB} / ${totalMemMB}) MB (${percent}%)`);
+    // console.log(`시스템 RAM 사용량: ${percent}%`);
 
-    return Number(percent);
+    return percent;
   };
 
   const getCPUUsage = async () => {
     const cpuUsage = await cpu.usage();
-    console.log(`시스템 CPU 사용량: ${cpuUsage.toFixed(2)}%`);
-    return Number(cpuUsage.toFixed(2));
+    // console.log(`시스템 CPU 사용량: ${Math.floor(cpuUsage)}%`);
+    return Math.floor(cpuUsage);
   };
+
 
   return { getStatus, sendStatus, getRAMUsage, getCPUUsage };
 };
