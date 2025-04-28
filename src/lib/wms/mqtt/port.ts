@@ -24,12 +24,12 @@ export interface PortPresenceStatusBody {
 const portPresenceStatus = async (wmsName: string, messageMessage: MbsMqttMesaage, messageBody: PortPresenceStatusBody) => {
   console.log('catch wmsPortPresenceStatust')
 
-  // HCACK = 4 수신
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
-
   const cmdId = messageBody.Cmd_ID;
   const portId = messageBody.PortID;
   const callId = messageBody.Call_ID;
+
+  // HCACK = 4 수신
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 
   // infoAckInfoCallByCallId 랑 매칭되는 정보 조회
   const infoAckInCallByCallId = await redisUtil.hgetObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId, callId) || null

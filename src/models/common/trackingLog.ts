@@ -9,7 +9,7 @@ export interface TrackingLogAttributes {
   callType: string | null;       // 출발 설비 기준 call type 
   eqpCallId: string | null;      // 출발 설비 기준 call 번호
   transferId: string | null;     // 창고에서 사용하는 물류 로그 ( transfer initated 단계에서 생성됨 )
-  subject: TrackingLogSubjectType | null;        // 물류 로그 subject 정보 ex ) LOAD_COMMAND , MISSION_STATE ... 
+  subject: TrackingLogSubjectType | null | any;        // 물류 로그 subject 정보 ex ) LOAD_COMMAND , MISSION_STATE ... 
   detail: string | null;         // subject의 detail 정보 ex ) subject : MISSION_STATE , detail : AMR_ASSIGNED
   state: TrackingLogState | null;       // 물류 로그 진행 상태
   startFacility: string | null;  // 출발 설비 명 
@@ -29,8 +29,10 @@ export type TrackingLogSubjectType =
   'CALL_RESPONSE' |  // 콜에 대한 호출 응답
   'ACK_CALL_INFO_WMS' |  // ACK_CALL_INFO_WMS - 창고로부터 받은 응답
   'ACK_CALL_INFO_PLC' |  // ACK_CALL_INFO_PLC - 설비에서 호출 응답 시
-  'TRANSFER_INITIATED' |  // Transfer 시작
-
+  'TRANSFER_INITIATED' |  // Transfer 시작 -> transfer Id 생성 시점
+  'ACK_TRANSFER_INITIATED' | // MCS -> WMS 응답
+  'CRANE_ACTIVE' | // Crane 시작
+  'ACK_CRANE_ACTIVE' |  // MCS -> WMS 응답
   'PORT_ASSIGNED' |  // 포트 배정 완료
   'WORK_ORDER_CREATED' |    // 작업지시 생성 
   'CALL_ID' |

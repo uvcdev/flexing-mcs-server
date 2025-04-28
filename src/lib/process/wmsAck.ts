@@ -1,8 +1,10 @@
 import { WmsCommandSetting } from "../../models/common/setting";
+import { TrackingLogRedisUpdateParams } from "../../models/common/trackingLog";
 import { logging } from "../logging";
 import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from "../mqttUtil";
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from "../redisUtil";
 import { formatDetailedDateTime, isCurrentTimeFasterThanAnyMinutes, isCurrentTimeFasterThanAnySeconds } from "../usefullToolUtil";
+import { editTrackingLogRedis } from "./trackingLog";
 
 const redisUtil = useRedisUtil();
 
@@ -30,6 +32,7 @@ export interface RemainingAckCommand {
 
 export interface ReceivedAckCommand {
   subjectCmdId: string;      // [subject]-[Cmc_ID]
+  callId: string;
   systemTopic: string;       // systemTopic : CALL, PORT ...
   systemName: string;
   message: MbsMqttMesaage;
@@ -89,7 +92,7 @@ export const setRemainingAckCommand = (systemTopic: string, systemName: string, 
 }
 
 // WMS에서 MCS로 들어온 데이터들에 대한 관리
-export const setReceivedAckCommand = (systemTopic: string, systemName: string, mqttMessage: MbsMqttMesaage) => {
+export const setReceivedAckCommand = (systemTopic: string, systemName: string, callId: string, mqttMessage: MbsMqttMesaage) => {
   const cmdId = mqttMessage.body.Cmd_ID || null
   const subject = mqttMessage.header.subject || ''
 
@@ -117,6 +120,7 @@ export const setReceivedAckCommand = (systemTopic: string, systemName: string, m
 
   const receivedAckCommand: ReceivedAckCommand = {
     subjectCmdId: subjectCmdId,
+    callId: callId,
     systemName: systemName,
     systemTopic: systemTopic,
     message: mqttMessage,
@@ -216,7 +220,7 @@ export const checkRemainingAckCommand = async () => {
 }
 
 // ACK 여부만 보내면 되는 subtopic list
-const basicAckSubtopicList = [
+const trackingAckSubtopicList = [
   'CALL_REQUEST',
   'TRANSFER_INITIATED',
   'TRANSFER_CANCEL_COMPLETED',
@@ -239,6 +243,9 @@ const basicAckSubtopicList = [
   'BRANCH_INFO_REP',
   'ALARM_REPORT',
   'ALARM_CLEAR',
+]
+
+const systemAckSubtopicList = [
   'WMS_ONLINE'
 ]
 
@@ -254,20 +261,14 @@ export const checkReceivedAckCommand = async () => {
   for (let i = 0; i < receivedAckCommandList.length; i++) {
     const receivedAckCommand = receivedAckCommandList[i];
     const receivedAckCommandSubtopic = receivedAckCommand.message.header.subject
-    if (basicAckSubtopicList.includes(receivedAckCommandSubtopic)) {
-      basicAckForInterfaceTest(receivedAckCommand, receivedAckCommandSubtopic)
-    } else if (logicAckSubtopicList.includes(receivedAckCommandSubtopic)) {
+    const callId = receivedAckCommand.message.body.Call_ID || ''
 
-    } else {
-
-    }
-
-
+    await basicAckForInterfaceTest(receivedAckCommand, receivedAckCommandSubtopic, callId)
   }
 }
 
 // interface 테스트 단순 회신을 위한 함수
-const basicAckForInterfaceTest = (ackCommand: ReceivedAckCommand, subtopic: string) => {
+const basicAckForInterfaceTest = async (ackCommand: ReceivedAckCommand, subtopic: string, callId: string) => {
   if (!ackCommand.message.body.Cmd_ID) {
     return;
   }
@@ -283,6 +284,26 @@ const basicAckForInterfaceTest = (ackCommand: ReceivedAckCommand, subtopic: stri
   const subjectCmdId = `${subtopic}-${ackCommand.message.body.Cmd_ID}`
 
   sendMbsMqtt(systemTopic, mqttHeader, mqttBody, ackCommand.systemName);
+
+  // 해당 로그에 대한 Item 로깅 추가
+  if (trackingAckSubtopicList.includes(subtopic)) {
+    const trackingLogSubject = newSubtopic
+    const trackingLogDetail = newSubtopic
+    const trackingLogState = 'PROCESSING'
+    const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+      callId: callId,
+      subject: trackingLogSubject,
+      detail: trackingLogDetail,
+      state: trackingLogState,
+      startFacility: null,
+      transferId: null,
+      destFacility: null,
+      assignedRobot: null,
+      value: null,
+      description: `Call ID ${callId} sent ${newSubtopic} to MCS`
+    }
+    await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', 'MCS')
+  }
 
   deleteReceivedAckCommand(subjectCmdId)
 }

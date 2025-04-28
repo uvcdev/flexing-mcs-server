@@ -48,7 +48,7 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
   const branchInfoRepData = infoAckOutCallByCallId || infoAckMissionCallByCallId;
 
   // 2. BRANCH_INFO_REP 의 ACK HCACK = 4 처리 ( ACK = 4는 특수한 경우 빼고는 전부 전송한다. MCS 서버에서만 에러날 수 있게 작업해야함 )
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 
   // 3. 에러 핸들링
   if (!cmdId || cmdId === '') {

@@ -5,42 +5,50 @@ const systemTopic = 'CARRIER'
 
 const carrierTransferring = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsCallRequest')
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO Carrier CALL ID'
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const carrierIdread = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsAckCallInfo')
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO Carrier CALL ID'
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const carrierWaitin = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsAckCancelCallInfo')
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO Carrier CALL ID'
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const carrierWaitout = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsAckReqCallInfoList')
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO Carrier CALL ID'
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const carrierStored = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsAckReqCallInfoList')
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO Carrier CALL ID'
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const carrierRemoved = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsAckReqCallInfoList')
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO Carrier CALL ID'
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const carrierInstallCompleted = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsAckReqCallInfoList')
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO Carrier CALL ID'
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const carrierRemoveCompleted = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsAckReqCallInfoList')
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO Carrier CALL ID'
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 export const wmsCarrier = (wmsName: string, messageJson: MbsMqttMesaage) => {

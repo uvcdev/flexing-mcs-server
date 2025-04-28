@@ -4,18 +4,19 @@ import { editTrackingLogRedis } from "../../process/trackingLog";
 import { setReceivedAckCommand } from "../../process/wmsAck"
 import { RedisKeys, useRedisUtil } from "../../redisUtil";
 
-const systemTopic = 'TRANSFER'
-
 const redisUtil = useRedisUtil();
 
+const systemTopic = 'TRANSFER'
+
+
 const transferInitiated = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
-  console.log('catch wmsTransferInitiated')
+  console.log('catch wms TRANSFER_INITIATED')
 
   const callId = messageMessage.body.Call_ID;
   const transferId = messageMessage.body.TransferID;
 
   // 단순 Hcack = 4 기록
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 
   // Item Log 생성
   const trackingLogInfoByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, callId);
@@ -41,40 +42,50 @@ const transferInitiated = async (wmsName: string, messageMessage: MbsMqttMesaage
 const transferCancelCompleted = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsTransferCancelCompleted')
 
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO transfer CALL ID'
+
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const transferAbortCompleted = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsTransferAbortCompleted')
 
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO transfer CALL ID'
+
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const transferPaused = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsTransferPaused')
 
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO transfer CALL ID'
+
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const transferResumed = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsTransferResumed')
 
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO transfer CALL ID'
+
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const transferCompleted = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsTransferCompleted')
 
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO transfer CALL ID'
+
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
-export const wmsTransfer = (wmsName: string, messageJson: MbsMqttMesaage) => {
+export const wmsTransfer = async (wmsName: string, messageJson: MbsMqttMesaage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
 
   if (subject === 'TRANSFER_INITIATED') {
-    transferInitiated(wmsName, messageJson)
+    await transferInitiated(wmsName, messageJson)
   } else if (subject === 'TRANSFER_CANCEL_COMPLETED') {
     transferCancelCompleted(wmsName, messageJson)
   } else if (subject === 'TRANSFER_ABORT_COMPLETED') {
