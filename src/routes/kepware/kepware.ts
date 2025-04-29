@@ -27,8 +27,6 @@ router.post('/write', isLoggedIn, async (req: Request<unknown, unknown, Array<Ke
 
     // 요청 파라미터
     const paramsList: Array<KepwareWriteParams> = [];
-    console.log("🚀 ~ router.post ~ req.body:", req.headers)
-    console.log("🚀 ~ router.post ~ req.body:", req.body)
     for (let i = 0, length = req.body.length; i < length; i++) {
       const params: KepwareWriteParams = {
         targetFacility: req.body[i].targetFacility,

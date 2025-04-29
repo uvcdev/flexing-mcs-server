@@ -4,6 +4,7 @@ import { KepwareWriteParams } from '../../models/kepware/kepware';
 import { useKepServerUtil } from '../../lib/kepServerUtil';
 import { AttributeIds, StatusCode, WriteValueOptions } from 'node-opcua-client';
 import { opcuaUtil } from '../../lib/opcuaUtil';
+import { parseAsciiToWord } from '../../lib/kepServerUtil';
 const service = {
 
   parseValue(value: string, dataType: string): boolean | number | string {
@@ -36,6 +37,9 @@ const service = {
         const params: KepwareWriteParams = paramsList[i];
         const tagMapValue = tagMap.get(`${params.targetFacility}.${params.tagName}`);
         if (tagMapValue) {
+          if (tagMapValue.INPUT_TYPE === 'ASCII') {
+            params.value = parseAsciiToWord(params.value).toString();
+          }
           writeDatas.push({
             nodeId: tagMapValue.NODE_ID,
             attributeId: AttributeIds.Value,

@@ -39,6 +39,7 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     callId: callInfo.CALL_ID,
     callType: callInfo.Call_Type,
     eqpCallId: eqpCallId,
+    transferId: null,
     subject: subject,
     detail: subject,
     state: state,
@@ -116,6 +117,7 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     callId: trackingLogInsertParams.callId,
     callType: trackingLogInsertParams.callType,
     eqpCallId: trackingLogInsertParams.eqpCallId,
+    transferId: trackingLogInsertParams.transferId,
     subject: subject,
     detail: subject,
     state: state,
@@ -137,6 +139,7 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
 export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRedisUpdateParams, value?: string, resultStatus?: string, location?: string) => {
   // 필수 값 확인 
   const callId = trackingLogUpdateData.callId;
+  const transferId = trackingLogUpdateData.transferId || null;
 
   // Redis 값 업데이트
   const dateNow = formatDetailedDateTime(new Date());
@@ -216,6 +219,7 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
     callId: infoTrackingLogByCallId.callId,
     callType: infoTrackingLogByCallId.callType,
     eqpCallId: infoTrackingLogByCallId.eqpCallId,
+    transferId: transferId || infoTrackingLogByCallId.transferId,
     subject: trackingLogUpdateData.subject ? trackingLogUpdateData.subject : infoTrackingLogByCallId.subject,
     detail: trackingLogUpdateData.detail ? trackingLogUpdateData.detail : infoTrackingLogByCallId.detail,
     state: trackingLogUpdateData.state ? trackingLogUpdateData.state : infoTrackingLogByCallId.state,
@@ -261,6 +265,7 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
     callId: trackingLogUpdateParams.callId ?? null,
     callType: trackingLogUpdateParams.callType ?? null,
     eqpCallId: trackingLogUpdateParams.eqpCallId ?? null,
+    transferId: trackingLogUpdateParams.transferId ?? null,
     subject: trackingLogUpdateParams.subject ?? null,
     detail: trackingLogUpdateParams.detail ?? null,
     state: trackingLogUpdateParams.state ?? null,
@@ -276,6 +281,9 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
 
   redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, facilityCode, JSON.stringify(trackingLogRedisBody));
   redisUtil.hset(RedisKeys.InfoTrackingLogByCallId, callId, JSON.stringify(trackingLogRedisBody));
+  if (trackingLogRedisBody.transferId) {
+    redisUtil.hset(RedisKeys.InfoTrackingLogByTransferId, trackingLogRedisBody.transferId, JSON.stringify(trackingLogRedisBody))
+  }
 }
 
 export const sendTrackingLogs = async () => {

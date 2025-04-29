@@ -8,6 +8,7 @@ import path from "path";
 export interface MonitorTagValue {
   key: string;
   value: boolean | number | string;
+  inputType: string;
 }
 export interface MonitorTag {
   readValueIdOptions: ReadValueIdOptions[];
@@ -49,8 +50,20 @@ export interface Subscription {
 }
 
 
+// ASCII 타입 태그에서 WORD 값을 추출하는 함수
+export const parseAsciiToWord = (value: string): number => {
+  if (typeof value !== 'string' || value.length !== 2) {
+    throw new Error('두 자리 문자열을 입력하세요.');
+  }
+
+  const char1 = value.charCodeAt(0); // 첫 번째 문자 (상위 바이트)
+  const char2 = value.charCodeAt(1); // 두 번째 문자 (하위 바이트)
+
+  return (char1 << 8) | char2; // 상위 바이트를 왼쪽으로 8비트 이동 후 OR 연산
+};
+
 // WORD 타입 태그에서 ASCII 값을 추출하는 함수
-const parseWordToAscii = (value: number): string | number => {
+export const parseWordToAscii = (value: number): string | number => {
   if (typeof value !== 'number' || value < 0 || value > 0xFFFF) {
     throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
   }
@@ -151,7 +164,12 @@ export const useKepServerUtil = () => {
           const dataValues = await session.read(readValueIdOptions);
 
           dataValues.forEach((dataValue, index) => {
-            tagValue[index].value = dataValue.value.value;
+            const inputType = tagValue[index].inputType;
+            if (inputType === 'ASCII') {
+              tagValue[index].value = parseWordToAscii(dataValue.value.value);
+            } else {
+              tagValue[index].value = dataValue.value.value;
+            }
             result[tagValue[index].key] = tagValue[index].value;
           });
 
@@ -237,13 +255,13 @@ export const useKepServerUtil = () => {
           existingEntry.readValueIdOptions.push({ nodeId: tag.NODE_ID, attributeId: AttributeIds.Value });
 
           // 기존 항목에 새로운 TAG_NAME을 키로 추가
-          existingEntry.tagValue.push({ key: tag.TAG_NAME, value: "" });
+          existingEntry.tagValue.push({ key: tag.TAG_NAME, value: "", inputType: tag.INPUT_TYPE });
         }
       } else {
         // 키가 존재하지 않는 경우, 새로운 항목 생성
         opcuaUtil.allTagNodeIds.set(monitorKey, {
           readValueIdOptions: [{ nodeId: tag.NODE_ID, attributeId: AttributeIds.Value }],
-          tagValue: [{ key: tag.TAG_NAME, value: "" }]
+          tagValue: [{ key: tag.TAG_NAME, value: "", inputType: tag.INPUT_TYPE }],
         });
       }
     });
