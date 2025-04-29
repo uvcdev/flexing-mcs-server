@@ -81,9 +81,9 @@ export const useWorkOrderUtil = () => {
         const params: McsWorkOrderRequestType =
         {
           TYPE: workOrder.type,
-          CALL_ID: parseInt(workOrder.callId.toString().slice(-4), 10).toString(), // 작업지시코드 뒤 4자리
+          CALL_ID: workOrder.callId,
           EQP_ID: workOrder.fromFacilityName,
-          EQP_CALL_ID: workOrder.callId,
+          EQP_CALL_ID: parseInt(workOrder.callId.toString().slice(-4), 10).toString(), // 작업지시코드 뒤 4자리
           PORT_ID: workOrder.type === 'OUT' ? workOrder.toFacilityName : '', // 있어야함
           CALL_PRIORITY: workOrder.callPriority,
           CALL_TYPE: workOrder.callType,

@@ -13,6 +13,7 @@ import { RedisKeys, useRedisUtil } from "./redisUtil";
 import { CallInfoForWms } from "./process/wmsCallInfo";
 import { useWorkOrderUtil, McsWorkOrderRequestType } from "./workOrderUtil";
 import { initTrackingLogRedis } from "./process/trackingLog";
+import { InfoBranchCallAttributes } from "./wms/mqtt/branch";
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -21,6 +22,7 @@ export interface EqpCallStats {
   Call_Quantity: number;
   Call_Priority: string;
   SYSTEM_NAME?: string;
+  NODE_ID: string;
 };
 
 export interface EqpCallStatsForAck extends EqpCallStats {
@@ -47,6 +49,7 @@ export const useCallRegisterUtil = () => {
       : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
     // 필요한 태그 값들 가져오기
     // TODO: call_type 01~10 들어오는 값 확인 후 가공 필요
+    const callResponse = opcuaUtil.tagMap.get(`${targetKey}.Call_Response`);
     const callType01 = opcuaUtil.tagMap.get(`${targetKey}.Call_Type_01`);
     const callPriority = opcuaUtil.tagMap.get(`${targetKey}.Call_Priority`);
     const callCount = opcuaUtil.tagMap.get(`${targetKey}.Call_Count`);
@@ -58,6 +61,7 @@ export const useCallRegisterUtil = () => {
 
     // 필요한 모든 nodeId들을 배열로 모음
     const needNodeIds = [
+      callResponse?.NODE_ID,
       callType01?.NODE_ID,
       callPriority?.NODE_ID,
       callCount?.NODE_ID,
@@ -66,10 +70,12 @@ export const useCallRegisterUtil = () => {
       // callRequestMulti1?.NODE_ID,
       // callRequestMulti2?.NODE_ID
     ].filter((nodeId): nodeId is string => nodeId !== undefined);
+    console.log('needNodeIds123', needNodeIds)
     const readDatas = await kepServerUtil.readTagsValue(needNodeIds);
     console.log("🚀 ~ testRegWorkOrder ~ readDatas:", readDatas)
 
     const needKeys = [
+      callResponse?.TAG_NAME,
       callType01?.TAG_NAME,
       callPriority?.TAG_NAME,
       callCount?.TAG_NAME,
@@ -148,6 +154,8 @@ export const useCallRegisterUtil = () => {
       Caller: info.EQP_ID,
       Call_Quantity: 1,
       Call_Priority: callPriorityValue === 'true' ? '99' : '1',
+      NODE_ID: callResponse?.NODE_ID || '',
+      DATA_TYPE: targetTagInfo.DATA_TYPE
     }));
 
     for (const callInfo of callInfoList) {
@@ -155,16 +163,23 @@ export const useCallRegisterUtil = () => {
       const callInfoString = JSON.stringify(callInfo);
       // init TrackingLog 
       await initTrackingLogRedis(callInfo)
+
       // 미션결정지 여부 판단
       if (facilityInfo?.isMissionOrderCapable) {
+        // 설비 - 설비 로직
         // useWorkOrderUtil().createMissionWorkOrder()
         // await redisUtil.hset(RedisKeys.InfoAckOutCallByCallId, callInfo.EQP_CALL_ID, callInfoString);
-
+        // 설비 - 창고 로직
       } else {
+        // todo: 설비 - 설비 로직
+
+        // 설비 - 창고 로직
         if (facilityInfo?.type === 'in') {
           await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.CALL_ID, callInfoString);
+          await redisUtil.hset(RedisKeys.InfoInCallByNodeId, callInfo.NODE_ID, callInfoString);
         } else {
           await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
+          await redisUtil.hset(RedisKeys.InfoInCallByNodeId, callInfo.NODE_ID, callInfoString);
         }
         // TODO: call_info redis 삭제 시점 확인 필요
       }
@@ -177,7 +192,7 @@ export const useCallRegisterUtil = () => {
 
 
     console.log(`Call request sent to WCS. TYPE: ${callType01Value}, CallID: ${callCountValue}`);
-  }
+  };
   // callRequestMulti1Value와 callRequestMulti2Value의 값을 기반으로 multiValue 결정
   const determineMultiValue = (callRequestMulti1Value: string, callRequestMulti2Value: string): number => {
     if (callRequestMulti1Value === "true" && callRequestMulti2Value === "true") {
@@ -242,31 +257,37 @@ export const useCallRegisterUtil = () => {
   const checkCallSave = async () => {
     // TODO: 동일 EQP ID에 존재하는 레거시 콜들 전부 삭제
     // CallCancel();
-    // const processCallList = async (redisKey: string): Promise<void> => {
-    //   const callList = await redisUtil.hgetAllObject<McsWorkOrderRequestType>(redisKey) || [];
-    //   callList.forEach((callInfo) => {
-    //     useWorkOrderUtil().createWorkOrder(callInfo);
-    //   });
-    // };
 
-    // await processCallList(RedisKeys.InfoAckInCallByCallId);
-    // await processCallList(RedisKeys.InfoAckOutCallByCallId);
+    // call_request 켜 있으면 call_response write
+    const writeAckInfos = async (list: TagValue[] | null) => {
+      if (!list) return;
 
-    const pendingWorkOrderList = await redisUtil.hgetAllObject<WorkOrderAttributesDeep>(RedisKeys.InfoPendingWorkOrderByCallId);
+      for (const info of list) {
+        await kepServerUtil.writeTagsValue([
+          {
+            nodeId: info.NODE_ID,
+            attributeId: AttributeIds.Value,
+            value: {
+              value: {
+                dataType: info.DATA_TYPE,
+                value: true,
+              },
+            },
+          },
+        ]);
+        redisUtil.hdel(RedisKeys.InfoInCallByNodeId, info.NODE_ID);
+        redisUtil.hdel(RedisKeys.InfoOutCallByNodeId, info.NODE_ID);
+      }
+    };
 
-    // write call_response
-    // const callResponseWriteResult = await kepServerUtil.writeTagsValue([
-    //   {
-    //     nodeId: callResponse?.NODE_ID,
-    //     attributeId: AttributeIds.Value,
-    //     value: {
-    //       value: {
-    //         dataType: callResponse?.DATA_TYPE,
-    //         value: true
-    //       }
-    //     }
-    //   }
-    // ]);
-  }
+    const [infoAckInList, infoAckOutList] = await Promise.all([
+
+      redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoInCallByNodeId),
+      redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoOutCallByNodeId)
+    ]);
+
+    await writeAckInfos(infoAckInList);
+    await writeAckInfos(infoAckOutList);
+  };
   return { callRegister, checkCallSave };
 };

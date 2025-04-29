@@ -57,7 +57,9 @@ export enum RedisKeys {
   InfoPendingWorkOrderByCallId = 'info_pending_work_order_by_call_id',    // 작업지시 만들 데이터 목록 
   InfoChangedTagById = 'info_changed_tag_by_id',
   InfoTrackingLogByFacilityCode = 'info_tracking_log_by_facility_code',    // 물류 현황 redis 데이터 by facility code 
-  InfoTrackingLogByCallId = 'info_tracking_log_by_call_id'                 // 물류 현황 redis 데이터 by Call Id => 해당 내용은 사용하고 나서 지워줘야함 ( 콜 생성 시점에서 )
+  InfoTrackingLogByCallId = 'info_tracking_log_by_call_id',                 // 물류 현황 redis 데이터 by Call Id => 해당 내용은 사용하고 나서 지워줘야함 ( 콜 생성 시점에서 )
+  InfoInCallByNodeId = 'info_in_call_by_node_id',
+  InfoOutCallByNodeId = 'info_out_call_by_node_id'
 }
 export enum RedisSettingKeys {
   // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

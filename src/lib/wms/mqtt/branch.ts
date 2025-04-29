@@ -29,7 +29,7 @@ interface BranchInfoRepBody extends MbsMqttBody {
   CarrierList: Array<BranchInfoRepCarrierInfo>
 }
 
-interface InfoBranchCallAttributes extends BranchInfoReqBody, DeletedBranchInfoReq {
+export interface InfoBranchCallAttributes extends BranchInfoReqBody, DeletedBranchInfoReq {
 
 }
 
