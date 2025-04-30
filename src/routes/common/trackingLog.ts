@@ -35,6 +35,8 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, TrackingLogIn
     // 요청 파라미터
     const params: TrackingLogInsertParams = {
       code: req.body.code,
+      plcName: req.body.plcName,
+      portName: req.body.portName,
       callId: req.body.callId,
       eqpCallId: req.body.eqpCallId,
       transferId: req.body.transferId,

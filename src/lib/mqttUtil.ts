@@ -569,21 +569,21 @@ export const receiveMqtt = (): void => {
             // WMS에서 오는 메세지 처리
             if (wmsList.includes(systemTopic)) {
               if (logicTopic === 'CALL') {
-                wmsCall(systemTopic, messageJson)
+                await wmsCall(systemTopic, messageJson)
               } else if (logicTopic === 'TRANSFER') {
-                wmsTransfer(systemTopic, messageJson)
+                await wmsTransfer(systemTopic, messageJson)
               } else if (logicTopic === 'CARRIER') {
-                wmsCarrier(systemTopic, messageJson)
+                await wmsCarrier(systemTopic, messageJson)
               } else if (logicTopic === 'PORT') {
-                wmsPort(systemTopic, messageJson)
+                await wmsPort(systemTopic, messageJson)
               } else if (logicTopic === 'CRANE') {
-                wmsCrane(systemTopic, messageJson)
+                await wmsCrane(systemTopic, messageJson)
               } else if (logicTopic === 'BRANCH') {
-                wmsBranch(systemTopic, messageJson)
+                await wmsBranch(systemTopic, messageJson)
               } else if (logicTopic === 'ALARM') {
-                wmsAlarm(systemTopic, messageJson)
+                await wmsAlarm(systemTopic, messageJson)
               } else if (logicTopic === 'ONLINE') {
-                wmsOnline(systemTopic, messageJson)
+                await wmsOnline(systemTopic, messageJson)
               }
             }
             // ACS에서 오는 메세지 처리

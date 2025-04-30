@@ -261,13 +261,14 @@ export const checkReceivedAckCommand = async () => {
   for (let i = 0; i < receivedAckCommandList.length; i++) {
     const receivedAckCommand = receivedAckCommandList[i];
     const receivedAckCommandSubtopic = receivedAckCommand.message.header.subject
-    const callId = receivedAckCommand.message.body.Call_ID || ''
+    // const callId = receivedAckCommand.message.body.Call_ID || ''
+    const callId = receivedAckCommand.callId || ''
 
     await basicAckForInterfaceTest(receivedAckCommand, receivedAckCommandSubtopic, callId)
   }
 }
 
-// interface 테스트 단순 회신을 위한 함수
+// interface 단순 회신을 위한 함수
 const basicAckForInterfaceTest = async (ackCommand: ReceivedAckCommand, subtopic: string, callId: string) => {
   if (!ackCommand.message.body.Cmd_ID) {
     return;
@@ -300,7 +301,7 @@ const basicAckForInterfaceTest = async (ackCommand: ReceivedAckCommand, subtopic
       destFacility: null,
       assignedRobot: null,
       value: null,
-      description: `Call ID ${callId} sent ${newSubtopic} to MCS`
+      description: `Call ID ${callId} sent ${newSubtopic} to MCS`,
     }
     await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', 'MCS')
   }

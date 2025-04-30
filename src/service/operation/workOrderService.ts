@@ -143,7 +143,7 @@ const service = {
       const transParams: WorkOrderInsertParams = {
         fromFacilityId: fromFacilityInfo?.id || null,
         toFacilityId: toFacilityInfo?.id || null,
-        code: params.EQP_CALL_ID,
+        code: params.CALL_ID,
         itemId: existItem?.id || params?.newItemId || null,
         itemCode: itemCode,
         level: params.CALL_PRIORITY,

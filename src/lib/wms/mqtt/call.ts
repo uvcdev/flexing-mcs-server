@@ -85,8 +85,8 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: true,
       });
 
-      const trackingLogSubject = 'ACK_CALL_INFO_WMS'
-      const trackingLogDetail = 'ACK_CALL_INFO_WMS'
+      const trackingLogSubject = 'ACK_CALL_INFO'
+      const trackingLogDetail = 'ACK_CALL_INFO'
       const trackingLogState = 'PROCESSING'
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,

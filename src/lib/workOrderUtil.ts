@@ -8,6 +8,8 @@ import { EqpCallStats } from "./callRegisterUtil";
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { service as workOrderService } from '../service/operation/workOrderService';
 import { logging } from './logging';
+import { TrackingLogRedisUpdateParams } from '../models/common/trackingLog';
+import { editTrackingLogRedis } from './process/trackingLog';
 export type WorkOrderStats = {
   id: number;
   code: string;
@@ -48,6 +50,8 @@ export type McsPendingWorkOrderRequestType = {
   callId: string;
   fromFacilityName: string;
   toFacilityName: string;
+  eqpName: string;
+  portName: string;
   type: 'IN' | 'OUT' | 'MISSION';
   typeofisMissionOrder: string;
   callPriority: string;
@@ -81,10 +85,10 @@ export const useWorkOrderUtil = () => {
         const params: McsWorkOrderRequestType =
         {
           TYPE: workOrder.type,
-          CALL_ID: parseInt(workOrder.callId.toString().slice(-4), 10).toString(), // 작업지시코드 뒤 4자리
-          EQP_ID: workOrder.fromFacilityName,
-          EQP_CALL_ID: workOrder.callId,
-          PORT_ID: workOrder.type === 'OUT' ? workOrder.toFacilityName : '', // 있어야함
+          CALL_ID: workOrder.callId,
+          EQP_ID: workOrder.eqpName,
+          EQP_CALL_ID: parseInt(workOrder.callId.toString().slice(-4), 10).toString(), // 작업지시코드 뒤 4자리
+          PORT_ID: workOrder.type !== 'MISSION' ? workOrder.portName : '', // 있어야함
           CALL_PRIORITY: workOrder.callPriority,
           CALL_TYPE: workOrder.callType,
           IS_MISSION_ORDER: workOrder.type === 'MISSION' ? 'true' : 'false',
@@ -100,6 +104,23 @@ export const useWorkOrderUtil = () => {
         // console.log("🚀 ~ createWorkOrder ~ messageJson:", messageJson)
         await workOrderService.regWorkOrder(messageJson);
 
+        const trackingLogSubject = 'WORK_ORDER_CREATED'
+        const trackingLogDetail = 'WORK_ORDER_CREATED'
+        const trackingLogState = 'PROCESSING'
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: workOrder.callId,
+          subject: trackingLogSubject,
+          detail: trackingLogDetail,
+          state: trackingLogState,
+          startFacility: workOrder.fromFacilityName,
+          destFacility: workOrder.toFacilityName,
+          assignedRobot: null,
+          value: null,
+          description: `CALL ID ${workOrder.callId} WorkOrder Created`,
+          plcName: params.EQP_ID
+        }
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', 'MCS')
+
         try {
           sendMqtt(messageTopic, message);
         } catch (err) {
@@ -111,7 +132,7 @@ export const useWorkOrderUtil = () => {
           });
         }
 
-        redisUtil.hdel(RedisKeys.InfoPendingWorkOrderByCallId, params.EQP_CALL_ID);
+        redisUtil.hdel(RedisKeys.InfoPendingWorkOrderByCallId, params.CALL_ID);
       }
     }
   }

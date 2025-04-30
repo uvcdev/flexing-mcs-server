@@ -36,6 +36,8 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
   // tracking Log insert
   const trackingLogInsertParams: TrackingLogInsertParams = {
     code: generateUUIDNode(),
+    plcName: callInfo.Caller,
+    portName: null,
     callId: callInfo.CALL_ID,
     callType: callInfo.Call_Type,
     eqpCallId: eqpCallId,
@@ -43,8 +45,8 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     subject: subject,
     detail: subject,
     state: state,
-    startFacility: callInfo.Caller,
-    destFacility: null,
+    startFacility: null,
+    destFacility: callInfo.Caller,
     assignedRobot: null,
     value: null,
     description: null,
@@ -114,6 +116,8 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
   const trackingLogRedisBody: TrackingLogRedisAttributes = {
     id: trackingLogId,
     code: trackingLogInsertParams.code,
+    plcName: trackingLogInsertParams.plcName,
+    portName: trackingLogInsertParams.portName,
     callId: trackingLogInsertParams.callId,
     callType: trackingLogInsertParams.callType,
     eqpCallId: trackingLogInsertParams.eqpCallId,
@@ -132,8 +136,8 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
   }
 
   // 물류 로그 Redis Set
-  redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, callInfo.Caller, JSON.stringify(trackingLogRedisBody));
-  redisUtil.hset(RedisKeys.InfoTrackingLogByCallId, callInfo.CALL_ID, JSON.stringify(trackingLogRedisBody));
+  await redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, callInfo.Caller, JSON.stringify(trackingLogRedisBody));
+  await redisUtil.hset(RedisKeys.InfoTrackingLogByCallId, callInfo.CALL_ID, JSON.stringify(trackingLogRedisBody));
 }
 
 export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRedisUpdateParams, value?: string, resultStatus?: string, location?: string) => {
@@ -144,6 +148,7 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
   // Redis 값 업데이트
   const dateNow = formatDetailedDateTime(new Date());
 
+  console.log('trackingLogUpdateData', trackingLogUpdateData)
   if (!callId) {
     logging.ACTION_ERROR({
       filename: 'trackingLog.ts - editTrackingLogRedis',
@@ -166,19 +171,19 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
     return
   }
 
-  const facilityCode = infoTrackingLogByCallId.startFacility;
+  const plcName = infoTrackingLogByCallId.plcName;
 
-  if (!facilityCode) {
+  if (!plcName) {
     logging.ACTION_ERROR({
       filename: 'trackingLog.ts - editTrackingLogRedis',
-      error: `facilityCode (${callId}) is invalid `,
+      error: `plcName (${plcName}) is invalid `,
       params: null,
       result: false,
     });
     return
   }
 
-  const infoTrackingLogByFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByFacilityCode, facilityCode)
+  const infoTrackingLogByFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByFacilityCode, plcName)
 
   if (!infoTrackingLogByFacilityCode) {
     logging.ACTION_ERROR({
@@ -216,6 +221,8 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
   const trackingLogUpdateParams: TrackingLogUpdateParams = {
     id: infoTrackingLogByCallId.id,
     code: infoTrackingLogByCallId.code,
+    plcName: infoTrackingLogByCallId.plcName,
+    portName: infoTrackingLogByCallId.portName,
     callId: infoTrackingLogByCallId.callId,
     callType: infoTrackingLogByCallId.callType,
     eqpCallId: infoTrackingLogByCallId.eqpCallId,
@@ -236,7 +243,7 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
   const itemLogInsertParams: ItemLogInsertParams = {
     itemCode: null,
     facilityCode: null,
-    facilityName: facilityCode,
+    facilityName: plcName,
     amrCode: null,
     amrName: null,
     floor: null,
@@ -262,6 +269,8 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
   const trackingLogRedisBody: TrackingLogRedisAttributes = {
     id: trackingLogUpdateParams.id,
     code: trackingLogUpdateParams.code ?? null,
+    plcName: trackingLogUpdateParams.plcName ?? null,
+    portName: trackingLogUpdateParams.portName ?? null,
     callId: trackingLogUpdateParams.callId ?? null,
     callType: trackingLogUpdateParams.callType ?? null,
     eqpCallId: trackingLogUpdateParams.eqpCallId ?? null,
@@ -279,11 +288,8 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
     itemLogList: itemLogList
   };
 
-  redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, facilityCode, JSON.stringify(trackingLogRedisBody));
+  redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, plcName, JSON.stringify(trackingLogRedisBody));
   redisUtil.hset(RedisKeys.InfoTrackingLogByCallId, callId, JSON.stringify(trackingLogRedisBody));
-  if (trackingLogRedisBody.transferId) {
-    redisUtil.hset(RedisKeys.InfoTrackingLogByTransferId, trackingLogRedisBody.transferId, JSON.stringify(trackingLogRedisBody))
-  }
 }
 
 export const sendTrackingLogs = async () => {
