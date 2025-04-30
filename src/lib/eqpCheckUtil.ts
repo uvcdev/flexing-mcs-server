@@ -3,6 +3,7 @@ import { TagValue, useKepServerUtil } from "./kepServerUtil";
 import { logging } from "./logging";
 import opcuaUtil from "./opcuaUtil";
 import { useCallRegisterUtil } from "./callRegisterUtil";
+import { useDockingUtil } from "./process/dockingUtil";
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -46,19 +47,19 @@ export const useEqpCheckUtil = () => {
           await callCancel(targetTagInfo);
           break;
 
-        case 'Docking_Response':
-          console.log(`Action Method Tag: Docking_Response`);
-          await dockingStart(targetTagInfo);
+        case 'Dock_Permit':
+          console.log(`Action Method Tag: Dock_Permit`);
+          await useDockingUtil().dockingStart(targetTagInfo);
           break;
 
-        case 'Docking_Complete':
-          console.log(`Action Method Tag: Docking_Complete`);
-          await dockingComplete(targetTagInfo);
+        case 'Dock_Not_Permit':
+          console.log(`Action Method Tag: Dock_Not_Permit`);
+          await useDockingUtil().dockingFailed(targetTagInfo);
           break;
 
-        case 'Docking_Failed':
-          console.log(`Action Method Tag: Docking_Failed`);
-          await dockingFailed(targetTagInfo);
+        case 'Dock_EQ_Status':
+          console.log(`Action Method Tag: Dock_EQ_Status`);
+          await useDockingUtil().dockingComplete(targetTagInfo);
           break;
       }
 
@@ -249,17 +250,7 @@ export const useEqpCheckUtil = () => {
     // 구현 필요
   };
 
-  const dockingStart = async (targetTagInfo: TagValue) => {
-    // 구현 필요
-  };
 
-  const dockingComplete = async (targetTagInfo: TagValue) => {
-    // 구현 필요
-  };
-
-  const dockingFailed = async (targetTagInfo: TagValue) => {
-    // 구현 필요
-  };
 
   return { eqpTaskStatus }
 }

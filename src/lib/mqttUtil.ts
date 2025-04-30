@@ -28,6 +28,8 @@ import { acsAlarmState } from './acs/alarmState';
 import { acsAckMissionCommand } from './acs/ackMissionCommand';
 import { wmsOnline } from './wms/mqtt/online';
 import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/wmsBranch';
+import { useDockingUtil } from './process/dockingUtil';
+import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -110,7 +112,9 @@ export enum MqttTopics {
   InsertFacilityInfo = 'facility_info',
   // MBS용
   KepwareStatus = 'kepware_status',
-  ServerStatus = 'server/status'
+  ServerStatus = 'server/status',
+  ImcsEqpDockingRequest = 'imcs/docking/eqp/request',
+  ImcsWcsDockingRequest = 'imcs/docking/wcs/request',
 }
 
 export interface MbsMqttHeader {
@@ -446,6 +450,7 @@ export const receiveMqtt = (): void => {
 
               try {
                 void itemLogDao.insert(messageJson);
+                useDockingUtil().sendAcsDockingRequest(JSON.parse(message));
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
               }
@@ -462,6 +467,7 @@ export const receiveMqtt = (): void => {
 
               try {
                 void itemLogDao.insert(messageJson);
+                useDockingUtil().sendAcsDockingComplete(JSON.parse(message));
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
               }
@@ -478,6 +484,7 @@ export const receiveMqtt = (): void => {
 
               try {
                 void itemLogDao.insert(messageJson);
+                useDockingUtil().sendAcsDockingDetach(JSON.parse(message));
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
               }
@@ -511,6 +518,17 @@ export const receiveMqtt = (): void => {
               } catch (error) {
                 console.log('logging.missionOrder', error);
               }
+            }
+            // acs heartbeat 수집
+            if (topicSplit.length === 3 && topicSplit[1] === 'server' && topicSplit[2] === 'status') {
+              const messageJson = JSON.parse(message);
+              const receiveAt = formatDetailedDateTime(new Date());
+              logging.MQTT_LOG({
+                title: 'acs heartbeat',
+                topic: messageTopic,
+                message: messageJson,
+              });
+              sendAcsHeartbeat(messageJson, receiveAt)
             }
           }
 
@@ -694,3 +712,20 @@ export const separateMqttMessage = (messageJson: MbsMqttMesaage) => {
     messageBody,
   }
 }
+
+// 도킹 관련 mqtt 메세지 발송
+export const sendDockingMqtt = (topic: string, message: string): void => {
+  if (mqttConfig.host !== '') {
+    // mqtt host가 등록된 경우에만 발송한다.
+    try {
+      client.publish(topic, message);
+    } catch (err) {
+      logging.MQTT_ERROR({
+        title: 'mqtt send error',
+        topic: topic,
+        message: message,
+        error: err,
+      });
+    }
+  }
+};

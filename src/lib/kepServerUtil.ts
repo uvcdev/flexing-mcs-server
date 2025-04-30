@@ -4,6 +4,9 @@ import { logging, logToConsoleAndFile } from './logging';
 import opcuaUtil from './opcuaUtil';
 import { MqttTopics, sendMqtt } from './mqttUtil';
 import path from "path";
+import { KepwareWriteParams } from "../models/kepware/kepware";
+import { RedisKeys, useRedisUtil } from "./redisUtil";
+import { FacilityAttributes } from "../models/operation/facility";
 
 export interface MonitorTagValue {
   key: string;
@@ -49,6 +52,14 @@ export interface Subscription {
   tagGroup: string;
 }
 
+export interface MakeWriteDatasParams {
+  targetFacility: string;
+  tagInfo: {
+    tagName: string,
+    value: string | boolean
+  }[];
+}
+
 
 // ASCII 타입 태그에서 WORD 값을 추출하는 함수
 export const parseAsciiToWord = (value: string): number => {
@@ -79,6 +90,7 @@ export const parseWordToAscii = (value: number): string | number => {
 const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
 
 export const useKepServerUtil = () => {
+  const redisUtil = useRedisUtil();
   // JSON 파일 읽기
   const loadTags = async (filePath: string) => {
     const data = await fs.readFile(filePath, "utf8");
@@ -328,12 +340,55 @@ export const useKepServerUtil = () => {
 
     return targetTagInfo;
   }
+
+
+  const makeWriteDatas = async (params: MakeWriteDatasParams): Promise<WriteValueOptions[]> => {
+    const writeDatas: WriteValueOptions[] = [];
+    const tagMap = opcuaUtil.tagMap;
+    try {
+      const targetFacility = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityByResource, params.targetFacility);
+      // if (!targetFacility) {
+      //   throw new Error(`No facility found with name: ${params.targetFacility}`);
+      // }
+      // const targetFacilityObject = JSON.parse(targetFacility);
+      // TODO: 설비의 코드,시리얼,이름 중 무엇을 사용할지 결정(kepwaretag와 매칭되어야함)
+      // // targetFacilityObject.facilityCode = 'SC11' -> targetFacilityCode = 'SC.11'
+      // const targetFacilityCode = targetFacilityObject.facilityCode.slice(0, 2) + '.' + targetFacilityObject.facilityCode.slice(2);
+      // // targetFacilityObject.serial = 'SC11' -> targetFacilitySerial = 'SC.11'
+      // const targetFacilitySerial = targetFacilityObject.serial.slice(0, 2) + '.' + targetFacilityObject.serial.slice(2);
+      // const targetFacilityCode = targetFacilityObject.facilityCode;
+      const targetFacilityCode = 'STACK01.LOAD-PORT';
+      for (let i = 0, length = params.tagInfo.length; i < length; i++) {
+        const tagMapValue = tagMap.get(`${targetFacilityCode}.${params.tagInfo[i].tagName}`);
+        if (tagMapValue) {
+          writeDatas.push({
+            nodeId: tagMapValue.NODE_ID,
+            attributeId: AttributeIds.Value,
+            value: {
+              value: {
+                dataType: tagMapValue.DATA_TYPE,
+                value: params.tagInfo[i].value
+              }
+            }
+          });
+        }
+      }
+      return writeDatas;
+
+    } catch (error) {
+      logToConsoleAndFile(`Error making write datas from kepServerUtil.makeWriteDatas: ${error}`, "red");
+      throw error;
+    }
+  }
+
+
   return {
     writeTagsValue,
     readTagsValue,
     monitorTagData,
     heartbeat,
     initTagData,
-    updateTagValue
+    updateTagValue,
+    makeWriteDatas
   }
 }
