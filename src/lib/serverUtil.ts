@@ -14,8 +14,8 @@ export type ServerStatus = {
   // dryrunTime: Date | null;
   // startEndOfDayState: 'start' | 'end';
   // realOrderGroupId: number | null;
-  ramUsage: number;
-  cpuUsage: number;
+  ramUsage: string;
+  cpuUsage: string;
 };
 
 const serverStatus: ServerStatus = {
@@ -29,8 +29,8 @@ const serverStatus: ServerStatus = {
   // dryrunTime: null,
   // startEndOfDayState: 'start',
   // realOrderGroupId: null,
-  ramUsage: 0,
-  cpuUsage: 0,
+  ramUsage: '00',
+  cpuUsage: '00',
 };
 // const checkTimes = {
 //   mcs: (process.env.SERVER_STATUS_CHECK_TIME_MCS && Number(process.env.SERVER_STATUS_CHECK_TIME_MCS)) || 10,
@@ -97,13 +97,13 @@ export const useServerUtil = () => {
 
     // console.log(`시스템 RAM 사용량: ${percent}%`);
 
-    return percent;
+    return percent.toString().padStart(2, '0');
   };
 
   const getCPUUsage = async () => {
     const cpuUsage = await cpu.usage();
     // console.log(`시스템 CPU 사용량: ${Math.floor(cpuUsage)}%`);
-    return Math.floor(cpuUsage);
+    return Math.floor(cpuUsage).toString().padStart(2, '0');
   };
 
 

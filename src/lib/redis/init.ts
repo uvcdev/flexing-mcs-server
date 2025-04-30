@@ -2,11 +2,18 @@ import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { formatDetailedDateTime } from '../usefullToolUtil';
 import { service as settingService } from '../../service/common/settingService';
 import { service as facilityService } from '../../service/operation/facilityService';
+import { ServerState } from 'node-opcua-client';
 
 export interface HeartbeatInfo {
   systemName: string;
   state: 'connection' | 'disconnection',
   time: string,
+}
+
+export interface KepwareHeartbeatInfo extends HeartbeatInfo {
+  serverState: ServerState,
+  startTime: string,
+  shutdownReason: string,
 }
 
 export const heartbeatSystemList = process.env.SYSTEM_LIST?.split(',') || []
