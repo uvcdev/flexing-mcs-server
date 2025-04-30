@@ -308,6 +308,8 @@ export interface PendingWorkOrderAttributes {
   isMissionOrder?: boolean;
   callPriority?: string;
   callType?: string;
+  eqpName?: string;
+  portName?: string;
 }
 
 // include attributes

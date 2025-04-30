@@ -5,12 +5,16 @@ const systemTopic = 'ALARM'
 
 const alarmReport = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wms AlarmReport')
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+
+  const callId: string = 'TODO ALARM CALL ID'
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const alarmClear = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wms AlarmClear')
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+
+  const callId: string = 'TODO ALARM CALL ID'
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 

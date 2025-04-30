@@ -6,6 +6,7 @@ import { makeMbsMqttHeader, MbsMqttBody, sendMbsMqtt } from "../mqttUtil";
 import { RedisKeys, useRedisUtil } from "../redisUtil";
 import { editTrackingLogRedis } from "./trackingLog";
 import { setRemainingAckCommand } from "./wmsAck";
+import { RecentCallInfo, setRecentCallInfoTaskByCmdId } from "./wmsCommon";
 
 const redisUtil = useRedisUtil();
 
@@ -89,7 +90,6 @@ const sendCallInfoToWms = async (callInfo: CallInfoBody, systemName: string) => 
 
   const mqttHeader = makeMbsMqttHeader(subject);
   const mqttBody: MbsMqttBody = callInfoData;
-
   // CALLINFO MQTT 데이터 전송
   sendMbsMqtt(topic, mqttHeader, mqttBody, systemName);
 
@@ -98,6 +98,19 @@ const sendCallInfoToWms = async (callInfo: CallInfoBody, systemName: string) => 
 
   // CALLINFO에 대한 ack 초기값 설정
   setRemainingAckCommand(topic, systemName, { header: mqttHeader, body: mqttBody });
+
+  // Recent call info task 기록
+  const recentCallInfoTaskParams: RecentCallInfo = {
+    cmdId: callInfoData.Cmd_ID,
+    callId: callInfoData.Call_ID,
+    transferId: null,
+    callType: callInfoData.Call_Type,
+    callQuantity: callInfoData.Call_Quantity,
+    callPriority: callInfoData.Call_Priority,
+    caller: callInfoData.Caller,
+    port: null,
+  }
+  setRecentCallInfoTaskByCmdId(recentCallInfoTaskParams)
 
   // ITEM LOG 기록
   // 물류 로그에 대한 redis 값 업데이트
@@ -109,11 +122,13 @@ const sendCallInfoToWms = async (callInfo: CallInfoBody, systemName: string) => 
     subject: trackingLogSubject,
     detail: trackingLogDetail,
     state: trackingLogState,
-    startFacility: callInfo.Caller,
-    destFacility: null,
+    startFacility: null,
+    destFacility: callInfo.Caller,
     assignedRobot: null,
     value: null,
-    description: `Facility ${callInfo.Caller} requested CALLINFO to WMS ${systemName} with call number ${callInfoData.Call_ID}`
+    description: `Facility ${callInfo.Caller} requested CALLINFO to WMS ${systemName} with call number ${callInfoData.Call_ID}`,
+    plcName: null,
+    portName: null,
   }
   await editTrackingLogRedis(trackingLogUpdateData, (callInfoData.Call_ID).slice(-4), 'SUCCESS', callInfo.Caller)
 };

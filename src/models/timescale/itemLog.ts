@@ -51,7 +51,7 @@ type ItemLogSubjectType =
   | TrackingLogSubjectType
   ;
 
-type ResultStatus = 'SUCCESS' | 'ERROR' | 'ABORT' | 'PAUSED';
+type ResultStatus = 'SUCCESS' | 'ERROR' | 'ABORTED' | 'PAUSED';
 
 class ItemLog extends Model implements ItemLogAttributes {
   public readonly id!: ItemLogAttributes['id'];

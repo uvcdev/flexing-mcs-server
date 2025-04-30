@@ -20,7 +20,8 @@ const callRequest = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsCallRequest')
 
   // set GetAckCommandByCmdId - Call Request
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId: string = 'TODO CallRequest CALL ID'
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCallInfoBody) => {
@@ -85,8 +86,8 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: true,
       });
 
-      const trackingLogSubject = 'ACK_CALL_INFO_WMS'
-      const trackingLogDetail = 'ACK_CALL_INFO_WMS'
+      const trackingLogSubject = 'ACK_CALL_INFO'
+      const trackingLogDetail = 'ACK_CALL_INFO'
       const trackingLogState = 'PROCESSING'
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,

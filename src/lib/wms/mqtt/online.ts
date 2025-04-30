@@ -5,8 +5,8 @@ const systemTopic = 'ONLINE'
 
 const online = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wms online')
-
-  setReceivedAckCommand(systemTopic, wmsName, messageMessage)
+  const callId = ''
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 }
 
 

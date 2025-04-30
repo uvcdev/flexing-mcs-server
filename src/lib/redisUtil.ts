@@ -58,7 +58,7 @@ export enum RedisKeys {
   InfoChangedTagById = 'info_changed_tag_by_id',
   InfoTrackingLogByFacilityCode = 'info_tracking_log_by_facility_code',    // 물류 현황 redis 데이터 by facility code 
   InfoTrackingLogByCallId = 'info_tracking_log_by_call_id',                // 물류 현황 redis 데이터 by Call Id => 해당 내용은 사용하고 나서 지워줘야함 ( 콜 생성 시점에서 )
-  InfoTrackingLogByTransferId = 'info_tracking_log_by_transfer_id',         // 물류 현황 redis 데이터 by Transfer Id => ( Transfer Init 부분에서 생성되는 로그로 해당 내용으로 창고 물류 작업이 끝나면 삭제해줘야 함 )  
+  RecentCallInfoTaskByCmdId = 'recent_call_info_task_by_cmd_id',          // recent call info 정보 ( CALLINFO 부터 PORT 배정까지 : 창고 입고)
   InfoInCallByNodeId = 'info_in_call_by_node_id',
   InfoOutCallByNodeId = 'info_out_call_by_node_id'
 }

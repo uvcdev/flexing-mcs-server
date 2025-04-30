@@ -21,6 +21,17 @@ export interface AbortedCommandForRetryInfo {
   message: MbsMqttMesaage;
 }
 
+export interface RecentCallInfo {
+  cmdId: string;
+  transferId: string | null;
+  callId: string;
+  callType: string;
+  callQuantity: string;
+  callPriority: string;
+  caller: string;
+  port?: string | null;
+}
+
 export const setAbortedCommandForRetry = (systemName: string, subject: string, messageTopic: string, mqttMessage: MbsMqttMesaage) => {
   const newMqttBody = { ...mqttMessage.body };
   newMqttBody.Cmd_ID = generateUUIDNode();
@@ -82,4 +93,14 @@ export const checkAbortedCommandForRetry = async () => {
       deleteAbortedCommandForRetry(abortedCommandForRetryKey)
     }
   }
+}
+
+export const setRecentCallInfoTaskByCmdId = (recentCallInfoParams: RecentCallInfo) => {
+  const cmdId = recentCallInfoParams.cmdId
+
+  redisUtil.hset(RedisKeys.RecentCallInfoTaskByCmdId, cmdId, JSON.stringify(recentCallInfoParams))
+}
+
+export const deleteRecentCallInfoTaskByCmdId = async (cmdId: string) => {
+  redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId)
 }
