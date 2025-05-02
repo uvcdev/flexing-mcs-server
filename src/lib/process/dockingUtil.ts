@@ -26,6 +26,7 @@ export interface AcsDockingRequestType {
   INSTRUCTION_ID: string;
   RESOURCE_ID: string;
   REQUEST_COUNT: number;
+  SERIAL_ID: string;
 };
 
 export interface AcsDockingRequestResponse extends AcsDockingRequestType {
@@ -44,6 +45,7 @@ export interface AcsDockingCompleteType {
   REPORT_ID: string;
   INSTRUCTION_ID: string;
   RESOURCE_ID: string;
+  SERIAL_ID: string;
 };
 
 export interface AcsDockingCompleteResponse extends AcsDockingCompleteType {
@@ -58,6 +60,7 @@ export interface AcsDockingDetachType {
   CALL_ID: string;
   WORKER_ID: string;
   RESOURCE_ID: string;
+  SERIAL_ID: string;
 };
 
 export interface AcsDockingDetachResponse extends AcsDockingDetachType {
@@ -95,13 +98,13 @@ export const useDockingUtil = () => {
     }
     try {
       // 설비추출해서 도킹요청 데이터 추출
-      const targetKey = targetTagInfo.TAGGROUP
-        ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
-        : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+      // const targetKey = targetTagInfo.TAGGROUP
+      //   ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
+      //   : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
-      // const facilityPortId = targetKey.replace('.', '');
-      const facilityPortId = 'SP11';
-      const dockingRequestInfo = await redisUtil.hgetObject<AcsDockingRequestType>(RedisKeys.DockingRequestByPortId, facilityPortId);
+      const facilitySerialId = targetTagInfo.EQ_CODE;
+
+      const dockingRequestInfo = await redisUtil.hgetObject<AcsDockingRequestType>(RedisKeys.DockingRequestBySerialId, facilitySerialId);
       if (!dockingRequestInfo) {
         console.log("🚀 ~ dockingStart ~ dockingRequestInfo:", dockingRequestInfo)
         logging.ACTION_ERROR({
@@ -119,7 +122,7 @@ export const useDockingUtil = () => {
         RESULT_MESSAGE: '도킹 가능',
       };
 
-      redisUtil.hset(RedisKeys.DockingRequestByPortId, facilityPortId, JSON.stringify(dockingResponse));
+      redisUtil.hset(RedisKeys.DockingRequestBySerialId, facilitySerialId, JSON.stringify(dockingResponse));
 
       sendDockingMqtt(MqttTopics.ImcsEqpDockingRequest, JSON.stringify(dockingResponse));
     } catch (error) {
@@ -164,9 +167,8 @@ export const useDockingUtil = () => {
         ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
         : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
-      // const facilityPortId = targetKey.replace('.', '');
-      const facilityPortId = 'SP11';
-      const dockingRequestInfo = await redisUtil.hgetObject<AcsDockingRequestType>(RedisKeys.DockingRequestByPortId, facilityPortId);
+      const facilitySerialId = targetTagInfo.EQ_CODE;
+      const dockingRequestInfo = await redisUtil.hgetObject<AcsDockingRequestType>(RedisKeys.DockingRequestBySerialId, facilitySerialId);
       if (!dockingRequestInfo) {
         logging.ACTION_ERROR({
           filename: `src/lib/process/dockingUtil.ts`,
@@ -185,7 +187,7 @@ export const useDockingUtil = () => {
 
       sendDockingMqtt(MqttTopics.ImcsEqpDockingRequest, JSON.stringify(dockingResponse));
 
-      redisUtil.hset(RedisKeys.DockingRequestByPortId, facilityPortId, JSON.stringify(dockingResponse));
+      redisUtil.hset(RedisKeys.DockingRequestBySerialId, facilitySerialId, JSON.stringify(dockingResponse));
 
       // Dock_AMR_Status PLC 쓰기 
       const dockAMRStatus = opcuaUtil.tagMap.get(`${targetKey}.Dock_AMR_Status`);
@@ -251,10 +253,9 @@ export const useDockingUtil = () => {
       const targetKey = targetTagInfo.TAGGROUP
         ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
         : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
-      // const facilityPortId = targetKey.replace('.', '');
-      const facilityPortId = 'SP11';
-      const dockingCompleteInfo = await redisUtil.hgetObject<AcsDockingCompleteResponse>(RedisKeys.DockingCompleteByPortId, facilityPortId);
-      const dockingRequestInfo = await redisUtil.hgetObject<AcsDockingRequestResponse>(RedisKeys.DockingRequestByPortId, facilityPortId);
+      const facilitySerialId = targetTagInfo.EQ_CODE;
+      const dockingCompleteInfo = await redisUtil.hgetObject<AcsDockingCompleteResponse>(RedisKeys.DockingCompleteBySerialId, facilitySerialId);
+      const dockingRequestInfo = await redisUtil.hgetObject<AcsDockingRequestResponse>(RedisKeys.DockingRequestBySerialId, facilitySerialId);
       if (!dockingRequestInfo) {
         logging.ACTION_ERROR({
           filename: `src/lib/process/dockingUtil.ts`,
@@ -310,7 +311,7 @@ export const useDockingUtil = () => {
         if (dockingRequestInfo.EXC_CLS === EXC_CLS.AUTO) {
           // 일반도킹요청 내리기
           const dockingRequestTag = await useKepServerUtil().makeWriteDatas({
-            targetFacility: dockingRequestInfo.RESOURCE_ID,
+            targetFacility: dockingRequestInfo.SERIAL_ID,
             tagInfo: [
               {
                 tagName: 'Dock_Request',
@@ -322,7 +323,7 @@ export const useDockingUtil = () => {
         } else if (dockingRequestInfo.EXC_CLS === EXC_CLS.CHARGE) {
           // 충전도킹요청 내리기
           const dockingRequestChargeTag = await useKepServerUtil().makeWriteDatas({
-            targetFacility: dockingRequestInfo.RESOURCE_ID,
+            targetFacility: dockingRequestInfo.SERIAL_ID,
             tagInfo: [
               {
                 tagName: 'Dock_Request_Charge',
@@ -334,7 +335,7 @@ export const useDockingUtil = () => {
         } else if (dockingRequestInfo.EXC_CLS === EXC_CLS.MANUAL) {
           // 수동도킹요청 내리기
           const dockingRequestForceTag = await useKepServerUtil().makeWriteDatas({
-            targetFacility: dockingRequestInfo.RESOURCE_ID,
+            targetFacility: dockingRequestInfo.SERIAL_ID,
             tagInfo: [
               {
                 tagName: 'Dock_Request_Force',
@@ -347,7 +348,7 @@ export const useDockingUtil = () => {
 
         dockingCompleteInfo.RESULT = 'True';
         dockingCompleteInfo.RESULT_MESSAGE = '도킹 완료';
-        redisUtil.hset(RedisKeys.DockingCompleteByPortId, facilityPortId, JSON.stringify(dockingCompleteInfo));
+        redisUtil.hset(RedisKeys.DockingCompleteBySerialId, facilitySerialId, JSON.stringify(dockingCompleteInfo));
         // 이후 설비도 도킹완료, 도킹허가 내림.
       }
     } catch (error) {
@@ -363,16 +364,16 @@ export const useDockingUtil = () => {
 
   // acs에서 도킹요청이 왔을 때, 설비에 도킹요청하는 함수
   const sendAcsDockingRequest = async (params: AcsDockingRequestType) => {
-    redisUtil.hdel(RedisKeys.DockingRequestByPortId, params.PORT_ID);
-    redisUtil.hdel(RedisKeys.DockingCompleteByPortId, params.PORT_ID);
-    redisUtil.hdel(RedisKeys.DockingDetachByPortId, params.PORT_ID);
+    redisUtil.hdel(RedisKeys.DockingRequestBySerialId, params.SERIAL_ID);
+    redisUtil.hdel(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID);
+    redisUtil.hdel(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID);
     // 도킹요청 들어온 것에 대한 redis 저장
-    redisUtil.hset(RedisKeys.DockingRequestByPortId, params.PORT_ID, JSON.stringify(params));
+    redisUtil.hset(RedisKeys.DockingRequestBySerialId, params.SERIAL_ID, JSON.stringify(params));
 
     // 도킹 재요청 전 데이터 초기화 처리
     try {
       const writeDatas = await useKepServerUtil().makeWriteDatas({
-        targetFacility: params.RESOURCE_ID,
+        targetFacility: params.SERIAL_ID,
         tagInfo: [
           {
             tagName: 'Dock_Request',
@@ -415,10 +416,22 @@ export const useDockingUtil = () => {
       case EXC_CLS.AUTO:  //일반도킹
         // TODO: [트래킹로그]도킹요청 들어온 것에 대한 트래킹로그 저장
         // TODO: 도킹 요청 ID/기종 확인(ID/기종은 콜 호출응답 시 기록되어있어야함)
-
+        // const CallId = params.CALL_ID;
+        // const CallIdRedisInfo = await redisUtil.hgetObject<CallIdRedisInfo>(RedisKeys.CallIdRedisInfo, CallId);
+        // const CallType = CallIdRedisInfo.Call_Type;
+        // const callTypeResponseTag = await useKepServerUtil().makeWriteDatas({
+        //   targetFacility: params.SERIAL_ID,
+        //   tagInfo: [
+        //     {
+        //       tagName: 'Call_Type_Response_01',
+        //       value: params.CALL_TYPE
+        //     }
+        //   ]
+        // });
+        // await useKepServerUtil().writeTagsValue(callTypeResponseTag);
         // 일반 도킹 요청 PLC 쓰기
         const dockingRequestTag = await useKepServerUtil().makeWriteDatas({
-          targetFacility: params.RESOURCE_ID,
+          targetFacility: params.SERIAL_ID,
           tagInfo: [
             {
               tagName: 'Dock_Request',
@@ -434,7 +447,7 @@ export const useDockingUtil = () => {
         // 충전 도킹 요청 PLC 쓰기
         // 도킹 요청 ID/기종 확인 안함
         const dockingChargeRequestTag = await useKepServerUtil().makeWriteDatas({
-          targetFacility: params.RESOURCE_ID,
+          targetFacility: params.SERIAL_ID,
           tagInfo: [
             {
               tagName: 'Dock_Request_Charge',
@@ -450,7 +463,7 @@ export const useDockingUtil = () => {
         // callType이 있다면 ? 없다면 ?
         // 수동 도킹 요청 PLC 쓰기
         const dockingManualRequestTag = await useKepServerUtil().makeWriteDatas({
-          targetFacility: params.RESOURCE_ID,
+          targetFacility: params.SERIAL_ID,
           tagInfo: [
             {
               tagName: 'Dock_Request_Force',
@@ -474,13 +487,13 @@ export const useDockingUtil = () => {
   const sendAcsDockingComplete = async (params: AcsDockingCompleteType) => {
     console.log("🚀 ~ sendAcsDockingComplete ~ params:", params)
 
-    redisUtil.hset(RedisKeys.DockingCompleteByPortId, params.PORT_ID, JSON.stringify(params));
+    redisUtil.hset(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID, JSON.stringify(params));
 
     // TODO: [트래킹로그]도킹완료에 대한 트래킹로그 저장
 
     // Dock_AMR_Status PLC 쓰기 
     const dockAMRStatusTag = await useKepServerUtil().makeWriteDatas({
-      targetFacility: params.RESOURCE_ID,
+      targetFacility: params.SERIAL_ID,
       tagInfo: [
         {
           tagName: 'Dock_AMR_Status',
@@ -502,11 +515,11 @@ export const useDockingUtil = () => {
       RESULT: 'True',
       RESULT_MESSAGE: '도킹 진출완료',
     };
-    redisUtil.hset(RedisKeys.DockingDetachByPortId, params.PORT_ID, JSON.stringify(dockingResponse));
+    redisUtil.hset(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID, JSON.stringify(dockingResponse));
 
     // Dock_AMR_Status PLC 쓰기 
     const dockAMRStatusTag = await useKepServerUtil().makeWriteDatas({
-      targetFacility: params.RESOURCE_ID,
+      targetFacility: params.SERIAL_ID,
       tagInfo: [
         {
           tagName: 'Dock_AMR_Status',
@@ -520,7 +533,7 @@ export const useDockingUtil = () => {
   // 도킹 요청에 대해 응답을 받았는지 확인하는 함수
   const checkDockingResponse = async (params: AcsDockingRequestType) => {
     console.log("🚀 ~ checkDockingResponse ~ params:", params)
-    const dockingRequestInfo = await redisUtil.hgetObject<AcsDockingRequestResponse>(RedisKeys.DockingRequestByPortId, params.PORT_ID);
+    const dockingRequestInfo = await redisUtil.hgetObject<AcsDockingRequestResponse>(RedisKeys.DockingRequestBySerialId, params.SERIAL_ID);
     // 초기화, 재시도 로직으로 인해 도킹요청 데이터가 없어진 경우, 없을 수 있음(현재까진 무조건 오류가 아닐 수 있음.)
     if (!dockingRequestInfo) {
       logging.ACTION_ERROR({

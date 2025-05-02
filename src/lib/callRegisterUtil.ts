@@ -42,19 +42,22 @@ export const useCallRegisterUtil = () => {
     }
 
     // ##### 1. EQP-EQP 통신으로 인한 작업 생성
+    // targetKey 형식: STACK01.SC11 || SC.11
     const targetKey = targetTagInfo.TAGGROUP
       ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
       : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+    // targetCode 형식: SC11
+    const targetCode = targetTagInfo.EQ_CODE;
     // 필요한 태그 값들 가져오기
     // TODO: call_type 01~10 들어오는 값 확인 후 가공 필요
-    const callType01 = opcuaUtil.tagMap.get(`${targetKey}.Call_Type_01`);
-    const callPriority = opcuaUtil.tagMap.get(`${targetKey}.Call_Priority`);
-    const callCount = opcuaUtil.tagMap.get(`${targetKey}.Call_Count`);
-    const EQCode01 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_01`);
-    const EQCode02 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_02`);
+    const callType01 = opcuaUtil.tagMap.get(`${targetCode}.Call_Type_01`);
+    const callPriority = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`);
+    const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
+    const EQCode01 = opcuaUtil.tagMap.get(`${targetCode}.EQ_Code_01`);
+    const EQCode02 = opcuaUtil.tagMap.get(`${targetCode}.EQ_Code_02`);
     // TODO: 멀티콜 로직 추가 필요
-    // const callRequestMulti1 = opcuaUtil.tagMap.get(`${targetKey}.Call_Request_Multi_1`);
-    // const callRequestMulti2 = opcuaUtil.tagMap.get(`${targetKey}.Call_Request_Multi_2`);
+    // const callRequestMulti1 = opcuaUtil.tagMap.get(`${targetCode}.Call_Request_Multi_1`);
+    // const callRequestMulti2 = opcuaUtil.tagMap.get(`${targetCode}.Call_Request_Multi_2`);
 
     // 필요한 모든 nodeId들을 배열로 모음
     const needNodeIds = [
@@ -189,12 +192,16 @@ export const useCallRegisterUtil = () => {
     }
   };
   const createEQPCallId = async (targetKey: string, callCountValue: string, multiValue: number): Promise<string[] | null> => {
+    // targetKey 형식: STACK01.SC11 || SC.11
+    // targetCode 형식: SC11
+    const targetCode = kepServerUtil.getTagCode(targetKey);
+
     try {
       // 설비코드 1 + 설비코드 2 + 콜 ID 시간1(년도) + 콜 ID시간2(월,일) + 콜ID(0~9999)
-      const EQCode01 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_01`);
-      const EQCode02 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_02`);
-      const callTimeYear = opcuaUtil.tagMap.get(`${targetKey}.Call_Time_Year`);
-      const callTimeMonthDay = opcuaUtil.tagMap.get(`${targetKey}.Call_Time_MonthDay`);
+      const EQCode01 = opcuaUtil.tagMap.get(`${targetCode}.EQ_Code_01`);
+      const EQCode02 = opcuaUtil.tagMap.get(`${targetCode}.EQ_Code_02`);
+      const callTimeYear = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_Year`);
+      const callTimeMonthDay = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_MonthDay`);
 
       // 필요한 모든 nodeId들을 배열로 모음
       const needNodeIds = [

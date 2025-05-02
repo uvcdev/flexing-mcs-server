@@ -59,9 +59,9 @@ export enum RedisKeys {
   InfoTrackingLogByFacilityCode = 'info_tracking_log_by_facility_code',    // 물류 현황 redis 데이터 by facility code 
   InfoTrackingLogByCallId = 'info_tracking_log_by_call_id',                // 물류 현황 redis 데이터 by Call Id => 해당 내용은 사용하고 나서 지워줘야함 ( 콜 생성 시점에서 )
   RecentCallInfoTaskByCmdId = 'recent_call_info_task_by_cmd_id',         // recent call info 정보 ( CALLINFO 부터 PORT 배정까지 : 창고 입고)
-  DockingRequestByPortId = 'docking_request_by_port_id',
-  DockingCompleteByPortId = 'docking_complete_by_port_id',
-  DockingDetachByPortId = 'docking_detach_by_port_id',
+  DockingRequestBySerialId = 'docking_request_by_serial_id',                // acs로부터 온 도킹요청정보와 imcs가 acs로 보내는 도킹요청응답정보 
+  DockingCompleteBySerialId = 'docking_complete_by_serial_id',              // acs로부터 온 도킹완료정보와 imcs가 acs로 보내는 도킹완료응답정보 
+  DockingDetachBySerialId = 'docking_detach_by_serial_id',                // acs로부터 온 도킹해제정보와 imcs가 acs로 보내는 도킹해제응답정보 
 }
 export enum RedisSettingKeys {
   // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

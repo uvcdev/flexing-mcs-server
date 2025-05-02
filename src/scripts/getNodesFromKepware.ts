@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { OPCUAClient, ClientSession, ClientSubscription, ReferenceDescription, UserIdentityInfoUserName, BrowseResult, UserTokenType, DataType, AttributeIds } from "node-opcua";
 import colors from "ansi-colors";
+import { parseWordToAscii } from "../lib/kepServerUtil";
 
 interface TagDeviceInfo {
   KEY: string;
@@ -21,6 +22,7 @@ interface Tag {
   ADDRESS: string;
   SUBSCRIPTION: boolean;
   INPUT_TYPE: string;
+  EQ_CODE: string;
 }
 
 dotenv.config();
@@ -61,7 +63,6 @@ function logToConsoleAndFile(data: string, color: 'white' | 'green' | 'blue' | '
   writeToLogFile(data); // 파일에 저장
 }
 
-
 const opcuaClient = {
   client: OPCUAClient.create(kepserverConfig.clientOptions),
   session: null as ClientSession | null,
@@ -71,6 +72,15 @@ const opcuaClient = {
   subscribableNodes: [] as Record<string, any>[],   // 구독가능한 노드배열
   nodesToSubscribe: [{}] as Record<string, any>[],   // 구독선택한 노드배열
   subscribableTags: new Set<string>(),
+
+
+  needToSubscribe(tagName: string): boolean {
+    return tagName === 'Call_Request' || tagName === 'Call_Cancel' || tagName === 'Dock_Permit' || tagName === 'Dock_Not_Permit' || tagName === 'Dock_EQ_Status'
+  },
+
+  isASCII(tagName: string): boolean {
+    return tagName.includes('EQ_Code') || tagName.includes('Call_Type')
+  },
 
   async getTagDetails(nodeId: string): Promise<{ description: string; dataType: string, address: string; }> {
     if (!this.session) {
@@ -158,6 +168,21 @@ const opcuaClient = {
         if (tagGroups.length === 0) {
           // 🔹 4️⃣ 태그 그룹이 없으면 바로 태그 검색
           const tagBrowseResult: BrowseResult = await this.session.browse(device.nodeId);
+          const attributesToRead = [
+            { nodeId: `${device.nodeId}.EQ_Code_01`, attributeId: AttributeIds.Value },
+            { nodeId: `${device.nodeId}.EQ_Code_02`, attributeId: AttributeIds.Value }
+          ];
+
+          const results = await this.session.read(attributesToRead);
+          // const eqCode01 = results[0].value.value;
+          // const eqCode02 = results[1].value.value;
+          // const eqCode = parseWordToAscii(eqCode01) + parseWordToAscii(eqCode02);
+
+          // nodeId 형식: STACK01.SC11.Call_Request 일때
+          const eqCode = device.name;
+          // nodeId 형식: SC.11.Call_Request 일때
+          // const eqCode = device.nodeId.split('.').slice(0, 2).join('');
+
           for (const ref of tagBrowseResult.references!) {
             if (ref.nodeClass === 2 && ref.nodeId.namespace === 2 && !(ref.browseName.name?.startsWith("_") ?? false)) {
               const tagDetails = await this.getTagDetails(ref.nodeId.toString());
@@ -171,8 +196,9 @@ const opcuaClient = {
                 DESCRIPTION: tagDetails.description || '',
                 DATA_TYPE: tagDetails.dataType,
                 ADDRESS: tagDetails.address,
-                SUBSCRIPTION: false,
-                INPUT_TYPE: (tagDetails.dataType === 'Boolean') ? 'Bool' : 'DEC'
+                SUBSCRIPTION: this.needToSubscribe(ref.browseName.name || ''),
+                INPUT_TYPE: (tagDetails.dataType === 'Boolean') ? 'Bool' : this.isASCII(ref.browseName.name || '') ? 'ASCII' : 'DEC',
+                EQ_CODE: eqCode
               });
             }
           }
@@ -180,6 +206,20 @@ const opcuaClient = {
           // 🔹 5️⃣ 태그 그룹이 있으면 그룹별로 태그 찾기
           for (const tagGroup of tagGroups) {
             const tagBrowseResult: BrowseResult = await this.session.browse(tagGroup.nodeId);
+            const attributesToRead = [
+              { nodeId: `${tagGroup.nodeId}.EQ_Code_01`, attributeId: AttributeIds.Value },
+              { nodeId: `${tagGroup.nodeId}.EQ_Code_02`, attributeId: AttributeIds.Value }
+            ];
+
+            const results = await this.session.read(attributesToRead);
+            // const eqCode01 = results[0].value.value;
+            // const eqCode02 = results[1].value.value;
+            // const eqCode = parseWordToAscii(eqCode01) + parseWordToAscii(eqCode02);
+            // nodeId 형식: STACK01.SC11.Call_Request 일때
+            const eqCode = tagGroup.name;
+            // nodeId 형식: SC.11.Call_Request 일때
+            // const eqCode = tagGroup.nodeId.split('.').slice(0, 2).join('');
+
             for (const ref of tagBrowseResult.references!) {
               if (ref.nodeClass === 2 && ref.nodeId.namespace === 2 && !(ref.browseName.name?.startsWith("_") ?? false)) {
                 const tagDetails = await this.getTagDetails(ref.nodeId.toString());
@@ -193,8 +233,9 @@ const opcuaClient = {
                   DESCRIPTION: tagDetails.description || '',
                   DATA_TYPE: tagDetails.dataType,
                   ADDRESS: tagDetails.address,
-                  SUBSCRIPTION: false,
-                  INPUT_TYPE: (tagDetails.dataType === 'Boolean') ? 'Bool' : 'DEC'
+                  SUBSCRIPTION: this.needToSubscribe(ref.browseName.name || ''),
+                  INPUT_TYPE: (tagDetails.dataType === 'Boolean') ? 'Bool' : this.isASCII(ref.browseName.name || '') ? 'ASCII' : 'DEC',
+                  EQ_CODE: eqCode
                 });
               }
             }
