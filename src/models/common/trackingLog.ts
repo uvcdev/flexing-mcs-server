@@ -47,7 +47,22 @@ export type TrackingLogSubjectType =
   'CALL_RESPONSE' |
   'WORK_ORDER' |
   'WMS_CALL_ID' |
-  'WMS_PORT_ID';
+  'WMS_PORT_ID' |
+  'FROM_DOCKING_REQ' |
+  'FROM_DOCKING_PERMIT' |
+  'FROM_DOCKING_COMPLETED' |
+  'TO_DOCKING_REQ' |
+  'TO_DOCKING_PERMIT' |
+  'TO_DOCKING_COMPLETED' |
+  'FROM_START' |
+  'FROM_COMPLETED' |
+  'MISSION_START' |
+  'MISSION_COMPLETED' |
+  'TO_START' |
+  'TO_COMPLETED' |
+  'AMR_ASSIGNED' |
+  'BRANCH_INFO_REQ' |
+  'BRANCH_INFO_REP';
 
 // 진행 상태 추가 필요시 추가 적용 예정
 export type TrackingLogState = 'PUBLISHED' | 'PROCESSING' | 'COMPLETED' | 'ABORTED' | 'PAUSED' | 'ERROR';   // 시작 전 , 진행 중 , 완료 , 중단

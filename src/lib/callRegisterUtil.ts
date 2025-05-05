@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { AttributeIds } from "node-opcua-client";
-import { WorkOrderAttributesDeep, WorkOrderUpdateByCodeParams } from 'models/operation/workOrder';
+import { PendingWorkOrderAttributes, WorkOrderAttributesDeep, WorkOrderUpdateByCodeParams } from 'models/operation/workOrder';
 import Facility, { FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
 import Amr from 'models/common/amr';
 import { calculateDurationInSeconds } from './dateUtil';
@@ -162,7 +162,18 @@ export const useCallRegisterUtil = () => {
       if (facilityInfo?.isMissionOrderCapable) {
         // useWorkOrderUtil().createMissionWorkOrder()
         // await redisUtil.hset(RedisKeys.InfoAckOutCallByCallId, callInfo.EQP_CALL_ID, callInfoString);
-
+        const infoPendingMissionWorkOrder: PendingWorkOrderAttributes = {
+          callId: callInfo.CALL_ID,
+          fromFacilityName: callInfo.Caller,
+          toFacilityName: null,
+          type: 'MISSION',
+          isMissionOrder: true,
+          callPriority: callInfo.Call_Priority || '',
+          callType: callInfo.Call_Type,
+          portName: null,
+          eqpName: callInfo.Caller
+        }
+        redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingMissionWorkOrder))
       } else {
         if (facilityInfo?.type === 'in') {
           await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.CALL_ID, callInfoString);

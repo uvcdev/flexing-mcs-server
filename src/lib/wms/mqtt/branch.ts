@@ -1,6 +1,6 @@
 import { PendingWorkOrderAttributes } from "../../../models/operation/workOrder";
 import { logging } from "../../logging";
-import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody } from "../../mqttUtil"
+import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, sendMqtt } from "../../mqttUtil"
 import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand } from "../../process/wmsAck"
 import { BranchInfoReqBody, DeletedBranchInfoReq, deleteInfoAckMissionCallByCallId, deleteInfoAckOutCallByCallId } from "../../process/wmsBranch";
 import { setAbortedCommandForRetry } from "../../process/wmsCommon";
@@ -26,6 +26,7 @@ interface BranchInfoRepBody extends MbsMqttBody {
   Call_ID: string;
   CurrentLocation: string;
   AMRID: string;
+  amrId: string;
   CarrierList: Array<BranchInfoRepCarrierInfo>
 }
 
@@ -100,8 +101,24 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
       if (branchInfoRepData.isMissionOrder) {
         // 미션 오더 MQTT 전송
         // TODO MQTT 데이터 전송
+        const missionOrderMqttMessage = {
+          EQP_CALL_ID: branchInfoRepData.Call_ID,
+          TYPE: 'MISSION',
+          WORK_ORDER_ID: branchInfoRepData.workOrderId,
+          EQP_ID: carrierInfo.NewDest,
+          AMR_ID: branchInfoRepData.AMRID,
+          AMR_DB_ID: Number(branchInfoRepData.amrDbId) || 0,
+          CALL_TYPE: carrierInfo.Call_Type,
+          CALL_ID: branchInfoRepData.Call_ID,
+          IS_MISSION_ORDER: "TRUE",
+          TX_ID: "",
+          TAG_ID: "",
+          CALL_PRIORITY: branchInfoRepData.callPriority,
+
+        }
+        sendMqtt('acs/missionorder', JSON.stringify(missionOrderMqttMessage));
       }
-      // 설비에서 만든 out 콜인 경우 
+      // 설비에서 만든 out 콜인 경우 - normal order
       else {
         const prefixFromFacilityName = callId.substring(0, 4)
 
@@ -111,9 +128,10 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
           toFacilityName: carrierInfo.NewDest,
           type: 'OUT',
           isMissionOrder: false,
-          // TODO - CALL 정보 수집되는 것 보고 결정 예정
-          callPriority: '',
+          callPriority: branchInfoRepData.callPriority || '',
           callType: carrierInfo.Call_Type,
+          portName: carrierInfo.NewDest,
+          eqpName: prefixFromFacilityName
         }
 
         redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder))
@@ -365,8 +383,6 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
 
 export const wmsBranch = (wmsName: string, messageJson: MbsMqttMesaage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
-
-  // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
 
   if (subject === 'BRANCH_INFO_REP') {
     branchInfoRep(wmsName, subject, messageJson, messageBody as BranchInfoRepBody)
