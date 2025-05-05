@@ -5,18 +5,7 @@ import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { HeartbeatInfo, heartbeatSystemList, KepwareHeartbeatInfo } from "../redis/init";
 import { logging } from "../logging";
 import { useKepServerUtil } from "../kepServerUtil";
-import { ServerState, ServerStatusDataType } from "node-opcua-types";
-// enum ServerState {
-//   Running = 0,
-//   Failed = 1,
-//   NoConfiguration = 2,
-//   Suspended = 3,
-//   Shutdown = 4,
-//   Test = 5,
-//   CommunicationFault = 6,
-//   Unknown = 7,
-//   Invalid = 4294967295
-// }
+import { ServerState, ServerStatusDataType } from "node-opcua";
 
 const redisUtil = useRedisUtil();
 
@@ -32,11 +21,11 @@ const sendMcsHeartbeat = () => {
 
   // mcs heartbeat 업데이트
   const heartbeatData: HeartbeatInfo = {
-    systemName: 'mcs',
+    systemName: 'MCS',
     state: 'connection',
     time: mqttHeader.time,
   }
-  redisUtil.hset(RedisKeys.Heartbeat, 'mcs', JSON.stringify(heartbeatData))
+  redisUtil.hset(RedisKeys.Heartbeat, 'MCS', JSON.stringify(heartbeatData))
 
   sendMbsMqtt(topic, mqttHeader, mqttBody)
 }
@@ -54,7 +43,7 @@ const sendKepwareHeartbeat = async () => {
 
       // kepware heartbeat 업데이트
       const heartbeatData: KepwareHeartbeatInfo = {
-        systemName: 'kepware',
+        systemName: 'KEPWARE',
         state: kepwareHeartbeatState === ServerState.Running ? 'connection' : 'disconnection',
         time: time,
         serverState: kepwareHeartbeatState,
@@ -63,7 +52,7 @@ const sendKepwareHeartbeat = async () => {
       }
 
 
-      redisUtil.hset(RedisKeys.Heartbeat, 'kepware', JSON.stringify(heartbeatData))
+      redisUtil.hset(RedisKeys.Heartbeat, 'KEPWARE', JSON.stringify(heartbeatData))
 
     }
   }
@@ -74,11 +63,11 @@ export const sendAcsHeartbeat = (messageJson: any, receiveAt: string) => {
 
 
   const acsHeartbeatData: HeartbeatInfo = {
-    systemName: 'acs',
+    systemName: 'ACS',
     state: 'connection',
     time: receiveAt,
   }
-  redisUtil.hset(RedisKeys.Heartbeat, 'acs', JSON.stringify(acsHeartbeatData))
+  redisUtil.hset(RedisKeys.Heartbeat, 'ACS', JSON.stringify(acsHeartbeatData))
 
 }
 

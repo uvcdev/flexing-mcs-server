@@ -29,6 +29,7 @@ export interface TagValue {
   DATA_TYPE: string;
   INPUT_TYPE: string;
   NODE_ID: string;
+  EQ_CODE: string;
 }
 export interface Tag {
   NODE_ID: string;
@@ -41,6 +42,7 @@ export interface Tag {
   ADDRESS: string;
   SUBSCRIPTION: boolean;
   INPUT_TYPE: string;
+  EQ_CODE: string;
 }
 
 export interface Subscription {
@@ -74,17 +76,18 @@ export const parseAsciiToWord = (value: string): number => {
 };
 
 // WORD 타입 태그에서 ASCII 값을 추출하는 함수
-export const parseWordToAscii = (value: number): string | number => {
+export const parseWordToAscii = (value: number): string => {
   if (typeof value !== 'number' || value < 0 || value > 0xFFFF) {
     throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
   }
+
+  if (value === 0) return '';
 
   const lowByte = (value >> 8) & 0xFF;  // 반대로!
   const highByte = value & 0xFF;
 
   const char1 = String.fromCharCode(lowByte);
   const char2 = String.fromCharCode(highByte);
-
   return char1 + char2;
 }
 const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
@@ -96,6 +99,25 @@ export const useKepServerUtil = () => {
     const data = await fs.readFile(filePath, "utf8");
     return data;
   };
+
+  const getTagMapKey = (nodeId: string) => {
+
+    // nodeId 형식: STACK01.SC11.Call_Request 일때
+    const tagMapKey = nodeId.split('.').slice(1, 3).join('.');
+    // nodeId 형식: SC.11.Call_Request 일때
+    // const parts = nodeId.split('.');
+    // const tagMapKey = parts.slice(0, 2).join('') + '.' + parts.slice(2)[0];
+
+    return tagMapKey;
+  }
+
+  const getTagCode = (targetKey: string) => {
+    // targetKey 형식: STACK01.SC11
+    const tagCode = targetKey.split('.')[1];
+    // targetKey 형식: SC.11
+    // const tagCode = targetKey.split('.').join('');
+    return tagCode;
+  }
 
   // 태그 쓰는 함수
   const writeTagsValue = async (data: WriteValueOptions[]): Promise<StatusCode[]> => {
@@ -238,10 +260,7 @@ export const useKepServerUtil = () => {
     opcuaUtil.tagMap.clear();
     // 각 태그에 대해 Map 엔트리 생성
     allTags.forEach((tag: Tag) => {
-      const key = tag.TAGGROUP
-        ? `${tag.CHANNEL}.${tag.DEVICE}.${tag.TAGGROUP}.${tag.TAG_NAME}`
-        : `${tag.CHANNEL}.${tag.DEVICE}.${tag.TAG_NAME}`;
-
+      const key = `${tag.EQ_CODE}.${tag.TAG_NAME}`;
       opcuaUtil.tagMap.set(key, {
         value: "",
         prevValue: "",
@@ -253,11 +272,11 @@ export const useKepServerUtil = () => {
         TAG_NAME: tag.TAG_NAME,
         DATA_TYPE: tag.DATA_TYPE,
         INPUT_TYPE: tag.INPUT_TYPE,
-        NODE_ID: tag.NODE_ID
+        NODE_ID: tag.NODE_ID,
+        EQ_CODE: tag.EQ_CODE
       });
-      const monitorKey = tag.TAGGROUP
-        ? `${tag.CHANNEL}.${tag.DEVICE}.${tag.TAGGROUP}`
-        : `${tag.CHANNEL}.${tag.DEVICE}`;
+
+      const monitorKey = tag.EQ_CODE;
 
       if (opcuaUtil.allTagNodeIds.has(monitorKey)) {
         // 키가 이미 존재하는 경우, 기존 항목을 업데이트
@@ -290,7 +309,8 @@ export const useKepServerUtil = () => {
     let targetTagInfo = null;
 
     if (opcuaUtil.tagMap) {
-      targetTagInfo = opcuaUtil.tagMap.get(nodeId);
+      const tagMapKey = getTagMapKey(nodeId);
+      targetTagInfo = opcuaUtil.tagMap.get(tagMapKey);
     }
 
     if (!targetTagInfo) {
@@ -346,7 +366,7 @@ export const useKepServerUtil = () => {
     const writeDatas: WriteValueOptions[] = [];
     const tagMap = opcuaUtil.tagMap;
     try {
-      const targetFacility = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityByResource, params.targetFacility);
+      const targetFacility = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, params.targetFacility);
       // if (!targetFacility) {
       //   throw new Error(`No facility found with name: ${params.targetFacility}`);
       // }
@@ -357,9 +377,19 @@ export const useKepServerUtil = () => {
       // // targetFacilityObject.serial = 'SC11' -> targetFacilitySerial = 'SC.11'
       // const targetFacilitySerial = targetFacilityObject.serial.slice(0, 2) + '.' + targetFacilityObject.serial.slice(2);
       // const targetFacilityCode = targetFacilityObject.facilityCode;
-      const targetFacilityCode = 'STACK01.LOAD-PORT';
+      // const targetFacilityCode = 'STACK01.LOAD-PORT';
+      if (!targetFacility) {
+        logging.ACTION_ERROR({
+          filename: 'kepServerUtil.ts',
+          error: null,
+          params: null,
+          result: `No facility found with name: ${params.targetFacility}`,
+        });
+        return [];
+      }
+      const targetFacilitySerial = targetFacility.serial;
       for (let i = 0, length = params.tagInfo.length; i < length; i++) {
-        const tagMapValue = tagMap.get(`${targetFacilityCode}.${params.tagInfo[i].tagName}`);
+        const tagMapValue = tagMap.get(`${targetFacilitySerial}.${params.tagInfo[i].tagName}`);
         if (tagMapValue) {
           writeDatas.push({
             nodeId: tagMapValue.NODE_ID,
@@ -389,6 +419,7 @@ export const useKepServerUtil = () => {
     heartbeat,
     initTagData,
     updateTagValue,
-    makeWriteDatas
+    makeWriteDatas,
+    getTagCode
   }
 }

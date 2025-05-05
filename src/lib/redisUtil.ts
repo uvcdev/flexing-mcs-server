@@ -64,6 +64,9 @@ export enum RedisKeys {
   DockingRequestByPortId = 'docking_request_by_port_id',
   DockingCompleteByPortId = 'docking_complete_by_port_id',
   DockingDetachByPortId = 'docking_detach_by_port_id',
+  DockingRequestBySerialId = 'docking_request_by_serial_id',                // acs로부터 온 도킹요청정보와 imcs가 acs로 보내는 도킹요청응답정보 
+  DockingCompleteBySerialId = 'docking_complete_by_serial_id',              // acs로부터 온 도킹완료정보와 imcs가 acs로 보내는 도킹완료응답정보 
+  DockingDetachBySerialId = 'docking_detach_by_serial_id',                // acs로부터 온 도킹해제정보와 imcs가 acs로 보내는 도킹해제응답정보 
 }
 export enum RedisSettingKeys {
   // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정
