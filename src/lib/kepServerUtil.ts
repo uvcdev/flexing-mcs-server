@@ -61,7 +61,11 @@ export interface MakeWriteDatasParams {
     value: string | boolean
   }[];
 }
-
+export interface WriteDataParams {
+  targetFacility: string;
+  tagName: string,
+  value: boolean
+}[]
 
 // ASCII 타입 태그에서 WORD 값을 추출하는 함수
 export const parseAsciiToWord = (value: string): number => {
@@ -120,21 +124,38 @@ export const useKepServerUtil = () => {
   }
 
   // 태그 쓰는 함수 호출
-  const writeSimpleTagValue = async (
-    nodeId: string,
-    dataType: DataType,
-    value: any
-  ): Promise<void> => {
-    await writeTagValue({
-      nodeId,
-      attributeId: AttributeIds.Value,
-      value: {
-        value: {
-          dataType,
-          value,
-        },
-      },
-    });
+  const writeSimpleTagValue = async (params: WriteDataParams): Promise<void> => {
+    const tagMap = opcuaUtil.tagMap;
+    try {
+      const targetFacility = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, params.targetFacility);
+      if (!targetFacility) {
+        logging.ACTION_ERROR({
+          filename: 'kepServerUtil.ts',
+          error: null,
+          params: null,
+          result: `No facility found with name: ${params.targetFacility}`,
+        });
+        return;
+      }
+      const targetFacilitySerial = targetFacility.serial;
+      const tagMapValue = tagMap.get(`${targetFacilitySerial}.${params.tagName}`);
+      if (tagMapValue) {
+        const writeDatas = {
+          nodeId: tagMapValue.NODE_ID,
+          attributeId: AttributeIds.Value,
+          value: {
+            value: {
+              dataType: tagMapValue.DATA_TYPE,
+              value: params.value
+            }
+          }
+        };
+        await writeTagValue(writeDatas);
+      }
+    } catch (error) {
+      logToConsoleAndFile(`Error making write datas from kepServerUtil.makeWriteDatas: ${error}`, "red");
+      throw error;
+    }
   };
 
   // 태그 쓰는 함수

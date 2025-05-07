@@ -1,5 +1,6 @@
 import { TrackingLogRedisUpdateParams } from "../../../models/common/trackingLog"
 import { EqpCallStatsForAck } from "../../callRegisterUtil"
+import { useKepServerUtil } from "../../kepServerUtil"
 import { logging } from "../../logging"
 import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody } from "../../mqttUtil"
 import { editTrackingLogRedis } from "../../process/trackingLog"
@@ -84,6 +85,13 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         error: `[HCACK = ${hcack}] CallId (${callId}) Command executed successfully - comment : ${ackComment}`,
         params: null,
         result: true,
+      });
+
+      // call_response 작성
+      await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: callInfoData.Caller,
+        tagName: 'Call_Response',
+        value: true,
       });
 
       const trackingLogSubject = 'ACK_CALL_INFO'

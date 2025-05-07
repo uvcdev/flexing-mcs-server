@@ -54,13 +54,13 @@ export const processMcs = async () => {
     // 3. 창고(반입) -> 설비(반출) - 설비에서 창고로 바로 이동할 작업 지시 생성
     await checkOutBranchInfoReqForWms()
 
-    // ACK_CALL_INFO 판단해서 콜 정보 저장과 EQP에 응답 데이터 Write
-    await useCallRegisterUtil().checkCallSave()
-    // todo4: 창고로부터 ACK 오면 EQP_Call_Save 함수와 같은 기능 실행
-    await useWorkOrderUtil().createWorkOrder()
+    // pending 된 작업 지시 생성
+    // await useWorkOrderUtil().createWorkOrder()
 
-    // 설비-설비 간에 작업 미생성된 콜에 대해 재판단 처리
-    // await useCallRegisterUtil().checkRemainEqpCall()
+    // 설비-설비 간에 작업 미생성된 콜에 대해 재판단(Call_Response) 처리
+    await useCallRegisterUtil().checkRemainEqpCall()
+
+
   } catch (error) {
     console.error("Error in processMcs:", error);
     // 에러 로깅 또는 알림 처리

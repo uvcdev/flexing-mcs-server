@@ -163,14 +163,10 @@ export const useCallRegisterUtil = () => {
     for (const callInfo of callInfoList) {
       const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityBySerial, callInfo.Caller || '')
       const callInfoString = JSON.stringify(callInfo);
-      console.log("🚀 ~ callRegister ~ callInfoString:", callInfoString)
       // init TrackingLog 
       await initTrackingLogRedis(callInfo)
-      console.log('facilityInfo?.linkedEqpIds123', facilityInfo)
-      // ======= 미션결정 작업지시 =======
+      // ======= 미션결정 작업지시 (설비기준 회수) =======
       if (facilityInfo?.isMissionOrderCapable) {
-        // useWorkOrderUtil().createMissionWorkOrder()
-        // await redisUtil.hset(RedisKeys.InfoAckOutCallByCallId, callInfo.EQP_CALL_ID, callInfoString);
         const infoPendingMissionWorkOrder: PendingWorkOrderAttributes = {
           callId: callInfo.CALL_ID,
           fromFacilityName: callInfo.Caller,
@@ -182,17 +178,14 @@ export const useCallRegisterUtil = () => {
           portName: null,
           eqpName: callInfo.Caller
         }
-        //   redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingMissionWorkOrder))
-        // } else {
-        //   if (facilityInfo?.type === 'in') {
-        //     await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.CALL_ID, callInfoString);
-        //   } else {
-        //     await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
-        //   }
 
         // 작업지시 예정 레디스 저장
         redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingMissionWorkOrder))
-        await kepServerUtil.writeSimpleTagValue(`${nodeName}.Call_Response`, 1, true);
+        await kepServerUtil.writeSimpleTagValue({
+          targetFacility: callInfo.Caller,
+          tagName: 'Call_Response',
+          value: true,
+        });
       } else {
         // ======= to 작업지시 =======
         if (facilityInfo?.linkedEqpIds) {
@@ -219,35 +212,42 @@ export const useCallRegisterUtil = () => {
               callPriority: callInfo.Call_Priority,
               callType: callInfo.Call_Type
             }
-            if (plcInfoToJson.Call_Request) {
+
+            if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
               // 작업지시 예정 레디스 저장
               redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingWorkOrder))
 
-              // 콜 발생 / 반대쪽 Call_Response 작성
-              await kepServerUtil.writeSimpleTagValue(`${nodeName}.Call_Response`, 1, true);
-              await kepServerUtil.writeSimpleTagValue(`${nodeName}.Call_Response`, 1, true);
+              // 콜 기준 설비 call_response 작성
+              await useKepServerUtil().writeSimpleTagValue({
+                targetFacility: facilityInfo.serial || '',
+                tagName: 'Call_Response',
+                value: true,
+              });
+              // call_response 작성
+              await useKepServerUtil().writeSimpleTagValue({
+                targetFacility: linkedFacilityInfo.serial || '',
+                tagName: 'Call_Response',
+                value: true,
+              });
 
               break
-            } else {
+            } else if (!plcInfoToJson.Call_Request && linkedFacilityInfo) {
               // 반대쪽에 콜이 떠 있지 않은 경우 반복해서 판단하는 redis에 저장
-              redisUtil.hset(RedisKeys.InfoRemainCallById, callInfo.CALL_ID, JSON.stringify(infoPendingWorkOrder))
+              redisUtil.hset(RedisKeys.InfoRemainCallById, callInfo.CALL_ID, JSON.stringify({
+                ...infoPendingWorkOrder,
+                fromFacilityName: facilityInfo.serial,
+                toFacilityName: linkedFacilityInfo.serial
+              }))
             }
-
-            // todo: 링크된건 있는데 작업지시 못 만든 경우 redis 에 등록해서 반복해서 확인하고 작업지시 만들도록 로직 구성할것
           }
-
-
-
-        } else if (facilityInfo?.linkedWmsIds) {
+          // } else if (facilityInfo?.linkedWmsIds) {
         } else {
           // 설비 - 창고 로직
           // 설비 테이블에 어떤 창고와 통신을 해야한다는 창고를 등록하고
           if (facilityInfo?.type === 'in') {
             await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.CALL_ID, callInfoString);
-            await redisUtil.hset(RedisKeys.InfoInCallByNodeId, callInfo.NODE_FRONT_NAME, callInfoString);
           } else {
             await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
-            await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.NODE_FRONT_NAME, callInfoString);
           }
         }
         // else {
@@ -334,37 +334,39 @@ export const useCallRegisterUtil = () => {
       return null;
     }
   };
-  const checkCallSave = async () => {
-    // TODO: 동일 EQP ID에 존재하는 레거시 콜들 전부 삭제
-    // CallCancel();
-
-    const [inCallList, outCallList] = await Promise.all([
-      redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoInCallByNodeId),
-      redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoOutCallByNodeId)
-    ]);
-
-    const processAckList = async (list: TagValue[] | null) => {
-      if (!list?.length) return;
-
-      for (const info of list) {
-        console.log('info123', info)
-        // await kepServerUtil.writeSimpleTagValue(`${info.NODE_FRONT_NAME}.Call_Response`, 1, true);
-
-        await Promise.all([
-          redisUtil.hdel(RedisKeys.InfoInCallByNodeId, info.NODE_ID),
-          redisUtil.hdel(RedisKeys.InfoOutCallByNodeId, info.NODE_ID),
-        ]);
-      }
-    };
-
-    await Promise.all([
-      processAckList(inCallList),
-      processAckList(outCallList),
-    ]);
-  };
   const checkRemainEqpCall = async () => {
+    const remainCallList = await redisUtil.hgetAllObject<PendingWorkOrderAttributes>(RedisKeys.InfoRemainCallById);
+    if (remainCallList) {
+      for (const remainCall of remainCallList) {
+        const reqCallInfo = await redisUtil.hgetObject<FacilityAttributes>(
+          RedisKeys.InfoPlcBySerial,
+          remainCall?.fromFacilityName?.toString() || ''
+        );
+        const resCallInfo = await redisUtil.hgetObject<FacilityAttributes>(
+          RedisKeys.InfoPlcBySerial,
+          remainCall?.toFacilityName?.toString() || ''
+        );
 
+        const reqCallInfoJson = JSON.parse(JSON.stringify(reqCallInfo))
+        const resCallInfoJson = JSON.parse(JSON.stringify(resCallInfo))
 
+        if (reqCallInfoJson.Call_Request && resCallInfoJson.Call_Request) {
+          // 콜 기준 설비 call_response 작성
+          await useKepServerUtil().writeSimpleTagValue({
+            targetFacility: remainCall.fromFacilityName || '',
+            tagName: 'Call_Response',
+            value: true,
+          });
+          // call_response 작성
+          await useKepServerUtil().writeSimpleTagValue({
+            targetFacility: remainCall.toFacilityName || '',
+            tagName: 'Call_Response',
+            value: true,
+          });
+          redisUtil.hdel(RedisKeys.InfoRemainCallById, remainCall.callId || '');
+        }
+      }
+    }
   };
-  return { callRegister, checkCallSave, checkRemainEqpCall };
+  return { callRegister, checkRemainEqpCall };
 };

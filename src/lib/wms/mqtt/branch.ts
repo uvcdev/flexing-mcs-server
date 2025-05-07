@@ -1,4 +1,5 @@
 import { PendingWorkOrderAttributes } from "../../../models/operation/workOrder";
+import { useKepServerUtil } from "../../kepServerUtil";
 import { logging } from "../../logging";
 import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, sendMqtt } from "../../mqttUtil"
 import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand } from "../../process/wmsAck"
@@ -135,6 +136,12 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
         }
 
         redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder))
+        // call_response 작성
+        await useKepServerUtil().writeSimpleTagValue({
+          targetFacility: prefixFromFacilityName,
+          tagName: 'Call_Response',
+          value: true,
+        });
       }
 
       break;
