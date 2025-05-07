@@ -65,7 +65,7 @@ export interface WriteDataParams {
   targetFacility: string;
   tagName: string,
   value: boolean
-}[]
+}
 
 // ASCII 타입 태그에서 WORD 값을 추출하는 함수
 export const parseAsciiToWord = (value: string): number => {
