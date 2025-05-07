@@ -101,7 +101,7 @@ const portPresenceStatus = async (wmsName: string, subject: string, messageMessa
     deleteRecentCallInfoTaskByCmdId(cmdId)
 
     // 물류 로그 저장 - 포트 지정 완료
-    const trackingLogSubject = 'PORT_ASSIGNED'
+    const trackingLogSubject = subject
     const trackingLogDetail = 'PORT_ASSIGNED'
     const trackingLogState = 'PROCESSING'
     const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
@@ -116,7 +116,7 @@ const portPresenceStatus = async (wmsName: string, subject: string, messageMessa
       value: portId,
       description: `Call ID ${callId} received ${subject} from WMS(${wmsName}) - Port assigned: ${portId}`
     }
-    await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+    await editTrackingLogRedis(trackingLogUpdateData, portId, 'SUCCESS', wmsName)
   }
 }
 

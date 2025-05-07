@@ -1,7 +1,9 @@
+import { TrackingLogRedisUpdateParams } from "../../../models/common/trackingLog";
 import { PendingWorkOrderAttributes } from "../../../models/operation/workOrder";
 import { useKepServerUtil } from "../../kepServerUtil";
 import { logging } from "../../logging";
 import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, sendMqtt } from "../../mqttUtil"
+import { editTrackingLogRedis } from "../../process/trackingLog";
 import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand } from "../../process/wmsAck"
 import { BranchInfoReqBody, DeletedBranchInfoReq, deleteInfoAckMissionCallByCallId, deleteInfoAckOutCallByCallId } from "../../process/wmsBranch";
 import { setAbortedCommandForRetry } from "../../process/wmsCommon";
@@ -118,6 +120,24 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
 
         }
         sendMqtt('acs/missionorder', JSON.stringify(missionOrderMqttMessage));
+
+        // Item Log 생성
+        const trackingLogSubject = subject
+        const trackingLogDetail = subject
+        const trackingLogState = 'PROCESSING'
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: callId,
+          subject: trackingLogSubject,
+          detail: trackingLogDetail,
+          state: trackingLogState,
+          startFacility: null,
+          transferId: null,
+          destFacility: carrierInfo.NewDest,
+          assignedRobot: branchInfoRepData.AMRID,
+          value: carrierInfo.NewDest,
+          description: `Call ID ${callId} received BRANCH_INFO_REP from WMS (${wmsName})`
+        }
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
       }
       // 설비에서 만든 out 콜인 경우 - normal order
       else {
@@ -136,12 +156,38 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
         }
 
         redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder))
+
         // call_response 작성
         await useKepServerUtil().writeSimpleTagValue({
           targetFacility: prefixFromFacilityName,
           tagName: 'Call_Response',
           value: true,
         });
+
+        // Item Log 생성  -> 설비에서 직접 만든 콜은 로그 표현 형식을 위해 Detail을 강제로 ACK_CALL_INFO로 보냄
+        const trackingLogSubject = subject
+        const trackingLogDetail = 'ACK_CALL_INFO'
+        const trackingLogState = 'PROCESSING'
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: callId,
+          subject: trackingLogSubject,
+          detail: trackingLogDetail,
+          state: trackingLogState,
+          startFacility: null,
+          transferId: null,
+          destFacility: carrierInfo.NewDest,
+          assignedRobot: branchInfoRepData.AMRID,
+          value: carrierInfo.NewDest,
+          description: `Call ID ${callId} received BRANCH_INFO_REP from WMS (${wmsName})`
+        }
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+
+        // 포트 배정 로그까지 기록
+        const portTrackingLogDetail = 'PORT_ASSIGNED'
+        const portTackingLogValue = carrierInfo.NewDest
+        trackingLogUpdateData.detail = portTrackingLogDetail
+        trackingLogUpdateData.value = portTackingLogValue
+        await editTrackingLogRedis(trackingLogUpdateData, portTackingLogValue, 'SUCCESS', wmsName)
       }
 
       break;
@@ -247,10 +293,49 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
     case '4':
       // 물류 로그 기록
       // InfoAckOutCallByCallId 레디스 기록
+      // 미션 오더인 경우
       if (infoAckOutCallData.isMissionOrder) {
         redisUtil.hset(RedisKeys.InfoAckMissionCallByCallId, callId, JSON.stringify(infoAckOutCallData))
-      } else {
+
+        // Item Log 생성
+        const trackingLogSubject = subject
+        const trackingLogDetail = subject
+        const trackingLogState = 'PROCESSING'
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: callId,
+          subject: trackingLogSubject,
+          detail: trackingLogDetail,
+          state: trackingLogState,
+          startFacility: null,
+          transferId: null,
+          destFacility: null,
+          assignedRobot: null,
+          value: null,
+          description: `Call ID ${callId} received ACK_BRANCH_INFO_REQ from WMS (${wmsName})`
+        }
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+      }
+      // 미션오더가 아닌 경우 
+      else {
         redisUtil.hset(RedisKeys.InfoAckOutCallByCallId, callId, JSON.stringify(infoAckOutCallData))
+
+        // Item Log 생성 - 물류 로그 순서상 강제로 CALL_INFO 정보를 Detail에 사용
+        const trackingLogSubject = subject
+        const trackingLogDetail = 'CALL_INFO'
+        const trackingLogState = 'PROCESSING'
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: callId,
+          subject: trackingLogSubject,
+          detail: trackingLogDetail,
+          state: trackingLogState,
+          startFacility: null,
+          transferId: null,
+          destFacility: null,
+          assignedRobot: null,
+          value: null,
+          description: `Call ID ${callId} received ACK_BRANCH_INFO_REQ from WMS (${wmsName})`
+        }
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
       }
       // 정상 처리 시, 별도의 로직 존재하지 않음 ( ACK 받은 것만 인지 할 수 있으면 됨 - remainingCommandInfo 삭제 )
       logging.ACTION_INFO({
