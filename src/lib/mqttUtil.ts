@@ -523,11 +523,6 @@ export const receiveMqtt = (): void => {
             if (topicSplit.length === 3 && topicSplit[1] === 'server' && topicSplit[2] === 'status') {
               const messageJson = JSON.parse(message);
               const receiveAt = formatDetailedDateTime(new Date());
-              logging.MQTT_LOG({
-                title: 'acs heartbeat',
-                topic: messageTopic,
-                message: messageJson,
-              });
               sendAcsHeartbeat(messageJson, receiveAt)
             }
           }
