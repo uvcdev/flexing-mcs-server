@@ -48,6 +48,7 @@ const craneActive = async (wmsName: string, subject: string, messageMessage: Mbs
   const callId = recentCallInfoTask?.callId || ''
 
   console.log('recentCallInfoTask', recentCallInfoTask)
+  // ACK 발송
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
 
   if (!transferId) {
@@ -100,10 +101,13 @@ const craneIdle = async (wmsName: string, subject: string, messageMessage: MbsMq
 
   const callId = recentCallInfoTask?.callId || ''
 
-  if (!cmdId || cmdId === '') {
+  // ACK 발송 callId 상관 없이 일단 보내야함
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
+
+  if (!callId || callId === '') {
     logging.ACTION_ERROR({
       filename: `crane.ts - craneIdle - recentCallInfoTask`,
-      error: `[CmdID] Cmd Id ${cmdId} is invalid`,
+      error: `[CallId] CallId Id ${callId} is invalid`,
       params: null,
       result: false,
     });
@@ -150,10 +154,13 @@ const craneForkActive = async (wmsName: string, subject: string, messageMessage:
 
   const callId = recentCallInfoTask?.callId || ''
 
-  if (!cmdId || cmdId === '') {
+  // ACK 발송 callId 상관 없이 일단 보내야함
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
+
+  if (!callId || callId === '') {
     logging.ACTION_ERROR({
       filename: `crane.ts - craneForkActive - recentCallInfoTask`,
-      error: `[CmdID] Cmd Id ${cmdId} is invalid`,
+      error: `[CallId] CallId Id ${callId} is invalid`,
       params: null,
       result: false,
     });
