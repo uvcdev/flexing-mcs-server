@@ -169,17 +169,29 @@ export const useCallRegisterUtil = () => {
       console.log('facilityInfo?.linkedEqpIds123', facilityInfo)
       // ======= 미션결정 작업지시 =======
       if (facilityInfo?.isMissionOrderCapable) {
-        const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+        // useWorkOrderUtil().createMissionWorkOrder()
+        // await redisUtil.hset(RedisKeys.InfoAckOutCallByCallId, callInfo.EQP_CALL_ID, callInfoString);
+        const infoPendingMissionWorkOrder: PendingWorkOrderAttributes = {
           callId: callInfo.CALL_ID,
           fromFacilityName: callInfo.Caller,
+          toFacilityName: null,
           type: 'MISSION',
           isMissionOrder: true,
-          callPriority: callInfo.Call_Priority,
-          callType: callInfo.Call_Type
+          callPriority: callInfo.Call_Priority || '',
+          callType: callInfo.Call_Type,
+          portName: null,
+          eqpName: callInfo.Caller
         }
+        //   redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingMissionWorkOrder))
+        // } else {
+        //   if (facilityInfo?.type === 'in') {
+        //     await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.CALL_ID, callInfoString);
+        //   } else {
+        //     await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
+        //   }
 
         // 작업지시 예정 레디스 저장
-        redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingWorkOrder))
+        redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingMissionWorkOrder))
         await kepServerUtil.writeSimpleTagValue(`${nodeName}.Call_Response`, 1, true);
       } else {
         // ======= to 작업지시 =======

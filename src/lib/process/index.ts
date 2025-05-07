@@ -12,7 +12,7 @@ import { checkAbortedCommandForRetry } from './wmsCommon';
 import { useCallRegisterUtil } from "../callRegisterUtil";
 import { useEqpCheckUtil } from '../eqpCheckUtil';
 import { useWorkOrderUtil } from '../workOrderUtil';
-import { checkMissionBranchInfoReqForWms } from './wmsBranch';
+import { checkMissionBranchInfoReqForWms, checkOutBranchInfoReqForWms } from './wmsBranch';
 import { sendTrackingLogs } from './trackingLog';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
@@ -49,8 +49,10 @@ export const processMcs = async () => {
     // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
     // 1. 창고(반출) -> 설비(입고) - CALLINFO는 창고 기준 반출만 사용한다.  
     await checkCallInfoForWms()
-    // 2. 창고(반입) -> 설비(반출) - BRANCH_INFO_REQ 는 창고 기준 반입만 사용한다. ( 창고 반입은 모두 미션 결정지 )
+    // 2. 창고(반입) -> 설비(반출) - BRANCH_INFO_REQ 는 창고 기준 반입만 사용한다. ( 창고 반입은 모두 미션 결정지 ) - 미션결정지 이동
     await checkMissionBranchInfoReqForWms()
+    // 3. 창고(반입) -> 설비(반출) - 설비에서 창고로 바로 이동할 작업 지시 생성
+    await checkOutBranchInfoReqForWms()
 
     // ACK_CALL_INFO 판단해서 콜 정보 저장과 EQP에 응답 데이터 Write
     await useCallRegisterUtil().checkCallSave()

@@ -302,14 +302,14 @@ export interface WorkOrderDeleteParams {
 export interface PendingWorkOrderAttributes {
   callId?: string;
   fromFacilityName?: string;
-  toFacilityName?: string;
+  toFacilityName?: string | null;
   itemName?: string;
   type: 'IN' | 'OUT' | 'MISSION';
   isMissionOrder?: boolean;
   callPriority?: string;
   callType?: string;
   eqpName?: string;
-  portName?: string;
+  portName?: string | null;
 }
 
 // include attributes

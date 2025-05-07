@@ -5,6 +5,8 @@ import { makeMbsMqttHeader, MbsMqttBody, sendMbsMqtt } from "../mqttUtil";
 import { RedisKeys, useRedisUtil } from "../redisUtil";
 import { setRemainingAckCommand } from "./wmsAck";
 import { EqpCallStats } from "../callRegisterUtil";
+import { TrackingLogRedisUpdateParams } from "../../models/common/trackingLog";
+import { editTrackingLogRedis } from "./trackingLog";
 
 
 const redisUtil = useRedisUtil();
@@ -45,12 +47,15 @@ export interface BranchInfoReqForWms extends BranchInfoReqBody {
   systemName?: string;
   workOrderCode?: string;
   workOrderId?: number;
+  amrDbId?: number;
 }
 
 export interface DeletedBranchInfoReq {
   isMissionOrder?: boolean;
   workOrderCode?: string | null;
   workOrderId?: number | null;
+  callPriority?: string | null;
+  amrDbId?: number | null;
 }
 
 export interface MqttBranchInfoDataFromAcs {
@@ -62,7 +67,20 @@ export interface MqttBranchInfoDataFromAcs {
   carrierId: string;
   carrierState: string;
   callType: string;
-  mode: 'auto' | 'manual'
+  mode: 'auto' | 'manual';
+  amrId: number;
+}
+
+export interface MqttMissionOrderAttributes {
+  id: number,                       // 작업 지시 id
+  code: string,                     // 작업 지시 코드
+  mode: 'auto' | 'manual',          // 작업지시 모드 ( 자동 / 수동 )
+  type: 'in' | 'out' | 'mission' | 'IN' | 'OUT' | 'MISSION', // 작업지시 타입
+  callPriority: boolean,            // 작업지시 중요도 ( false = 1 , true = 99 )
+  FromFacility: {
+    name: string,
+    serial: string,
+  }
 }
 
 // 공통 함수: Redis에서 미션 결정지 콜 정보를 확인하고 처리하는 함수
@@ -115,13 +133,14 @@ export const checkOutBranchInfoReqForWms = async () => {
       isMissionOrder: false,
       workOrderCode: null,
       workOrderId: null,
+      callPriority: outCallInfo.Call_Priority || ''
     }
 
     sendBranchInfoToWms(branchInfo, systemName, deletedBranchInfoReqInfo);
   }
 };
 
-const sendBranchInfoToWms = (branchInfo: BranchInfoReqBody, systemName: string, deletedBranchInfoReqInfo: DeletedBranchInfoReq) => {
+const sendBranchInfoToWms = async (branchInfo: BranchInfoReqBody, systemName: string, deletedBranchInfoReqInfo: DeletedBranchInfoReq) => {
   const topic = 'BRANCH';
   const subject = 'BRANCH_INFO_REQ'
 
@@ -157,10 +176,10 @@ const sendBranchInfoToWms = (branchInfo: BranchInfoReqBody, systemName: string, 
   const mqttHeader = makeMbsMqttHeader(subject);
   const mqttBody: MbsMqttBody = branchInfoData;
 
-  // CALLINFO MQTT 데이터 전송
+  // BRANCH_INFO_REQ MQTT 데이터 전송
   sendMbsMqtt(topic, mqttHeader, mqttBody, systemName);
 
-  // CALLINFO 보내고 나서 해당 redis 값 삭제
+  // BRANCH_INFO_REQ 보내고 나서 해당 redis 값 삭제
   if (deletedBranchInfoReqInfo.isMissionOrder) {
     deleteInfoMissionCallByCallId(branchInfoData.Call_ID)
   } else {
@@ -172,6 +191,48 @@ const sendBranchInfoToWms = (branchInfo: BranchInfoReqBody, systemName: string, 
 
   // ITEM LOG 기록
   // TODO - 물류 로그에 대한 redis 값 업데이트
+  // 미션 오더 tracking log 기록
+  if (deletedBranchInfoReqInfo.isMissionOrder) {
+    const startFacilityName = branchInfoData.Call_ID.substring(0, 4)
+    const trackingLogSubject = subject
+    const trackingLogDetail = subject
+    const trackingLogState = 'PROCESSING'
+    const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+      callId: branchInfoData.Call_ID,
+      subject: trackingLogSubject,
+      detail: trackingLogDetail,
+      state: trackingLogState,
+      startFacility: startFacilityName,
+      destFacility: null,
+      assignedRobot: branchInfoData.AMRID || null,
+      value: null,
+      description: `AMR(${branchInfoData.AMRID}) requested BRANCH_INFO to WMS (${systemName}) with call number ${branchInfoData.Call_ID} - MISSION ORDER`,
+      plcName: branchInfoData.CurrentLocation,
+      portName: null,
+    }
+    await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', 'MCS')
+  }
+  // 설비 - 창고 오더 tracking log 기록 ( NORMAL ORDER)
+  else {
+    const startFacilityName = branchInfoData.Call_ID.substring(0, 4)
+    const trackingLogSubject = subject
+    const trackingLogDetail = subject
+    const trackingLogState = 'PROCESSING'
+    const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+      callId: branchInfoData.Call_ID,
+      subject: trackingLogSubject,
+      detail: trackingLogDetail,
+      state: trackingLogState,
+      startFacility: startFacilityName,
+      destFacility: null,
+      assignedRobot: branchInfoData.AMRID || null,
+      value: null,
+      description: `Facility(${startFacilityName}) requested BRANCH_INFO to WMS (${systemName}) with call number ${branchInfoData.Call_ID} - NORMAL ORDER`,
+      plcName: branchInfoData.CurrentLocation,
+      portName: null,
+    }
+    await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', 'MCS')
+  }
 };
 
 export const deleteInfoOutCallByCallId = (callId: string) => {
@@ -224,8 +285,11 @@ export const receiveBranchInfoFromACS = async (branchInfoMqttMessage: MqttBranch
           CarrierState: branchInfoMqttMessage.carrierState,
           Call_Type: branchInfoMqttMessage.callType
         }
-      ]
-
+      ],
+      workOrderId: Number(branchInfoMqttMessage.workOrderId) | 0,
+      workOrderCode: branchInfoMqttMessage.workOrderCode,
+      systemName: 'MW01',
+      amrDbId: Number(branchInfoMqttMessage.amrId) | 0
     }
     redisUtil.hset(RedisKeys.InfoMissionCallByCallId, callId, JSON.stringify(branchInfoReqForWmsParams))
   }
