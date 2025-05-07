@@ -250,6 +250,9 @@ const service = {
         params: null,
         result: 'facility writeAllRedis success',
       });
+
+      return { insertedId: facilityList.rows.length }
+
     } catch (err) {
       logging.ACTION_ERROR({
         filename: 'facilityService.ts',
@@ -262,10 +265,6 @@ const service = {
         reject(err);
       });
     }
-
-    return new Promise((resolve) => {
-      resolve(result);
-    });
   },
 
   // redis init
@@ -295,6 +294,8 @@ const service = {
         params: null,
         result: 'facility writeSingleRedis success',
       });
+
+      return { insertedId: facilityId }
     } catch (err) {
       logging.ACTION_ERROR({
         filename: 'facilityService.ts',
@@ -307,10 +308,6 @@ const service = {
         reject(err);
       });
     }
-
-    return new Promise((resolve) => {
-      resolve(result);
-    });
   },
 };
 

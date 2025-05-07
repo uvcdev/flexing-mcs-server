@@ -5,7 +5,18 @@ import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { HeartbeatInfo, heartbeatSystemList, KepwareHeartbeatInfo } from "../redis/init";
 import { logging } from "../logging";
 import { useKepServerUtil } from "../kepServerUtil";
-import { ServerState, ServerStatusDataType } from "node-opcua";
+// import { ServerState, ServerStatusDataType } from "node-opcua-types";
+// enum ServerState {
+//   Running = 0,
+//   Failed = 1,
+//   NoConfiguration = 2,
+//   Suspended = 3,
+//   Shutdown = 4,
+//   Test = 5,
+//   CommunicationFault = 6,
+//   Unknown = 7,
+//   Invalid = 4294967295
+// }
 
 const redisUtil = useRedisUtil();
 
@@ -34,28 +45,28 @@ const sendMcsHeartbeat = () => {
 const sendKepwareHeartbeat = async () => {
 
   const kepwareHeartbeat = await useKepServerUtil().heartbeat();
-  if (kepwareHeartbeat) {
-    const kepwareHeartbeatValue: ServerStatusDataType = kepwareHeartbeat.value.value;
-    const kepwareHeartbeatState: ServerState = kepwareHeartbeatValue.state;
-    if (kepwareHeartbeatValue.currentTime) {
-      const time = formatDetailedDateTime(kepwareHeartbeatValue.currentTime);
-      const state = kepwareHeartbeatValue.state;
+  // if (kepwareHeartbeat) {
+  //   const kepwareHeartbeatValue: ServerStatusDataType = kepwareHeartbeat.value.value;
+  //   const kepwareHeartbeatState: ServerState = kepwareHeartbeatValue.state;
+  //   if (kepwareHeartbeatValue.currentTime) {
+  //     const time = formatDetailedDateTime(kepwareHeartbeatValue.currentTime);
+  //     const state = kepwareHeartbeatValue.state;
 
-      // kepware heartbeat 업데이트
-      const heartbeatData: KepwareHeartbeatInfo = {
-        systemName: 'KEPWARE',
-        state: kepwareHeartbeatState === ServerState.Running ? 'connection' : 'disconnection',
-        time: time,
-        serverState: kepwareHeartbeatState,
-        startTime: kepwareHeartbeatValue.startTime?.toString() || '',
-        shutdownReason: kepwareHeartbeatValue.shutdownReason?.toString() || '',
-      }
+  //     // kepware heartbeat 업데이트
+  //     const heartbeatData: KepwareHeartbeatInfo = {
+  //       systemName: 'kepware',
+  //       state: kepwareHeartbeatState === ServerState.Running ? 'connection' : 'disconnection',
+  //       time: time,
+  //       serverState: kepwareHeartbeatState,
+  //       startTime: kepwareHeartbeatValue.startTime?.toString() || '',
+  //       shutdownReason: kepwareHeartbeatValue.shutdownReason?.toString() || '',
+  //     }
 
 
-      redisUtil.hset(RedisKeys.Heartbeat, 'KEPWARE', JSON.stringify(heartbeatData))
+  //     redisUtil.hset(RedisKeys.Heartbeat, 'kepware', JSON.stringify(heartbeatData))
 
-    }
-  }
+  //   }
+  // }
 }
 
 // acs heartbeat 업데이트

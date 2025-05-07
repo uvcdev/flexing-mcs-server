@@ -75,7 +75,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
-        NODE_ID: ''
+        NODE_FRONT_NAME: ""
       }
       redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData))
 

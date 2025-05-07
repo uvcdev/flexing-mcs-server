@@ -193,10 +193,9 @@ export const opcuaUtil = {
         const redisUtil = useRedisUtil();
         const nodeId = monitoredItem.itemToMonitor.nodeId.value.toString();
         const value = dataValue;
-        console.log("🚀 ~ monitoredItems.on ~ value:", value)
         const targetTagInfo = useKepServerUtil().updateTagValue(nodeId, value);
 
-        logToConsoleAndFile(`Changed Tag Data NodeId: ${nodeId} ${value.value.value}`);
+        // logToConsoleAndFile(`Changed Tag Data NodeId: ${nodeId} ${value.value.value}`);
         logging.KEPWARE_LOG({
           action: 'TAG_WRITE',
           tag: nodeId,

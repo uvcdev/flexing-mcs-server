@@ -169,6 +169,8 @@ const service = {
       });
 
       logging.ACTION_DEBUG({ filename: 'settingService.ts', error: null, params: null, result: true });
+
+      return { insertedId: settingList.rows.length }
     } catch (err) {
       logging.ACTION_ERROR({
         filename: 'settingService.ts',
@@ -181,10 +183,6 @@ const service = {
         reject(err);
       });
     }
-
-    return new Promise((resolve) => {
-      resolve(result);
-    });
   },
 };
 

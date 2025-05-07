@@ -47,6 +47,8 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, FacilityInser
       alwaysFill: req.body.alwaysFill,
       description: req.body.description,
       isMissionOrderCapable: req.body.isMissionOrderCapable,
+      linkedEqpIds: [],
+      linkedWmsIds: []
     };
     logging.REQUEST_PARAM(logFormat);
 

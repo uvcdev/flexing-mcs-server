@@ -1,5 +1,5 @@
 import fs from "fs/promises";
-import { NodeId, AttributeIds, DataValue, ReadValueIdOptions, WriteValueOptions, StatusCode } from 'node-opcua-client';
+import { NodeId, AttributeIds, DataValue, ReadValueIdOptions, WriteValueOptions, StatusCode, DataType } from 'node-opcua-client';
 import { logging, logToConsoleAndFile } from './logging';
 import opcuaUtil from './opcuaUtil';
 import { MqttTopics, sendMqtt } from './mqttUtil';
@@ -119,6 +119,56 @@ export const useKepServerUtil = () => {
     return tagCode;
   }
 
+  // 태그 쓰는 함수 호출
+  const writeSimpleTagValue = async (
+    nodeId: string,
+    dataType: DataType,
+    value: any
+  ): Promise<void> => {
+    await writeTagValue({
+      nodeId,
+      attributeId: AttributeIds.Value,
+      value: {
+        value: {
+          dataType,
+          value,
+        },
+      },
+    });
+  };
+
+  // 태그 쓰는 함수
+  const writeTagValue = async (tag: WriteValueOptions): Promise<StatusCode> => {
+    try {
+      const session = opcuaUtil.session;
+
+      if (!session) {
+        throw new Error("OPC UA 세션이 존재하지 않습니다.");
+      }
+
+      const [statusCode] = await session.write([tag]); // 단건도 배열로 전달해야 함
+
+      logging.KEPWARE_LOG({
+        action: 'TAG_WRITE',
+        tag: null,
+        value: JSON.parse(JSON.stringify(tag)),
+        message: `writing value from kepServerUtil.writeTagValue`,
+        error: null,
+      });
+      return statusCode;
+    } catch (error) {
+      logToConsoleAndFile(`Error writing value to node: ${tag}. Error: ${error}`, "red");
+      logging.KEPWARE_ERROR({
+        action: 'TAG_WRITE',
+        tag: tag.toString(),
+        value: null,
+        message: `Error writing value from kepServerUtil.writeTagValue`,
+        error: error,
+      });
+      throw error;
+    }
+  }
+
   // 태그 쓰는 함수
   const writeTagsValue = async (data: WriteValueOptions[]): Promise<StatusCode[]> => {
     try {
@@ -208,7 +258,9 @@ export const useKepServerUtil = () => {
           });
 
           // MQTT로 결과 전송
+          await redisUtil.hset(RedisKeys.InfoPlcBySerial, key.split('.').pop()?.toString() || '', JSON.stringify(result));
           sendMqtt(`${MqttTopics.KepwareStatus}/${key}`, JSON.stringify(result));
+
         }
       } catch (error) {
         logging.MQTT_ERROR({
@@ -261,6 +313,13 @@ export const useKepServerUtil = () => {
     // 각 태그에 대해 Map 엔트리 생성
     allTags.forEach((tag: Tag) => {
       const key = `${tag.EQ_CODE}.${tag.TAG_NAME}`;
+      //   const key = tag.TAGGROUP
+      //   ? `${tag.CHANNEL}.${tag.DEVICE}.${tag.TAGGROUP}.${tag.TAG_NAME}`
+      //   : `${tag.CHANNEL}.${tag.DEVICE}.${tag.TAG_NAME}`;
+
+      // const monitorKey = tag.TAGGROUP
+      //   ? `${tag.CHANNEL}.${tag.DEVICE}.${tag.TAGGROUP}`
+      //   : `${tag.CHANNEL}.${tag.DEVICE}`;
       opcuaUtil.tagMap.set(key, {
         value: "",
         prevValue: "",
@@ -273,7 +332,7 @@ export const useKepServerUtil = () => {
         DATA_TYPE: tag.DATA_TYPE,
         INPUT_TYPE: tag.INPUT_TYPE,
         NODE_ID: tag.NODE_ID,
-        EQ_CODE: tag.EQ_CODE
+        EQ_CODE: tag.EQ_CODE,
       });
 
       const monitorKey = tag.EQ_CODE;
@@ -413,6 +472,7 @@ export const useKepServerUtil = () => {
 
 
   return {
+    writeSimpleTagValue,
     writeTagsValue,
     readTagsValue,
     monitorTagData,
@@ -420,6 +480,7 @@ export const useKepServerUtil = () => {
     initTagData,
     updateTagValue,
     makeWriteDatas,
+    getTagMapKey,
     getTagCode
   }
 }

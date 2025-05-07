@@ -20,7 +20,7 @@ export function registerSubscriptionEvents(subscription: ClientSubscription): vo
 
   subscription.on("item_added", (monitoredItem: ClientMonitoredItem) => {
     const nodeId = monitoredItem?.itemToMonitor?.nodeId?.toString() || "Unknown";
-    logToConsoleAndFile(`Subscription item_added! monitoredItem is ${nodeId}`);
+    // logToConsoleAndFile(`Subscription item_added! monitoredItem is ${nodeId}`);
   });
 
   subscription.on("keepalive", () => {
