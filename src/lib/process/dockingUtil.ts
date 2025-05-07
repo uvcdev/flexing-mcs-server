@@ -364,6 +364,7 @@ export const useDockingUtil = () => {
 
   // acs에서 도킹요청이 왔을 때, 설비에 도킹요청하는 함수
   const sendAcsDockingRequest = async (params: AcsDockingRequestType) => {
+    params.SERIAL_ID = params.PORT_ID
     redisUtil.hdel(RedisKeys.DockingRequestBySerialId, params.SERIAL_ID);
     redisUtil.hdel(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID);
     redisUtil.hdel(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID);
@@ -391,7 +392,10 @@ export const useDockingUtil = () => {
             tagName: 'Dock_AMR_Status',
             value: false
           },
-          // TODO: 도킹관련설비 신호 리셋 필요
+          // TODO: 추후 아래 신호도 넣어야 할 가능성 있음
+          // 위 값들은 amr이 쓰는 도킹관련 값이라면 아래는 설비의 도킹관련 신호 리셋하는 용도로 추측
+          // Dock_Signal_Reset	PLC 도킹 신호 리셋 요청 (0: 요청 없음, 1: 도킹 리셋 요청)
+
         ]
       });
       const result = await useKepServerUtil().writeTagsValue(writeDatas);
@@ -407,15 +411,9 @@ export const useDockingUtil = () => {
       });
     }
 
-    // TODO: 하위 로직에서 도킹요청을 한다.
-    // 일반 도킹요청은 callId/callType을 보고 설비가 알아서 허가응답을 해줄 것이다.
-    // 수동 도킹요청은 아직 모르므로 설비에서 불허해주는 이유를 보고 처리해야한다.
-    // 충전 도킹요청은 callId/callType을 안보기 때문에 허가가 날 것이다.
-    // 테스트 시 아래 요청에 대해 설비가 허가를 해줬다고 본다.
     switch (params.EXC_CLS) {
       case EXC_CLS.AUTO:  //일반도킹
-        // TODO: [트래킹로그]도킹요청 들어온 것에 대한 트래킹로그 저장
-        // TODO: 도킹 요청 ID/기종 확인(ID/기종은 콜 호출응답 시 기록되어있어야함)
+        // TODO: 도킹 요청 기종 확인(기종은 콜 호출 응답 시, 혹은 도킹요청 하기 전 기록되어있어야함)
         // const CallId = params.CALL_ID;
         // const CallIdRedisInfo = await redisUtil.hgetObject<CallIdRedisInfo>(RedisKeys.CallIdRedisInfo, CallId);
         // const CallType = CallIdRedisInfo.Call_Type;
@@ -439,6 +437,9 @@ export const useDockingUtil = () => {
             }
           ]
         });
+        // TODO: [트래킹로그]도킹요청 들어온 것에 대한 트래킹로그 저장
+
+
         console.log("🚀 ~ dockingRequestTag ~ dockingRequestTag:", dockingRequestTag)
         await useKepServerUtil().writeTagsValue(dockingRequestTag);
         break;
@@ -486,6 +487,7 @@ export const useDockingUtil = () => {
   // acs에서 도킹완료 응답이 왔을 때, 설비에 도킹완료 응답하는 함수
   const sendAcsDockingComplete = async (params: AcsDockingCompleteType) => {
     console.log("🚀 ~ sendAcsDockingComplete ~ params:", params)
+    params.SERIAL_ID = params.PORT_ID
 
     redisUtil.hset(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID, JSON.stringify(params));
 
@@ -509,6 +511,7 @@ export const useDockingUtil = () => {
   // acs에서 도킹진출완료 응답이 왔을 때, 설비에 도킹진출완료 응답하는 함수
   const sendAcsDockingDetach = async (params: AcsDockingDetachType) => {
     console.log("🚀 ~ sendAcsDockingDetach ~ params:", params)
+    params.SERIAL_ID = params.PORT_ID
 
     const dockingResponse: AcsDockingDetachResponse = {
       ...params,
