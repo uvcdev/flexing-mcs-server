@@ -148,110 +148,108 @@ export const useCallRegisterUtil = () => {
 
     for (const callInfo of callInfoList) {
       const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityBySerial, callInfo.Caller || '')
-      const callInfoString = JSON.stringify(callInfo);
-      // init TrackingLog 
-      await initTrackingLogRedis(callInfo)
-      // ======= 미션결정 작업지시 (설비기준 회수) =======
-      if (facilityInfo?.isMissionOrderCapable) {
-        const infoPendingMissionWorkOrder: PendingWorkOrderAttributes = {
-          callId: callInfo.CALL_ID,
-          fromFacilityName: callInfo.Caller,
-          toFacilityName: null,
-          type: 'MISSION',
-          isMissionOrder: true,
-          callPriority: callInfo.Call_Priority || '',
-          callType: callInfo.Call_Type,
-          portName: null,
-          eqpName: callInfo.Caller
-        }
-
-        // 작업지시 예정 레디스 저장
-        redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingMissionWorkOrder))
-        await kepServerUtil.writeSimpleTagValue({
-          targetFacility: callInfo.Caller,
-          tagName: 'Call_Response',
-          value: true,
-        });
-        await kepServerUtil.writeSimpleTagValue({
-          targetFacility: callInfo.Caller,
-          tagName: 'Call_Response_Count',
-          value: callInfo.CALL_ID.slice(-4),
-        });
-      } else {
-        // ======= to 작업지시 =======
-        if (facilityInfo?.linkedEqpIds) {
-          // 설비 - 설비로직
-          for (let i = 0; i < facilityInfo.linkedEqpIds.length; i++) {
-            const linkedEqpId = facilityInfo.linkedEqpIds[i]
-            const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-              RedisKeys.InfoFacilityById,
-              linkedEqpId.toString() || ''
-            );
-            console.log("🚀 ~ callRegister ~ linkedFacilityInfo:", linkedFacilityInfo?.serial)
-            const plcInfo = await redisUtil.hgetObject<FacilityAttributes>(
-              RedisKeys.InfoPlcBySerial,
-              linkedFacilityInfo?.serial?.toString() || ''
-            );
-
-            // 반대쪽에 콜이 떠 있는 경우 작업 생성 
-            const plcInfoToJson = JSON.parse(JSON.stringify(plcInfo))
-            const infoPendingWorkOrder: PendingWorkOrderAttributes = {
-              callId: callInfo.CALL_ID,
-              fromFacilityName: callInfo.Caller,
-              type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
-              isMissionOrder: false,
-              callPriority: callInfo.Call_Priority,
-              callType: callInfo.Call_Type
-            }
-
-            if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
-              // 작업지시 예정 레디스 저장
-              redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingWorkOrder))
-
-              // 콜 기준 설비 call_response 작성
-              await useKepServerUtil().writeSimpleTagValue({
-                targetFacility: facilityInfo.serial || '',
-                tagName: 'Call_Response',
-                value: true,
-              });
-              // call_response 작성
-              await useKepServerUtil().writeSimpleTagValue({
-                targetFacility: linkedFacilityInfo.serial || '',
-                tagName: 'Call_Response',
-                value: true,
-              });
-
-              break
-            } else if (!plcInfoToJson.Call_Request && linkedFacilityInfo) {
-              // 반대쪽에 콜이 떠 있지 않은 경우 반복해서 판단하는 redis에 저장
-              redisUtil.hset(RedisKeys.InfoRemainCallById, callInfo.CALL_ID, JSON.stringify({
-                ...infoPendingWorkOrder,
-                fromFacilityName: facilityInfo.serial,
-                toFacilityName: linkedFacilityInfo.serial
-              }))
-            }
+      // 설비 시스템인 경우에만 콜 생성(셀창고는 제외하기 위함)
+      if (facilityInfo?.system === 'EQP') {
+        const callInfoString = JSON.stringify(callInfo);
+        // init TrackingLog 
+        await initTrackingLogRedis(callInfo)
+        // ======= 미션결정 작업지시 (설비기준 회수) =======
+        if (facilityInfo?.isMissionOrderCapable) {
+          const infoPendingMissionWorkOrder: PendingWorkOrderAttributes = {
+            callId: callInfo.CALL_ID,
+            fromFacilityName: callInfo.Caller,
+            toFacilityName: null,
+            type: 'MISSION',
+            isMissionOrder: true,
+            callPriority: callInfo.Call_Priority || '',
+            callType: callInfo.Call_Type,
+            portName: null,
+            eqpName: callInfo.Caller
           }
-          // } else if (facilityInfo?.linkedWmsIds) {
+
+          // 작업지시 예정 레디스 저장
+          redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingMissionWorkOrder))
+          await kepServerUtil.writeSimpleTagValue({
+            targetFacility: callInfo.Caller,
+            tagName: 'Call_Response',
+            value: true,
+          });
+          await kepServerUtil.writeSimpleTagValue({
+            targetFacility: callInfo.Caller,
+            tagName: 'Call_Response_Count',
+            value: callInfo.CALL_ID.slice(-4),
+          });
         } else {
-          // 설비 - 창고 로직
-          // 설비 테이블에 어떤 창고와 통신을 해야한다는 창고를 등록하고
-          if (facilityInfo?.type === 'in') {
-            await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.CALL_ID, callInfoString);
+          // ======= to 작업지시 =======
+          if (facilityInfo?.linkedEqpIds) {
+            // 설비 - 설비로직
+            for (let i = 0; i < facilityInfo.linkedEqpIds.length; i++) {
+              const linkedEqpId = facilityInfo.linkedEqpIds[i]
+              const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+                RedisKeys.InfoFacilityById,
+                linkedEqpId.toString() || ''
+              );
+              console.log("🚀 ~ callRegister ~ linkedFacilityInfo:", linkedFacilityInfo?.serial)
+              const plcInfo = await redisUtil.hgetObject<FacilityAttributes>(
+                RedisKeys.InfoPlcBySerial,
+                linkedFacilityInfo?.serial?.toString() || ''
+              );
+
+              // 반대쪽에 콜이 떠 있는 경우 작업 생성 
+              const plcInfoToJson = JSON.parse(JSON.stringify(plcInfo))
+              const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+                callId: callInfo.CALL_ID,
+                eqpName: callInfo.Caller,
+                portName: linkedFacilityInfo?.serial,
+                type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
+                isMissionOrder: false,
+                callPriority: callInfo.Call_Priority,
+                callType: callInfo.Call_Type
+              }
+
+              if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
+                // 작업지시 예정 레디스 저장
+                redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingWorkOrder))
+
+                // 콜 기준 설비 call_response 작성
+                await useKepServerUtil().writeSimpleTagValue({
+                  targetFacility: facilityInfo.serial || '',
+                  tagName: 'Call_Response',
+                  value: true,
+                });
+                // call_response 작성
+                await useKepServerUtil().writeSimpleTagValue({
+                  targetFacility: linkedFacilityInfo.serial || '',
+                  tagName: 'Call_Response',
+                  value: true,
+                });
+
+                break
+              } else if (!plcInfoToJson.Call_Request && linkedFacilityInfo) {
+                // 반대쪽에 콜이 떠 있지 않은 경우 반복해서 판단하는 redis에 저장
+                redisUtil.hset(RedisKeys.InfoRemainCallById, callInfo.CALL_ID, JSON.stringify({
+                  ...infoPendingWorkOrder,
+                  fromFacilityName: facilityInfo.serial,
+                  toFacilityName: linkedFacilityInfo.serial
+                }))
+              }
+            }
+            // } else if (facilityInfo?.linkedWmsIds) {
           } else {
-            await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
+            // 설비 - 창고 로직
+            // 설비 테이블에 어떤 창고와 통신을 해야한다는 창고를 등록하고
+            if (facilityInfo?.type === 'in') {
+              await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.CALL_ID, callInfoString);
+            } else {
+              await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
+            }
           }
+          // else {
+          //   // todo: 도착지와 통신 없이 바로 작업 생성
+          // }
         }
-        // else {
-        //   // todo: 도착지와 통신 없이 바로 작업 생성
-        // }
       }
     }
-
-
-    // eqp-eqp / eqp-wms 를 콜 발생하는 설비에 다중으로 매핑해주는 방법은 어떤지...
-    // eqpWcsInfo.EQP_CALL_ID로 ACS_info_facility_by_serial 로 조회해서 컬럼 값이 설비인지 
-
-
     console.log(`Call request sent to WCS. TYPE: ${callType01Value}, CallID: ${callCountValue}`);
   };
   // callRequestMulti1Value와 callRequestMulti2Value의 값을 기반으로 multiValue 결정
