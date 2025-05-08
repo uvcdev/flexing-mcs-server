@@ -473,19 +473,22 @@ export const useDockingUtil = () => {
       });
     }
     // 콜타입 입력
-    const callType = parseAsciiToWord(params.CALL_TYPE).toString();
+    const callType = parseAsciiToWord(params.CALL_TYPE);
     console.log("🚀 ~ sendAcsDockingRequest ~ callType:", callType)
-    const callTypeResponseTag = await useKepServerUtil().makeWriteDatas({
-      targetFacility: params.SERIAL_ID,
-      tagInfo: [
-        {
-          tagName: 'Call_Type_Response_01',
-          value: callType
-        }
-      ]
-    });
-    console.log("🚀 ~ sendAcsDockingRequest ~ callTypeResponseTag:", callTypeResponseTag)
-    await useKepServerUtil().writeTagsValue(callTypeResponseTag);
+    if (!callType) {
+      const callTypeString = callType.toString();
+      const callTypeResponseTag = await useKepServerUtil().makeWriteDatas({
+        targetFacility: params.SERIAL_ID,
+        tagInfo: [
+          {
+            tagName: 'Call_Type_Response_01',
+            value: callTypeString
+          }
+        ]
+      });
+      console.log("🚀 ~ sendAcsDockingRequest ~ callTypeResponseTag:", callTypeResponseTag)
+      await useKepServerUtil().writeTagsValue(callTypeResponseTag);
+    }
     console.log("🚀 ~ sendAcsDockingRequest ~ params:", params)
     switch (params.EXC_CLS) {
       case EXC_CLS.AUTO:  //일반도킹

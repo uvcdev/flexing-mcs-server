@@ -70,7 +70,7 @@ export interface WriteDataParams {
 // ASCII 타입 태그에서 WORD 값을 추출하는 함수
 export const parseAsciiToWord = (value: string): number => {
   if (typeof value !== 'string' || value.length !== 2) {
-    throw new Error('두 자리 문자열을 입력하세요.');
+    return 0;
   }
 
   const char1 = value.charCodeAt(0); // 첫 번째 문자 (상위 바이트)

@@ -8,7 +8,7 @@ import { sendAllHeartbeat } from '../heartbeat/sendHeartbeat';
 import { checkSystemConnectionStatus } from '../heartbeat/checkHeartbeat';
 import { checkReceivedAckCommand, checkRemainingAckCommand } from './wmsAck';
 import { checkCallInfoForWms } from './wmsCallInfo';
-import { checkAbortedCommandForRetry } from './wmsCommon';
+import { checkAbortedCommandForRetry, checkCancelCall } from './wmsCommon';
 import { useCallRegisterUtil } from "../callRegisterUtil";
 import { useEqpCheckUtil } from '../eqpCheckUtil';
 import { useWorkOrderUtil } from '../workOrderUtil';
@@ -45,6 +45,9 @@ export const processMcs = async () => {
 
     // Aborted 된 작업 재전송 여부 확인
     await checkAbortedCommandForRetry()
+
+    // 콜 취소 요청 들어 왔을 때 처리 로직
+    await checkCancelCall()
 
     // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
     // 1. 창고(반출) -> 설비(입고) - CALLINFO는 창고 기준 반출만 사용한다.  

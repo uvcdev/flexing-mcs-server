@@ -1,9 +1,11 @@
 import { WmsCommandSetting } from "../../models/common/setting";
 import { generateUUIDNode } from "../hashUtil";
 import { logging } from "../logging";
-import { makeMbsMqttHeader, MbsMqttMesaage, sendMbsMqtt } from "../mqttUtil";
+import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from "../mqttUtil";
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from "../redisUtil";
 import { formatDetailedDateTime, isCurrentTimeFasterThanAnyMinutes } from "../usefullToolUtil";
+import { setRemainingAckCommand } from "./wmsAck";
+import { CallInfoBody } from "./wmsCallInfo";
 
 const redisUtil = useRedisUtil();
 
@@ -30,6 +32,13 @@ export interface RecentCallInfo {
   callPriority: string;
   caller: string;
   port?: string | null;
+}
+
+export interface CancelCallInfo {
+  Cmd_ID?: string;
+  Call_ID: string;
+  Call_Quantity: string;
+  systemName?: string;
 }
 
 export const setAbortedCommandForRetry = (systemName: string, subject: string, messageTopic: string, mqttMessage: MbsMqttMesaage) => {
@@ -103,4 +112,61 @@ export const setRecentCallInfoTaskByCmdId = (recentCallInfoParams: RecentCallInf
 
 export const deleteRecentCallInfoTaskByCmdId = async (cmdId: string) => {
   redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId)
+}
+
+// 설비 콜 취소 내용 수신 후 처리 로직
+export const checkCancelCall = async () => {
+  const cancelCallByCallIdList = await redisUtil.hgetAllObject<CancelCallInfo>(RedisKeys.InfoCancelCallByCallId) || []
+
+  for (let i = 0, length = cancelCallByCallIdList.length; i < length; i++) {
+    const infoCancelCallByCallId = cancelCallByCallIdList[i];
+
+    if (!infoCancelCallByCallId.Cmd_ID || infoCancelCallByCallId.Cmd_ID === '') {
+      infoCancelCallByCallId.Cmd_ID = generateUUIDNode()
+    }
+
+    await checkCancelCallInfo(infoCancelCallByCallId)
+  }
+}
+
+const checkCancelCallInfo = async (cancelCallInfo: CancelCallInfo) => {
+  const callId = cancelCallInfo.Call_ID
+
+  // 진행 중인 CALL INFO 중 해당 CALL INFO가 있는지 확인함
+  const infoAckInCallByCallId = await redisUtil.hgetObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId, callId)
+  // 진행 중인 CALL INFO가 있다면 해당 정보로 CancelCall 날림
+
+  if (infoAckInCallByCallId?.Call_Quantity !== cancelCallInfo.Call_Quantity) {
+    // 필요한 경우 return 지금은 새로 들어온 값 기준으로 판단
+    logging.ACTION_DEBUG({
+      filename: `wmsCommon.ts - checkCancelCallInfo`,
+      error: `[Call_Quantity] The new value(${cancelCallInfo.Call_Quantity}) does not match the existing value(${infoAckInCallByCallId?.Call_Quantity})`,
+      params: null,
+      result: false,
+    });
+  }
+
+  if (!cancelCallInfo.Cmd_ID) {
+    logging.ACTION_ERROR({
+      filename: `wmsCommon.ts - checkCancelCallInfo`,
+      error: `[Cmd_ID] Cmd_ID ${cancelCallInfo.Cmd_ID} is invalid`,
+      params: null,
+      result: false,
+    });
+    return;
+  }
+
+  const systemName = cancelCallInfo.systemName || 'MW01' // 이거 동적으로 바꿔야 함
+  const topic = 'CALL'
+  const subtopic = 'CANCEL_CALL_INFO'
+  const mqttHeader = makeMbsMqttHeader(subtopic)
+  const mqttBody: MbsMqttBody = cancelCallInfo
+
+  sendMbsMqtt(topic, mqttHeader, mqttBody, systemName);
+
+  // CALLINFO에 대한 ack 초기값 설정
+  setRemainingAckCommand(topic, systemName, { header: mqttHeader, body: mqttBody }, {});
+
+  // InfoCancelCallByCallId 정보 삭제
+  redisUtil.hdel(RedisKeys.InfoCancelCallByCallId, cancelCallInfo.Call_ID)
 }
