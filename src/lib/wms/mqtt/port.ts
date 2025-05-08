@@ -40,6 +40,24 @@ const portPresenceStatus = async (wmsName: string, subject: string, messageMessa
     const fromFacilityName = separateCallId[0]
     const toFacilityName = separateCallId[1]
 
+    const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+      callId: callId,
+      fromFacilityName: fromFacilityName,
+      toFacilityName: toFacilityName,
+      type: 'OUT',
+      isMissionOrder: false,
+      callPriority: "99",
+      callType: "",
+      eqpName: fromFacilityName,
+      portName: toFacilityName,
+    }
+
+    // pending workOrder 레디스 정보 저장
+
+    console.log('infoPendingWorkOrder', infoPendingWorkOrder)
+
+    redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder))
+
   }
   // CALL INFO 받아서 생성된 port presence status
   else {

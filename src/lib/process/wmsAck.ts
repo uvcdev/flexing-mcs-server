@@ -219,9 +219,8 @@ export const checkRemainingAckCommand = async () => {
   }
 }
 
-// ACK 여부만 보내면 되는 subtopic list
+// TrackingLog 수집 subtopic list
 const trackingAckSubtopicList = [
-  'CALL_REQUEST',
   'TRANSFER_INITIATED',
   'TRANSFER_CANCEL_COMPLETED',
   'TRANSFER_ABORT_COMPLETED',
