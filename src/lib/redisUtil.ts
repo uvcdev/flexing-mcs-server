@@ -52,6 +52,7 @@ export enum RedisKeys {
   InfoAckOutCallByCallId = 'info_ack_out_call_by_call_id',  // out 설비 콜 중 WMS에서 ACK_BRANCH_INFO_REQ 받은 콜
   InfoInCallByCallId = 'info_in_call_by_call_id',           // in 설비에서 발생한 콜 ( WMS에 CALLINFO 요청 전 )
   InfoAckInCallByCallId = 'info_ack_in_call_by_call_id',     // in 설비 콜 중 WMS에서 ACK_CALLINFO를 받은 콜 ( ACK 수신 후 부터 PORT 배정 전까지 살아있음 )
+  InfoCancelCallByCallId = 'info_cancel_call_by_call_id',    // 설비에서 CALL 취소 발생한 목록
   InfoMissionCallByCallId = 'info_mission_call_by_call_id',           // out 설비에서 발생한 콜 ( WMS에 Branch 요청 전 - 미션 결정지에 도착 후 ACS가 요청 )
   InfoAckMissionCallByCallId = 'info_ack_mission_call_by_call_id',     // out 설비 콜 중 WMS에서 ACK_BRANCH_INFO_REQ를 받은 콜 
   InfoPendingWorkOrderByCallId = 'info_pending_work_order_by_call_id',    // 작업지시 만들 데이터 목록 
