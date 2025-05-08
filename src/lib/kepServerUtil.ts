@@ -58,7 +58,7 @@ export interface MakeWriteDatasParams {
   targetFacility: string;
   tagInfo: {
     tagName: string,
-    value: string | boolean
+    value: string | boolean | number
   }[];
 }
 export interface WriteDataParams {
