@@ -3,6 +3,7 @@ import { TagValue, useKepServerUtil } from "./kepServerUtil";
 import { logging } from "./logging";
 import opcuaUtil from "./opcuaUtil";
 import { useCallRegisterUtil } from "./callRegisterUtil";
+import { useCallRemoveUtil } from "./callRemoveUtil";
 import { useDockingUtil } from "./process/dockingUtil";
 
 export interface EQP_WCS {
@@ -39,7 +40,11 @@ export const useEqpCheckUtil = () => {
       switch (targetTagInfo.TAG_NAME) {
         case 'Call_Request':
           console.log(`Action Method Tag: Call_Request`);
-          await useCallRegisterUtil().callRegister(targetTagInfo)
+          if (targetTagInfo.value == true) {
+            await useCallRegisterUtil().callRegister(targetTagInfo)
+          } else {
+            await useCallRemoveUtil().callRemove(targetTagInfo)
+          }
           break;
 
         case 'Call_Cancel':

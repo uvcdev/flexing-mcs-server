@@ -64,7 +64,7 @@ export interface MakeWriteDatasParams {
 export interface WriteDataParams {
   targetFacility: string;
   tagName: string,
-  value: boolean
+  value: boolean | string;
 }
 
 // ASCII 타입 태그에서 WORD 값을 추출하는 함수

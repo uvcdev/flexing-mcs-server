@@ -30,6 +30,7 @@ import { wmsOnline } from './wms/mqtt/online';
 import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/wmsBranch';
 import { useDockingUtil } from './process/dockingUtil';
 import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
+import { useKepServerUtil } from './kepServerUtil';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -50,6 +51,7 @@ type AcsDetail = {
   facilityName: string | null;
   amrCode: string | null;
   amrName: string | null;
+  serial: string | null;
 };
 
 type MissionState =
@@ -164,6 +166,7 @@ if (mqttConfig.host !== '') {
 
 // mqtt 연결, 구독, 메세지 수신
 export const receiveMqtt = (): void => {
+  const kepServerUtil = useKepServerUtil()
   if (mqttConfig.host !== '') {
     // mqtt host가 등록된 경우에만 구독한다.
     client.on('connect', () => {
@@ -421,12 +424,16 @@ export const receiveMqtt = (): void => {
           // acs에서 오는 메세지 처리
           if (serverTopic === 'acs') {
             // item-logging 메세지 처리
-            if (topicSplit.length === 2 && topicSplit[1] === 'item-logging') {
+            if (topicSplit.length === 3 && topicSplit[1] === 'item-logging') {
               // const itemCode = topicSplit[2];
               const messageJson = JSON.parse(message);
               // 로봇할당 값 write
-              if (messageJson.body.State === 'AMR_ARRIVED') {
-
+              if (messageJson.body.state === 'AMR_ARRIVED') {
+                await kepServerUtil.writeSimpleTagValue({
+                  targetFacility: messageJson.serial,
+                  tagName: 'Call_Robot_Assigned',
+                  value: true
+                });
               }
 
               logging.MQTT_DEBUG({

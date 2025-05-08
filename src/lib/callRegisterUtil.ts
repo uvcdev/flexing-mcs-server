@@ -17,7 +17,6 @@ export interface EqpCallStats {
   Call_Quantity: number;
   Call_Priority: string;
   SYSTEM_NAME?: string;
-  NODE_FRONT_NAME: string;
   // NODE_ID: string;
 };
 
@@ -29,15 +28,6 @@ export const useCallRegisterUtil = () => {
   const kepServerUtil = useKepServerUtil()
   const redisUtil = useRedisUtil();
   const callRegister = async (targetTagInfo: TagValue) => {
-    if (targetTagInfo.value !== true) {
-      logging.KEPWARE_DEBUG({
-        action: 'TAG_READ',
-        tag: targetTagInfo.TAG_NAME,
-        value: JSON.parse(JSON.stringify(targetTagInfo)),
-        message: `Error reading value from kepServerUtil.readTagsValue`,
-      });
-      return;
-    }
 
     // ##### 1. EQP-EQP 통신으로 인한 작업 생성
     // targetKey 형식: STACK01.SC11 || SC.11
@@ -49,10 +39,9 @@ export const useCallRegisterUtil = () => {
     // targetCode 형식: SC11
     const targetCode = targetTagInfo.EQ_CODE;
     // 필요한 태그 값들 가져오기    
-    const callResponse = opcuaUtil.tagMap.get(`${targetCode}.Call_Response`);
+    const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
     const callType01 = opcuaUtil.tagMap.get(`${targetCode}.Call_Type_01`);
     const callPriority = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`);
-    const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
     // const EQCode01 = opcuaUtil.tagMap.get(`${targetCode}.EQ_Code_01`);
     // const EQCode02 = opcuaUtil.tagMap.get(`${targetCode}.EQ_Code_02`);
     // TODO: 멀티콜 로직 추가 필요
@@ -66,7 +55,6 @@ export const useCallRegisterUtil = () => {
       callCount?.NODE_ID,
       callType01?.NODE_ID,
       callPriority?.NODE_ID,
-      callResponse?.NODE_ID,
       // CallResponseCount?.NODE_ID,
       // callRequestMulti1?.NODE_ID,
       // callRequestMulti2?.NODE_ID,
@@ -81,7 +69,6 @@ export const useCallRegisterUtil = () => {
       callCount?.TAG_NAME,
       callType01?.TAG_NAME,
       callPriority?.TAG_NAME,
-      callResponse?.TAG_NAME,
       // CallResponseCount?.TAG_NAME,
       // callRequestMulti1?.TAG_NAME,
       // callRequestMulti2?.TAG_NAME,
@@ -157,7 +144,6 @@ export const useCallRegisterUtil = () => {
       Call_Quantity: 1,
       Call_Priority: callPriorityValue === 'true' ? '99' : '1',
       DATA_TYPE: targetTagInfo.DATA_TYPE,
-      NODE_FRONT_NAME: nodeName || ''
     }));
 
     for (const callInfo of callInfoList) {
@@ -185,6 +171,11 @@ export const useCallRegisterUtil = () => {
           targetFacility: callInfo.Caller,
           tagName: 'Call_Response',
           value: true,
+        });
+        await kepServerUtil.writeSimpleTagValue({
+          targetFacility: callInfo.Caller,
+          tagName: 'Call_Response_Count',
+          value: callInfo.CALL_ID.slice(-4),
         });
       } else {
         // ======= to 작업지시 =======
