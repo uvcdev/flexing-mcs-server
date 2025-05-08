@@ -1,10 +1,11 @@
 import { TrackingLogRedisUpdateParams } from "../../../models/common/trackingLog"
 import { EqpCallStatsForAck } from "../../callRegisterUtil"
 import { useKepServerUtil } from "../../kepServerUtil"
+import { generateUUIDNode } from "../../hashUtil"
 import { logging } from "../../logging"
-import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody } from "../../mqttUtil"
+import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, makeMbsMqttHeader, sendMbsMqtt } from "../../mqttUtil"
 import { editTrackingLogRedis } from "../../process/trackingLog"
-import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand } from "../../process/wmsAck"
+import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand, setRemainingAckCommand } from "../../process/wmsAck"
 import { CallInfoBody } from "../../process/wmsCallInfo"
 import { setAbortedCommandForRetry } from "../../process/wmsCommon"
 import { RedisKeys, useRedisUtil } from "../../redisUtil"
@@ -17,12 +18,84 @@ interface ackCallInfoBody extends MbsMqttBody {
   Comment: string;
 }
 
-const callRequest = (wmsName: string, messageMessage: MbsMqttMesaage) => {
+interface CallRequestBody extends MbsMqttBody {
+  Cmd_ID: string
+  Call_ID: string
+}
+
+const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsCallRequest')
+  // set Data
+  const callRequestBody = messageMessage.body as CallRequestBody
+  const callId = callRequestBody.Call_ID
 
   // set GetAckCommandByCmdId - Call Request
-  const callId: string = 'TODO CallRequest CALL ID'
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
+
+  // 1. 콜 아이디에 해당하는 정보 다시 쓰기
+  const infoAckInCallByCallId = await redisUtil.hgetObject<EqpCallStatsForAck>(RedisKeys.InfoAckInCallByCallId, callId)
+
+  if (!infoAckInCallByCallId) {
+    // TODO - ljk ) 이때 해당 CALL ID 가 없어서 HCACK = 6 으로 회신해야 하는지 질문해야함
+    logging.ACTION_INFO({
+      filename: `call.ts - callRequest`,
+      error: `[infoAckInCallByCallId] infoAckInCallByCallId ${infoAckInCallByCallId} is invalid`,
+      params: null,
+      result: true,
+    });
+
+    return
+  }
+
+  // CALL INFO 재전송 가능한 경우 해당 내용으로 CALLINFO 재전송 
+  const callInfoTopic = 'CALL'
+  const callInfoSubject = 'CALL_INFO'
+  const newCmdId = generateUUIDNode()
+
+  const mqttHeader = makeMbsMqttHeader(callInfoSubject);
+  const mqttBody: MbsMqttBody = {
+    Cmd_ID: newCmdId,
+    Call_ID: infoAckInCallByCallId.CALL_ID,
+    Call_Type: infoAckInCallByCallId.Call_Type,
+    Caller: infoAckInCallByCallId.Caller,
+    Call_Quantity: infoAckInCallByCallId.Call_Quantity,
+    Call_Priority: infoAckInCallByCallId.Call_Priority
+  };
+  // CALLINFO MQTT 데이터 전송
+  sendMbsMqtt(callInfoTopic, mqttHeader, mqttBody, wmsName);
+
+  // CALLINFO에 대한 ack 초기값 설정
+  setRemainingAckCommand(callInfoTopic, wmsName, { header: mqttHeader, body: mqttBody });
+
+  // 진행 중인 infoAckInCallByCallId의 Cmd_ID 변경해주기
+  const infoAckInCallByCallIdData: EqpCallStatsForAck = {
+    Cmd_ID: newCmdId,
+    CALL_ID: infoAckInCallByCallId.CALL_ID,
+    EQP_CALL_ID: infoAckInCallByCallId.EQP_CALL_ID,
+    Call_Type: infoAckInCallByCallId.Call_Type,
+    Caller: infoAckInCallByCallId.Caller,
+    Call_Priority: infoAckInCallByCallId.Call_Priority,
+    Call_Quantity: Number(infoAckInCallByCallId.Call_Quantity) || 1,
+  }
+  redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData))
+
+  // CALL INFO 추가 로깅
+  const trackingLogSubject = 'CALL_INFO'
+  const trackingLogDetail = 'CALL_INFO'
+  const trackingLogState = 'PROCESSING'
+  const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+    callId: callId,
+    subject: trackingLogSubject,
+    detail: trackingLogDetail,
+    state: trackingLogState,
+    startFacility: infoAckInCallByCallId.Caller,
+    transferId: null,
+    destFacility: null,
+    assignedRobot: null,
+    value: null,
+    description: `Requesting CALL_INFO from WMS(${wmsName}) for Call ID ${callId}`
+  }
+  await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
 }
 
 const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCallInfoBody) => {
