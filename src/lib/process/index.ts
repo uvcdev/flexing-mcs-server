@@ -55,7 +55,7 @@ export const processMcs = async () => {
     await checkOutBranchInfoReqForWms()
 
     // pending 된 작업 지시 생성
-    // await useWorkOrderUtil().createWorkOrder()
+    await useWorkOrderUtil().createWorkOrder()
 
     // 설비-설비 간에 작업 미생성된 콜에 대해 재판단(Call_Response) 처리
     await useCallRegisterUtil().checkRemainEqpCall()
