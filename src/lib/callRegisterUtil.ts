@@ -149,7 +149,6 @@ export const useCallRegisterUtil = () => {
     for (const callInfo of callInfoList) {
       const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityBySerial, callInfo.Caller || '')
       // 설비 시스템인 경우에만 콜 생성(셀창고는 제외하기 위함)
-      console.log('facilityInfo?.system123', facilityInfo?.system)
       if (facilityInfo?.system === 'EQP') {
         const callInfoString = JSON.stringify(callInfo);
         // init TrackingLog 
@@ -251,11 +250,6 @@ export const useCallRegisterUtil = () => {
         }
       }
     }
-
-    // eqp-eqp / eqp-wms 를 콜 발생하는 설비에 다중으로 매핑해주는 방법은 어떤지...
-    // eqpWcsInfo.EQP_CALL_ID로 ACS_info_facility_by_serial 로 조회해서 컬럼 값이 설비인지 
-
-
     console.log(`Call request sent to WCS. TYPE: ${callType01Value}, CallID: ${callCountValue}`);
   };
   // callRequestMulti1Value와 callRequestMulti2Value의 값을 기반으로 multiValue 결정

@@ -61,7 +61,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "CR11"
         },
@@ -74,7 +74,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "CR11"
         },
@@ -997,7 +997,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "CR13"
         },
@@ -1010,7 +1010,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "CR13"
         },
@@ -1933,7 +1933,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "CS12"
         },
@@ -1946,7 +1946,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "CS12"
         },
@@ -2869,7 +2869,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "CS14"
         },
@@ -2882,7 +2882,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "CS14"
         },
@@ -3805,7 +3805,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "SC11"
         },
@@ -3818,7 +3818,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "SC11"
         },
@@ -4741,7 +4741,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "SC12"
         },
@@ -4754,7 +4754,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "SC12"
         },
@@ -5677,7 +5677,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "SP11"
         },
@@ -5690,7 +5690,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "SP11"
         },
@@ -6613,7 +6613,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "SP12"
         },
@@ -6626,7 +6626,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "SP12"
         },
@@ -7549,7 +7549,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "WC12"
         },
@@ -7562,7 +7562,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "WC12"
         },
@@ -8485,7 +8485,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "WC14"
         },
@@ -8498,7 +8498,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "WC14"
         },
@@ -9421,7 +9421,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "WS11"
         },
@@ -9434,7 +9434,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1111.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "WS11"
         },
@@ -10357,7 +10357,7 @@
             "DESCRIPTION": "콜 취소 여부 (0:정상, 1:콜 취소)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K0011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "WS13"
         },
@@ -10370,7 +10370,7 @@
             "DESCRIPTION": "콜 취소 응답 여부 (0:콜 취소 응답 없음, 1:콜 취소 응답)",
             "DATA_TYPE": "Boolean",
             "ADDRESS": "K1011.00",
-            "SUBSCRIPTION": false,
+            "SUBSCRIPTION": true,
             "INPUT_TYPE": "Bool",
             "EQ_CODE": "WS13"
         },
