@@ -199,7 +199,7 @@ export const useCallRegisterUtil = () => {
           });
         } else {
           // ======= to 작업지시 =======
-          if (facilityInfo?.linkedEqpIds) {
+          if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 0) {
             // 설비 - 설비로직
             for (let i = 0; i < facilityInfo.linkedEqpIds.length; i++) {
               const linkedEqpId = facilityInfo.linkedEqpIds[i]

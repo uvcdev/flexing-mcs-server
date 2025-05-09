@@ -157,13 +157,6 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
 
         redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder))
 
-        // call_response 작성
-        await useKepServerUtil().writeSimpleTagValue({
-          targetFacility: prefixFromFacilityName,
-          tagName: 'Call_Response',
-          value: true,
-        });
-
         // Item Log 생성  -> 설비에서 직접 만든 콜은 로그 표현 형식을 위해 Detail을 강제로 ACK_CALL_INFO로 보냄
         const trackingLogSubject = subject
         const trackingLogDetail = 'ACK_CALL_INFO'
@@ -181,6 +174,32 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
           description: `Call ID ${callId} received BRANCH_INFO_REP from WMS (${wmsName})`
         }
         await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+
+        // call_response 작성
+        await useKepServerUtil().writeSimpleTagValue({
+          targetFacility: prefixFromFacilityName,
+          tagName: 'Call_Response',
+          value: true,
+        });
+
+        const callResponseTrackingLogSubject = 'CALL_RESPONSE'
+        const callResponseTrackingLogDetail = 'CALL_RESPONSE'
+        const callResponseTrackingLogState = 'PROCESSING'
+        const callResponseTrackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: callId,
+          subject: callResponseTrackingLogSubject,
+          detail: callResponseTrackingLogDetail,
+          state: callResponseTrackingLogState,
+          startFacility: null,
+          transferId: null,
+          destFacility: null,
+          assignedRobot: null,
+          value: null,
+          description: `[Call ID ${callId}] Call responsed`
+        }
+        await editTrackingLogRedis(callResponseTrackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+
+
 
         // 포트 배정 로그까지 기록
         const portTrackingLogDetail = 'PORT_ASSIGNED'

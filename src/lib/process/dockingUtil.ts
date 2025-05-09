@@ -453,7 +453,8 @@ export const useDockingUtil = () => {
 
   // acs에서 도킹요청이 왔을 때, 설비에 도킹요청하는 함수
   const sendAcsDockingRequest = async (params: AcsDockingRequestType) => {
-    params.SERIAL_ID = params.PORT_ID
+    params.SERIAL_ID = params.PORT_ID;
+    params.WORKER_ID = "vw_3";
     redisUtil.hdel(RedisKeys.DockingRequestBySerialId, params.SERIAL_ID);
     redisUtil.hdel(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID);
     redisUtil.hdel(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID);
@@ -502,17 +503,20 @@ export const useDockingUtil = () => {
     // 콜타입 입력
     const callType = parseAsciiToWord(params.CALL_TYPE);
     console.log("🚀 ~ sendAcsDockingRequest ~ callType:", callType)
-    const callTypeResponseTag = await useKepServerUtil().makeWriteDatas({
-      targetFacility: params.SERIAL_ID,
-      tagInfo: [
-        {
-          tagName: 'Call_Type_Response_01',
-          value: callType
-        }
-      ]
-    });
-    console.log("🚀 ~ sendAcsDockingRequest ~ callTypeResponseTag:", callTypeResponseTag)
-    await useKepServerUtil().writeTagsValue(callTypeResponseTag);
+    if (!callType) {
+      const callTypeString = callType.toString();
+      const callTypeResponseTag = await useKepServerUtil().makeWriteDatas({
+        targetFacility: params.SERIAL_ID,
+        tagInfo: [
+          {
+            tagName: 'Call_Type_Response_01',
+            value: callTypeString
+          }
+        ]
+      });
+      console.log("🚀 ~ sendAcsDockingRequest ~ callTypeResponseTag:", callTypeResponseTag)
+      await useKepServerUtil().writeTagsValue(callTypeResponseTag);
+    }
     console.log("🚀 ~ sendAcsDockingRequest ~ params:", params)
     switch (params.EXC_CLS) {
       case EXC_CLS.AUTO:  //일반도킹
@@ -606,6 +610,7 @@ export const useDockingUtil = () => {
   const sendAcsDockingComplete = async (params: AcsDockingCompleteType) => {
     console.log("🚀 ~ sendAcsDockingComplete ~ params:", params)
     params.SERIAL_ID = params.PORT_ID
+    params.WORKER_ID = "vw_3";
 
     redisUtil.hset(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID, JSON.stringify(params));
 
@@ -656,7 +661,7 @@ export const useDockingUtil = () => {
   const sendAcsDockingDetach = async (params: AcsDockingDetachType) => {
     console.log("🚀 ~ sendAcsDockingDetach ~ params:", params)
     params.SERIAL_ID = params.PORT_ID
-
+    params.WORKER_ID = "vw_3";
     const dockingResponse: AcsDockingDetachResponse = {
       ...params,
       RESULT: 'True',
