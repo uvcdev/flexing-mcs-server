@@ -30,7 +30,6 @@ export const useCallRegisterUtil = () => {
   const redisUtil = useRedisUtil();
   const callRegister = async (targetTagInfo: TagValue) => {
 
-    // ##### 1. EQP-EQP 통신으로 인한 작업 생성
     // targetKey 형식: STACK01.SC11 || SC.11
     const lastNodeNameIndex = targetTagInfo.NODE_ID.lastIndexOf('.')
     const nodeName = targetTagInfo.NODE_ID.substring(0, lastNodeNameIndex);
