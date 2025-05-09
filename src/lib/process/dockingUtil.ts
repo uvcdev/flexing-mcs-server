@@ -453,7 +453,8 @@ export const useDockingUtil = () => {
 
   // acs에서 도킹요청이 왔을 때, 설비에 도킹요청하는 함수
   const sendAcsDockingRequest = async (params: AcsDockingRequestType) => {
-    params.SERIAL_ID = params.PORT_ID
+    params.SERIAL_ID = params.PORT_ID;
+    params.WORKER_ID = "vw_3";
     redisUtil.hdel(RedisKeys.DockingRequestBySerialId, params.SERIAL_ID);
     redisUtil.hdel(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID);
     redisUtil.hdel(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID);
@@ -609,6 +610,7 @@ export const useDockingUtil = () => {
   const sendAcsDockingComplete = async (params: AcsDockingCompleteType) => {
     console.log("🚀 ~ sendAcsDockingComplete ~ params:", params)
     params.SERIAL_ID = params.PORT_ID
+    params.WORKER_ID = "vw_3";
 
     redisUtil.hset(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID, JSON.stringify(params));
 
@@ -659,7 +661,7 @@ export const useDockingUtil = () => {
   const sendAcsDockingDetach = async (params: AcsDockingDetachType) => {
     console.log("🚀 ~ sendAcsDockingDetach ~ params:", params)
     params.SERIAL_ID = params.PORT_ID
-
+    params.WORKER_ID = "vw_3";
     const dockingResponse: AcsDockingDetachResponse = {
       ...params,
       RESULT: 'True',

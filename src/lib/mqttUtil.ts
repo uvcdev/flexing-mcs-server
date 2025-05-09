@@ -31,6 +31,7 @@ import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/w
 import { useDockingUtil } from './process/dockingUtil';
 import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
 import { useKepServerUtil } from './kepServerUtil';
+import { routeMissionOrderMqttMessage } from './process/commonUtils';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -525,7 +526,12 @@ export const receiveMqtt = (): void => {
               try {
                 // void itemLogDao.insert(messageJson);
                 // mission order 수집 구역
-                await receiveBranchInfoFromACS(messageJson as MqttBranchInfoDataFromAcs)
+                const missionOrderType = await routeMissionOrderMqttMessage(messageJson as MqttBranchInfoDataFromAcs)
+                if (missionOrderType === 'EQP') {
+
+                } else if (missionOrderType === 'WMS') {
+                  await receiveBranchInfoFromACS(messageJson as MqttBranchInfoDataFromAcs)
+                }
               } catch (error) {
                 console.log('logging.missionOrder', error);
               }

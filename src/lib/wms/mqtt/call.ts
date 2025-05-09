@@ -165,13 +165,6 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: true,
       });
 
-      // call_response 작성
-      await useKepServerUtil().writeSimpleTagValue({
-        targetFacility: callInfoData.Caller,
-        tagName: 'Call_Response',
-        value: true,
-      });
-
       const trackingLogSubject = 'ACK_CALL_INFO'
       const trackingLogDetail = 'ACK_CALL_INFO'
       const trackingLogState = 'PROCESSING'
@@ -188,6 +181,32 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`
       }
       await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+
+      // call_response 작성
+      await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: callInfoData.Caller,
+        tagName: 'Call_Response',
+        value: true,
+      });
+
+      const callResponseTrackingLogSubject = 'CALL_RESPONSE'
+      const callResponseTrackingLogDetail = 'CALL_RESPONSE'
+      const callResponseTrackingLogState = 'PROCESSING'
+      const callResponseTrackingLogUpdateData: TrackingLogRedisUpdateParams = {
+        callId: callId,
+        subject: callResponseTrackingLogSubject,
+        detail: callResponseTrackingLogDetail,
+        state: callResponseTrackingLogState,
+        startFacility: callInfoData.Caller,
+        transferId: null,
+        destFacility: null,
+        assignedRobot: null,
+        value: null,
+        description: `[Call ID ${callId}] Call responsed`
+      }
+      await editTrackingLogRedis(callResponseTrackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+
+
 
       break;
 

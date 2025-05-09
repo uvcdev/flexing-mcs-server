@@ -68,7 +68,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     value: assignAmrName,
     description: `AMR(${assignAmrName}) Mission State : ${state}`
   }
-  await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', 'ACS')
+  await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS')
 
   if (state === 'MISSION_CANCELED') {
 
