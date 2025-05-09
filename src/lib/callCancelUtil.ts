@@ -3,13 +3,15 @@ import { AttributeIds } from "node-opcua-client";
 import { PendingWorkOrderAttributes } from '../models/operation/workOrder';
 import { FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
 import { TagValue, useKepServerUtil } from "./kepServerUtil";
-import { logging } from './logging';
+import { logging, makeLogFormat, RequestLog } from './logging';
 import opcuaUtil from "./opcuaUtil";
 import { EQP_WCS } from "./eqpCheckUtil";
 import { formatToDateCode } from "./usefullToolUtil";
 import { RedisKeys, useRedisUtil } from "./redisUtil";
 import { initTrackingLogRedis } from "./process/trackingLog";
 import { TrackingLogRedisAttributes } from "../models/common/trackingLog";
+import { sendMqtt } from "./mqttUtil";
+import { service as workOrderService } from '../service/operation/workOrderService';
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -24,6 +26,13 @@ export interface EqpCallStats {
 export interface EqpCallStatsForAck extends EqpCallStats {
   Cmd_ID: string;
 };
+
+export interface CancelWorkOrderRequestType {
+  ZONE_ID: string;
+  EQP_ID: string;
+  EQP_CALL_ID: string;
+  CALL_ID: string;
+}
 
 export const useCallCancelUtil = () => {
   const kepServerUtil = useKepServerUtil()
@@ -103,6 +112,39 @@ export const useCallCancelUtil = () => {
 
         // 창고 콜 취소 전달
         redisUtil.hset(RedisKeys.InfoCancelCallByCallId, infoCancelCall.CALL_ID, JSON.stringify(infoCancelCall))
+
+
+        // acs 작업지시 취소 요청
+        const params: CancelWorkOrderRequestType =
+        {
+          ZONE_ID: process.env.FLOOR || '1F',
+          EQP_ID: targetCode,
+          EQP_CALL_ID: infoTrackingLogByFacilityCode?.eqpCallId || '',
+          CALL_ID: infoTrackingLogByFacilityCode?.callId || ''
+        }
+        const result = await workOrderService.facilityCancel(
+          { code: params.CALL_ID },
+          makeLogFormat({} as RequestLog)
+        );
+
+        if (result.updatedCount > 0) {
+          const messageTopic = 'acs/cancelworkorder'
+          try {
+            logging.MQTT_LOG({
+              title: 'callRemoveUtil cancel workorder',
+              topic: messageTopic,
+              message: params,
+            });
+            sendMqtt(messageTopic, JSON.stringify(params));
+          } catch (err) {
+            logging.MQTT_ERROR({
+              title: 'mqtt message error',
+              topic: messageTopic,
+              message: params,
+              error: err,
+            });
+          }
+        }
       }
     } catch (error) {
       console.error("Error in callRemove:", error);

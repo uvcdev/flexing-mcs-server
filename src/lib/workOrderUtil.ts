@@ -65,7 +65,7 @@ export const useWorkOrderUtil = () => {
     const params: McsWorkOrderRequestType =
     {
       TX_ID: "",
-      ZONE_ID: "",
+      ZONE_ID: process.env.FLOOR || '1F',
       TYPE: 'MISSION',
       EQP_ID: callInfo.Caller,
       EQP_CALL_ID: callInfo.EQP_CALL_ID,
@@ -93,7 +93,7 @@ export const useWorkOrderUtil = () => {
           IS_MISSION_ORDER: workOrder.type === 'MISSION' ? 'true' : 'false',
           TAG_ID: "",
           TX_ID: "",
-          ZONE_ID: ""
+          ZONE_ID: process.env.FLOOR || '1F'
         }
         const message = JSON.stringify(params)
         const messageJson = JSON.parse(message)
