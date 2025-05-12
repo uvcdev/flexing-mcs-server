@@ -46,7 +46,7 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     detail: subject,
     state: state,
     startFacility: null,
-    destFacility: callInfo.Caller,
+    destFacility: null,
     assignedRobot: null,
     value: null,
     description: null,

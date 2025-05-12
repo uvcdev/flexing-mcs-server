@@ -8,7 +8,8 @@ import opcuaUtil from "./opcuaUtil";
 import { EQP_WCS } from "./eqpCheckUtil";
 import { formatToDateCode } from "./usefullToolUtil";
 import { RedisKeys, useRedisUtil } from "./redisUtil";
-import { initTrackingLogRedis } from "./process/trackingLog";
+import { editTrackingLogRedis, initTrackingLogRedis } from "./process/trackingLog";
+import { TrackingLogRedisAttributes, TrackingLogRedisUpdateParams } from "../models/common/trackingLog";
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -149,7 +150,6 @@ export const useCallRegisterUtil = () => {
     for (const callInfo of callInfoList) {
       const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityBySerial, callInfo.Caller || '')
       // 설비 시스템인 경우에만 콜 생성(셀창고는 제외하기 위함)
-      console.log('facilityInfo?.system123', facilityInfo?.system)
       if (facilityInfo?.system === 'EQP') {
         const callInfoString = JSON.stringify(callInfo);
         // init TrackingLog 
@@ -175,6 +175,23 @@ export const useCallRegisterUtil = () => {
             tagName: 'Call_Response',
             value: true,
           });
+          const trackingLogSubject = 'CALL_RESPONSE'
+          const trackingLogDetail = 'CALL_RESPONSE'
+          const trackingLogState = 'PROCESSING'
+          const trackingLogUpdateMissionData: TrackingLogRedisUpdateParams = {
+            callId: infoPendingMissionWorkOrder?.callId,
+            subject: trackingLogSubject,
+            detail: trackingLogDetail,
+            state: trackingLogState,
+            startFacility: null,
+            transferId: null,
+            destFacility: null,
+            assignedRobot: null,
+            value: null,
+            description: `Call ID ${infoPendingMissionWorkOrder?.callId} responsed`
+          }
+          await editTrackingLogRedis(trackingLogUpdateMissionData, undefined, 'SUCCESS', callInfo.Caller)
+
           await kepServerUtil.writeSimpleTagValue({
             targetFacility: callInfo.Caller,
             tagName: 'Call_Response_Count',
@@ -182,7 +199,7 @@ export const useCallRegisterUtil = () => {
           });
         } else {
           // ======= to 작업지시 =======
-          if (facilityInfo?.linkedEqpIds) {
+          if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 0) {
             // 설비 - 설비로직
             for (let i = 0; i < facilityInfo.linkedEqpIds.length; i++) {
               const linkedEqpId = facilityInfo.linkedEqpIds[i]
@@ -205,7 +222,9 @@ export const useCallRegisterUtil = () => {
                 type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
                 isMissionOrder: false,
                 callPriority: callInfo.Call_Priority,
-                callType: callInfo.Call_Type
+                callType: callInfo.Call_Type,
+                fromFacilityName: facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial! : callInfo.Caller,
+                toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial
               }
 
               if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
@@ -218,6 +237,24 @@ export const useCallRegisterUtil = () => {
                   tagName: 'Call_Response',
                   value: true,
                 });
+
+                const trackingLogSubject = 'CALL_RESPONSE'
+                const trackingLogDetail = 'CALL_RESPONSE'
+                const trackingLogState = 'PROCESSING'
+                const trackingLogUpdateReqData: TrackingLogRedisUpdateParams = {
+                  callId: callInfo.CALL_ID,
+                  subject: trackingLogSubject,
+                  detail: trackingLogDetail,
+                  state: trackingLogState,
+                  startFacility: callInfo.Caller,
+                  transferId: null,
+                  destFacility: linkedFacilityInfo?.serial,
+                  assignedRobot: null,
+                  value: null,
+                  description: `Call ID ${callInfo.CALL_ID} responsed`
+                }
+                await editTrackingLogRedis(trackingLogUpdateReqData, undefined, 'SUCCESS', callInfo.Caller)
+
                 // call_response 작성
                 await useKepServerUtil().writeSimpleTagValue({
                   targetFacility: linkedFacilityInfo.serial || '',
@@ -225,6 +262,19 @@ export const useCallRegisterUtil = () => {
                   value: true,
                 });
 
+                const trackingLogUpdateResData: TrackingLogRedisUpdateParams = {
+                  callId: callInfo.CALL_ID,
+                  subject: trackingLogSubject,
+                  detail: trackingLogDetail,
+                  state: trackingLogState,
+                  startFacility: linkedFacilityInfo?.serial,
+                  transferId: null,
+                  destFacility: callInfo.Caller,
+                  assignedRobot: null,
+                  value: null,
+                  description: `Call ID ${callInfo.CALL_ID} responsed`
+                }
+                await editTrackingLogRedis(trackingLogUpdateResData, undefined, 'SUCCESS', linkedFacilityInfo?.serial?.toString())
                 break
               } else if (!plcInfoToJson.Call_Request && linkedFacilityInfo) {
                 // 반대쪽에 콜이 떠 있지 않은 경우 반복해서 판단하는 redis에 저장
@@ -251,11 +301,6 @@ export const useCallRegisterUtil = () => {
         }
       }
     }
-
-    // eqp-eqp / eqp-wms 를 콜 발생하는 설비에 다중으로 매핑해주는 방법은 어떤지...
-    // eqpWcsInfo.EQP_CALL_ID로 ACS_info_facility_by_serial 로 조회해서 컬럼 값이 설비인지 
-
-
     console.log(`Call request sent to WCS. TYPE: ${callType01Value}, CallID: ${callCountValue}`);
   };
   // callRequestMulti1Value와 callRequestMulti2Value의 값을 기반으로 multiValue 결정
@@ -345,6 +390,9 @@ export const useCallRegisterUtil = () => {
         const reqCallInfoJson = JSON.parse(JSON.stringify(reqCallInfo))
         const resCallInfoJson = JSON.parse(JSON.stringify(resCallInfo))
 
+        const infoTrackingLogByReqFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByFacilityCode, reqCallInfo?.serial?.toString() || '');
+        const infoTrackingLogByResFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByFacilityCode, resCallInfo?.serial?.toString() || '');
+
         if (reqCallInfoJson.Call_Request && resCallInfoJson.Call_Request) {
           // 콜 기준 설비 call_response 작성
           await useKepServerUtil().writeSimpleTagValue({
@@ -352,12 +400,44 @@ export const useCallRegisterUtil = () => {
             tagName: 'Call_Response',
             value: true,
           });
+
+          const trackingLogSubject = 'CALL_RESPONSE'
+          const trackingLogDetail = 'CALL_RESPONSE'
+          const trackingLogState = 'PROCESSING'
+          const trackingLogUpdateReqData: TrackingLogRedisUpdateParams = {
+            callId: infoTrackingLogByReqFacilityCode?.callId,
+            subject: trackingLogSubject,
+            detail: trackingLogDetail,
+            state: trackingLogState,
+            startFacility: null,
+            transferId: null,
+            destFacility: infoTrackingLogByReqFacilityCode?.destFacility,
+            assignedRobot: null,
+            value: infoTrackingLogByReqFacilityCode?.destFacility,
+            description: `Call ID ${infoTrackingLogByReqFacilityCode?.callId} responsed`
+          }
+          await editTrackingLogRedis(trackingLogUpdateReqData, undefined, 'SUCCESS', remainCall.fromFacilityName)
+
           // call_response 작성
           await useKepServerUtil().writeSimpleTagValue({
             targetFacility: remainCall.toFacilityName || '',
             tagName: 'Call_Response',
             value: true,
           });
+          const trackingLogUpdateResData: TrackingLogRedisUpdateParams = {
+            callId: infoTrackingLogByResFacilityCode?.callId,
+            subject: trackingLogSubject,
+            detail: trackingLogDetail,
+            state: trackingLogState,
+            startFacility: null,
+            transferId: null,
+            destFacility: infoTrackingLogByResFacilityCode?.destFacility,
+            assignedRobot: null,
+            value: infoTrackingLogByResFacilityCode?.destFacility,
+            description: `Call ID ${infoTrackingLogByResFacilityCode?.callId} responsed`
+          }
+          await editTrackingLogRedis(trackingLogUpdateResData, undefined, 'SUCCESS', remainCall.toFacilityName?.toString())
+
           redisUtil.hdel(RedisKeys.InfoRemainCallById, remainCall.callId || '');
         }
       }

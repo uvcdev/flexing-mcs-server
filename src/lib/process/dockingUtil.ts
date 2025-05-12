@@ -129,7 +129,7 @@ export const useDockingUtil = () => {
       sendDockingMqtt(MqttTopics.ImcsEqpDockingRequest, JSON.stringify(dockingResponse));
 
       // TODO: [트래킹로그]도킹허가 응답에 대한 트래킹로그 저장 (도킹허가 초록표시)
-      const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, dockingRequestInfo.CALL_ID);
+      const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, dockingRequestInfo.EQP_CALL_ID);
       if (!infoTrackingLogByCallId) {
         logging.ACTION_ERROR({
           filename: `src/lib/process/dockingUtil.ts`,
@@ -142,9 +142,9 @@ export const useDockingUtil = () => {
 
       const trackingLogSubject = infoTrackingLogByCallId.startFacility === dockingRequestInfo.SERIAL_ID ? 'FROM_DOCKING_PERMIT' : 'TO_DOCKING_PERMIT';
       const trackingLogDetail = infoTrackingLogByCallId.startFacility === dockingRequestInfo.SERIAL_ID ? 'FROM_DOCKING_PERMIT' : 'TO_DOCKING_PERMIT';
-      const trackingLogState = 'PROCESSING';
+      const trackingLogState = 'COMPLETED';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-        callId: dockingRequestInfo.CALL_ID,
+        callId: dockingRequestInfo.EQP_CALL_ID,
         subject: trackingLogSubject,
         detail: trackingLogDetail,
         state: trackingLogState,
@@ -153,7 +153,7 @@ export const useDockingUtil = () => {
         destFacility: null,
         assignedRobot: dockingRequestInfo.WORKER_ID,
         value: dockingRequestInfo.SERIAL_ID,
-        description: `Call ID ${dockingRequestInfo.CALL_ID} received ${trackingLogSubject} from ACS(${dockingRequestInfo.SERIAL_ID}) `
+        description: `Call ID ${dockingRequestInfo.EQP_CALL_ID} received ${trackingLogSubject} from ACS(${dockingRequestInfo.SERIAL_ID}) `
       }
       await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', dockingRequestInfo.SERIAL_ID);
     } catch (error) {
@@ -244,7 +244,7 @@ export const useDockingUtil = () => {
       ]);
 
       // TODO: [트래킹로그]도킹불가 응답에 대한 트래킹로그 저장 (도킹허가 빨강표시)
-      const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, dockingRequestInfo.CALL_ID);
+      const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, dockingRequestInfo.EQP_CALL_ID);
       if (!infoTrackingLogByCallId) {
         logging.ACTION_ERROR({
           filename: `src/lib/process/dockingUtil.ts`,
@@ -259,7 +259,7 @@ export const useDockingUtil = () => {
       const trackingLogDetail = infoTrackingLogByCallId.startFacility === dockingRequestInfo.SERIAL_ID ? 'FROM_DOCKING_PERMIT' : 'TO_DOCKING_PERMIT';
       const trackingLogState = 'ABORTED';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-        callId: dockingRequestInfo.CALL_ID,
+        callId: dockingRequestInfo.EQP_CALL_ID,
         subject: trackingLogSubject,
         detail: trackingLogDetail,
         state: trackingLogState,
@@ -268,7 +268,7 @@ export const useDockingUtil = () => {
         destFacility: null,
         assignedRobot: dockingRequestInfo.WORKER_ID,
         value: dockingRequestInfo.SERIAL_ID,
-        description: `Call ID ${dockingRequestInfo.CALL_ID} received ${trackingLogSubject} from ACS(${dockingRequestInfo.SERIAL_ID}) `
+        description: `Call ID ${dockingRequestInfo.EQP_CALL_ID} received ${trackingLogSubject} from ACS(${dockingRequestInfo.SERIAL_ID}) `
       }
       await editTrackingLogRedis(trackingLogUpdateData, undefined, 'ABORTED', dockingRequestInfo.SERIAL_ID);
     } catch (error) {
@@ -308,9 +308,9 @@ export const useDockingUtil = () => {
 
     try {
       // 어떤 설비인지 추출하고 그 설비의 도킹완료redis데이터 추출
-      const targetKey = targetTagInfo.TAGGROUP
-        ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
-        : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+      // const targetKey = targetTagInfo.TAGGROUP
+      //   ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
+      //   : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
       const facilitySerialId = targetTagInfo.EQ_CODE;
       const dockingCompleteInfo = await redisUtil.hgetObject<AcsDockingCompleteResponse>(RedisKeys.DockingCompleteBySerialId, facilitySerialId);
       const dockingRequestInfo = await redisUtil.hgetObject<AcsDockingRequestResponse>(RedisKeys.DockingRequestBySerialId, facilitySerialId);
@@ -325,6 +325,7 @@ export const useDockingUtil = () => {
       }
       // 도킹불가에 의한 완료인 경우
       if (dockingRequestInfo.RESULT === 'False' && !dockingCompleteInfo) {
+
         // 도킹 완료 요청, 일반도킹 | 충전도킹 | 수동도킹 요청 내리기
         const dockingFailedCompleteTags = await useKepServerUtil().makeWriteDatas({
           targetFacility: dockingRequestInfo.RESOURCE_ID,
@@ -347,11 +348,37 @@ export const useDockingUtil = () => {
             },
             {
               tagName: 'Call_Type_Response_01',
-              value: ''
+              value: 0
             }
           ]
         });
         await useKepServerUtil().writeTagsValue(dockingFailedCompleteTags);
+
+        // 콜 취소 유무
+        const callCancelTag = opcuaUtil.tagMap.get(`${targetTagInfo.EQ_CODE}.Call_Cancel`);
+        const needNodeIds = [
+          callCancelTag?.NODE_ID
+        ].filter((nodeId): nodeId is string => nodeId !== undefined);
+
+        const callCancelTagValue = await useKepServerUtil().readTagsValue(needNodeIds);
+        if (callCancelTagValue[0].value.value === true) {
+          // 콜 취소로 인한 도킹 불허
+          // 시퀀스 상으로 [콜 취소 완료 요청]을 응답해줘야 함
+          // Call_Cancel_Response
+          const callCancelResponseTag = await useKepServerUtil().makeWriteDatas({
+            targetFacility: dockingRequestInfo.SERIAL_ID,
+            tagInfo: [
+              {
+                tagName: 'Call_Cancel_Response',
+                value: true
+              }
+            ]
+          });
+          await useKepServerUtil().writeTagsValue(callCancelResponseTag);
+        } else {
+          // 알수 없는 이유로 도킹 불허
+        }
+
 
         // 이후 설비도 도킹완료, 도킹불가 내림.
 
@@ -426,7 +453,8 @@ export const useDockingUtil = () => {
 
   // acs에서 도킹요청이 왔을 때, 설비에 도킹요청하는 함수
   const sendAcsDockingRequest = async (params: AcsDockingRequestType) => {
-    params.SERIAL_ID = params.PORT_ID
+    params.SERIAL_ID = params.PORT_ID;
+    params.WORKER_ID = "vw_3";
     redisUtil.hdel(RedisKeys.DockingRequestBySerialId, params.SERIAL_ID);
     redisUtil.hdel(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID);
     redisUtil.hdel(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID);
@@ -508,7 +536,7 @@ export const useDockingUtil = () => {
         });
         await useKepServerUtil().writeTagsValue(dockingRequestTag);
         // [트래킹로그]도킹요청 들어온 것에 대한 트래킹로그 저장
-        const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, params.CALL_ID);
+        const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, params.EQP_CALL_ID);
         if (!infoTrackingLogByCallId) {
           logging.ACTION_ERROR({
             filename: `src/lib/process/dockingUtil.ts`,
@@ -521,9 +549,9 @@ export const useDockingUtil = () => {
 
         const trackingLogSubject = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_REQ' : 'TO_DOCKING_REQ';
         const trackingLogDetail = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_REQ' : 'TO_DOCKING_REQ';
-        const trackingLogState = 'PROCESSING';
+        const trackingLogState = 'COMPLETED';
         const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-          callId: params.CALL_ID,
+          callId: params.EQP_CALL_ID,
           subject: trackingLogSubject,
           detail: trackingLogDetail,
           state: trackingLogState,
@@ -532,7 +560,7 @@ export const useDockingUtil = () => {
           destFacility: null,
           assignedRobot: params.WORKER_ID,
           value: params.SERIAL_ID,
-          description: `Call ID ${params.CALL_ID} received ${trackingLogSubject} from ACS(${params.SERIAL_ID}) `
+          description: `Call ID ${params.EQP_CALL_ID} received ${trackingLogSubject} from ACS(${params.SERIAL_ID}) `
         }
         await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', params.SERIAL_ID);
         console.log("🚀 ~ dockingRequestTag ~ dockingRequestTag:", dockingRequestTag)
@@ -571,22 +599,23 @@ export const useDockingUtil = () => {
     }
 
     // 도킹 요청 후 x초가 지나면 재도킹 요청해야함, 여기서 시간을 시작하고 다른 함수에서 10초가 지나면 해당 요청을 취소하고 재요청해야함
-    const dockingRequestTime = new Date();
-    const dockingRequestTimeout = setTimeout(() => {
-      // 도킹 요청에 대해 응답을 받았는지 확인하는 함수
-      checkDockingResponse(params);
-    }, parseInt(process.env.DOCKING_RESPONSE_TIMEOUT_MS || '10000'));
+    // const dockingRequestTime = new Date();
+    // const dockingRequestTimeout = setTimeout(() => {
+    //   // 도킹 요청에 대해 응답을 받았는지 확인하는 함수
+    //   checkDockingResponse(params);
+    // }, parseInt(process.env.DOCKING_RESPONSE_TIMEOUT_MS || '10000'));
   };
 
   // acs에서 도킹완료 응답이 왔을 때, 설비에 도킹완료 응답하는 함수
   const sendAcsDockingComplete = async (params: AcsDockingCompleteType) => {
     console.log("🚀 ~ sendAcsDockingComplete ~ params:", params)
     params.SERIAL_ID = params.PORT_ID
+    params.WORKER_ID = "vw_3";
 
     redisUtil.hset(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID, JSON.stringify(params));
 
     // TODO: [트래킹로그]도킹완료에 대한 트래킹로그 저장
-    const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, params.CALL_ID);
+    const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, params.EQP_CALL_ID);
     if (!infoTrackingLogByCallId) {
       logging.ACTION_ERROR({
         filename: `src/lib/process/dockingUtil.ts`,
@@ -599,9 +628,9 @@ export const useDockingUtil = () => {
 
     const trackingLogSubject = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
     const trackingLogDetail = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
-    const trackingLogState = 'PROCESSING';
+    const trackingLogState = 'COMPLETED';
     const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-      callId: params.CALL_ID,
+      callId: params.EQP_CALL_ID,
       subject: trackingLogSubject,
       detail: trackingLogDetail,
       state: trackingLogState,
@@ -610,7 +639,7 @@ export const useDockingUtil = () => {
       destFacility: null,
       assignedRobot: params.WORKER_ID,
       value: params.SERIAL_ID,
-      description: `Call ID ${params.CALL_ID} received ${trackingLogSubject} from ACS(${params.SERIAL_ID}) `
+      description: `Call ID ${params.EQP_CALL_ID} received ${trackingLogSubject} from ACS(${params.SERIAL_ID}) `
     }
     await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', params.SERIAL_ID);
     // Dock_AMR_Status PLC 쓰기 
@@ -632,7 +661,7 @@ export const useDockingUtil = () => {
   const sendAcsDockingDetach = async (params: AcsDockingDetachType) => {
     console.log("🚀 ~ sendAcsDockingDetach ~ params:", params)
     params.SERIAL_ID = params.PORT_ID
-
+    params.WORKER_ID = "vw_3";
     const dockingResponse: AcsDockingDetachResponse = {
       ...params,
       RESULT: 'True',

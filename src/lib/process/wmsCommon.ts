@@ -1,4 +1,5 @@
 import { WmsCommandSetting } from "../../models/common/setting";
+import { EqpCallStats } from "../callRemoveUtil";
 import { generateUUIDNode } from "../hashUtil";
 import { logging } from "../logging";
 import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from "../mqttUtil";
@@ -37,7 +38,7 @@ export interface RecentCallInfo {
 export interface CancelCallInfo {
   Cmd_ID?: string;
   Call_ID: string;
-  Call_Quantity: string;
+  Call_Quantity: number;
   systemName?: string;
 }
 
@@ -116,16 +117,22 @@ export const deleteRecentCallInfoTaskByCmdId = async (cmdId: string) => {
 
 // 설비 콜 취소 내용 수신 후 처리 로직
 export const checkCancelCall = async () => {
-  const cancelCallByCallIdList = await redisUtil.hgetAllObject<CancelCallInfo>(RedisKeys.InfoCancelCallByCallId) || []
+  const cancelCallByCallIdList = await redisUtil.hgetAllObject<EqpCallStats>(RedisKeys.InfoCancelCallByCallId) || []
 
   for (let i = 0, length = cancelCallByCallIdList.length; i < length; i++) {
     const infoCancelCallByCallId = cancelCallByCallIdList[i];
 
-    if (!infoCancelCallByCallId.Cmd_ID || infoCancelCallByCallId.Cmd_ID === '') {
-      infoCancelCallByCallId.Cmd_ID = generateUUIDNode()
+    const newCancelCallInfoData: CancelCallInfo = {
+      Call_ID: infoCancelCallByCallId.CALL_ID,
+      Call_Quantity: infoCancelCallByCallId.Call_Quantity || 0,
+      systemName: infoCancelCallByCallId.SYSTEM_NAME || 'MW01'
     }
 
-    await checkCancelCallInfo(infoCancelCallByCallId)
+    if (!newCancelCallInfoData.Cmd_ID || newCancelCallInfoData.Cmd_ID === '') {
+      newCancelCallInfoData.Cmd_ID = generateUUIDNode()
+    }
+
+    await checkCancelCallInfo(newCancelCallInfoData)
   }
 }
 
@@ -136,15 +143,15 @@ const checkCancelCallInfo = async (cancelCallInfo: CancelCallInfo) => {
   const infoAckInCallByCallId = await redisUtil.hgetObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId, callId)
   // 진행 중인 CALL INFO가 있다면 해당 정보로 CancelCall 날림
 
-  if (infoAckInCallByCallId?.Call_Quantity !== cancelCallInfo.Call_Quantity) {
-    // 필요한 경우 return 지금은 새로 들어온 값 기준으로 판단
-    logging.ACTION_DEBUG({
-      filename: `wmsCommon.ts - checkCancelCallInfo`,
-      error: `[Call_Quantity] The new value(${cancelCallInfo.Call_Quantity}) does not match the existing value(${infoAckInCallByCallId?.Call_Quantity})`,
-      params: null,
-      result: false,
-    });
-  }
+  // if (infoAckInCallByCallId?.Call_Quantity !== cancelCallInfo.Call_Quantity) {
+  //   // 필요한 경우 return 지금은 새로 들어온 값 기준으로 판단
+  //   logging.ACTION_DEBUG({
+  //     filename: `wmsCommon.ts - checkCancelCallInfo`,
+  //     error: `[Call_Quantity] The new value(${cancelCallInfo.Call_Quantity}) does not match the existing value(${infoAckInCallByCallId?.Call_Quantity})`,
+  //     params: null,
+  //     result: false,
+  //   });
+  // }
 
   if (!cancelCallInfo.Cmd_ID) {
     logging.ACTION_ERROR({

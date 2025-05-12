@@ -65,7 +65,7 @@ export type TrackingLogSubjectType =
   'BRANCH_INFO_REP';
 
 // 진행 상태 추가 필요시 추가 적용 예정
-export type TrackingLogState = 'PUBLISHED' | 'PROCESSING' | 'COMPLETED' | 'ABORTED' | 'PAUSED' | 'ERROR';   // 시작 전 , 진행 중 , 완료 , 중단
+export type TrackingLogState = 'PUBLISHED' | 'PROCESSING' | 'COMPLETED' | 'ABORTED' | 'CANCELED' | 'PAUSED' | 'ERROR';   // 시작 전 , 진행 중 , 완료 , 중단 , 취소, 정지, 에러
 
 class TrackingLog extends Model implements TrackingLogAttributes {
   public readonly id!: TrackingLogAttributes['id'];

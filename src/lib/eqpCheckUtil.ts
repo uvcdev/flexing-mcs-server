@@ -5,6 +5,7 @@ import opcuaUtil from "./opcuaUtil";
 import { useCallRegisterUtil } from "./callRegisterUtil";
 import { useCallRemoveUtil } from "./callRemoveUtil";
 import { useDockingUtil } from "./process/dockingUtil";
+import { useCallCancelUtil } from "./callCancelUtil";
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -47,9 +48,9 @@ export const useEqpCheckUtil = () => {
           }
           break;
 
-        case 'Call_Cancel':
-          console.log(`Action Method Tag: Call_Cancel`);
-          await callCancel(targetTagInfo);
+        case 'Call_Cancel_Request':
+          console.log(`Action Method Tag: Call_Cancel_Request`);
+          await useCallCancelUtil().callCancel(targetTagInfo);
           break;
 
         case 'Dock_Permit':
