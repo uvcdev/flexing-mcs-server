@@ -35,7 +35,7 @@ const dailyWorkOrderStats: DailyWorkOrderStats = {
 export type McsWorkOrderRequestType = {
   TX_ID: string;
   ZONE_ID: string;
-  TYPE: 'IN' | 'OUT' | 'MISSION'; // 반출 OUT, 반입 IN , 미션 MISSION
+  TYPE: 'IN' | 'OUT' | 'MISSION' | 'DRYRUN'; // 반출 OUT, 반입 IN , 미션 MISSION
   EQP_ID: string;
   EQP_CALL_ID: string;
   PORT_ID: string;
@@ -52,7 +52,7 @@ export type McsPendingWorkOrderRequestType = {
   toFacilityName: string;
   eqpName: string;
   portName: string;
-  type: 'IN' | 'OUT' | 'MISSION';
+  type: 'IN' | 'OUT' | 'MISSION' | 'DRYRUN';
   typeofisMissionOrder: string;
   callPriority: string;
   callType: string;
@@ -60,23 +60,6 @@ export type McsPendingWorkOrderRequestType = {
 
 export const useWorkOrderUtil = () => {
   const redisUtil = useRedisUtil();
-  // MissionWorkOrder 는 바로 작업 생성
-  const createMissionWorkOrder = async (callInfo: EqpCallStats) => {
-    const params: McsWorkOrderRequestType =
-    {
-      TX_ID: "",
-      ZONE_ID: process.env.FLOOR || '1F',
-      TYPE: 'MISSION',
-      EQP_ID: callInfo.Caller,
-      EQP_CALL_ID: callInfo.EQP_CALL_ID,
-      PORT_ID: '',
-      CALL_ID: callInfo.CALL_ID, // 작업지시코드 뒤 4자리
-      TAG_ID: "",
-      CALL_PRIORITY: callInfo.Call_Priority,
-      CALL_TYPE: callInfo.Call_Type,
-      IS_MISSION_ORDER: 'true',
-    }
-  }
   const createWorkOrder = async () => {
     const workOrderList = await redisUtil.hgetAllObject<McsPendingWorkOrderRequestType>(RedisKeys.InfoPendingWorkOrderByCallId);
     if (workOrderList) {
@@ -87,7 +70,7 @@ export const useWorkOrderUtil = () => {
           CALL_ID: workOrder.callId,
           EQP_ID: workOrder.eqpName,
           EQP_CALL_ID: parseInt(workOrder.callId.toString().slice(-4), 10).toString(), // 작업지시코드 뒤 4자리
-          PORT_ID: workOrder.type !== 'MISSION' ? workOrder.portName : '', // 있어야함
+          PORT_ID: (workOrder.type === 'MISSION') || (workOrder.type === 'DRYRUN') ? '' : workOrder.portName,
           CALL_PRIORITY: workOrder.callPriority,
           CALL_TYPE: workOrder.callType,
           IS_MISSION_ORDER: workOrder.type === 'MISSION' ? 'true' : 'false',
@@ -268,5 +251,5 @@ export const useWorkOrderUtil = () => {
     sendMqtt(MqttTopics.WorkOrderStats, JSON.stringify(getStats()))
   };
 
-  return { createMissionWorkOrder, createWorkOrder, getStats, setStats, setInitStats, initStats, sendStats };
+  return { createWorkOrder, getStats, setStats, setInitStats, initStats, sendStats };
 };

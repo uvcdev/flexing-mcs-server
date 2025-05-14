@@ -304,7 +304,7 @@ export interface PendingWorkOrderAttributes {
   fromFacilityName?: string;
   toFacilityName?: string | null;
   itemName?: string;
-  type: 'IN' | 'OUT' | 'MISSION';
+  type: 'IN' | 'OUT' | 'MISSION' | 'DRYRUN';
   isMissionOrder?: boolean;
   callPriority?: string;
   callType?: string;

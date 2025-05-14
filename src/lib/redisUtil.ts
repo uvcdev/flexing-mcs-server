@@ -80,6 +80,7 @@ export enum RedisSettingKeys {
   // NightlyStartEndSchedule = `nightlyStartEndSchedule`, // 야간 시업/종업
   WmsCommandSetting = 'wmsCommandSetting', // WMS 통신 관련 설정
   LanguageSetting = 'languageSetting', // 언어 설정
+  DryrunSetting = 'dryrunSetting',         // 드라이런 모드 설정
 }
 
 // export type AmrCurrentChargerTypes = {
