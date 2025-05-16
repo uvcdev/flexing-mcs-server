@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import { TrackingLogRedisAttributes } from "../models/common/trackingLog";
+import { CancelWorkOrderRequestType } from "./callCancelUtil";
 import { TagValue, useKepServerUtil } from "./kepServerUtil";
+import { logging, makeLogFormat, RequestLog } from "./logging";
+import { sendMqtt } from "./mqttUtil";
 import opcuaUtil from "./opcuaUtil";
-import { useRedisUtil } from "./redisUtil";
+import { RedisKeys, useRedisUtil } from "./redisUtil";
+import { service as workOrderService } from '../service/operation/workOrderService';
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -86,6 +91,39 @@ export const useCallRemoveUtil = () => {
           tagName: 'Call_Cancel_Response',
           value: false,
         });
+
+        // acs 작업지시 취소 요청
+        const infoTrackingLogByFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByFacilityCode, targetCode);
+        const params: CancelWorkOrderRequestType =
+        {
+          ZONE_ID: process.env.FLOOR || '1F',
+          EQP_ID: targetCode,
+          EQP_CALL_ID: infoTrackingLogByFacilityCode?.eqpCallId || '',
+          CALL_ID: infoTrackingLogByFacilityCode?.callId || ''
+        }
+        const result = await workOrderService.facilityCancel(
+          { code: params.CALL_ID },
+          makeLogFormat({} as RequestLog)
+        );
+
+        if (result.updatedCount > 0) {
+          const messageTopic = 'acs/cancelworkorder'
+          try {
+            logging.MQTT_LOG({
+              title: 'callRemoveUtil cancel workorder',
+              topic: messageTopic,
+              message: params,
+            });
+            sendMqtt(messageTopic, JSON.stringify(params));
+          } catch (err) {
+            logging.MQTT_ERROR({
+              title: 'mqtt message error',
+              topic: messageTopic,
+              message: params,
+              error: err,
+            });
+          }
+        }
       }
     } catch (error) {
       console.error("Error in callRemove:", error);

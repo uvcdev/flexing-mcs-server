@@ -108,6 +108,14 @@ export type WmsCommandSetting = {
   };
 };
 
+export type DryrunSetting = {
+  system: string;
+  type: string;
+  data: {
+    mode: 'normal' | 'eqp';
+  };
+};
+
 export type LanguageSetting = {
   system: string;
   type: string;
