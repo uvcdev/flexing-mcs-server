@@ -140,7 +140,7 @@ export const useCallRegisterUtil = () => {
     const callInfoList: EqpCallStats[] = eqpWcsInfo.map((info) => ({
       EQP_CALL_ID: info.EQP_CALL_ID,
       CALL_ID: info.CALL_ID,
-      Call_Type: 'N0961',
+      Call_Type: callType01Value,
       Caller: info.EQP_ID,
       Call_Quantity: 1,
       Call_Priority: callPriorityValue === 'true' ? '99' : '1',
@@ -334,7 +334,9 @@ export const useCallRegisterUtil = () => {
                 type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
                 isMissionOrder: false,
                 callPriority: callInfo.Call_Priority,
-                callType: callInfo.Call_Type
+                callType: callInfo.Call_Type,
+                fromFacilityName: facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial! : callInfo.Caller,
+                toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial
               }
 
               if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
