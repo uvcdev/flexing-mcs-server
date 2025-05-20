@@ -40,6 +40,8 @@ const portPresenceStatus = async (wmsName: string, subject: string, messageMessa
     const fromFacilityName = separateCallId[0]
     const toFacilityName = separateCallId[1]
 
+    const newCallId = fromFacilityName + separateCallId[2]
+
     const infoPendingWorkOrder: PendingWorkOrderAttributes = {
       callId: callId,
       fromFacilityName: fromFacilityName,

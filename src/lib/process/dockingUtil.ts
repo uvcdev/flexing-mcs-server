@@ -599,11 +599,11 @@ export const useDockingUtil = () => {
     }
 
     // 도킹 요청 후 x초가 지나면 재도킹 요청해야함, 여기서 시간을 시작하고 다른 함수에서 10초가 지나면 해당 요청을 취소하고 재요청해야함
-    const dockingRequestTime = new Date();
-    const dockingRequestTimeout = setTimeout(() => {
-      // 도킹 요청에 대해 응답을 받았는지 확인하는 함수
-      checkDockingResponse(params);
-    }, parseInt(process.env.DOCKING_RESPONSE_TIMEOUT_MS || '10000'));
+    // const dockingRequestTime = new Date();
+    // const dockingRequestTimeout = setTimeout(() => {
+    //   // 도킹 요청에 대해 응답을 받았는지 확인하는 함수
+    //   checkDockingResponse(params);
+    // }, parseInt(process.env.DOCKING_RESPONSE_TIMEOUT_MS || '10000'));
   };
 
   // acs에서 도킹완료 응답이 왔을 때, 설비에 도킹완료 응답하는 함수
