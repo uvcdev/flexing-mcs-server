@@ -246,5 +246,5 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 
 ## v0.2.1-ksm
 
-- Settings에 검색 조건 추가 (`settingDao.selectList`)
+- Settings 검색 조건 추가 (`settingDao.selectList`)
   - type, system
