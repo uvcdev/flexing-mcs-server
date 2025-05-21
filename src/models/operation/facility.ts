@@ -19,6 +19,8 @@ export interface FacilityAttributes {
   alwaysFill: boolean | null;
   description: string | null;
   isMissionOrderCapable: boolean | null;
+  linkedEqpIds: Array<number> | null;
+  linkedWmsIds: Array<number> | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -44,10 +46,16 @@ class Facility extends Model implements FacilityAttributes {
   public alwaysFill!: FacilityAttributes['alwaysFill'];
   public description!: FacilityAttributes['description'];
   public isMissionOrderCapable!: FacilityAttributes['isMissionOrderCapable'];
+  public linkedEqpIds!: FacilityAttributes['linkedEqpIds'];
+  public linkedWmsIds!: FacilityAttributes['linkedWmsIds'];
   public readonly createdAt!: FacilityAttributes['createdAt'];
   public readonly updatedAt!: FacilityAttributes['updatedAt'];
   public readonly deletedAt!: FacilityAttributes['deletedAt'];
 }
+export const FacilityDefaultValue = {
+  linkedEqpIds: [],
+  linkedWmsIds: []
+};
 
 Facility.init(
   {
@@ -104,6 +112,14 @@ Facility.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    linkedEqpIds: {
+      type: DataTypes.ARRAY(DataTypes.INTEGER),
+      defaultValue: FacilityDefaultValue.linkedEqpIds,
+    },
+    linkedWmsIds: {
+      type: DataTypes.ARRAY(DataTypes.INTEGER),
+      defaultValue: FacilityDefaultValue.linkedWmsIds,
+    },
   },
   {
     sequelize,
@@ -130,6 +146,8 @@ export interface FacilityInsertParams {
   active: boolean;
   alwaysFill: boolean;
   isMissionOrderCapable: boolean;
+  linkedEqpIds: Array<number>;
+  linkedWmsIds: Array<number>;
   description: string | null;
 }
 
@@ -196,6 +214,8 @@ export interface FacilityUpdateParams {
   alwaysFill?: boolean;
   description?: string | null;
   isMissionOrderCapable?: boolean;
+  linkedEqpIds?: Array<number>;
+  linkedWmsIds?: Array<number>;
 }
 
 // update state
@@ -226,6 +246,8 @@ export const FacilityAttributesInclude = [
   'alwaysFill',
   'description',
   'isMissionOrderCapable',
+  'linkedEqpIds',
+  'linkedWmsIds',
   'createdAt',
 ];
 

@@ -20,7 +20,7 @@ import {
 } from '../../models/operation/workOrder';
 import { service as eventHistoryService } from '../../service/common/eventHistoryService';
 import { service as workOrderService } from '../../service/operation/workOrderService';
-import { useWorkOrderStatsUtil } from '../../lib/workOrderUtil';
+import { useWorkOrderUtil } from '../../lib/workOrderUtil';
 
 const router = express.Router();
 
@@ -184,7 +184,7 @@ router.get(
       // 입력 값 체크
 
       // 비즈니스 로직 호출
-      const result = useWorkOrderStatsUtil().getStats()
+      const result = useWorkOrderUtil().getStats()
 
       // 최종 응답 값 세팅
       const resJson = resSuccess(result, resType.INFO);

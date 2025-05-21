@@ -1,5 +1,4 @@
 import { Router, Request, Response } from "express";
-import { readTagsValue, heartbeat } from "../lib/kepServerUtil";
 
 const router = Router();
 

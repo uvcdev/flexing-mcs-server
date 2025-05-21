@@ -256,18 +256,21 @@ const dao = {
         });
     });
   },
-  selectSerial(params: FacilitySelectSerialParams): Promise<FacilityAttributes | null> {
-    return new Promise((resolve, reject) => {
-      Facility.findOne({
+  async selectSerial(params: FacilitySelectSerialParams): Promise<FacilityAttributes | null> {
+    if (!params.serial) {
+      // serial이 없으면 null 반환 또는 throw new Error("...") 처리 가능
+      return null;
+    }
+
+    try {
+      const selectedOne = await Facility.findOne({
         where: { serial: params.serial },
-      })
-        .then((selectedOne) => {
-          resolve(selectedOne);
-        })
-        .catch((err) => {
-          reject(err);
-        });
-    });
+      });
+      return selectedOne;
+    } catch (err) {
+      // 에러 로깅도 추가 가능
+      throw err;
+    }
   },
   selectOneCode(params: FacilitySelectOneCodeParams): Promise<FacilityAttributes | null> {
     return new Promise((resolve, reject) => {

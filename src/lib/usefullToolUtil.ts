@@ -130,3 +130,35 @@ export const isCurrentTimeFasterThanAnySeconds = (referenceTime: Date, anySecond
 
   return timeDifference >= (1000 * anySeconds)
 }
+
+export const isCurrentTimeFasterThanAnyMinutes = (referenceTime: Date, anyMinutes: number) => {
+  const currentTime = new Date();
+  const timeDifference = currentTime.getTime() - referenceTime.getTime();
+
+  return timeDifference >= (1000 * 60 * anyMinutes);
+};
+
+export const removeAckPrefix = (input: string): string => {
+  return input.replace(/^ACK_/, '');
+};
+
+export const formatToDateCode = (input: number): string => {
+  let month: number;
+  let day: number;
+
+  if (input < 100) {
+    // 예: 11 → 01월 01일
+    month = Math.floor(input / 10);
+    day = input % 10;
+  } else {
+    // 예: 425 → 04월 25일
+    month = Math.floor(input / 100);
+    day = input % 100;
+  }
+
+  // 두 자릿수 포맷 맞추기
+  const monthStr = month.toString().padStart(2, '0');
+  const dayStr = day.toString().padStart(2, '0');
+
+  return `${monthStr}${dayStr}`;
+}

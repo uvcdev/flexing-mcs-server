@@ -150,7 +150,7 @@ WorkOrder.init(
       type: DataTypes.STRING(255),
     },
     type: {
-      type: DataTypes.STRING(3),
+      type: DataTypes.STRING(10),
     },
     isMissionOrder: {
       type: DataTypes.BOOLEAN,
@@ -297,6 +297,19 @@ export interface WorkOrderUpdateByCodeParams {
 // delete
 export interface WorkOrderDeleteParams {
   id?: number;
+}
+
+export interface PendingWorkOrderAttributes {
+  callId?: string;
+  fromFacilityName?: string;
+  toFacilityName?: string | null;
+  itemName?: string;
+  type: 'IN' | 'OUT' | 'MISSION' | 'DRYRUN';
+  isMissionOrder?: boolean;
+  callPriority?: string;
+  callType?: string;
+  eqpName?: string;
+  portName?: string | null;
 }
 
 // include attributes

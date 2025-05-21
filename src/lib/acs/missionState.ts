@@ -1,5 +1,7 @@
-import { separateMqttMessage, mbsMqttMesaage } from "../mqttUtil"
-import { sendAckToWms } from "../process/ack";
+import { TrackingLogRedisUpdateParams, TrackingLogState } from "../../models/common/trackingLog";
+import { separateMqttMessage, MbsMqttMesaage } from "../mqttUtil"
+import { editTrackingLogRedis } from "../process/trackingLog";
+import { sendAckToWms } from "../process/wmsAck";
 
 const topic = 'MISSION_STATE'
 
@@ -15,9 +17,12 @@ export type MissionStateType =
   | 'AMR_UNASSIGNED'
   | 'MISSION_COMPLETED'
   | 'MISSION_CANCELED'
-  | 'MISSION_FAILED';
+  | 'MISSION_FAILED'
+  | 'MISSION_ORDER_ASSIGNED'
+  | 'MISSION_ORDER_STARTED'
+  | 'MISSION_ORDER_COMPLETED';
 
-export interface MissionState {
+export interface MissionStateBody {
   mission: string;
   state: MissionStateType;
   assign: {
@@ -27,7 +32,7 @@ export interface MissionState {
 }
 
 export interface AllMissionState {
-  missions: MissionState[]
+  missions: MissionStateBody[]
 }
 
 export interface MissionCompleted {
@@ -39,23 +44,46 @@ export interface MissionFailed {
   mission: string;
 }
 
-const missionState = (acsName: string, messageJson: mbsMqttMesaage) => {
+const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
   console.log('catch acs missionState')
-  const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
-  // acs 물류 로그 저장
-  // 물류 로그 state 로직 처리 ( canceled or failed 일 때 로직 필요할 듯 )
-  // ACK 전송
-  const ackBody = {
-    mission: messageBody.mission || ''
+  const missionStateBody = messageJson.body as MissionStateBody
+  const state = missionStateBody.state
+  const callId = (missionStateBody.mission).split('$')[0]
+  const assignAmrName = missionStateBody.assign.robot || ''
+  const assignState = missionStateBody.assign.task as TrackingLogState || ''
+
+  // 물류 로그 저장
+  const trackingLogSubject = 'MISSION_STATE'
+  const trackingLogDetail = state
+  const trackingLogState = assignState
+  const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+    callId: callId,
+    subject: trackingLogSubject,
+    detail: trackingLogDetail,
+    state: trackingLogState,
+    transferId: null,
+    startFacility: null,
+    destFacility: null,
+    assignedRobot: assignAmrName,
+    value: assignAmrName,
+    description: `AMR(${assignAmrName}) Mission State : ${state}`
   }
-  sendAckToWms(topic, subject, ackBody, acsName)
+  await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS')
+
+  if (state === 'MISSION_CANCELED') {
+
+  } else if (state === 'MISSION_FAILED') {
+
+  } else if (state === 'MISSION_COMPLETED') {
+
+  }
 }
 
 const allMissionState = (acsName: string) => {
   console.log('catch acs allMissionState')
 }
 
-const missionCompleted = (acsName: string, messageJson: mbsMqttMesaage) => {
+const missionCompleted = (acsName: string, messageJson: MbsMqttMesaage) => {
   console.log('catch acs missionCompleted')
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
   // acs 물류 로그 저장
@@ -67,7 +95,7 @@ const missionCompleted = (acsName: string, messageJson: mbsMqttMesaage) => {
   sendAckToWms(topic, subject, ackBody, acsName)
 }
 
-const missionFailed = (acsName: string, messageJson: mbsMqttMesaage) => {
+const missionFailed = (acsName: string, messageJson: MbsMqttMesaage) => {
   console.log('catch acs missionFailed')
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
   // acs 물류 로그 저장
@@ -80,10 +108,10 @@ const missionFailed = (acsName: string, messageJson: mbsMqttMesaage) => {
 }
 
 
-export const acsMissionState = (acsName: string, messageJson: mbsMqttMesaage) => {
+export const acsMissionState = (acsName: string, messageJson: MbsMqttMesaage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
 
-  console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
+  // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
 
   if (subject === 'MISSION_STATE') {
     missionState(acsName, messageJson)

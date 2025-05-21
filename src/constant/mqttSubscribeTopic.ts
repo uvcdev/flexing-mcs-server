@@ -7,7 +7,8 @@ export const mqttSubscribeWmsTopics = [
   "-MCS-CRANE",
   "-MCS-BRANCH",
   "-MCS-ALARM",
-  "-HEARTBEAT",
+  "-MCS-ONLINE",
+  "-HEARTBEAT"
 ];
 
 export const mqttSubscribeAcsTopics = [

@@ -10,7 +10,7 @@ import https from 'https';
 import fs from 'fs';
 import { logSequelize, sequelize } from './models';
 import { router } from './routes/index';
-import { RequestLog, logging, makeLogFormat } from './lib/logging';
+import { ActionLog, RequestLog, logging, makeLogFormat } from './lib/logging';
 import { responseCode as resCode, makeResponseError as resError, ErrorClass } from './lib/resUtil';
 import { receiveMqtt } from './lib/mqttUtil';
 import path from 'path';
@@ -19,14 +19,14 @@ import swaggerJson from '../src/swagger.json';
 
 import * as process from 'process';
 import { service as workOrderService } from './service/operation/workOrderService';
-import { makeinitDailyWorkOrderstatsScheduleSet } from './lib/scheduleUtil';
+import { makeinitDailyWorkOrderstatsScheduleSet, makeSendServerStatusInterval } from './lib/scheduleUtil';
 
-import opcuaClient from './lib/opcuaUtil';
+import opcuaUtil from './lib/opcuaUtil';
 import { logToConsoleAndFile } from "./lib/logging";
 
 import { processMcs } from './lib/process/index';
 import { initAllRedisData } from './lib/redis/init';
-import { initTagData, monitorTagData } from './lib/kepServerUtil';
+import { useKepServerUtil } from './lib/kepServerUtil';
 
 dotenv.config();
 
@@ -70,42 +70,9 @@ app.set('port', port);
 
 if (env === 'production') {
   // production인 경우에만 자동 생성 한다. (개발시에는 POST {{url}}/tables 를 이용할 것)
-  sequelize
-    .sync({
-      force: false,
-    })
-    .then(() => {
-      logging.SYSTEM_LOG({
-        title: 'Sequelize Table Sync',
-        message: {
-          DB_HOST: process.env.DB_HOST,
-          DB_PORT: process.env.DB_PORT,
-          DB_DATABASE: process.env.DB_DATABASE,
-          DB_ID: process.env.DB_ID,
-          DB_PASS: '******',
-          DB_DIALECT: process.env.DB_DIALECT,
-        },
-      });
-      console.log('Sequelize sync success');
-
-      // 여기에 redis 데이터 초기화 로직 추가
-      initAllRedisData()
-    })
-    .catch((err: Error) => {
-      console.error(err);
-    });
-}
-
-// NODE_ENV 환경에 따른 설정
-if (env === 'production') {
-  // 운영 환경 세팅
-  app.use(hpp());
-  app.use(helmet());
-  app.use(morgan('combined'));
   void (async () => {
-    // sequelize sync 동작 (Table 자동 생성 옵션)
     try {
-      await sequelize.sync({ force: false }).then(async () => {
+      await sequelize.sync({ force: false }).then(() => {
         logging.SYSTEM_LOG({
           title: 'Sequelize Table Sync',
           message: {
@@ -119,13 +86,17 @@ if (env === 'production') {
         });
         console.log('Sequelize sync success');
 
-        // imcs 관련 redis 작성
+        // 여기에 redis 데이터 초기화 로직 추가
         initAllRedisData()
-      });
+      })
+        .catch((err: Error) => {
+          console.error(err);
+        });
     } catch (error) {
       console.error('Unable to connect to the database:', error);
     }
 
+    // logSequelize sync 동작 (Table 자동 생성 옵션)
     try {
       await logSequelize.sync({ force: false }).then(async () => {
         // 첫 번째 쿼리 실행
@@ -160,8 +131,7 @@ if (env === 'production') {
     } catch (error) {
       console.error(error);
     }
-
-  })();
+  })
 }
 
 // NODE_ENV 환경에 따른 설정
@@ -224,39 +194,28 @@ const logMessage = {
 
 // running http
 app.listen(app.get('port'), () => {
-  // logging.SYSTEM_LOG({
-  //   title: `Server Running (http:${port})`,
-  //   message: {
-  //     ...logMessage,
-  //   },
-  // });
+  logging.SYSTEM_LOG({
+    title: `Server Running (http:${port})`,
+    message: {
+      ...logMessage,
+    },
+  });
   console.log(`server is running on http port:${port}`);
-
-  // MCS 로직 실행
-  initAllRedisData()
-  // 설비 정보 동기화
-  // WMS 정보 동기화
-  processMcs()
 });
 
 // running https
 if (httpsOption.key && httpsOption.cert) {
   const httpsServer = https.createServer({ key: httpsOption.key, cert: httpsOption.cert }, app);
   httpsServer.listen(httpsPort, () => {
-    // logging.SYSTEM_LOG({
-    //   title: `Server Running (https:${httpsPort})`,
-    //   message: {
-    //     ...logMessage,
-    //   },
-    // });
-    console.log(`server is running on http port:${httpsPort}`);
-
-    // MCS 로직 실행
-    initAllRedisData()
-    processMcs()
+    logging.SYSTEM_LOG({
+      title: `Server Running (https:${httpsPort})`,
+      message: {
+        ...logMessage,
+      },
+    });
+    console.log(`server is running on https port:${httpsPort}`);
   });
 }
-
 
 // redis 초기 값 설정 (setting 등)
 if (env === 'development') {
@@ -264,40 +223,50 @@ if (env === 'development') {
 
   Promise.all([])
     .then(async () => {
-      // await useCacheDbUtil().redisInit();
-      // await settingService.writeAllRedis();
-      // await amrService.writeAllRedis();
+      // =====🔥MCS 관련🔥=====
+      // MCS 로직 실행
+      await initAllRedisData()
+
+      // 설비 정보 동기화
+
+      // WMS 정보 동기화
+      await processMcs()
+
+
+      // =====🔥kepserver 관련🔥=====
+      // 초기 태그 데이터 초기화
+      await useKepServerUtil().initTagData();
+
+      // NODE-OPCUA <-> KEPServerex 연결 및 초기화
+      await opcuaUtil.initKepserverex();
+
+      // PLC 데이터 수집 (kepware 상태 불러와서 mqtt 전송)
+      await useKepServerUtil().monitorTagData();
+
     })
     .catch((error: Error) => {
       console.log(error);
     });
 
   receiveMqtt(); // mqtt subscribe
-
-  void (async () => {
-    try {
-
-      // 초기 태그 데이터 초기화
-      await initTagData();
-
-      // NODE-OPCUA <-> KEPServerex 연결 및 초기화
-      await opcuaClient.initKepserverex();
-      logToConsoleAndFile("KepServerEX initialization successful!", "green");
-
-      // kepware 상태 불러와서 mqtt 전송
-      await monitorTagData();
-
-    } catch (error) {
-      logToConsoleAndFile(`Unexpected error during initialization: ${error}`, "red");
-    }
-
-  })();
 }
+try {
+  if (process.env.SCHEDULER_SERVER_STATUS === 'true') {
+    makeSendServerStatusInterval({ second: Number(process.env.SERVER_STATUS_CHECK_TIME || 1) })
+  }
+  if (process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true') {
+    makeinitDailyWorkOrderstatsScheduleSet({ hour: 0, minute: 0, second: 0 })
+  }
 
-if (process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true') {
-  makeinitDailyWorkOrderstatsScheduleSet({ hour: 0, minute: 0, second: 0 })
+} catch (err) {
+  const actionLog: ActionLog = {
+    filename: 'index.ts-scheduleUtil',
+    params: null,
+    result: null,
+    error: err,
+  };
+  logging.ACTION_ERROR({ ...actionLog, params: null, error: err });
 }
-
 
 // 종료 핸들러
 // 프로그램이 종료되기전에 실행될 코드

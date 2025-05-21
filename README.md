@@ -109,49 +109,63 @@ ALTER TABLE public.work_orders ADD to_end_date timestamptz NULL;
 - 모비스 로그 조회 api 추가 (라우터 `itemLog`, `itemLogService`)
 
 ## v0.0.8-b
+
 - 모비스 로그 층 정보 입력을 위한 컬럼 추가
+
 ```sql
 ALTER TABLE public.item_logs ADD floor varchar(10) NULL;
 ```
 
 ## v0.0.9
+
 - 버전승인: `v0.0.8-b`
 - 설비 테이블 층 컬럼 필수값 적용
+
 ```sql
 ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 ```
+
 - 설비 등록할 때 ACS 층별 분기 적용
   - process.env.FIRST_ACS_RESTAPI_HOST
   - process.env.SECOND_ACS_RESTAPI_HOST
 
 ## v0.0.9-a
+
 - 버전승인: `v0.0.9`
 
 ## v0.0.9-b
+
 - 버전승인: `v0.0.9-a`
 - `imcs/mcs/recallworkorder` mqttUtil 추가
 
 ## v0.0.9-c
+
 - `acs/recallworkorder` 변경
 
 ## v0.1.0
+
 - `WROK_STATUS`작업 상태 로깅 추가
 
 ## v0.1.1
+
 - `workOrderService.stateCheckAndEdit` code 값 예외처리
 
 # MBS 서버 구분
 
 ## v0.2.0
+
 - MBS용 KEPWARE 초기세팅
 - 설비 데이터 실시간으로 불러와서 mqtt 발송하는 기능 추가(`kepServerUtil.readTagValues`)
 
 ## v0.2.0-ljk
+
 - HEARTBEAT 로직 추가
+
   - 주기적으로 서버 가동 상태를 확인하는 HEARTBEAT 로직 추가
   - WMS Heartbeat 정보 수집 로직 추가 <span style="color:red"> - 동기화 로직은 추후 개발 예정 </span>
 
 - 기본 구조 추가
+
   - MBS MQTT 관련하여 구독, 메세지 수신, 메시지 송신 로직 추가
 
 - ACK 기능 추가
@@ -159,6 +173,7 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
   - 각 메세지에 대한 세부 내용은 개발 중에 추가 예정
 
 ## v0.2.0-ssb
+
 - KEPWARE - MCS 통신 로직 수정
 - KEPWARE TAG정보 읽기 스크립트 추가
 - KEPWARE 구독할 태그 선택 스크립트 추가
@@ -167,5 +182,69 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 - KEPWARE heartbeat 함수 추가가
 
 ## v0.2.1
+
 - 버전승인: `v0.2.0-ssb`
 - 버전승인: `v0.2.0-ljk`
+
+## v0.2.1-ljk
+
+- trackingLog 테이블 추가
+
+  - 기존에 timescale에서 작성하려는 의도와 다르게 빈번한 업데이트 때문에 RDB 에서 생성으로 변경
+  - CRUD 기능 생성
+
+- itemLog 테이블 컬럼 추가
+  - itemLog 테이블이 trackingLog 하위 개념으로 포함되기 때문에 itemLog에 trackingLogId 컬럼 추가
+
+## v0.2.1-cyk
+
+- src\index.ts 구조 변경
+- acs에서 설비 등록/수정 시 mcs 설비 데이터 연동
+- 설비, 작업지시 테이블에 mission order 인지 컬럼 추가
+
+```sql
+ALTER TABLE public.facilities ADD is_mission_order_capable bool NULL DEFAULT false;
+ALTER TABLE public.work_orders ADD is_mission_order bool NULL DEFAULT false;
+```
+
+- kepware `Call_Request` 값에 따른 처리 로직 적용
+  - mission 결정지 작업지시 생성 로직 적용
+
+```sql
+ALTER TABLE public.work_orders ADD mission_start_date timestamptz NULL;
+ALTER TABLE public.work_orders ADD mission_end_date timestamptz NULL;
+```
+
+- linked_eqp_ids 컬럼 추가
+  - 콜이 발생되되는 설비 기준에서 EQP-EQP 통신인 경우 연결될 설비 id 지정하는 컬럼
+
+```sql
+ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
+```
+
+## v0.2.2-ljk
+
+- 설비 입고, 창고 출고 로직 마무리
+
+  - TOPIC: PORT 관련 로직 추가
+  - CALLINFO 코드 오류 수정
+
+- Tracking Log
+
+  - 물류 로그 기본 로직 구현
+  - Tracking Log 테이블 수정
+
+- Item Log
+  - 하위 물류 로그 기본 로직 구현
+  - Tracking Log 테이블 수정
+
+## v0.2.1-ssb
+
+- CPU 사용량(%), RAM 사용량(%) 체크 후 MQTT 전송 로직 추가
+- 시스템관리 : 다국어처리 설정 타입 추가
+- PLC 값 변경 API 추가
+
+## v0.2.1-ksm
+
+- Settings 검색 조건 추가 (`settingDao.selectList`)
+  - type, system

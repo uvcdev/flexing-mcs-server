@@ -4,6 +4,12 @@ import { MqttTopics, sendMqtt } from './mqttUtil';
 import Facility from 'models/operation/facility';
 import Amr from 'models/common/amr';
 import { calculateDurationInSeconds } from './dateUtil';
+import { EqpCallStats } from "./callRegisterUtil";
+import { RedisKeys, useRedisUtil } from './redisUtil';
+import { service as workOrderService } from '../service/operation/workOrderService';
+import { logging } from './logging';
+import { TrackingLogRedisUpdateParams } from '../models/common/trackingLog';
+import { editTrackingLogRedis } from './process/trackingLog';
 export type WorkOrderStats = {
   id: number;
   code: string;
@@ -26,7 +32,91 @@ const dailyWorkOrderStats: DailyWorkOrderStats = {
   Amr: {},
 };
 
-export const useWorkOrderStatsUtil = () => {
+export type McsWorkOrderRequestType = {
+  TX_ID: string;
+  ZONE_ID: string;
+  TYPE: 'IN' | 'OUT' | 'MISSION' | 'DRYRUN'; // 반출 OUT, 반입 IN , 미션 MISSION
+  EQP_ID: string;
+  EQP_CALL_ID: string;
+  PORT_ID: string;
+  CALL_ID: string;
+  TAG_ID: string;
+  CALL_PRIORITY: string;
+  CALL_TYPE: string; // 배터리 타입 PLC 맵에서 콜타입 이라 명명
+  IS_MISSION_ORDER: string; // 작업 지시의 mission order 여부
+};
+
+export type McsPendingWorkOrderRequestType = {
+  callId: string;
+  fromFacilityName: string;
+  toFacilityName: string;
+  eqpName: string;
+  portName: string;
+  type: 'IN' | 'OUT' | 'MISSION' | 'DRYRUN';
+  typeofisMissionOrder: string;
+  callPriority: string;
+  callType: string;
+};
+
+export const useWorkOrderUtil = () => {
+  const redisUtil = useRedisUtil();
+  const createWorkOrder = async () => {
+    const workOrderList = await redisUtil.hgetAllObject<McsPendingWorkOrderRequestType>(RedisKeys.InfoPendingWorkOrderByCallId);
+    if (workOrderList) {
+      for (const workOrder of workOrderList) {
+        const params: McsWorkOrderRequestType =
+        {
+          TYPE: workOrder.type,
+          CALL_ID: workOrder.callId,
+          EQP_ID: workOrder.eqpName,
+          EQP_CALL_ID: parseInt(workOrder.callId.toString().slice(-4), 10).toString(), // 작업지시코드 뒤 4자리
+          PORT_ID: (workOrder.type === 'MISSION') || (workOrder.type === 'DRYRUN') ? '' : workOrder.portName,
+          CALL_PRIORITY: workOrder.callPriority,
+          CALL_TYPE: workOrder.callType,
+          IS_MISSION_ORDER: workOrder.type === 'MISSION' ? 'true' : 'false',
+          TAG_ID: "",
+          TX_ID: "",
+          ZONE_ID: process.env.FLOOR || '1F'
+        }
+        const message = JSON.stringify(params)
+        const messageJson = JSON.parse(message)
+        const messageTopic = 'acs/workorder'
+
+        await workOrderService.regWorkOrder(messageJson);
+
+        const trackingLogSubject = 'WORK_ORDER_CREATED'
+        const trackingLogDetail = 'WORK_ORDER_CREATED'
+        const trackingLogState = 'PROCESSING'
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: workOrder.callId,
+          subject: trackingLogSubject,
+          detail: trackingLogDetail,
+          state: trackingLogState,
+          startFacility: workOrder.fromFacilityName,
+          destFacility: workOrder.toFacilityName,
+          assignedRobot: null,
+          value: null,
+          description: `CALL ID ${workOrder.callId} WorkOrder Created`,
+          plcName: params.EQP_ID
+        }
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', 'MCS')
+
+        try {
+          sendMqtt(messageTopic, message);
+        } catch (err) {
+          logging.MQTT_ERROR({
+            title: 'mqtt message error',
+            topic: messageTopic,
+            message: messageJson,
+            error: err,
+          });
+        }
+
+        console.log("🚀 ~ createWorkOrder ~ params.CALL_ID:", params.CALL_ID)
+        redisUtil.hdel(RedisKeys.InfoPendingWorkOrderByCallId, params.CALL_ID);
+      }
+    }
+  }
   const initializeWorkOrderStats = (id: number, code: string, system: string, name: string): WorkOrderStats => ({
     id,
     code,
@@ -38,31 +128,31 @@ export const useWorkOrderStatsUtil = () => {
     totalDuration: 0,
   });
   const getStats = () => dailyWorkOrderStats;
-  const setStats = (target: 'Facility' | 'Amr', id: number, code: string, system: string, name: string, params: {created?: number, completed?:number, duration?: number,}) => {
-    try{
-      if(!dailyWorkOrderStats[target][id]){
+  const setStats = (target: 'Facility' | 'Amr', id: number, code: string, system: string, name: string, params: { created?: number, completed?: number, duration?: number, }) => {
+    try {
+      if (!dailyWorkOrderStats[target][id]) {
         dailyWorkOrderStats[target][id] = initializeWorkOrderStats(id, code, system, name);
-  
+
       }
       const targetObject = dailyWorkOrderStats[target][id]
-      if(params.created) targetObject.totalCreated += params.created
-      if(params.completed) targetObject.totalCompleted += params.completed
-      if(params.duration) {
+      if (params.created) targetObject.totalCreated += params.created
+      if (params.completed) targetObject.totalCompleted += params.completed
+      if (params.duration) {
         targetObject.totalDuration += params.duration
         targetObject.averageDuration = targetObject.totalDuration / targetObject.totalCompleted
       }
       sendStats()
-    }catch(error){
+    } catch (error) {
 
     }
- 
+
   }
   const setInitStats = (workOrder: WorkOrderAttributesDeep) => {
-    try{
-      if(workOrder.FromFacility){
-        if(dailyWorkOrderStats.Facility[workOrder.FromFacility.id]){
+    try {
+      if (workOrder.FromFacility) {
+        if (dailyWorkOrderStats.Facility[workOrder.FromFacility.id]) {
           dailyWorkOrderStats.Facility[workOrder.FromFacility.id].totalCreated += 1
-          if(workOrder.fromStartDate && workOrder.fromEndDate){
+          if (workOrder.fromStartDate && workOrder.fromEndDate) {
             const durationSec = calculateDurationInSeconds(workOrder.fromStartDate, workOrder.fromEndDate)
             dailyWorkOrderStats.Facility[workOrder.FromFacility.id].totalCompleted += 1
             dailyWorkOrderStats.Facility[workOrder.FromFacility.id].totalDuration += durationSec
@@ -78,10 +168,10 @@ export const useWorkOrderStatsUtil = () => {
             totalCreated: 0,
             totalCompleted: 0,
             averageDuration: 0,
-            totalDuration:0.
+            totalDuration: 0.
           } as WorkOrderStats
           dailyWorkOrderStats.Facility[workOrder.FromFacility.id].totalCreated += 1
-          if(workOrder.fromStartDate && workOrder.fromEndDate){
+          if (workOrder.fromStartDate && workOrder.fromEndDate) {
             const durationSec = calculateDurationInSeconds(workOrder.fromStartDate, workOrder.fromEndDate)
             dailyWorkOrderStats.Facility[workOrder.FromFacility.id].totalCompleted += 1
             dailyWorkOrderStats.Facility[workOrder.FromFacility.id].totalDuration += durationSec
@@ -89,10 +179,10 @@ export const useWorkOrderStatsUtil = () => {
           }
         }
       }
-      if(workOrder.toStartDate){
-        if(dailyWorkOrderStats.Facility[workOrder.ToFacility.id]){
+      if (workOrder.toStartDate) {
+        if (dailyWorkOrderStats.Facility[workOrder.ToFacility.id]) {
           dailyWorkOrderStats.Facility[workOrder.ToFacility.id].totalCreated += 1
-          if(workOrder.toStartDate && workOrder.toEndDate){
+          if (workOrder.toStartDate && workOrder.toEndDate) {
             const durationSec = calculateDurationInSeconds(workOrder.toStartDate, workOrder.toEndDate)
             dailyWorkOrderStats.Facility[workOrder.ToFacility.id].totalCompleted += 1
             dailyWorkOrderStats.Facility[workOrder.ToFacility.id].totalDuration += durationSec
@@ -108,10 +198,10 @@ export const useWorkOrderStatsUtil = () => {
             totalCreated: 0,
             totalCompleted: 0,
             averageDuration: 0,
-            totalDuration:0.
+            totalDuration: 0.
           } as WorkOrderStats
           dailyWorkOrderStats.Facility[workOrder.ToFacility.id].totalCreated += 1
-          if(workOrder.toStartDate && workOrder.toEndDate){
+          if (workOrder.toStartDate && workOrder.toEndDate) {
             const durationSec = calculateDurationInSeconds(workOrder.toStartDate, workOrder.toEndDate)
             dailyWorkOrderStats.Facility[workOrder.ToFacility.id].totalCompleted += 1
             dailyWorkOrderStats.Facility[workOrder.ToFacility.id].totalDuration += durationSec
@@ -119,10 +209,10 @@ export const useWorkOrderStatsUtil = () => {
           }
         }
       }
-      if(workOrder.Amr){
-        if(dailyWorkOrderStats.Amr[workOrder.Amr.id]){
+      if (workOrder.Amr) {
+        if (dailyWorkOrderStats.Amr[workOrder.Amr.id]) {
           dailyWorkOrderStats.Amr[workOrder.Amr.id].totalCreated += 1
-          if(workOrder.fromStartDate && workOrder.toEndDate){
+          if (workOrder.fromStartDate && workOrder.toEndDate) {
             const durationSec = calculateDurationInSeconds(workOrder.fromStartDate, workOrder.toEndDate)
             dailyWorkOrderStats.Amr[workOrder.Amr.id].totalCompleted += 1
             dailyWorkOrderStats.Amr[workOrder.Amr.id].totalDuration += durationSec
@@ -136,10 +226,10 @@ export const useWorkOrderStatsUtil = () => {
             totalCreated: 0,
             totalCompleted: 0,
             averageDuration: 0,
-            totalDuration:0.
+            totalDuration: 0.
           } as WorkOrderStats
           dailyWorkOrderStats.Amr[workOrder.Amr.id].totalCreated += 1
-          if(workOrder.fromStartDate && workOrder.toEndDate){
+          if (workOrder.fromStartDate && workOrder.toEndDate) {
             const durationSec = calculateDurationInSeconds(workOrder.fromStartDate, workOrder.toEndDate)
             dailyWorkOrderStats.Amr[workOrder.Amr.id].totalCompleted += 1
             dailyWorkOrderStats.Amr[workOrder.Amr.id].totalDuration += durationSec
@@ -147,10 +237,10 @@ export const useWorkOrderStatsUtil = () => {
           }
         }
       }
-    }catch(error){
+    } catch (error) {
 
     }
-    
+
   }
   const initStats = async () => {
     dailyWorkOrderStats.Facility = {};
@@ -161,5 +251,5 @@ export const useWorkOrderStatsUtil = () => {
     sendMqtt(MqttTopics.WorkOrderStats, JSON.stringify(getStats()))
   };
 
-  return { getStats, setStats, setInitStats, initStats, sendStats };
+  return { createWorkOrder, getStats, setStats, setInitStats, initStats, sendStats };
 };

@@ -1,3 +1,4 @@
+import { StatusCode } from 'node-opcua-client';
 import { literal as sequelizeLiteral, OrderItem } from 'sequelize';
 
 /* 응답 타입 설정 */
@@ -238,6 +239,7 @@ export enum responseType {
   FREESTYLE,
   UPLOAD,
   DOWNLOAD,
+  WRITE,
 }
 
 // 성공 응답(responseJson) 생성하기
@@ -307,6 +309,12 @@ export function makeResponseSuccess(result: unknown, type: responseType): Respon
   } else if (type === responseType.DOWNLOAD) {
     const resultData = result as DownloadResult;
     resJson.message = 'Downloaded File successfully';
+    resJson.data = resultData;
+
+    return resJson;
+  } else if (type === responseType.WRITE) {
+    const resultData = result as StatusCode[];
+    resJson.message = 'Written data successfully';
     resJson.data = resultData;
 
     return resJson;

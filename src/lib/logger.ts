@@ -33,7 +33,7 @@ const logger = createLogger({
       // 로그파일 출력 세팅
       filename: `${logDir}/%DATE%.log`,
       datePattern: 'YYYY-MM-DD',
-      format: format.combine(format.printf((info: TransformableInfo) => `${info.message}`)),
+      // format: format.combine(format.printf((info: TransformableInfo) => `${info.message}`)),
     }),
   ],
 });
