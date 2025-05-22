@@ -44,7 +44,7 @@ export const useEqpCheckUtil = () => {
           if (targetTagInfo.value == true) {
             await useCallRegisterUtil().callRegister(targetTagInfo)
           } else {
-            await useCallRemoveUtil().callRemove(targetTagInfo)
+            // await useCallRemoveUtil().callRemove(targetTagInfo)
           }
           break;
 
