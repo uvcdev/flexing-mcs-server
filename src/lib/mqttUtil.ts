@@ -119,6 +119,7 @@ export enum MqttTopics {
   KepwareStatus = 'kepware_status',
   ServerStatus = 'server/status',
   ImcsEqpDockingRequest = 'imcs/docking/eqp/request',
+  ImcsEqpDockingOutRequest = 'imcs/docking/eqp/out_request',
   ImcsWcsDockingRequest = 'imcs/docking/wcs/request',
 }
 
@@ -469,6 +470,25 @@ export const receiveMqtt = (): void => {
                 console.log('logging.ITEM_LOG', error);
               }
             }
+
+            if (topicSplit.length === 4 && topicSplit[1] === 'docking' && topicSplit[3] === 'out_request') {
+              const targetSystem = topicSplit[2];
+
+              const messageJson = JSON.parse(message);
+              logging.MQTT_LOG({
+                title: 'acs docking out_request',
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                void itemLogDao.insert(messageJson);
+                useDockingUtil().sendAcsDockingOutRequest(JSON.parse(message));
+              } catch (error) {
+                console.log('logging.ITEM_LOG', error);
+              }
+            }
+
             if (topicSplit.length === 4 && topicSplit[1] === 'docking' && topicSplit[3] === 'complete') {
               const targetSystem = topicSplit[2];
 
