@@ -140,7 +140,8 @@ export const useCallRegisterUtil = () => {
     const callInfoList: EqpCallStats[] = eqpWcsInfo.map((info) => ({
       EQP_CALL_ID: info.EQP_CALL_ID,
       CALL_ID: info.CALL_ID,
-      Call_Type: callType01Value,
+      // Call_Type: callType01Value,
+      Call_Type: 'NS',
       Caller: info.EQP_ID,
       Call_Quantity: 1,
       Call_Priority: callPriorityValue === 'true' ? '99' : '1',
@@ -338,7 +339,7 @@ export const useCallRegisterUtil = () => {
                 fromFacilityName: facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial! : callInfo.Caller,
                 toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial
               }
-
+              console.log('plcInfoToJson123', plcInfoToJson.Call_Request)
               if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
                 // 작업지시 예정 레디스 저장
                 redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callInfo.CALL_ID, JSON.stringify(infoPendingWorkOrder))

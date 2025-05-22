@@ -44,8 +44,7 @@ export const useEqpCheckUtil = () => {
           if (targetTagInfo.value == true) {
             await useCallRegisterUtil().callRegister(targetTagInfo)
           } else {
-            // 콜 내려갈 때 취소 응답 확인해서 내려줌
-            await useCallRemoveUtil().callRemove(targetTagInfo)
+            // await useCallRemoveUtil().callRemove(targetTagInfo)
           }
           break;
 
