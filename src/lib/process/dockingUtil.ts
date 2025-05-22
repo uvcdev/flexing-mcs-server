@@ -503,14 +503,14 @@ export const useDockingUtil = () => {
     // 콜타입 입력
     const callType = parseAsciiToWord(params.CALL_TYPE);
     console.log("🚀 ~ sendAcsDockingRequest ~ callType:", callType)
-    if (!callType) {
+    if (callType) {
       const callTypeString = callType.toString();
       const callTypeResponseTag = await useKepServerUtil().makeWriteDatas({
         targetFacility: params.SERIAL_ID,
         tagInfo: [
           {
             tagName: 'Call_Type_Response_01',
-            value: callTypeString
+            value: callType
           }
         ]
       });
