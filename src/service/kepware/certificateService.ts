@@ -20,7 +20,8 @@ export async function createClientCertificate() {
   if (!fs.existsSync(clientCertificateFile)) {
     console.log("Generating client certificate...");
     await clientCertificateManager.createSelfSignedCertificate({
-      applicationUri: "urn:DESKTOP-1NG4ONT:NodeOPCUA-Client",
+      // applicationUri: "urn:DESKTOP-1NG4ONT:NodeOPCUA-Client",
+      applicationUri: "",
       dns: [],
       validity: 365, // 인증서 유효기간 (365일)
       subject: "/CN=MyNodeOPCUAClient",

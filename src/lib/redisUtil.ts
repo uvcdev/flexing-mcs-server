@@ -66,6 +66,7 @@ export enum RedisKeys {
   DockingCompleteByPortId = 'docking_complete_by_port_id',
   DockingDetachByPortId = 'docking_detach_by_port_id',
   DockingRequestBySerialId = 'docking_request_by_serial_id',                // acs로부터 온 도킹요청정보와 imcs가 acs로 보내는 도킹요청응답정보 
+  DockingOutRequestBySerialId = 'docking_out_request_by_serial_id',         // acs로부터 온 도킹요청정보와 imcs가 acs로 보내는 도킹아웃요청응답정보 
   DockingCompleteBySerialId = 'docking_complete_by_serial_id',              // acs로부터 온 도킹완료정보와 imcs가 acs로 보내는 도킹완료응답정보 
   DockingDetachBySerialId = 'docking_detach_by_serial_id',                // acs로부터 온 도킹해제정보와 imcs가 acs로 보내는 도킹해제응답정보 
   InfoPlcBySerial = 'info_plc_by_serial',
@@ -80,6 +81,7 @@ export enum RedisSettingKeys {
   // NightlyStartEndSchedule = `nightlyStartEndSchedule`, // 야간 시업/종업
   WmsCommandSetting = 'wmsCommandSetting', // WMS 통신 관련 설정
   LanguageSetting = 'languageSetting', // 언어 설정
+  DryrunSetting = 'dryrunSetting',         // 드라이런 모드 설정
 }
 
 // export type AmrCurrentChargerTypes = {

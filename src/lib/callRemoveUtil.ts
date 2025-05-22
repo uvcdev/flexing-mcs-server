@@ -123,12 +123,10 @@ export const useCallRemoveUtil = () => {
             });
           }
         }
+      } catch (error) {
+        console.error("Error in callRemove:", error);
       }
+    };
 
-    } catch (error) {
-      console.error("Error in callRemove:", error);
-    }
+    return { callRemove };
   };
-
-  return { callRemove };
-};

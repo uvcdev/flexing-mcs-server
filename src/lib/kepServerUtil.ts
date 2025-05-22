@@ -153,7 +153,7 @@ export const useKepServerUtil = () => {
         await writeTagValue(writeDatas);
       }
     } catch (error) {
-      logToConsoleAndFile(`Error making write datas from kepServerUtil.makeWriteDatas: ${error}`, "red");
+      logToConsoleAndFile(`Error making write datas from kepServerUtil.writeSimpleTagValue: ${error}`, "red");
       throw error;
     }
   };
@@ -271,7 +271,8 @@ export const useKepServerUtil = () => {
           dataValues.forEach((dataValue, index) => {
             const inputType = tagValue[index].inputType;
             if (inputType === 'ASCII') {
-              tagValue[index].value = parseWordToAscii(dataValue.value.value);
+              // tagValue[index].value = parseWordToAscii(dataValue.value.value);
+              tagValue[index].value = 12532
             } else {
               tagValue[index].value = dataValue.value.value;
             }

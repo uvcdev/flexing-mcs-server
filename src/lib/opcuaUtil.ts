@@ -94,7 +94,7 @@ export const opcuaUtil = {
     }
 
     try {
-      // session 생성			
+      // session 생성
       this.session = await this.client.createSession(
         userIdentity.userName !== "" ? userIdentity : { type: UserTokenType.Anonymous }
       );
