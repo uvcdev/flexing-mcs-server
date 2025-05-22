@@ -50,7 +50,8 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
   const state = missionStateBody.state
   const callId = (missionStateBody.mission).split('$')[0]
   const assignAmrName = missionStateBody.assign.robot || ''
-  let assignState = missionStateBody.assign.task as TrackingLogState || ''
+  // let assignState = missionStateBody.assign.task as TrackingLogState || ''
+  let assignState = ''
 
   if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED') {
     assignState = "COMPLETED"
