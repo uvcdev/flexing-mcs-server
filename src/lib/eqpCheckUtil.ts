@@ -67,6 +67,12 @@ export const useEqpCheckUtil = () => {
           console.log(`Action Method Tag: Dock_EQ_Status`);
           await useDockingUtil().dockingComplete(targetTagInfo);
           break;
+
+        case 'Dock_Out_Request':
+          console.log(`Action Method Tag: Dock_Out_Request`);
+          await useDockingUtil().dockingOutStart(targetTagInfo);
+          break;
+
       }
 
     } catch (error) {
