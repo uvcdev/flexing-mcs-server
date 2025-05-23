@@ -53,7 +53,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
   // let assignState = missionStateBody.assign.task as TrackingLogState || ''
   let assignState = 'PROCESSING' as TrackingLogState
 
-  if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED') {
+  if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED' || state === 'MISSION_COMPLETED') {
     assignState = "COMPLETED"
   }
   // 물류 로그 저장

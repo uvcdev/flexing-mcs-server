@@ -5,7 +5,9 @@ import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { HeartbeatInfo, heartbeatSystemList, KepwareHeartbeatInfo } from "../redis/init";
 import { logging } from "../logging";
 import { useKepServerUtil } from "../kepServerUtil";
-import { ServerState, ServerStatusDataType } from "node-opcua-types";
+import { ServerState } from "node-opcua-client";
+import { ServerStatusDataType } from "node-opcua";
+// import { ServerState, ServerStatusDataType } from "node-opcua-types";
 // enum ServerState {
 //   Running = 0,
 //   Failed = 1,
@@ -43,7 +45,6 @@ const sendMcsHeartbeat = () => {
 
 // kepware heartbeat 업데이트
 const sendKepwareHeartbeat = async () => {
-
   const kepwareHeartbeat = await useKepServerUtil().heartbeat();
   if (kepwareHeartbeat) {
     const kepwareHeartbeatValue: ServerStatusDataType = kepwareHeartbeat.value.value;
@@ -61,7 +62,6 @@ const sendKepwareHeartbeat = async () => {
         startTime: kepwareHeartbeatValue.startTime?.toString() || '',
         shutdownReason: kepwareHeartbeatValue.shutdownReason?.toString() || '',
       }
-
 
       redisUtil.hset(RedisKeys.Heartbeat, 'KEPWARE', JSON.stringify(heartbeatData))
 

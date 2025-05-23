@@ -31,6 +31,7 @@ export interface AcsDockingRequestType {
   REQUEST_COUNT: number;
   SERIAL_ID: string;
   CALL_TYPE: string;
+  CALL_FACILITY: string;
 };
 
 export interface AcsDockingRequestResponse extends AcsDockingRequestType {
@@ -143,7 +144,7 @@ export const useDockingUtil = () => {
 
       const trackingLogSubject = infoTrackingLogByCallId.startFacility === dockingRequestInfo.SERIAL_ID ? 'FROM_DOCKING_PERMIT' : 'TO_DOCKING_PERMIT';
       const trackingLogDetail = infoTrackingLogByCallId.startFacility === dockingRequestInfo.SERIAL_ID ? 'FROM_DOCKING_PERMIT' : 'TO_DOCKING_PERMIT';
-      const trackingLogState = 'COMPLETED';
+      const trackingLogState = 'PROCESSING';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: dockingRequestInfo.EQP_CALL_ID,
         subject: trackingLogSubject,
@@ -238,7 +239,7 @@ export const useDockingUtil = () => {
       
             const trackingLogSubject = infoTrackingLogByCallId.startFacility === dockingRequestInfo.SERIAL_ID ? 'FROM_DOCKING_PERMIT' : 'TO_DOCKING_PERMIT';
             const trackingLogDetail = infoTrackingLogByCallId.startFacility === dockingRequestInfo.SERIAL_ID ? 'FROM_DOCKING_PERMIT' : 'TO_DOCKING_PERMIT';
-            const trackingLogState = 'COMPLETED';
+            const trackingLogState = 'PROCESSING';
             const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
               callId: dockingRequestInfo.EQP_CALL_ID,
               subject: trackingLogSubject,
@@ -646,7 +647,7 @@ export const useDockingUtil = () => {
 
         const trackingLogSubject = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_REQ' : 'TO_DOCKING_REQ';
         const trackingLogDetail = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_REQ' : 'TO_DOCKING_REQ';
-        const trackingLogState = 'COMPLETED';
+        const trackingLogState = 'PROCESSING';
         const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
           callId: params.EQP_CALL_ID,
           subject: trackingLogSubject,
@@ -800,7 +801,7 @@ export const useDockingUtil = () => {
 
     const trackingLogSubject = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
     const trackingLogDetail = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
-    const trackingLogState = 'COMPLETED';
+    const trackingLogState = 'PROCESSING';
     const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
       callId: params.EQP_CALL_ID,
       subject: trackingLogSubject,
