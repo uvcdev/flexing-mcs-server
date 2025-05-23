@@ -91,7 +91,6 @@ export const useCallRemoveUtil = () => {
           tagName: 'Call_Cancel_Response',
           value: false,
         });
-
         // acs 작업지시 취소 요청
         const infoTrackingLogByFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByFacilityCode, targetCode);
         const params: CancelWorkOrderRequestType =

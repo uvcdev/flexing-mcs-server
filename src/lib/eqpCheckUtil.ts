@@ -44,8 +44,7 @@ export const useEqpCheckUtil = () => {
           if (targetTagInfo.value == true) {
             await useCallRegisterUtil().callRegister(targetTagInfo)
           } else {
-            // 콜 내려갈 때 취소 응답 확인해서 내려줌
-            await useCallRemoveUtil().callRemove(targetTagInfo)
+            // await useCallRemoveUtil().callRemove(targetTagInfo)
           }
           break;
 
@@ -68,6 +67,12 @@ export const useEqpCheckUtil = () => {
           console.log(`Action Method Tag: Dock_EQ_Status`);
           await useDockingUtil().dockingComplete(targetTagInfo);
           break;
+
+        case 'Dock_Out_Permit':
+          console.log(`Action Method Tag: Dock_Out_Permit`);
+          await useDockingUtil().dockingOutStart(targetTagInfo);
+          break;
+
       }
 
     } catch (error) {
