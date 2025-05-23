@@ -69,8 +69,8 @@ export const useEqpCheckUtil = () => {
           await useDockingUtil().dockingComplete(targetTagInfo);
           break;
 
-        case 'Dock_Out_Request':
-          console.log(`Action Method Tag: Dock_Out_Request`);
+        case 'Dock_Out_Permit':
+          console.log(`Action Method Tag: Dock_Out_Permit`);
           await useDockingUtil().dockingOutStart(targetTagInfo);
           break;
 
