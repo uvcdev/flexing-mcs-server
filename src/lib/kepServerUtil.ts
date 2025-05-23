@@ -94,6 +94,23 @@ export const parseWordToAscii = (value: number): string => {
   const char2 = String.fromCharCode(highByte);
   return char1 + char2;
 }
+
+// call_type 함축축 함수
+export const makeCallType = (value: string): string => {
+  // if (value < 0 || value > 0xFFFF) {
+  //   throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
+  // }
+
+  let callType = '';
+
+  for (let i = 1; i <= 10; i++) {
+    const tag = opcuaUtil.tagMap.get(`${value}.Call_Type_0${i}`);
+    callType += tag;
+  }
+
+  return callType.trim()
+}
+
 const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
 
 export const useKepServerUtil = () => {

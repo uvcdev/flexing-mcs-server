@@ -2,7 +2,7 @@
 import { AttributeIds } from "node-opcua-client";
 import { PendingWorkOrderAttributes } from '../models/operation/workOrder';
 import { FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
-import { TagValue, useKepServerUtil } from "./kepServerUtil";
+import { makeCallType, TagValue, useKepServerUtil } from "./kepServerUtil";
 import { logging } from './logging';
 import opcuaUtil from "./opcuaUtil";
 import { EQP_WCS } from "./eqpCheckUtil";
@@ -41,8 +41,9 @@ export const useCallRegisterUtil = () => {
     const targetCode = targetTagInfo.EQ_CODE;
     // 필요한 태그 값들 가져오기    
     const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
-    const callType01 = opcuaUtil.tagMap.get(`${targetCode}.Call_Type_01`);
     const callPriority = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`);
+    const callType = makeCallType(targetCode)
+    console.log("🚀 ~ callRegister ~ callType:", callType)
     // const EQCode01 = opcuaUtil.tagMap.get(`${targetCode}.EQ_Code_01`);
     // const EQCode02 = opcuaUtil.tagMap.get(`${targetCode}.EQ_Code_02`);
     // TODO: 멀티콜 로직 추가 필요
@@ -54,7 +55,7 @@ export const useCallRegisterUtil = () => {
       // EQCode01?.NODE_ID,
       // EQCode02?.NODE_ID,
       callCount?.NODE_ID,
-      callType01?.NODE_ID,
+      // callType01?.NODE_ID,
       callPriority?.NODE_ID,
       // CallResponseCount?.NODE_ID,
       // callRequestMulti1?.NODE_ID,
@@ -68,7 +69,7 @@ export const useCallRegisterUtil = () => {
       // EQCode01?.TAG_NAME,
       // EQCode02?.TAG_NAME,
       callCount?.TAG_NAME,
-      callType01?.TAG_NAME,
+      // callType01?.TAG_NAME,
       callPriority?.TAG_NAME,
       // CallResponseCount?.TAG_NAME,
       // callRequestMulti1?.TAG_NAME,
@@ -82,7 +83,7 @@ export const useCallRegisterUtil = () => {
     }
 
     const callCountValue = callCount?.value.toString() || "0";
-    const callType01Value = callType01?.value.toString() || "0";
+    // const callType01Value = callType01?.value.toString() || "0";
     const callPriorityValue = callPriority?.value.toString() || "0";
     const callCountPrevValue = callCount?.prevValue.toString() || "0";
     // const callRequestMulti1Value = callRequestMulti1?.value.toString() || "0";
@@ -90,22 +91,22 @@ export const useCallRegisterUtil = () => {
 
 
     // 유효성 검사
-    if (callType01Value === "0" || callCountValue === "0") {
-      // console.log(`callTypeValue가 0이거나 callCountValue가 0
-      //             callType: ${callType01Value}, 
-      //             callCount: ${callCountValue}
-      //             `);
+    // if (callType01Value === "0" || callCountValue === "0") {
+    //   // console.log(`callTypeValue가 0이거나 callCountValue가 0
+    //   //             callType: ${callType01Value}, 
+    //   //             callCount: ${callCountValue}
+    //   //             `);
 
-      // logging.SYSTEM_LOG({
-      //   title: "얘네가 다 0이 아니어야 되는데 0이 들어옴.",
-      //   message: `callType: ${callType01Value}, callCount: ${callCountValue}
-      //             ` });
+    //   // logging.SYSTEM_LOG({
+    //   //   title: "얘네가 다 0이 아니어야 되는데 0이 들어옴.",
+    //   //   message: `callType: ${callType01Value}, callCount: ${callCountValue}
+    //   //             ` });
 
-      // throw new Error(`callTypeValue가 0이거나 callCountValue가 0.
-      //             callType: ${callType01Value}, 
-      //             callCount: ${callCountValue}
-      //             `);
-    }
+    //   // throw new Error(`callTypeValue가 0이거나 callCountValue가 0.
+    //   //             callType: ${callType01Value}, 
+    //   //             callCount: ${callCountValue}
+    //   //             `);
+    // }
 
     // 우선순위 체크
     // callPriorityValue === "1"
@@ -141,7 +142,7 @@ export const useCallRegisterUtil = () => {
       EQP_CALL_ID: info.EQP_CALL_ID,
       CALL_ID: info.CALL_ID,
       // Call_Type: callType01Value,
-      Call_Type: 'NS',
+      Call_Type: callType,
       Caller: info.EQP_ID,
       Call_Quantity: 1,
       Call_Priority: callPriorityValue === 'true' ? '99' : '1',
@@ -416,7 +417,7 @@ export const useCallRegisterUtil = () => {
         // todo: 창고 to 창고 작업지시
       }
     }
-    console.log(`Call request sent to WCS. TYPE: ${callType01Value}, CallID: ${callCountValue}`);
+    console.log(`Call request sent to WCS. TYPE: ${callType}, CallID: ${callCountValue}`);
   };
   // callRequestMulti1Value와 callRequestMulti2Value의 값을 기반으로 multiValue 결정
   const determineMultiValue = (callRequestMulti1Value: string, callRequestMulti2Value: string): number => {

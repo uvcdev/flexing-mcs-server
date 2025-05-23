@@ -77,7 +77,7 @@ export const useDockingUtil = () => {
 
   // 설비에서 도킹허가 응답이 왔을 때 처리하는 함수
   const dockingStart = async (targetTagInfo: TagValue) => {
-    console.log("🚀 ~ dockingStart ~ targetTagInfo:", targetTagInfo)
+    // console.log("🚀 ~ dockingStart ~ targetTagInfo:", targetTagInfo)
     // 도킹 요청에 대한 허가 응답이 온 경우
     if (targetTagInfo.value !== true && !targetTagInfo.prevValue) {
       logging.KEPWARE_DEBUG({
@@ -171,17 +171,17 @@ export const useDockingUtil = () => {
 
   // 설비에서 도킹아웃허가 응답이 왔을 때 처리하는 함수
   const dockingOutStart = async (targetTagInfo: TagValue) => {
-    console.log("🚀 ~ dockingOutStart ~ targetTagInfo:", targetTagInfo)
+    // console.log("🚀 ~ dockingOutStart ~ targetTagInfo:", targetTagInfo)
     // 도킹 요청에 대한 허가 응답이 온 경우
-    // if (targetTagInfo.value !== true && !targetTagInfo.prevValue) {
-    //   logging.KEPWARE_DEBUG({
-    //     action: 'TAG_READ',
-    //     tag: targetTagInfo.TAG_NAME,
-    //     value: JSON.parse(JSON.stringify(targetTagInfo)),
-    //     message: `Error reading value from kepServerUtil.readTagsValue`,
-    //   });
-    //   return;
-    // }
+    if (targetTagInfo.value !== true && !targetTagInfo.prevValue) {
+      logging.KEPWARE_DEBUG({
+        action: 'TAG_READ',
+        tag: targetTagInfo.TAG_NAME,
+        value: JSON.parse(JSON.stringify(targetTagInfo)),
+        message: `Error reading value from kepServerUtil.readTagsValue`,
+      });
+      return;
+    }
     // if (targetTagInfo.value === false && targetTagInfo.prevValue === true) {
     //   // 설비가 도킹허가 0으로 내림
     //   logToConsoleAndFile(`설비가 도킹허가 0으로 내림`, "green");
@@ -267,7 +267,7 @@ export const useDockingUtil = () => {
 
   // 설비에서 도킹불가 응답이 왔을 때 처리하는 함수
   const dockingFailed = async (targetTagInfo: TagValue) => {
-    console.log("🚀 ~ dockingFailed ~ targetTagInfo:", targetTagInfo)
+    // console.log("🚀 ~ dockingFailed ~ targetTagInfo:", targetTagInfo)
     if (targetTagInfo.value !== true && !targetTagInfo.prevValue) {
       logging.KEPWARE_DEBUG({
         action: 'TAG_READ',
@@ -381,7 +381,7 @@ export const useDockingUtil = () => {
 
   // 설비에서 도킹완료 응답이 왔을 때 처리하는 함수
   const dockingComplete = async (targetTagInfo: TagValue) => {
-    console.log("🚀 ~ dockingComplete ~ targetTagInfo:", targetTagInfo)
+    // console.log("🚀 ~ dockingComplete ~ targetTagInfo:", targetTagInfo)
     if (targetTagInfo.value !== true && !targetTagInfo.prevValue) {
       logging.KEPWARE_DEBUG({
         action: 'TAG_READ',
