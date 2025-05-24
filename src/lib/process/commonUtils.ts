@@ -24,18 +24,24 @@ export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDa
 
     const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilitySerial)
 
-    const facilityLinckedList = facilityInfo?.linkedEqpIds
+    const facilityLinckedList = facilityInfo?.linkedEqpIds || []
 
     // EQP에 생긴 미션오더
     if (facilityLinckedList && facilityLinckedList.length > 0) {
-      for (let i = 0, legnth = facilityLinckedList.length; i < length; i++) {
+      for (let i = 0, length = facilityLinckedList.length; i < length; i++) {
         // 모든 설비 데이터가 
       }
-      return 'EQP'
+      return {
+        state: 'EQP',
+        facilityInfo: facilityInfo
+      }
     }
     // WMS에 생긴 미션오더 
     else {
-      return 'WMS'
+      return {
+        state: 'WMS',
+        facilityInfo: null
+      }
     }
 
   } else {

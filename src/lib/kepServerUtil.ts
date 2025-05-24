@@ -82,7 +82,8 @@ export const parseAsciiToWord = (value: string): number => {
 // WORD 타입 태그에서 ASCII 값을 추출하는 함수
 export const parseWordToAscii = (value: number): string => {
   if (typeof value !== 'number' || value < 0 || value > 0xFFFF) {
-    throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
+    // throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
+    return '';
   }
 
   if (value === 0) return '';
@@ -94,6 +95,26 @@ export const parseWordToAscii = (value: number): string => {
   const char2 = String.fromCharCode(highByte);
   return char1 + char2;
 }
+
+// call_type 함축축 함수
+export const makeCallType = async (value: string): Promise<string> => {
+  // if (value < 0 || value > 0xFFFF) {
+  //   throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
+  // }
+
+  let callType = '';
+
+  for (let i = 1; i <= 10; i++) {
+    const tag = await opcuaUtil.tagMap.get(`${value}.Call_Type_0${i}`);
+    if (tag?.value) {
+      callType += tag?.value;
+    }
+  }
+  callType = callType.replace(/[\s]/g, '')
+
+  return callType
+}
+
 const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
 
 export const useKepServerUtil = () => {
@@ -271,8 +292,8 @@ export const useKepServerUtil = () => {
           dataValues.forEach((dataValue, index) => {
             const inputType = tagValue[index].inputType;
             if (inputType === 'ASCII') {
-              // tagValue[index].value = parseWordToAscii(dataValue.value.value);
-              tagValue[index].value = 12532
+              tagValue[index].value = parseWordToAscii(dataValue.value.value);
+              // tagValue[index].value = 12532
             } else {
               tagValue[index].value = dataValue.value.value;
             }

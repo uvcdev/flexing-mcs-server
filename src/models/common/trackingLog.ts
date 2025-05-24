@@ -106,7 +106,7 @@ TrackingLog.init(
       type: DataTypes.STRING(20),
     },
     callId: {
-      type: DataTypes.STRING(30),
+      type: DataTypes.STRING(50),
     },
     callType: {
       type: DataTypes.STRING(20),
@@ -133,7 +133,7 @@ TrackingLog.init(
       type: DataTypes.STRING(20),
     },
     assignedRobot: {
-      type: DataTypes.STRING(20),
+      type: DataTypes.STRING(50),
     },
     value: {
       type: DataTypes.STRING(255),

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { TrackingLogRedisAttributes } from "../models/common/trackingLog";
 import { CancelWorkOrderRequestType } from "./callCancelUtil";
-import { TagValue, useKepServerUtil } from "./kepServerUtil";
+import { makeCallType, TagValue, useKepServerUtil } from "./kepServerUtil";
 import { logging, makeLogFormat, RequestLog } from "./logging";
 import { sendMqtt } from "./mqttUtil";
 import opcuaUtil from "./opcuaUtil";
@@ -35,13 +35,14 @@ export const useCallRemoveUtil = () => {
 
       // 필요한 태그 값들 가져오기    
       const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
-      const callType01 = opcuaUtil.tagMap.get(`${targetCode}.Call_Type_01`);
+      // const callType01 = opcuaUtil.tagMap.get(`${targetCode}.Call_Type_01`);
+
+      const callType = await makeCallType(targetCode)
       const callPriority = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`);
       const callCancelResponse = opcuaUtil.tagMap.get(`${targetCode}.Call_Cancel_Response`);
 
       const needNodeIds = [
         callCount?.NODE_ID,
-        callType01?.NODE_ID,
         callPriority?.NODE_ID,
         callCancelResponse?.NODE_ID
       ].filter((nodeId): nodeId is string => nodeId !== undefined);
@@ -50,7 +51,6 @@ export const useCallRemoveUtil = () => {
 
       const needKeys = [
         callCount?.TAG_NAME,
-        callType01?.TAG_NAME,
         callPriority?.TAG_NAME,
         callCancelResponse?.TAG_NAME,
       ].filter((tagName): tagName is string => tagName !== undefined);
@@ -60,7 +60,7 @@ export const useCallRemoveUtil = () => {
       }
 
       const callCountValue = callCount?.value || 0;
-      const callType01Value = callType01?.value?.toString() || "0";
+      // const callTypeValue = callType
       const callPriorityValue = callPriority?.value || false;
       const callCountPrevValue = callCount?.prevValue?.toString() || "0";
       const callCancelResponseValue = callCancelResponse?.value || false;
@@ -91,7 +91,6 @@ export const useCallRemoveUtil = () => {
           tagName: 'Call_Cancel_Response',
           value: false,
         });
-
         // acs 작업지시 취소 요청
         const infoTrackingLogByFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByFacilityCode, targetCode);
         const params: CancelWorkOrderRequestType =
