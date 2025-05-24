@@ -843,23 +843,46 @@ export const useDockingUtil = () => {
     redisUtil.hset(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID, JSON.stringify(dockingResponse));
 
     // Dock_AMR_Status PLC 쓰기 
-    const dockAMRStatusTag = await useKepServerUtil().makeWriteDatas({
-      targetFacility: params.SERIAL_ID,
-      tagInfo: [
-        {
-          tagName: 'Dock_AMR_Status',
-          value: false
-        }
-      ]
+    // const dockAMRStatusTag = await useKepServerUtil().makeWriteDatas({
+    //   targetFacility: params.SERIAL_ID,
+    //   tagInfo: [
+    //     {
+    //       tagName: 'Dock_AMR_Status',
+    //       value: false
+    //     }
+    //   ]
+    // });
+    // await useKepServerUtil().writeTagsValue(dockAMRStatusTag);
+    await useKepServerUtil().writeSimpleTagValue({
+      targetFacility: params.SERIAL_ID || '',
+      tagName: 'Dock_AMR_Status',
+      value: false,
     });
-    await useKepServerUtil().writeTagsValue(dockAMRStatusTag);
-
     // 도킹 아웃 요청 켜 있으면 꺼주고 레디스 삭제
     const dockingOutRequestInfo = await redisUtil.hgetObject<AcsDockingRequestType>(RedisKeys.DockingOutRequestBySerialId, params.SERIAL_ID);
+    if (!dockingOutRequestInfo) {
+      logging.ACTION_ERROR({
+        filename: `src/lib/process/dockingUtil.ts`,
+        params: params,
+        result: 'No dockingOutRequestInfo record',
+        error: 'No dockingOutRequestInfo record',
+      });
+      return;
+    }
+
     const plcInfo = await redisUtil.hgetObject<FacilityAttributes>(
       RedisKeys.InfoPlcBySerial,
       params.SERIAL_ID
     );
+    if (!plcInfo) {
+      logging.ACTION_ERROR({
+        filename: `src/lib/process/dockingUtil.ts`,
+        params: params,
+        result: 'No plcInfo record',
+        error: 'No plcInfo record',
+      });
+      return;
+    }
     const plcInfoToJson = JSON.parse(JSON.stringify(plcInfo))
     if (dockingOutRequestInfo && plcInfoToJson.Dock_Out_Request === true) {
       await useKepServerUtil().writeSimpleTagValue({

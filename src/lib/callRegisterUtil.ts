@@ -42,8 +42,7 @@ export const useCallRegisterUtil = () => {
     // 필요한 태그 값들 가져오기    
     const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
     const callPriority = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`);
-    const callType = makeCallType(targetCode)
-    console.log("🚀 ~ callRegister ~ callType:", callType)
+    const callType = await makeCallType(targetCode)
     // const EQCode01 = opcuaUtil.tagMap.get(`${targetCode}.EQ_Code_01`);
     // const EQCode02 = opcuaUtil.tagMap.get(`${targetCode}.EQ_Code_02`);
     // TODO: 멀티콜 로직 추가 필요

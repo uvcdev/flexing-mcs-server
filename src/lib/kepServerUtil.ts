@@ -82,7 +82,8 @@ export const parseAsciiToWord = (value: string): number => {
 // WORD 타입 태그에서 ASCII 값을 추출하는 함수
 export const parseWordToAscii = (value: number): string => {
   if (typeof value !== 'number' || value < 0 || value > 0xFFFF) {
-    throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
+    // throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
+    return '';
   }
 
   if (value === 0) return '';
@@ -96,7 +97,7 @@ export const parseWordToAscii = (value: number): string => {
 }
 
 // call_type 함축축 함수
-export const makeCallType = (value: string): string => {
+export const makeCallType = async (value: string): Promise<string> => {
   // if (value < 0 || value > 0xFFFF) {
   //   throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
   // }
@@ -104,11 +105,14 @@ export const makeCallType = (value: string): string => {
   let callType = '';
 
   for (let i = 1; i <= 10; i++) {
-    const tag = opcuaUtil.tagMap.get(`${value}.Call_Type_0${i}`);
-    callType += tag;
+    const tag = await opcuaUtil.tagMap.get(`${value}.Call_Type_0${i}`);
+    if (tag?.value) {
+      callType += tag?.value;
+    }
   }
+  callType = callType.replace(/[\s]/g, '')
 
-  return callType.trim()
+  return callType
 }
 
 const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5

@@ -36,7 +36,6 @@ export const useEqpCheckUtil = () => {
   }
 
   const eqpTaskStatus = async (targetTagInfo: TagValue) => {
-    console.log("🚀 ~ eqpTaskStatus ~ targetTagInfo:", targetTagInfo)
     try {
       // TAG_NAME에 따라 다른 함수 실행
       switch (targetTagInfo.TAG_NAME) {
