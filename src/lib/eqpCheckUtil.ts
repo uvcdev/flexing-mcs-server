@@ -6,6 +6,7 @@ import { useCallRegisterUtil } from "./callRegisterUtil";
 import { useCallRemoveUtil } from "./callRemoveUtil";
 import { useDockingUtil } from "./process/dockingUtil";
 import { useCallCancelUtil } from "./callCancelUtil";
+import { useCallTypeUtil } from "./callTypeUtil";
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -15,26 +16,6 @@ export interface EQP_WCS {
 }
 
 export const useEqpCheckUtil = () => {
-  // const eqpTaskStatus = async (targetTagInfo: TagValue) => {
-
-  //   // // PLC 데이터 수집
-  //   // await doWork(targetTagInfo)
-
-  //   // // PLC 데이터 전송
-  //   // await doSend(targetTagInfo)
-
-  //   // PLC 수집 데이터 처리
-  //   // await doCheck(targetTagInfo)
-  // }
-
-  const doWork = async () => {
-    // console.log("🚀 ~ doWork ~ targetTagInfo:", targetTagInfo)
-  }
-
-  const doSend = async () => {
-    // console.log("🚀 ~ doSend ~ targetTagInfo:", targetTagInfo)
-  }
-
   const eqpTaskStatus = async (targetTagInfo: TagValue) => {
     try {
       // TAG_NAME에 따라 다른 함수 실행
@@ -44,7 +25,7 @@ export const useEqpCheckUtil = () => {
           if (targetTagInfo.value == true) {
             await useCallRegisterUtil().callRegister(targetTagInfo)
           } else {
-            // await useCallRemoveUtil().callRemove(targetTagInfo)
+            await useCallRemoveUtil().callRemove(targetTagInfo)
           }
           break;
 
@@ -71,6 +52,11 @@ export const useEqpCheckUtil = () => {
         case 'Dock_Out_Permit':
           console.log(`Action Method Tag: Dock_Out_Permit`);
           await useDockingUtil().dockingOutStart(targetTagInfo);
+          break;
+
+        case 'Call_Type_01':
+          console.log(`Action Method Tag: Call_Type_01`);
+          await useCallTypeUtil().callTypeResponse(targetTagInfo);
           break;
 
       }

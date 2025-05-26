@@ -105,9 +105,10 @@ export const makeCallType = async (value: string): Promise<string> => {
   let callType = '';
 
   for (let i = 1; i <= 10; i++) {
-    const tag = await opcuaUtil.tagMap.get(`${value}.Call_Type_0${i}`);
+    const suffix = i < 10 ? `0${i}` : `${i}`;
+    const tag = await opcuaUtil.tagMap.get(`${value}.Call_Type_${suffix}`);
     if (tag?.value) {
-      callType += tag?.value;
+      callType += tag.value;
     }
   }
   callType = callType.replace(/[\s]/g, '')

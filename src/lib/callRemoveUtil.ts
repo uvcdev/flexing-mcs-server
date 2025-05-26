@@ -59,29 +59,29 @@ export const useCallRemoveUtil = () => {
         kepServerUtil.updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
       }
 
-      const callCountValue = callCount?.value || 0;
+      // const callCountValue = callCount?.value || 0;
       // const callTypeValue = callType
-      const callPriorityValue = callPriority?.value || false;
-      const callCountPrevValue = callCount?.prevValue?.toString() || "0";
+      // const callPriorityValue = callPriority?.value || false;
+      // const callCountPrevValue = callCount?.prevValue?.toString() || "0";
       const callCancelResponseValue = callCancelResponse?.value || false;
 
-      if (callCountValue === 0 && callPriorityValue === false) {
-        await kepServerUtil.writeSimpleTagValue({
-          targetFacility: targetCode,
-          tagName: 'Call_Response',
-          value: false,
-        });
-        await kepServerUtil.writeSimpleTagValue({
-          targetFacility: targetCode,
-          tagName: 'Call_Robot_Assigned',
-          value: false,
-        });
-        await kepServerUtil.writeSimpleTagValue({
-          targetFacility: targetCode,
-          tagName: 'Call_Response_Count',
-          value: '0',
-        });
-      }
+      // if (callCountValue === 0 && callPriorityValue === false) {
+      await kepServerUtil.writeSimpleTagValue({
+        targetFacility: targetCode,
+        tagName: 'Call_Response',
+        value: false,
+      });
+      await kepServerUtil.writeSimpleTagValue({
+        targetFacility: targetCode,
+        tagName: 'Call_Robot_Assigned',
+        value: false,
+      });
+      await kepServerUtil.writeSimpleTagValue({
+        targetFacility: targetCode,
+        tagName: 'Call_Response_Count',
+        value: '0',
+      });
+      // }
 
       // 로봇 할당 되어 있는 경우 콜 취소 응답이 켜져 있는 상태에서
       // 콜이 내려간다면 콜 취소 응답 내리기
