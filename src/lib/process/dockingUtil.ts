@@ -786,35 +786,45 @@ export const useDockingUtil = () => {
     params.WORKER_ID = "vw_3";
 
     redisUtil.hset(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID, JSON.stringify(params));
+    const dockingRequestBySerialId = await redisUtil.hgetObject<AcsDockingRequestType>(RedisKeys.DockingRequestBySerialId, params.SERIAL_ID);
 
-    // TODO: [트래킹로그]도킹완료에 대한 트래킹로그 저장
-    const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, params.EQP_CALL_ID);
-    if (!infoTrackingLogByCallId) {
-      logging.ACTION_ERROR({
-        filename: `src/lib/process/dockingUtil.ts`,
-        params: params,
-        result: 'No infoTrackingLogByCallId record',
-        error: 'No infoTrackingLogByCallId record',
-      });
-      return;
-    }
 
-    const trackingLogSubject = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
-    const trackingLogDetail = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
-    const trackingLogState = 'PROCESSING';
-    const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-      callId: params.EQP_CALL_ID,
-      subject: trackingLogSubject,
-      detail: trackingLogDetail,
-      state: trackingLogState,
-      transferId: null,
-      startFacility: null,
-      destFacility: null,
-      assignedRobot: params.WORKER_ID,
-      value: params.SERIAL_ID,
-      description: `Call ID ${params.EQP_CALL_ID} received ${trackingLogSubject} from ACS(${params.SERIAL_ID}) `
+    switch (dockingRequestBySerialId?.EXC_CLS) {
+      case EXC_CLS.AUTO:
+        // TODO: [트래킹로그]도킹완료에 대한 트래킹로그 저장
+        const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, params.EQP_CALL_ID);
+        if (!infoTrackingLogByCallId) {
+          logging.ACTION_ERROR({
+            filename: `src/lib/process/dockingUtil.ts`,
+            params: params,
+            result: 'No infoTrackingLogByCallId record',
+            error: 'No infoTrackingLogByCallId record',
+          });
+          return;
+        }
+
+        const trackingLogSubject = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
+        const trackingLogDetail = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
+        const trackingLogState = 'PROCESSING';
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: params.EQP_CALL_ID,
+          subject: trackingLogSubject,
+          detail: trackingLogDetail,
+          state: trackingLogState,
+          transferId: null,
+          startFacility: null,
+          destFacility: null,
+          assignedRobot: params.WORKER_ID,
+          value: params.SERIAL_ID,
+          description: `Call ID ${params.EQP_CALL_ID} received ${trackingLogSubject} from ACS(${params.SERIAL_ID}) `
+        }
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', params.SERIAL_ID);
+        break;
+      case EXC_CLS.CHARGE:
+        break;
+      case EXC_CLS.MANUAL:
+        break;
     }
-    await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', params.SERIAL_ID);
     // Dock_AMR_Status PLC 쓰기 
     const dockAMRStatusTag = await useKepServerUtil().makeWriteDatas({
       targetFacility: params.SERIAL_ID,
