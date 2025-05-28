@@ -2,6 +2,7 @@ import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { formatDetailedDateTime } from '../usefullToolUtil';
 import { service as settingService } from '../../service/common/settingService';
 import { service as facilityService } from '../../service/operation/facilityService';
+import { amrService } from '../../service/common/amrService';
 import { ServerState } from 'node-opcua-client';
 
 export interface HeartbeatInfo {
@@ -40,4 +41,5 @@ export const initAllRedisData = async () => {
   initHeartbeatRedisData()
   await settingService.redisInit()
   await facilityService.writeAllRedis();
+  await amrService.writeAllRedis();
 }

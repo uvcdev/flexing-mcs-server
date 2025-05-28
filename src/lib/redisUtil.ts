@@ -25,7 +25,6 @@ export enum RedisKeys {
   // WorkerStatus = 'feedback_worker_status',
   // Instructions = 'res_get_task',
   // ComposeJobs = 'req_compose_job',
-  // InfoAmr = 'info_amr',
   // InfoChargerById = 'info_charger_by_id',
   // InfoChargerByResource = 'info_charger_by_resource',
   // AmrRecentTask = 'amr_recent_task',
@@ -37,6 +36,7 @@ export enum RedisKeys {
   // InfoFacility = 'info_facility',  
 
   // 기존
+  InfoAmr = 'info_amr',
   InfoAmrById = 'info_amr_by_id',
   AlarmStatusToggle = 'alarm_status_toggle',
   Setting = 'setting',

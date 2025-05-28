@@ -51,6 +51,13 @@ export const amrService = {
     let result: BulkInsertedOrUpdatedResult;
     try {
       result = await amrDao.bulkInsert(paramList);
+
+      if (result.insertedOrUpdatedIds && result.insertedOrUpdatedIds.length > 0) {
+        for (const id of result.insertedOrUpdatedIds) {
+          void this.writeSingleRedis(id);
+        }
+      }
+
       logging.METHOD_ACTION(logFormat, __filename, paramList, result);
     } catch (err) {
       logging.ERROR_METHOD(logFormat, __filename, paramList, err);
@@ -144,5 +151,83 @@ export const amrService = {
     return new Promise((resolve) => {
       resolve(result);
     });
+  },
+
+  async writeAllRedis(): Promise<InsertedResult> {
+    let result: InsertedResult;
+    try {
+      redisUtil.del(RedisKeys.InfoAmr);
+      redisUtil.del(RedisKeys.InfoAmrById);
+      const amrList = await amrDao.selectList({});
+      amrList.rows.forEach((amr) => {
+        const amrInfo = amr as AmrAttributes;
+        const amrString = JSON.stringify(amrInfo);
+        if (amrInfo?.active === true) {
+          redisUtil.hset(RedisKeys.InfoAmr, amrInfo.code.toString(), amrString);
+          redisUtil.hset(RedisKeys.InfoAmrById, amrInfo.id.toString(), amrString);
+        } else if (amrInfo?.active === false) {
+          redisUtil.hdel(RedisKeys.InfoAmr, amrInfo.code.toString());
+          redisUtil.hdel(RedisKeys.InfoAmrById, amrInfo.id.toString());
+        }
+      });
+
+      logging.ACTION_DEBUG({
+        filename: 'amrService.ts',
+        error: null,
+        params: null,
+        result: 'amr writeAllRedis success',
+      });
+
+      return { insertedId: amrList.rows.length }
+
+    } catch (err) {
+      logging.ACTION_ERROR({
+        filename: 'amrService.ts',
+        error: 'redis acs amr info값 초기화 실패',
+        params: null,
+        result: false,
+      });
+
+      return new Promise((resolve, reject) => {
+        reject(err);
+      });
+    }
+  },
+
+  // redis init
+  async writeSingleRedis(amrId: number): Promise<InsertedResult> {
+    let result: InsertedResult;
+    try {
+      const amrInfo = await amrDao.selectInfo({ id: amrId });
+      const amrInfoRedisString = JSON.stringify(amrInfo);
+
+      if (amrInfo?.active === true) {
+        redisUtil.hset(RedisKeys.InfoAmr, amrInfo.code.toString(), amrInfoRedisString);
+        redisUtil.hset(RedisKeys.InfoAmrById, amrInfo.id.toString(), amrInfoRedisString);
+      } else if (amrInfo?.active === false) {
+        redisUtil.hdel(RedisKeys.InfoAmr, amrInfo.code.toString());
+        redisUtil.hdel(RedisKeys.InfoAmrById, amrInfo.id.toString());
+      }
+
+      logging.ACTION_DEBUG({
+        filename: 'amrService.ts',
+        error: null,
+        params: null,
+        result: 'amr writeSingleRedis success',
+      });
+
+      return { insertedId: amrId }
+    } catch (err) {
+      logging.ACTION_ERROR({
+        filename: 'amrService.ts',
+        error: 'redis acs amr info값 초기화 실패',
+        params: null,
+        result: false,
+      });
+
+      return new Promise((resolve, reject) => {
+        reject(err);
+      });
+    }
   },
 };
