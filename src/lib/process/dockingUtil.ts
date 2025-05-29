@@ -255,7 +255,7 @@ export const useDockingUtil = () => {
             await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', dockingRequestInfo.SERIAL_ID);
             */
     } catch (error) {
-      console.log("🚀 ~ dockingStart ~ error:", error)
+      console.log("🚀 ~ dockingOutStart ~ error:", error)
       logging.MQTT_ERROR({
         title: 'Docking Start',
         topic: MqttTopics.ImcsEqpDockingRequest,
@@ -552,7 +552,7 @@ export const useDockingUtil = () => {
   // acs에서 도킹요청이 왔을 때, 설비에 도킹요청하는 함수
   const sendAcsDockingRequest = async (params: AcsDockingRequestType) => {
     params.SERIAL_ID = params.PORT_ID;
-    // params.WORKER_ID = "vw_3";
+    params.WORKER_ID = "vw_3";
     redisUtil.hdel(RedisKeys.DockingRequestBySerialId, params.SERIAL_ID);
     redisUtil.hdel(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID);
     redisUtil.hdel(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID);
@@ -687,7 +687,9 @@ export const useDockingUtil = () => {
           targetFacility: params.SERIAL_ID,
           tagInfo: [
             {
-              tagName: 'Dock_Request_Force',
+              // tagName: 'Dock_Request_Force',
+              // todo: for 1st facility dryrun test(05/28)
+              tagName: 'Dock_Request',
               value: true
             }
           ]
@@ -707,7 +709,7 @@ export const useDockingUtil = () => {
   // acs에서 도킹아웃요청이 왔을 때, 설비에 도킹아웃요청하는 함수
   const sendAcsDockingOutRequest = async (params: AcsDockingRequestType) => {
     params.SERIAL_ID = params.PORT_ID;
-    // params.WORKER_ID = "vw_3";
+    params.WORKER_ID = "vw_3";
     // redisUtil.hdel(RedisKeys.DockingRequestBySerialId, params.SERIAL_ID);
     // redisUtil.hdel(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID);
     // redisUtil.hdel(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID);

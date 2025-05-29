@@ -112,7 +112,7 @@ export type DryrunSetting = {
   system: string;
   type: string;
   data: {
-    mode: 'normal' | 'eqp';
+    mode: 'normal' | 'facility';
   };
 };
 

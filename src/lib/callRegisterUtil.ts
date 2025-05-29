@@ -130,7 +130,7 @@ export const useCallRegisterUtil = () => {
     const callInfoList: EqpCallStats[] = eqpWcsInfo.map((info) => ({
       EQP_CALL_ID: info.EQP_CALL_ID,
       CALL_ID: info.CALL_ID,
-      Call_Type: callType,
+      Call_Type: callType || 'NC11',
       Caller: info.EQP_ID,
       Call_Quantity: 1,
       Call_Priority: callPriorityValue === 'true' ? '99' : '1',
@@ -156,7 +156,7 @@ export const useCallRegisterUtil = () => {
         const callInfoString = JSON.stringify(callInfo);
         // init TrackingLog 
         await initTrackingLogRedis(callInfo)
-        if (dryrunMode === 'eqp') {
+        if (dryrunMode === 'facility') {
           // 링크된 설비 있다면 반대편 설비 확인 후 작업 생성 
           if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 0) {
             // 설비 - 설비로직
@@ -253,8 +253,6 @@ export const useCallRegisterUtil = () => {
               }
             }
           } else {
-            // 링크된 설비 없이 바로 작업 생성
-            console.log('no linked facility')
             const infoPendingWorkOrder: PendingWorkOrderAttributes = {
               callId: callInfo.CALL_ID,
               fromFacilityName: callInfo.Caller,
