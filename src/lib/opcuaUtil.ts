@@ -205,11 +205,11 @@ export const opcuaUtil = {
 
         // 변경되는 값 저장
         redisUtil.hset(RedisKeys.InfoChangedTagById, nodeId, JSON.stringify(targetTagInfo));
-        logging.REDIS_LOG({
-          key: nodeId,
-          value: value.value.value,
-          message: `changing value from opcuaUtil.registerChangeEvent`,
-        });
+        // logging.REDIS_LOG({
+        //   key: nodeId,
+        //   value: value.value.value,
+        //   message: `changing value from opcuaUtil.registerChangeEvent`,
+        // });
 
         if (targetTagInfo) {
           // 변경된 데이터 값을 기준으로 판단하는 함수

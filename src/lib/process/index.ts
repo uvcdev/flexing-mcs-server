@@ -78,26 +78,26 @@ export const processMcs = async () => {
       // 설비-설비 간에 작업 미생성된 콜에 대해 재판단(Call_Response) 처리
       await useCallRegisterUtil().checkRemainEqpCall()
 
-    } else if (dryrunMode === 'eqp') {
+    } else if (dryrunMode === 'facility') {
       // 설비 기준 드라이런 시나리오(창고 IF / PIO 삭제 로직)
       // WMS 관련 프로세스
       if (counter % 5 === 0) {
-        // sendAllHeartbeat();                 // wms heartbeat 전송 ( n초마다 실행 )
+        sendAllHeartbeat();                 // wms heartbeat 전송 ( n초마다 실행 )
       }
       // 현재 진행 중인 물류 로그 전송
       await sendTrackingLogs()
 
       // 수집한 ack 데이터 처리 ( ACK )
-      // await checkReceivedAckCommand()
+      await checkReceivedAckCommand()
 
       // ACK 응답 여부 확인 ( ACK )
-      // await checkRemainingAckCommand()
+      await checkRemainingAckCommand()
 
       // Aborted 된 작업 재전송 여부 확인
-      // await checkAbortedCommandForRetry()
+      await checkAbortedCommandForRetry()
 
       // 콜 취소 요청 들어 왔을 때 처리 로직
-      // await checkCancelCall()
+      await checkCancelCall()
 
       // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
       // 1. 창고(반출) -> 설비(입고) - CALLINFO는 창고 기준 반출만 사용한다.  
