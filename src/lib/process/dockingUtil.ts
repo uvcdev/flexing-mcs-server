@@ -546,6 +546,7 @@ export const useDockingUtil = () => {
         message: targetTagInfo,
         error: error,
       });
+      throw error;
     }
   }
 
@@ -597,6 +598,7 @@ export const useDockingUtil = () => {
         result: 'fail docking request',
         error: error,
       });
+      throw error;
     }
     // 콜타입 입력
     const callType = parseAsciiToWord(params.CALL_TYPE);
@@ -783,116 +785,123 @@ export const useDockingUtil = () => {
 
   // acs에서 도킹완료 응답이 왔을 때, 설비에 도킹완료 응답하는 함수
   const sendAcsDockingComplete = async (params: AcsDockingCompleteType) => {
-    console.log("🚀 ~ sendAcsDockingComplete ~ params:", params)
-    params.SERIAL_ID = params.PORT_ID
-    params.WORKER_ID = "vw_3";
+    try {
 
-    redisUtil.hset(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID, JSON.stringify(params));
+      console.log("🚀 ~ sendAcsDockingComplete ~ params:", params)
+      params.SERIAL_ID = params.PORT_ID
+      params.WORKER_ID = "vw_3";
 
-    // TODO: [트래킹로그]도킹완료에 대한 트래킹로그 저장
-    const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, params.EQP_CALL_ID);
-    if (!infoTrackingLogByCallId) {
-      logging.ACTION_ERROR({
-        filename: `src/lib/process/dockingUtil.ts`,
-        params: params,
-        result: 'No infoTrackingLogByCallId record',
-        error: 'No infoTrackingLogByCallId record',
+      redisUtil.hset(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID, JSON.stringify(params));
+
+      // TODO: [트래킹로그]도킹완료에 대한 트래킹로그 저장
+      /*
+            const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, params.EQP_CALL_ID);
+            console.log('!infoTrackingLogByCallId1111', !infoTrackingLogByCallId)
+            if (!infoTrackingLogByCallId) {
+              logging.ACTION_ERROR({
+                filename: `src/lib/process/dockingUtil.ts`,
+                params: params,
+                result: 'No infoTrackingLogByCallId record',
+                error: 'No infoTrackingLogByCallId record',
+              });
+              return;
+            }
+      
+            const trackingLogSubject = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
+            const trackingLogDetail = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
+            const trackingLogState = 'PROCESSING';
+            const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+              callId: params.EQP_CALL_ID,
+              subject: trackingLogSubject,
+              detail: trackingLogDetail,
+              state: trackingLogState,
+              transferId: null,
+              startFacility: null,
+              destFacility: null,
+              assignedRobot: params.WORKER_ID,
+              value: params.SERIAL_ID,
+              description: `Call ID ${params.EQP_CALL_ID} received ${trackingLogSubject} from ACS(${params.SERIAL_ID}) `
+            }
+            console.log("🚀 ~ sendAcsDockingComplete ~ trackingLogUpdateData:", trackingLogUpdateData)
+            await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', params.SERIAL_ID);
+            */
+      // Dock_AMR_Status PLC 쓰기 
+      await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: params.SERIAL_ID,
+        tagName: 'Dock_AMR_Status',
+        value: true,
       });
-      return;
-    }
 
-    const trackingLogSubject = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
-    const trackingLogDetail = infoTrackingLogByCallId.startFacility === params.SERIAL_ID ? 'FROM_DOCKING_COMPLETED' : 'TO_DOCKING_COMPLETED';
-    const trackingLogState = 'PROCESSING';
-    const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-      callId: params.EQP_CALL_ID,
-      subject: trackingLogSubject,
-      detail: trackingLogDetail,
-      state: trackingLogState,
-      transferId: null,
-      startFacility: null,
-      destFacility: null,
-      assignedRobot: params.WORKER_ID,
-      value: params.SERIAL_ID,
-      description: `Call ID ${params.EQP_CALL_ID} received ${trackingLogSubject} from ACS(${params.SERIAL_ID}) `
+    } catch (error) {
+      throw error
     }
-    await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', params.SERIAL_ID);
-    // Dock_AMR_Status PLC 쓰기 
-    const dockAMRStatusTag = await useKepServerUtil().makeWriteDatas({
-      targetFacility: params.SERIAL_ID,
-      tagInfo: [
-        {
-          tagName: 'Dock_AMR_Status',
-          value: true
-        }
-      ]
-    });
-    console.log("🚀 ~ dockAMRStatusTag ~ dockAMRStatusTag:", dockAMRStatusTag)
-    await useKepServerUtil().writeTagsValue(dockAMRStatusTag);
-
   }
 
   // acs에서 도킹진출완료 응답이 왔을 때, 설비에 도킹진출완료 응답하는 함수
   const sendAcsDockingDetach = async (params: AcsDockingDetachType) => {
-    console.log("🚀 ~ sendAcsDockingDetach ~ params:", params)
-    params.SERIAL_ID = params.PORT_ID
-    params.WORKER_ID = "vw_3";
-    const dockingResponse: AcsDockingDetachResponse = {
-      ...params,
-      RESULT: 'True',
-      RESULT_MESSAGE: '도킹 진출완료',
-    };
-    redisUtil.hset(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID, JSON.stringify(dockingResponse));
+    try {
+      console.log("🚀 ~ sendAcsDockingDetach ~ params:", params)
+      params.SERIAL_ID = params.PORT_ID
+      params.WORKER_ID = "vw_3";
+      const dockingResponse: AcsDockingDetachResponse = {
+        ...params,
+        RESULT: 'True',
+        RESULT_MESSAGE: '도킹 진출완료',
+      };
+      redisUtil.hset(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID, JSON.stringify(dockingResponse));
 
-    // Dock_AMR_Status PLC 쓰기 
-    // const dockAMRStatusTag = await useKepServerUtil().makeWriteDatas({
-    //   targetFacility: params.SERIAL_ID,
-    //   tagInfo: [
-    //     {
-    //       tagName: 'Dock_AMR_Status',
-    //       value: false
-    //     }
-    //   ]
-    // });
-    // await useKepServerUtil().writeTagsValue(dockAMRStatusTag);
-    await useKepServerUtil().writeSimpleTagValue({
-      targetFacility: params.SERIAL_ID || '',
-      tagName: 'Dock_AMR_Status',
-      value: false,
-    });
-    // 도킹 아웃 요청 켜 있으면 꺼주고 레디스 삭제
-    const dockingOutRequestInfo = await redisUtil.hgetObject<AcsDockingRequestType>(RedisKeys.DockingOutRequestBySerialId, params.SERIAL_ID);
-    if (!dockingOutRequestInfo) {
-      logging.ACTION_ERROR({
-        filename: `src/lib/process/dockingUtil.ts`,
-        params: params,
-        result: 'No dockingOutRequestInfo record',
-        error: 'No dockingOutRequestInfo record',
-      });
-      return;
-    }
-
-    const plcInfo = await redisUtil.hgetObject<FacilityAttributes>(
-      RedisKeys.InfoPlcBySerial,
-      params.SERIAL_ID
-    );
-    if (!plcInfo) {
-      logging.ACTION_ERROR({
-        filename: `src/lib/process/dockingUtil.ts`,
-        params: params,
-        result: 'No plcInfo record',
-        error: 'No plcInfo record',
-      });
-      return;
-    }
-    const plcInfoToJson = JSON.parse(JSON.stringify(plcInfo))
-    if (dockingOutRequestInfo && plcInfoToJson.Dock_Out_Request === true) {
+      // Dock_AMR_Status PLC 쓰기 
+      // const dockAMRStatusTag = await useKepServerUtil().makeWriteDatas({
+      //   targetFacility: params.SERIAL_ID,
+      //   tagInfo: [
+      //     {
+      //       tagName: 'Dock_AMR_Status',
+      //       value: false
+      //     }
+      //   ]
+      // });
+      // await useKepServerUtil().writeTagsValue(dockAMRStatusTag);
       await useKepServerUtil().writeSimpleTagValue({
         targetFacility: params.SERIAL_ID || '',
-        tagName: 'Dock_Out_Request',
+        tagName: 'Dock_AMR_Status',
         value: false,
       });
-      redisUtil.hdel(RedisKeys.DockingOutRequestBySerialId, params.SERIAL_ID);
+      // 도킹 아웃 요청 켜 있으면 꺼주고 레디스 삭제
+      const dockingOutRequestInfo = await redisUtil.hgetObject<AcsDockingRequestType>(RedisKeys.DockingOutRequestBySerialId, params.SERIAL_ID);
+      if (!dockingOutRequestInfo) {
+        logging.ACTION_ERROR({
+          filename: `src/lib/process/dockingUtil.ts`,
+          params: params,
+          result: 'No dockingOutRequestInfo record',
+          error: 'No dockingOutRequestInfo record',
+        });
+        return;
+      }
+
+      const plcInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoPlcBySerial,
+        params.SERIAL_ID
+      );
+      if (!plcInfo) {
+        logging.ACTION_ERROR({
+          filename: `src/lib/process/dockingUtil.ts`,
+          params: params,
+          result: 'No plcInfo record',
+          error: 'No plcInfo record',
+        });
+        return;
+      }
+      const plcInfoToJson = JSON.parse(JSON.stringify(plcInfo))
+      if (dockingOutRequestInfo && plcInfoToJson.Dock_Out_Request === true) {
+        await useKepServerUtil().writeSimpleTagValue({
+          targetFacility: params.SERIAL_ID || '',
+          tagName: 'Dock_Out_Request',
+          value: false,
+        });
+        redisUtil.hdel(RedisKeys.DockingOutRequestBySerialId, params.SERIAL_ID);
+      }
+    } catch (error) {
+      throw error
     }
   }
 

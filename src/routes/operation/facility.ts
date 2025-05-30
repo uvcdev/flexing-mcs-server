@@ -208,7 +208,7 @@ router.put(
         alwaysFill: req.body.alwaysFill,
         description: req.body.description,
         isMissionOrderCapable: req.body.isMissionOrderCapable,
-        linkedEqpIds: req.body.linkedEqpIds,
+        linkedEqpIds: req.body.linkedEqpIds || []
       };
       logging.REQUEST_PARAM(logFormat);
 

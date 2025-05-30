@@ -148,7 +148,6 @@ export const editTrackingLogRedis = async (trackingLogUpdateData: TrackingLogRed
   // Redis 값 업데이트
   const dateNow = formatDetailedDateTime(new Date());
 
-  console.log('trackingLogUpdateData', trackingLogUpdateData)
   if (!callId) {
     logging.ACTION_ERROR({
       filename: 'trackingLog.ts - editTrackingLogRedis',

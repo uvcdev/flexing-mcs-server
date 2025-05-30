@@ -63,6 +63,7 @@ export const useWorkOrderUtil = () => {
   const createWorkOrder = async () => {
     const workOrderList = await redisUtil.hgetAllObject<McsPendingWorkOrderRequestType>(RedisKeys.InfoPendingWorkOrderByCallId);
     if (workOrderList) {
+      // todo: 05/30 pended workorder doesn't need create
       for (const workOrder of workOrderList) {
         const params: McsWorkOrderRequestType =
         {
