@@ -504,6 +504,7 @@ export const receiveMqtt = (): void => {
                 useDockingUtil().sendAcsDockingComplete(JSON.parse(message));
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
+                throw error
               }
             }
             if (topicSplit.length === 4 && topicSplit[1] === 'docking' && topicSplit[3] === 'detach') {
