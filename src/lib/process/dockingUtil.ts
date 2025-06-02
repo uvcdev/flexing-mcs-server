@@ -648,6 +648,11 @@ export const useDockingUtil = () => {
         // const CallIdRedisInfo = await redisUtil.hgetObject<CallIdRedisInfo>(RedisKeys.CallIdRedisInfo, CallId);
         // const CallType = CallIdRedisInfo.Call_Type;
         // 일반 도킹 요청 PLC 쓰기
+        await useKepServerUtil().writeSimpleTagValue({
+          targetFacility: params.SERIAL_ID,
+          tagName: 'Dock_Signal_Reset',
+          value: true,
+        });
         const dockingRequestTag = await useKepServerUtil().makeWriteDatas({
           targetFacility: params.SERIAL_ID,
           tagInfo: [
@@ -657,6 +662,13 @@ export const useDockingUtil = () => {
             }
           ]
         });
+        setTimeout(() => {
+          useKepServerUtil().writeSimpleTagValue({
+            targetFacility: params.SERIAL_ID,
+            tagName: 'Dock_Signal_Reset',
+            value: false,
+          });
+        }, 1000)
         await useKepServerUtil().writeTagsValue(dockingRequestTag);
         // [트래킹로그]도킹요청 들어온 것에 대한 트래킹로그 저장
         const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId, params.EQP_CALL_ID);
@@ -897,10 +909,22 @@ export const useDockingUtil = () => {
       // });
       // await useKepServerUtil().writeTagsValue(dockAMRStatusTag);
       await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: params.SERIAL_ID,
+        tagName: 'Dock_Signal_Reset',
+        value: true,
+      });
+      await useKepServerUtil().writeSimpleTagValue({
         targetFacility: params.SERIAL_ID || '',
         tagName: 'Dock_AMR_Status',
         value: false,
       });
+      setTimeout(() => {
+        useKepServerUtil().writeSimpleTagValue({
+          targetFacility: params.SERIAL_ID,
+          tagName: 'Dock_Signal_Reset',
+          value: false,
+        });
+      }, 1000)
       // 도킹 아웃 요청 켜 있으면 꺼주고 레디스 삭제
       const dockingOutRequestInfo = await redisUtil.hgetObject<AcsDockingRequestType>(RedisKeys.DockingOutRequestBySerialId, params.SERIAL_ID);
       if (!dockingOutRequestInfo) {

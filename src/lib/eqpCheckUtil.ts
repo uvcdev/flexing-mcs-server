@@ -59,6 +59,37 @@ export const useEqpCheckUtil = () => {
           // await useCallTypeUtil().callTypeResponse(targetTagInfo);
           break;
 
+        case 'Complete':
+          console.log(`Action Method Tag: Complete`);
+          // await useCallTypeUtil().callTypeResponse(targetTagInfo);
+          await useKepServerUtil().writeSimpleTagValue({
+            targetFacility: targetTagInfo.EQ_CODE,
+            tagName: 'Dock_Signal_Reset',
+            value: true,
+          });
+
+          await useKepServerUtil().writeSimpleTagValue({
+            targetFacility: targetTagInfo.EQ_CODE,
+            tagName: 'Dock_Request',
+            value: false,
+          });
+
+          await useKepServerUtil().writeSimpleTagValue({
+            targetFacility: targetTagInfo.EQ_CODE,
+            tagName: 'Dock_AMR_Status',
+            value: false,
+          });
+          setTimeout(() => {
+            useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Dock_Signal_Reset',
+              value: false,
+            });
+          }, 1000);
+
+
+          break;
+
       }
 
     } catch (error) {

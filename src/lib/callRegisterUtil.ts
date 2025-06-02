@@ -182,7 +182,7 @@ export const useCallRegisterUtil = () => {
                   type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
                   isMissionOrder: false,
                   callPriority: callInfo.Call_Priority,
-                  callType: callInfo.Call_Type
+                  callType: callInfo.Call_Type || 'NC11'
                 }
 
                 if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
@@ -261,7 +261,7 @@ export const useCallRegisterUtil = () => {
                 type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
                 isMissionOrder: false,
                 callPriority: callInfo.Call_Priority,
-                callType: callInfo.Call_Type,
+                callType: callInfo.Call_Type || 'NC11',
                 portName: null,
                 eqpName: callInfo.Caller,
               }
@@ -321,7 +321,7 @@ export const useCallRegisterUtil = () => {
               type: 'MISSION',
               isMissionOrder: true,
               callPriority: callInfo.Call_Priority || '',
-              callType: callInfo.Call_Type,
+              callType: callInfo.Call_Type || 'NC11',
               portName: null,
               eqpName: callInfo.Caller
             }
@@ -380,7 +380,7 @@ export const useCallRegisterUtil = () => {
                   type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
                   isMissionOrder: false,
                   callPriority: callInfo.Call_Priority,
-                  callType: callInfo.Call_Type,
+                  callType: callInfo.Call_Type || 'NC11',
                   fromFacilityName: facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial! : callInfo.Caller,
                   toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial
                 }
