@@ -33,10 +33,10 @@ router.post('/write', isLoggedIn, async (req: Request<unknown, unknown, Array<Ke
         tagName: req.body[i].tagName,
         value: req.body[i].value,
       };
-      if (!params.targetFacility || !params.tagName || !params.value) {
+      if (!params.targetFacility || !params.tagName) {
         const err = new ErrorClass(
           resCode.BAD_REQUEST_NULLORINVALID,
-          'Null or invalid value (targetFacility, tagName, value)'
+          'Null or invalid value (targetFacility, tagName)'
         );
 
         const resJson = resError(err);
