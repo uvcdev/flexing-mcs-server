@@ -215,3 +215,7 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 - CPU 사용량(%), RAM 사용량(%) 체크 후 MQTT 전송 로직 추가
 - 시스템관리 : 다국어처리 설정 타입 추가
 - PLC 값 변경 API 추가
+
+
+## v0.2.1-cyk
+- call_type01 값 써질 때 call_type_response01~10 쓰기기

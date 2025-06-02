@@ -56,7 +56,7 @@ export const useEqpCheckUtil = () => {
 
         case 'Call_Type_01':
           console.log(`Action Method Tag: Call_Type_01`);
-          // await useCallTypeUtil().callTypeResponse(targetTagInfo);
+          await useCallTypeUtil().callTypeResponse(targetTagInfo);
           break;
 
       }
