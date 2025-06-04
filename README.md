@@ -217,10 +217,12 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 - PLC 값 변경 API 추가
 
 ## v0.2.1-cyk
-- call_type01 값 써질 때 call_type_response01~10 쓰기기
+- call_type01 값 써질 때 call_type_response01~10 쓰기
 
 ## 0.2.1-ljk
 - Add Dock_Signal_Reset function
 
 ## v0.2.1-cyk
 - call_type01 값 써질 때 call_type_response01~10 쓰기기
+- in/out 같은 포트일 때 in 작업에 도킹 관련 작업은 out 포트에도 데이터 써주기
+
