@@ -36,6 +36,18 @@ const dao = {
         id: params.ids, // 'in'검색,
       };
     }
+    if (params.system) {
+      setQuery.where = {
+        ...setQuery.where,
+        system: params.system, // '='검색,
+      };
+    }
+    if (params.type) {
+      setQuery.where = {
+        ...setQuery.where,
+        type: params.type, // '='검색,
+      };
+    }
 
     return new Promise((resolve, reject) => {
       Setting.findAndCountAll({

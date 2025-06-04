@@ -690,8 +690,6 @@ export const useDockingUtil = () => {
             // const CallIdRedisInfo = await redisUtil.hgetObject<CallIdRedisInfo>(RedisKeys.CallIdRedisInfo, CallId);
             // const CallType = CallIdRedisInfo.Call_Type;
 
-            // todo: 250604 
-
             // todo: 250604 Dock_EQ_Status 값 내리기 위해 드라이런용 reset 추가
             await useKepServerUtil().writeSimpleTagValue({
               targetFacility: paramsSerial,
@@ -1030,11 +1028,6 @@ export const useDockingUtil = () => {
         tagName: 'Dock_Signal_Reset',
         value: true,
       });
-      await useKepServerUtil().writeSimpleTagValue({
-        targetFacility: params.SERIAL_ID || '',
-        tagName: 'Dock_AMR_Status',
-        value: false,
-      });
       setTimeout(() => {
         useKepServerUtil().writeSimpleTagValue({
           targetFacility: params.SERIAL_ID,
@@ -1042,6 +1035,11 @@ export const useDockingUtil = () => {
           value: false,
         });
       }, 1000)
+      await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: params.SERIAL_ID || '',
+        tagName: 'Dock_AMR_Status',
+        value: false,
+      });
       // 도킹 아웃 요청 켜 있으면 꺼주고 레디스 삭제
       const dockingOutRequestInfo = await redisUtil.hgetObject<AcsDockingRequestType>(RedisKeys.DockingOutRequestBySerialId, params.SERIAL_ID);
       if (!dockingOutRequestInfo) {
