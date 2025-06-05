@@ -70,12 +70,11 @@ const sendKepwareHeartbeat = async () => {
 }
 
 // acs heartbeat 업데이트
-export const sendAcsHeartbeat = (messageJson: any, receiveAt: string) => {
-
+export const sendAcsHeartbeat = (isAlive: boolean, receiveAt: string) => {
 
   const acsHeartbeatData: HeartbeatInfo = {
     systemName: 'ACS',
-    state: 'connection',
+    state: isAlive ? 'connection' : 'disconnection',
     time: receiveAt,
   }
   redisUtil.hset(RedisKeys.Heartbeat, 'ACS', JSON.stringify(acsHeartbeatData))

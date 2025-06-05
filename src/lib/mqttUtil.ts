@@ -616,10 +616,10 @@ export const receiveMqtt = (): void => {
               }
             }
             // acs heartbeat 수집
-            if (topicSplit.length === 3 && topicSplit[1] === 'server' && topicSplit[2] === 'status') {
-              const messageJson = JSON.parse(message);
+            if (topicSplit.length === 2 && topicSplit[1] === 'is_alive') {
+              const isAlive = message === 'true';
               const receiveAt = formatDetailedDateTime(new Date());
-              sendAcsHeartbeat(messageJson, receiveAt)
+              sendAcsHeartbeat(isAlive, receiveAt)
             }
             // in/out 포트 동일시 회수 작업 생성시 공급 데이터 내리고 회수 데이터 올리기기
             if (topicSplit[1] === 'same_pio') {
