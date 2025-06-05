@@ -227,3 +227,4 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 - in/out 같은 포트일 때 in 작업에 도킹 관련 작업은 out 포트에도 데이터 써주기
 - Update multi language setting from settingDao ( worker-ksm )
 - Move Dock_Signal_Reset function
+- acs로부터 same_pio mqtt 통신되면 in/out 포트에 맞는 데이터 써주기

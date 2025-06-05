@@ -621,6 +621,50 @@ export const receiveMqtt = (): void => {
               const receiveAt = formatDetailedDateTime(new Date());
               sendAcsHeartbeat(messageJson, receiveAt)
             }
+            // in/out 포트 동일시 회수 작업 생성시 공급 데이터 내리고 회수 데이터 올리기기
+            if (topicSplit[1] === 'same_pio') {
+              const messageJson = JSON.parse(message);
+              try {
+                console.log('messageJson123', messageJson.IN_SERIAL, messageJson.OUT_SERIAL)
+                // Dock_AMR_Status / Dock_EQ_Status 값 write
+                await kepServerUtil.writeSimpleTagValue({
+                  targetFacility: messageJson.IN_SERIAL,
+                  tagName: 'Dock_AMR_Status',
+                  value: false
+                });
+                await useKepServerUtil().writeSimpleTagValue({
+                  targetFacility: messageJson.IN_SERIAL,
+                  tagName: 'Dock_Signal_Reset',
+                  value: true,
+                });
+                await useKepServerUtil().writeSimpleTagValue({
+                  targetFacility: messageJson.IN_SERIAL,
+                  tagName: 'Dock_Request',
+                  value: false,
+                });
+                setTimeout(() => {
+                  useKepServerUtil().writeSimpleTagValue({
+                    targetFacility: messageJson.IN_SERIAL,
+                    tagName: 'Dock_Signal_Reset',
+                    value: false,
+                  });
+                }, 1000)
+                await kepServerUtil.writeSimpleTagValue({
+                  targetFacility: messageJson.OUT_SERIAL,
+                  tagName: 'Dock_AMR_Status',
+                  value: true
+                });
+                logging.MQTT_LOG({
+                  title: 'acs same_pio request',
+                  topic: messageTopic,
+                  message: messageJson,
+                });
+                void itemLogDao.insert(messageJson);
+              } catch (error) {
+                console.log('same_pio request', error);
+                throw error
+              }
+            }
           }
 
           // mcs에서 오는 메세지 처리
