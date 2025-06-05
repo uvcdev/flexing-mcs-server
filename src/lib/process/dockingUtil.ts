@@ -592,7 +592,7 @@ export const useDockingUtil = () => {
       });
       return;
     }
-    const usageFacilitylist = facilityInfoList.filter((facility) => { dockingParams.SERIAL_ID === facility.serial || dockingParams.SAME_PIO_SERIAL === facility.serial })
+    const usageFacilitylist = facilityInfoList.filter((facility) => (dockingParams.PORT_ID === facility.serial || dockingParams.SAME_PIO_SERIAL === facility.serial))
     console.log('usageFacilitylist.length123', usageFacilitylist.length)
     if (usageFacilitylist && usageFacilitylist.length > 0) {
       for (const facility of usageFacilitylist) {
@@ -831,7 +831,7 @@ export const useDockingUtil = () => {
         });
         return;
       }
-      const usageFacilitylist = facilityInfoList.filter((facility) => { dockingParams.SERIAL_ID === facility.serial || dockingParams.SAME_PIO_SERIAL === facility.serial })
+      const usageFacilitylist = facilityInfoList.filter((facility) => (dockingParams.PORT_ID === facility.serial || dockingParams.SAME_PIO_SERIAL === facility.serial))
       console.log('usageFacilitylist.length123', usageFacilitylist.length)
       if (usageFacilitylist && usageFacilitylist.length > 0) {
         for (const facility of usageFacilitylist) {
@@ -946,7 +946,7 @@ export const useDockingUtil = () => {
         });
         return;
       }
-      const usageFacilitylist = facilityInfoList.filter((facility) => { dockingParams.SERIAL_ID === facility.serial || dockingParams.SAME_PIO_SERIAL === facility.serial })
+      const usageFacilitylist = facilityInfoList.filter((facility) => (dockingParams.PORT_ID === facility.serial || dockingParams.SAME_PIO_SERIAL === facility.serial))
       console.log('usageFacilitylist.length123', usageFacilitylist.length)
       if (usageFacilitylist && usageFacilitylist.length > 0) {
         for (const facility of usageFacilitylist) {
@@ -1038,6 +1038,11 @@ export const useDockingUtil = () => {
       await useKepServerUtil().writeSimpleTagValue({
         targetFacility: params.SERIAL_ID || '',
         tagName: 'Dock_AMR_Status',
+        value: false,
+      });
+      await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: params.SERIAL_ID || '',
+        tagName: 'Dock_Request',
         value: false,
       });
       // 도킹 아웃 요청 켜 있으면 꺼주고 레디스 삭제

@@ -228,3 +228,4 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 - Update multi language setting from settingDao ( worker-ksm )
 - Move Dock_Signal_Reset function
 - acs로부터 same_pio mqtt 통신되면 in/out 포트에 맞는 데이터 써주기
+- Update dockingParams.SERAIL_ID => PORT_ID
