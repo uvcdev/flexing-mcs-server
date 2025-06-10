@@ -10,7 +10,7 @@ export const useTimescaleUtil = () => {
     const logPeriod = JSON.parse(period);
     void logSequelize.query(
       `SELECT remove_retention_policy('logs'); 
-         SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} ');`
+         SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
     );
   };
 

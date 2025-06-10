@@ -296,6 +296,8 @@ export const useCallRegisterUtil = () => {
                 value: callCountValue,
               });
             }
+
+            console.log(`Call request sent to EQP from EQP for dryrunMode. TYPE: ${callType}, CallID: ${callCountValue}`);
             /* 설비 - 창고 드라이런 필요시 주석해제
             else {
               // 설비 - 창고 로직
@@ -443,6 +445,8 @@ export const useCallRegisterUtil = () => {
                   }))
                 }
               }
+
+              console.log(`Call request sent to EQP from EQP. TYPE: ${callType}, CallID: ${callCountValue}`);
               // } else if (facilityInfo?.linkedWmsIds) {
             } else {
               // 설비 - 창고 로직
@@ -452,6 +456,8 @@ export const useCallRegisterUtil = () => {
               } else {
                 await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
               }
+
+              console.log(`Call request sent to WCS from EQP. TYPE: ${callType}, CallID: ${callCountValue}`);
             }
             // else {
             //   // todo: 도착지와 통신 없이 바로 작업 생성
@@ -459,9 +465,9 @@ export const useCallRegisterUtil = () => {
           }
         } else if (facilityInfo?.system === 'WMS') {
           // todo: 창고 to 창고 작업지시
+          console.log(`Call request sent to WCS. TYPE: ${callType}, CallID: ${callCountValue}`);
         }
       }
-      console.log(`Call request sent to WCS. TYPE: ${callType}, CallID: ${callCountValue}`);
 
     } catch (error) {
       throw error
@@ -601,7 +607,19 @@ export const useCallRegisterUtil = () => {
             description: `Call ID ${infoTrackingLogByResFacilityCode?.callId} responsed`
           }
           await editTrackingLogRedis(trackingLogUpdateResData, undefined, 'SUCCESS', remainCall.toFacilityName?.toString())
-
+          const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+            callId: remainCall.callId,
+            eqpName: remainCall.eqpName,
+            portName: remainCall.portName,
+            type: remainCall?.type.toUpperCase() === 'IN' ? 'IN' : 'OUT',
+            isMissionOrder: false,
+            callPriority: remainCall.callPriority,
+            callType: remainCall.callType || 'NC11',
+            fromFacilityName: remainCall?.type.toUpperCase() === 'IN' ? remainCall.toFacilityName! : remainCall.fromFacilityName,
+            toFacilityName: remainCall?.type.toUpperCase() === 'IN' ? remainCall.fromFacilityName : remainCall.toFacilityName
+          }
+          // 작업지시 예정 레디스 저장
+          redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, remainCall.callId || '', JSON.stringify(infoPendingWorkOrder))
           redisUtil.hdel(RedisKeys.InfoRemainCallById, remainCall.callId || '');
         }
       }

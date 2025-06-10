@@ -625,8 +625,17 @@ export const receiveMqtt = (): void => {
             if (topicSplit[1] === 'same_pio') {
               const messageJson = JSON.parse(message);
               try {
-                console.log('messageJson123', messageJson.IN_SERIAL, messageJson.OUT_SERIAL)
-                // Dock_AMR_Status / Dock_EQ_Status 값 write
+                // BS11 값 write
+                await useKepServerUtil().writeSimpleTagValue({
+                  targetFacility: messageJson.IN_SERIAL,
+                  tagName: 'Dock_Request',
+                  value: false,
+                });
+                await useKepServerUtil().writeSimpleTagValue({
+                  targetFacility: messageJson.IN_SERIAL,
+                  tagName: 'Dock_Out_Request',
+                  value: true,
+                });
                 await kepServerUtil.writeSimpleTagValue({
                   targetFacility: messageJson.IN_SERIAL,
                   tagName: 'Dock_AMR_Status',
@@ -637,18 +646,20 @@ export const receiveMqtt = (): void => {
                   tagName: 'Dock_Signal_Reset',
                   value: true,
                 });
-                await useKepServerUtil().writeSimpleTagValue({
-                  targetFacility: messageJson.IN_SERIAL,
-                  tagName: 'Dock_Request',
-                  value: false,
-                });
                 setTimeout(() => {
                   useKepServerUtil().writeSimpleTagValue({
                     targetFacility: messageJson.IN_SERIAL,
                     tagName: 'Dock_Signal_Reset',
                     value: false,
                   });
-                }, 1000)
+                }, 500)
+                await useKepServerUtil().writeSimpleTagValue({
+                  targetFacility: messageJson.IN_SERIAL,
+                  tagName: 'Dock_Out_Request',
+                  value: false,
+                });
+
+                // BS12 값 write
                 await kepServerUtil.writeSimpleTagValue({
                   targetFacility: messageJson.OUT_SERIAL,
                   tagName: 'Dock_AMR_Status',
