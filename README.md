@@ -139,3 +139,6 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 
 ## v0.1.1
 - `workOrderService.stateCheckAndEdit` code 값 예외처리
+
+## v0.1.1-ljk
+- Detail Log Table 기본 기능 및 구조 생성
