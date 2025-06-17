@@ -142,3 +142,4 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 
 ## v0.1.1-ljk
 - Detail Log Table 기본 기능 및 구조 생성
+- Tracking Log Table 기본 기능 및 구조 생성
