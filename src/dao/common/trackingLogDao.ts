@@ -67,6 +67,12 @@ const dao = {
         callId: { [Op.like]: `%${params.callId}%` }, // 'like' 검색
       };
     }
+    if (params.eqpCallId) {
+      setQuery.where = {
+        ...setQuery.where,
+        eqpCallId: { [Op.like]: `%${params.eqpCallId}%` }, // 'like' 검색
+      };
+    }
     if (params.caller) {
       setQuery.where = {
         ...setQuery.where,

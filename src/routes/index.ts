@@ -19,6 +19,7 @@ import { router as settingRouter } from './common/setting';
 import { router as alarmEmailRouter } from './common/alarmEmail';
 import { router as mcsAlarmRouter } from './common/mcsAlarm';
 import { amrRouter } from './common/amr';
+import { router as trackingLogRouter } from './common/trackingLog';
 // dashboard
 import { router as dailyStatisticRouter } from './dashboard/dailyStatistic';
 import { router as monthlyStatisticRouter } from './dashboard/monthlyStatistic';
@@ -32,6 +33,7 @@ import { router as workOrderRouter } from './operation/workOrder';
 import { router as logRouter } from './timescale/log';
 import { router as systemLogRouter } from './timescale/systemLog';
 import { router as itemLogRouter } from './timescale/itemLog';
+import { router as detailLogRouter } from './timescale/detailLog';
 
 dotenv.config();
 
@@ -196,6 +198,7 @@ router.use('/settings', settingRouter);
 router.use('/alarm-emails', alarmEmailRouter);
 router.use('/mcs-alarms', mcsAlarmRouter);
 router.use('/amrs', amrRouter);
+router.use('/tracking-logs', trackingLogRouter)
 // dashboard
 router.use('/daily-statistics', dailyStatisticRouter);
 router.use('/monthly-statistics', monthlyStatisticRouter);
@@ -209,5 +212,6 @@ router.use('/work-orders', workOrderRouter);
 router.use('/logs', logRouter);
 router.use('/system-logs', systemLogRouter);
 router.use('/item-logs', itemLogRouter);
+router.use('/detail-logs', detailLogRouter);
 
 export { router };

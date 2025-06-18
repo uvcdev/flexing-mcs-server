@@ -9,6 +9,8 @@ import Setting from './common/setting';
 import AlarmEmail from './common/alarmEmail';
 import McsAlarm from './common/mcsAlarm';
 import Amr from './common/amr';
+// 신규 추가
+import TrackingLog from './common/trackingLog';
 
 // dashboard
 import DailyStatistic from './dashboard/dailyStatistic';
@@ -26,6 +28,7 @@ import Log from './timescale/log';
 import SystemLog from './timescale/systemLog';
 import CallReserve from './common/callReserve';
 import CallSpec from './common/callSpec';
+import DetailLog from './timescale/detailLog'
 
 export * from './sequelize';
 
@@ -40,6 +43,7 @@ const db = {
   AlarmEmail,
   McsAlarm,
   Amr,
+  TrackingLog,
   /* dashboard */
   DailyStatistic,
   MonthlyStatistic,
@@ -54,6 +58,7 @@ const db = {
   SystemLog,
   CallReserve,
   CallSpec,
+  DetailLog
 };
 
 export type dbType = typeof db;

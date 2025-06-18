@@ -13,7 +13,7 @@ export interface DetailLogAttributes {
   callId: string | null;
   eqpCallId: string | null;
   value: string | null;  // 각 로그에서 사용할 데이터
-  // state: string | null;  // 기존에 body에 있던 state
+  state: string | null;  // 기존에 body에 있던 state
   location: string | null; // 발생 위치 창고 (WMS) , 설비 ( BS1O, BM1I ) , AMR ( AMR_01 )...
   message: string | null;
   resultStatus: ResultStatus | null;  // 상태값 정상, 오류 , 멈춤(해결가능) , 멈춤(단순멈춤)
@@ -51,7 +51,7 @@ class DetailLog extends Model implements DetailLogAttributes {
   public callId!: DetailLogAttributes['callId'];
   public eqpCallId!: DetailLogAttributes['eqpCallId'];
   public value!: DetailLogAttributes['value'];
-  // public state!: DetailLogAttributes['state'];
+  public state!: DetailLogAttributes['state'];
   public location!: DetailLogAttributes['location'];
   public message!: DetailLogAttributes['message'];
   public resultStatus!: DetailLogAttributes['resultStatus'];
