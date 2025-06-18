@@ -41,11 +41,11 @@ const service = {
             const remove = await logSequelize.query(`SELECT remove_retention_policy('logs');`);
           } catch (err) {
             const add = await logSequelize.query(
-              `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} day');`
+              `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
             );
           }
           const add = await logSequelize.query(
-            `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} day');`
+            `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
           );
         } catch (err) {
           // 에러 응답값 세팅
@@ -113,16 +113,40 @@ const service = {
       if (params.type === 'logRetentionPeriod') {
         try {
           const logPeriod = params.data as unknown as { mcsLog: number };
+          // logs 테이블
           try {
-            const remove = await logSequelize.query(`SELECT remove_retention_policy('logs');`);
+            const removeLogs = await logSequelize.query(`SELECT remove_retention_policy('logs');`);
           } catch (err) {
-            const add = await logSequelize.query(
-              `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} day');`
+            const addLogs = await logSequelize.query(
+              `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
             );
           }
-          const add = await logSequelize.query(
-            `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} day');`
+          const addLogs = await logSequelize.query(
+            `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
           );
+          // item_logs 테이블
+          try {
+            const removeItemLogs = await logSequelize.query(`SELECT remove_retention_policy('logs');`);
+          } catch (err) {
+            const addItemLogs = await logSequelize.query(
+              `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
+            );
+          }
+          const addItemLogs = await logSequelize.query(
+            `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
+          );
+          // detail_logs 테이블
+          try {
+            const removeDetailLogs = await logSequelize.query(`SELECT remove_retention_policy('logs');`);
+          } catch (err) {
+            const addDetailLogs = await logSequelize.query(
+              `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
+            );
+          }
+          const addDetailLogs = await logSequelize.query(
+            `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
+          );
+
         } catch (err) {
           // 에러 응답값 세팅
           const resJson = resError(err);
