@@ -22,6 +22,27 @@ export interface DetailLogAttributes {
 }
 
 type DetailLogSubjectType =
+  | 'CALL_CREATED'
+  | 'CALL_REQUEST'   // 콜 요청 ( 창고 요청 )
+  | 'CALL_CHECK'      // 창고 응답
+  | 'CALL_RESPONSE'   // 콜에 대한 호출 응답
+  | 'PORT_ASSIGNED'   // 포트 배정 완료
+  | 'WORK_ORDER_CREATED'     // 작업지시 생성 
+  | 'AMR_ASSIGNED'     // AMR 할당 
+  | 'FROM_START'      // FROM 작업 시작
+  | 'FROM_DOCKING_REQ'   // FROM 작업 도킹 요청 
+  | 'FROM_DOCKING_PERMIT'  // FROM 작업 도킹 허가
+  | 'FROM_DOCKING_COMPLETED'  // FROM 작업 도킹 완료
+  | 'FROM_PIO'  // FROM PIO 완료
+  | 'FROM_COMPLETED'    // FROM 작업 완료
+  | 'TO_START'      // TO 작업 시작
+  | 'TO_DOCKING_REQ'   // TO 작업 도킹 요청
+  | 'TO_DOCKING_PERMIT'   // TO 작업 도킹 허가 
+  | 'TO_DOCKING_COMPLETED'   // TO 작업 도킹 완료
+  | 'TO_PIO'   // TO PIO 완료
+  | 'TO_COMPLETED'     // TO 작업 완료
+  | 'MISSION_START'    // 미션 작업 시작
+  | 'MISSION_COMPLETED'   // 미션 작업 완료
   | 'TRANSPORT_COMMAND'
   | 'LOAD_COMMAND'
   | 'UNLOAD_COMMAND'
@@ -119,14 +140,16 @@ DetailLog.init(
 // insert
 export interface DetailLogInsertParams {
   topic: string;
-  subject: DetailLogAttributes['subject'];
+  subject: DetailLogAttributes['subject'] | null;
   trackingLogId: number | null;
   callId: string | null;
   eqpCallId?: string | null;
   value?: string | null;
+  state?: string | null;
   location?: string | null;
   message?: string | null;
   resultStatus: DetailLogAttributes['resultStatus'] | null;
+  createdDateTime?: Date | null;
 }
 
 // selectList

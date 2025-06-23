@@ -8,6 +8,7 @@ export interface InsertedResult {
 
 export interface FindOrCreatedResult {
   findOrCreatedId: number;
+  isCreated: boolean;
 }
 
 export interface InsertedListResult {

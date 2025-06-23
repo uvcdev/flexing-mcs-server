@@ -153,7 +153,7 @@ type MissionStateData = {
   acsDetail: AcsDetail;
 };
 
-type WorkStatus = {
+export type WorkStatus = {
   EQP_ID: string;
   AMR_CODE: string;
   EQP_CALL_ID: string;
@@ -162,9 +162,13 @@ type WorkStatus = {
   DATE_TIME: string;
 };
 
-const workStatusObject = {
-  CALL_REQUEST: {
+export const workStatusObject = {
+  CALL_CREATE: {
     description: "EQP(설비) 콜 발생",
+    missing_value: "EQP(설비) 콜 발생 오류"
+  },
+  CALL_REQUEST: {
+    description: "EQP(설비) 콜 요청",
     missing_value: "EQP(설비) 콜 미수신"
   },
   CALL_CHECK: {
@@ -174,6 +178,10 @@ const workStatusObject = {
   CALL_RESPONSE: {
     description: "EQP(설비)에 콜 응답 작성",
     missing_value: "MCS, PLC 통신 불량"
+  },
+  PORT_ASSIGNED: {
+    description: "WMS(창고) 포트 배정",
+    missing_value: "WMS(창고) 포트 배정 오류"
   },
   WORK_CREATE: {
     description: "콜이 작업으로 생성됨",

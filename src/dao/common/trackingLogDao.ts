@@ -20,6 +20,7 @@ import TrackingLog, {
   TrackingLogSelectInfoByCallIdParams,
   TrackingLogUpsertParams,
   TrackingLogFindOrCreatedParams,
+  TrackingLogSelectInfoByEqpCallIdParams,
 } from '../../models/common/trackingLog';
 
 const dao = {
@@ -47,15 +48,20 @@ const dao = {
         });
     });
   },
-  findOrCreate(params: TrackingLogFindOrCreatedParams, transaction: Transaction): Promise<FindOrCreatedResult> {
+  findOrCreate(params: TrackingLogFindOrCreatedParams): Promise<FindOrCreatedResult> {
+    const splitEqpCallId = params.eqpCallId.split('$')[0];
     return new Promise((resolve, reject) => {
       TrackingLog.findOrCreate({
         where: {
-          eqpCallId: params.eqpCallId
+          eqpCallId: splitEqpCallId
+        },
+        defaults: {
+          ...params,
+          eqpCallId: splitEqpCallId
         }
       })
         .then(([findOrCreated, isCreated]) => {
-          resolve({ findOrCreatedId: findOrCreated.id });
+          resolve({ findOrCreatedId: findOrCreated.id, isCreated });
         })
         .catch((err) => {
           reject(err);
@@ -210,6 +216,19 @@ const dao = {
     return new Promise((resolve, reject) => {
       TrackingLog.findOne({
         where: { callId: params.callId },
+      })
+        .then((selectedInfo) => {
+          resolve(selectedInfo);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+  selectInfoByEqpCallId(params: TrackingLogSelectInfoByEqpCallIdParams): Promise<TrackingLogAttributes | null> {
+    return new Promise((resolve, reject) => {
+      TrackingLog.findOne({
+        where: { eqpCallId: params.eqpCallId },
       })
         .then((selectedInfo) => {
           resolve(selectedInfo);

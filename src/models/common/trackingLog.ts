@@ -149,7 +149,8 @@ export interface TrackingLogInsertParams {
   description: string | null;
 }
 
-export interface TrackingLogFindOrCreatedParams {
+export interface TrackingLogFindOrCreatedParams extends TrackingLogInsertParams {
+  // eqpCallId 가 필수 값
   eqpCallId: string;
 }
 
@@ -212,6 +213,11 @@ export interface TrackingLogSelectInfoByCodeParams {
 // selectCallId
 export interface TrackingLogSelectInfoByCallIdParams {
   callId?: string;
+}
+
+// selectEqpCallId
+export interface TrackingLogSelectInfoByEqpCallIdParams {
+  eqpCallId?: string;
 }
 
 // update
