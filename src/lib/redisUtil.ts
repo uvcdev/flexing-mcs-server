@@ -73,6 +73,8 @@ export enum RedisKeys {
   Setting = 'setting',
   InfoFacility = 'info_facility',
   InfoFacilityById = 'info_facility_by_id',
+  // 신규 추가
+  InfoTrackingLogByEqpCallId = 'info_tracking_log_by_eqp_call_id', // [ Key : (설비명) + (콜 번호) ] -> EX) BS100001
 }
 export enum RedisSettingKeys {
   AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정
@@ -81,6 +83,7 @@ export enum RedisSettingKeys {
   WorkPriorityBoost = `workPriorityBoost`, //작업 우선 순위 상향 설정 (기준시간: priorityBoostTimeLimit)
   DailyStartEndSchedule = `dailyStartEndSchedule`, // 주간 시업/종업
   NightlyStartEndSchedule = `nightlyStartEndSchedule`, // 야간 시업/종업
+  LogDisplayDuration = 'logDisplayDuration'  // Tracking Log 중 취소된 작업이 남아있을 수 있는 최대 시간 ( 분 )
 }
 
 // export type AmrCurrentChargerTypes = {

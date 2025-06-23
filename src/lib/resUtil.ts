@@ -6,6 +6,10 @@ export interface InsertedResult {
   insertedId: number;
 }
 
+export interface FindOrCreatedResult {
+  findOrCreatedId: number;
+}
+
 export interface InsertedListResult {
   insertedIds: Array<number>;
 }
@@ -76,18 +80,18 @@ export type ResponseJson<T> = {
   code: string;
   message: string | null;
   data:
-    | InsertedResult
-    | BulkInsertedOrUpdatedResult
-    | SelectedInfoResult
-    | SelectedAllResult<T>
-    | SelectedListResult<T>
-    | UpdatedResult
-    | DeletedResult
-    | LoggedInResult
-    | FreeStyleResult
-    | UploadResult
-    | DownloadResult
-    | null;
+  | InsertedResult
+  | BulkInsertedOrUpdatedResult
+  | SelectedInfoResult
+  | SelectedAllResult<T>
+  | SelectedListResult<T>
+  | UpdatedResult
+  | DeletedResult
+  | LoggedInResult
+  | FreeStyleResult
+  | UploadResult
+  | DownloadResult
+  | null;
   remark: unknown;
 };
 

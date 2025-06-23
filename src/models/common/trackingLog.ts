@@ -35,11 +35,13 @@ export type TrackingLogSubjectType =
   'FROM_DOCKING_REQ' |  // FROM 작업 도킹 요청 
   'FROM_DOCKING_PERMIT' | // FROM 작업 도킹 허가
   'FROM_DOCKING_COMPLETED' | // FROM 작업 도킹 완료
+  'FROM_PIO' | // FROM PIO 완료
   'FROM_COMPLETED' |   // FROM 작업 완료
   'TO_START' |     // TO 작업 시작
   'TO_DOCKING_REQ' |  // TO 작업 도킹 요청
   'TO_DOCKING_PERMIT' |  // TO 작업 도킹 허가 
   'TO_DOCKING_COMPLETED' |  // TO 작업 도킹 완료
+  'TO_PIO' |  // TO PIO 완료
   'TO_COMPLETED' |    // TO 작업 완료
   'MISSION_START' |   // 미션 작업 시작
   'MISSION_COMPLETED' |  // 미션 작업 완료
@@ -147,6 +149,10 @@ export interface TrackingLogInsertParams {
   description: string | null;
 }
 
+export interface TrackingLogFindOrCreatedParams {
+  eqpCallId: string;
+}
+
 export interface TrackingLogUpsertParams {
   code?: string | null;
   caller?: string | null;
@@ -233,12 +239,12 @@ export interface TrackingLogDeleteParams {
   id?: TrackingLogAttributes['id'];
 }
 
-export interface TrackingLogRedisAttributes extends Omit<TrackingLogAttributes, 'createdAt' | 'updatedAt' | 'deletedAt'> {
-  // itemLogList: Array<ItemLogAttributes>;
-  itemLogList: Array<ItemLogInsertParams>;
-  createdDateTime: string;
-  updatedDateTime: string;
-}
+// export interface TrackingLogRedisAttributes extends Omit<TrackingLogAttributes, 'createdAt' | 'updatedAt' | 'deletedAt'> {
+//   // itemLogList: Array<ItemLogAttributes>;
+//   itemLogList: Array<ItemLogInsertParams>;
+//   createdDateTime: string;
+//   updatedDateTime: string;
+// }
 
 export interface TrackingLogRedisUpdateParams {
   code?: TrackingLogAttributes['code']

@@ -6,6 +6,7 @@ import {
   DeletedResult,
   getOrderby,
   BulkInsertedOrUpdatedResult,
+  FindOrCreatedResult,
 } from '../../lib/resUtil';
 import TrackingLog, {
   TrackingLogAttributes,
@@ -18,6 +19,7 @@ import TrackingLog, {
   TrackingLogSelectInfoByCodeParams,
   TrackingLogSelectInfoByCallIdParams,
   TrackingLogUpsertParams,
+  TrackingLogFindOrCreatedParams,
 } from '../../models/common/trackingLog';
 
 const dao = {
@@ -39,6 +41,21 @@ const dao = {
       })
         .then((inserted) => {
           resolve({ insertedId: inserted.id });
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+  findOrCreate(params: TrackingLogFindOrCreatedParams, transaction: Transaction): Promise<FindOrCreatedResult> {
+    return new Promise((resolve, reject) => {
+      TrackingLog.findOrCreate({
+        where: {
+          eqpCallId: params.eqpCallId
+        }
+      })
+        .then(([findOrCreated, isCreated]) => {
+          resolve({ findOrCreatedId: findOrCreated.id });
         })
         .catch((err) => {
           reject(err);
