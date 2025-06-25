@@ -10,6 +10,8 @@ import { service as workOrderService } from '../service/operation/workOrderServi
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { WorkOrderAttributesDeep } from 'models/operation/workOrder';
 import { useWorkOrderStatsUtil } from './workOrderUtil';
+import { imcsTrackingLogging } from './imcsTrackingLogUtil';
+import { sendTrackingLogListMqtt } from './trackingLogUtil';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -110,9 +112,11 @@ const topic = mqttConfig.topic;
 
 // 10초마다 서버 상태 acs로 보내기
 if (mqttConfig.host !== '') {
-  setInterval(() => {
+  setInterval(async () => {
     try {
       sendMqtt(`${MqttTopics.IsAlive}`, JSON.stringify(true));
+      // 여기에 Tracking Log 정보 반복 전송 로직 추가 - 함수
+      await sendTrackingLogListMqtt()
     } catch (error) {
       console.log("🚀 ~ setInterval ~ error:", error)
     }
@@ -242,6 +246,7 @@ export const receiveMqtt = (): void => {
             if (topicSplit.length === 4 && topicSplit[3] === 'workinfo') {
               const messageJson = JSON.parse(message);
               logging.WORK_STATUS(messageJson);
+              await imcsTrackingLogging(messageJson)
             }
             // 미사용
             // if(logicTopic === 'notify'){

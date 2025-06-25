@@ -22,6 +22,7 @@ export interface DetailLogAttributes {
 }
 
 type DetailLogSubjectType =
+  | 'CALL_CREATE'
   | 'CALL_CREATED'
   | 'CALL_REQUEST'   // 콜 요청 ( 창고 요청 )
   | 'CALL_CHECK'      // 창고 응답

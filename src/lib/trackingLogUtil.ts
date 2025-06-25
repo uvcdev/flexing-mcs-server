@@ -135,7 +135,7 @@ export const regDetailLog = async (params: RegDetailLogInsertParams) => {
   await redisUtil.hset(RedisKeys.InfoTrackingLogByEqpCallId, eqpCallId, JSON.stringify(trackingLogRedisData))
 }
 
-export const checkTrackingLogExists = async (params: CheckTrackingLogExists): Promise<Boolean> => {
+export const checkTrackingLogExists = async (params: CheckTrackingLogExists): Promise<boolean> => {
   // 1. 이미 있는 데이터 인지 조회 - REDIS
   const paramsEqpCallId = (params.eqpCallId)?.split('$')[0] || '';
 
@@ -225,7 +225,7 @@ export const sendTrackingLogListMqtt = async () => {
     // KEY = EQP CALL ID ( ex : BM1O202506190001 )
     const trackingLogByEqpCallId = infoTrackingLogByFacilityCode.eqpCallId;
 
-    console.log('i', i, 'trackingLogKeyValue', trackingLogByEqpCallId, 'infoTrackingLogByFacilityCode', infoTrackingLogByFacilityCode)
+    // console.log('i', i, 'trackingLogKeyValue', trackingLogByEqpCallId, 'infoTrackingLogByFacilityCode', infoTrackingLogByFacilityCode)
 
     if (!trackingLogByEqpCallId?.includes('MANUAL')) {
       sendMqtt(`tracking_log/${trackingLogByEqpCallId}`, JSON.stringify(infoTrackingLogByFacilityCode))
