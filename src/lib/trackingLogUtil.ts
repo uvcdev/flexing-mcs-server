@@ -105,6 +105,7 @@ export const regDetailLog = async (params: RegDetailLogInsertParams) => {
   const detailLogInsertParams: DetailLogInsertParams = {
     ...newDetailLogInsertParams,
     trackingLogId: trackingLogId,
+    createdDateTime: new Date().toISOString(),
   }
   await detailLogDao.insert(detailLogInsertParams)
 
@@ -129,6 +130,7 @@ export const regDetailLog = async (params: RegDetailLogInsertParams) => {
     value: trackingLogUpdateParams.value ?? null,
     description: trackingLogUpdateParams.description ?? null,
     detailLogList: newDetails,
+    createdDateTime: trackingLogInfo.createdDateTime || new Date().toISOString(),
     updatedDateTime: new Date().toISOString()
   }
 

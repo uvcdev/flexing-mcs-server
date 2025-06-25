@@ -1,7 +1,9 @@
-import { TrackingLogInsertParams } from "models/common/trackingLog";
+import { TrackingLogInsertParams } from "../models/common/trackingLog";
 import { WorkStatus } from "./logging";
 import { checkTrackingLogExists, CheckTrackingLogExists, regDetailLog, RegDetailLogInsertParams, regTrackingLog } from "./trackingLogUtil";
-import { DetailLogInsertParams } from "models/timescale/detailLog";
+import { DetailLogInsertParams } from "../models/timescale/detailLog";
+import { ImcsWorkOrderInsertParams } from "../models/operation/workOrder";
+import { dao as facilityDao } from '../dao/operation/facilityDao';
 
 
 export const imcsTrackingLogging = async (data: WorkStatus) => {
@@ -179,7 +181,7 @@ export const imcsTrackingLogging = async (data: WorkStatus) => {
       // detail Log 정보
       detailLogInsertParams.subject = 'PORT_ASSIGNED'
       // detailLogInsertParams.value = data.WCS_PORT
-      detailLogInsertParams.value = null
+      detailLogInsertParams.value = data.WCS_PORT || ''
       detailLogInsertParams.location = 'WCS'
       detailLogInsertParams.message = message
 
@@ -220,4 +222,83 @@ export const imcsTrackingLogging = async (data: WorkStatus) => {
   }
 
 
+}
+
+export const imcsWorkOrderTrackingLogging = async (data: ImcsWorkOrderInsertParams) => {
+  const trackingLogStatus = 'WORK_CREATE';
+  const checkTrackingLogExistsParams: CheckTrackingLogExists = {
+    eqpCallId: data.EQP_CALL_ID
+  }
+
+  // 설비 정보 GET
+  let fromFacilitySerial = null;
+  let toFacilitySerial = null;
+
+  if (data.TYPE === 'OUT') {
+    fromFacilitySerial = data.EQP_ID;
+    toFacilitySerial = data.PORT_ID;
+  } else {
+    fromFacilitySerial = data.PORT_ID;
+    toFacilitySerial = data.EQP_ID;
+  }
+
+  const fromFacilityInfo = await facilityDao.selectSerial({ serial: fromFacilitySerial });
+  const toFacilityInfo = await facilityDao.selectSerial({ serial: toFacilitySerial });
+
+  // Tracking 로그 만들기
+  const trackingLogInsertParams: TrackingLogInsertParams = {
+    code: null,
+    caller: data.EQP_ID,
+    eqpCallId: data.EQP_CALL_ID,
+    callId: data.EQP_CALL_ID.slice(-4),
+    itemCode: data.CALL_TYPE,
+    subject: null,
+    detail: null,
+    state: null,
+    fromFacility: fromFacilityInfo?.name || null,
+    toFacility: toFacilityInfo?.name || null,
+    assignedRobot: null,
+    value: null,
+    description: null,
+  }
+
+  const isTrackingLogExists = await checkTrackingLogExists(checkTrackingLogExistsParams)
+
+  if (!isTrackingLogExists) {
+    // Set Tracking Log
+    trackingLogInsertParams.subject = trackingLogStatus
+    trackingLogInsertParams.detail = trackingLogStatus
+    trackingLogInsertParams.state = 'PROCESSING'
+    await regTrackingLog(trackingLogInsertParams)
+  }
+
+  // Set Detail Log
+  const detailLogInsertParams: RegDetailLogInsertParams = {
+    topic: trackingLogStatus,
+    subject: null,
+    trackingLogId: null,
+    callId: data.EQP_CALL_ID.slice(-4),
+    eqpCallId: data.EQP_CALL_ID,
+    value: null,
+    location: null,
+    message: null,
+    resultStatus: 'SUCCESS'
+  }
+
+  // Set Detail Log
+  // tracking Log 정보
+  const message = `(${fromFacilityInfo?.name}) - (${toFacilityInfo?.name}) 작업 지시 생성`
+  detailLogInsertParams.trackingLogState = 'PROCESSING'
+  detailLogInsertParams.fromFacility = fromFacilityInfo?.name || null,
+    detailLogInsertParams.toFacility = toFacilityInfo?.name || null,
+    detailLogInsertParams.assignedRobot = null
+  detailLogInsertParams.value = null
+  detailLogInsertParams.description = message
+  // detail Log 정보
+  detailLogInsertParams.subject = 'WORK_CREATE'
+  detailLogInsertParams.value = null
+  detailLogInsertParams.location = 'MCS & ACS'
+  detailLogInsertParams.message = message
+
+  await regDetailLog(detailLogInsertParams)
 }

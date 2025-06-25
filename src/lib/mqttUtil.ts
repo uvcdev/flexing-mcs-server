@@ -10,8 +10,9 @@ import { service as workOrderService } from '../service/operation/workOrderServi
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { WorkOrderAttributesDeep } from 'models/operation/workOrder';
 import { useWorkOrderStatsUtil } from './workOrderUtil';
-import { imcsTrackingLogging } from './imcsTrackingLogUtil';
+import { imcsTrackingLogging, imcsWorkOrderTrackingLogging } from './imcsTrackingLogUtil';
 import { sendTrackingLogListMqtt } from './trackingLogUtil';
+import { acsDockingTrackingLogging, acsTrackingLogging } from './acsTrackingLogUtil';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -214,6 +215,8 @@ export const receiveMqtt = (): void => {
                 message: messageJson,
               });
               await workOrderService.regWorkOrder(messageJson);
+              // work order 에 해당하는 트래킹 로그 수집
+              await imcsWorkOrderTrackingLogging(messageJson);
               console.log('###4');
               sendMqtt('acs/workorder', message);
             }
@@ -246,6 +249,7 @@ export const receiveMqtt = (): void => {
             if (topicSplit.length === 4 && topicSplit[3] === 'workinfo') {
               const messageJson = JSON.parse(message);
               logging.WORK_STATUS(messageJson);
+              // 트래킹 로그 데이터 수집 추가
               await imcsTrackingLogging(messageJson)
             }
             // 미사용
@@ -276,6 +280,23 @@ export const receiveMqtt = (): void => {
 
               try {
                 void itemLogDao.insert(messageJson);
+                await acsDockingTrackingLogging({ ...messageJson, dockingType: 'request' })
+              } catch (error) {
+                console.log('logging.ITEM_LOG', error);
+              }
+            }
+            if (topicSplit.length === 4 && topicSplit[1] === 'docking' && topicSplit[3] === 'permit') {
+              const targetSystem = topicSplit[2];
+
+              const messageJson = JSON.parse(message);
+              logging.MQTT_LOG({
+                title: 'imcs docking request',
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                await acsDockingTrackingLogging({ ...messageJson, dockingType: 'permit' })
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
               }
@@ -292,6 +313,7 @@ export const receiveMqtt = (): void => {
 
               try {
                 void itemLogDao.insert(messageJson);
+                await acsDockingTrackingLogging({ ...messageJson, dockingType: 'complete' })
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
               }
@@ -393,6 +415,25 @@ export const receiveMqtt = (): void => {
                 await workOrderService.stateCheckAndEdit(params, makeLogFormat({} as RequestLog));
               }
             }
+
+            // Tracking Log 
+            if (topicSplit.length === 3 && topicSplit[1] === 'tracking-log') {
+              const EqpCallId = topicSplit[2];
+
+              const messageJson = JSON.parse(message);
+              logging.MQTT_DEBUG({
+                title: 'acs message - tracking log mqtt data',
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                await acsTrackingLogging(messageJson);
+              } catch (error) {
+                console.log('logging.ITEM_LOG', error);
+              }
+            }
+
           }
         }
       } catch (err) {

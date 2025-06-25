@@ -24,6 +24,7 @@ export interface TrackingLogAttributes {
 
 // Subject 내용은 물류 로그 작성 하면서 추가 예정
 export type TrackingLogSubjectType =
+  'CALL_CREATE' |
   'CALL_CREATED' |  // 콜 발생
   'CALL_REQUEST' |  // 콜 요청 ( 창고 요청 )
   'CALL_CHECK' |     // 창고 응답

@@ -160,6 +160,7 @@ export type WorkStatus = {
   WCS_CALL_ID: string;
   STATUS: keyof typeof workStatusObject;
   DATE_TIME: string;
+  WCS_PORT?: string;
 };
 
 export const workStatusObject = {

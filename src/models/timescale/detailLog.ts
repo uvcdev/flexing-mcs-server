@@ -21,13 +21,14 @@ export interface DetailLogAttributes {
   createdAt: Date;
 }
 
-type DetailLogSubjectType =
+export type DetailLogSubjectType =
   | 'CALL_CREATE'
   | 'CALL_CREATED'
   | 'CALL_REQUEST'   // 콜 요청 ( 창고 요청 )
   | 'CALL_CHECK'      // 창고 응답
   | 'CALL_RESPONSE'   // 콜에 대한 호출 응답
   | 'PORT_ASSIGNED'   // 포트 배정 완료
+  | 'WORK_CREATE'     // 작업 지시 생성
   | 'WORK_ORDER_CREATED'     // 작업지시 생성 
   | 'AMR_ASSIGNED'     // AMR 할당 
   | 'FROM_START'      // FROM 작업 시작
@@ -150,7 +151,7 @@ export interface DetailLogInsertParams {
   location?: string | null;
   message?: string | null;
   resultStatus: DetailLogAttributes['resultStatus'] | null;
-  createdDateTime?: Date | null;
+  createdDateTime?: Date | string | null;
 }
 
 // selectList
