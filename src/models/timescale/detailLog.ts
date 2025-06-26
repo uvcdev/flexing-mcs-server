@@ -62,7 +62,8 @@ export type DetailLogSubjectType =
   | 'MISSION_FAILED'
   | 'ALARM_REPORT'
   | 'ALARM_CLEAR'
-  | 'ACK_MISSION_COMMAND';
+  | 'ACK_MISSION_COMMAND'
+  | 'UNKNOWN';
 
 type ResultStatus = 'SUCCESS' | 'ERROR' | 'ABORTED' | 'PAUSED';
 

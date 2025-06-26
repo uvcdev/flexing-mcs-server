@@ -37,6 +37,7 @@ import { RequestParams } from 'nodemailer/lib/xoauth2';
 import dayjs from 'dayjs';
 import { DailyWorkOrderStats, WorkOrderStats, useWorkOrderStatsUtil } from '../../lib/workOrderUtil';
 import { calculateDurationInSeconds } from '../../lib/dateUtil';
+import { FacilityCanceledTrackingLoggingParams, imcsFacilityCanceledTrackingLogging } from '../../lib/imcsTrackingLogUtil';
 
 let accessToken = '';
 const workOrderStatsUtil = useWorkOrderStatsUtil()
@@ -256,6 +257,12 @@ const service = {
       };
 
       workOrderResult = await workOrderDao.update(workOrderUpdateParmas);
+
+      // 설비 취소 Tracking Log 추가
+      const facilityCanceledTrackingLoggingParams: FacilityCanceledTrackingLoggingParams = {
+        eqpCallId: workOrder.code
+      }
+      await imcsFacilityCanceledTrackingLogging(facilityCanceledTrackingLoggingParams)
     } catch (err) {
       await transaction.rollback();
       return new Promise((resolve, reject) => {

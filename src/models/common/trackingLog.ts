@@ -49,7 +49,8 @@ export type TrackingLogSubjectType =
   'CALL_ID' |
   'WORK_ORDER' |
   'WMS_CALL_ID' |
-  'WMS_PORT_ID'
+  'WMS_PORT_ID' |
+  'UNKNOWN'
   ;
 
 // 진행 상태 추가 필요시 추가 적용 예정
