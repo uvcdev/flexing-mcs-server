@@ -240,6 +240,84 @@ const service = {
       resolve(result);
     });
   },
+  async writeAllRedis(): Promise<InsertedResult> {
+    let result: InsertedResult;
+    try {
+      redisUtil.del(RedisKeys.InfoFacilityById);
+      redisUtil.del(RedisKeys.InfoFacilityBySerial);
+      const facilityList = await facilityDao.selectList({});
+      facilityList.rows.forEach((facility) => {
+        const facilityDeep = facility as FacilityAttributesDeep;
+        const facilityString = JSON.stringify(facilityDeep);
+        redisUtil.hset(RedisKeys.InfoFacilityById, facilityDeep.id.toString(), facilityString);
+        if (facilityDeep.serial) {
+          redisUtil.hset(RedisKeys.InfoFacilityBySerial, facilityDeep.serial, facilityString);
+        }
+      });
+
+      logging.ACTION_DEBUG({
+        filename: 'facilityService.ts',
+        error: null,
+        params: null,
+        result: 'facility writeAllRedis success',
+      });
+    } catch (err) {
+      logging.ACTION_ERROR({
+        filename: 'facilityService.ts',
+        error: 'redis acs facility info값 초기화 실패',
+        params: null,
+        result: false,
+      });
+
+      return new Promise((resolve, reject) => {
+        reject(err);
+      });
+    }
+
+    return new Promise((resolve) => {
+      resolve(result);
+    });
+  },
+  // redis init
+  async writeSingleRedis(facilityId: number): Promise<InsertedResult> {
+    let result: InsertedResult;
+    try {
+      const facilityInfo = await facilityDao.selectInfo({ id: facilityId });
+
+      const facilityDeep = facilityInfo as FacilityAttributesDeep;
+      if (facilityDeep?.active === true) {
+        const facilityInfoRedisString = JSON.stringify(facilityInfo);
+        redisUtil.hset(RedisKeys.InfoFacilityById, facilityDeep.id.toString(), facilityInfoRedisString);
+        if (facilityDeep?.serial) {
+          redisUtil.hset(RedisKeys.InfoFacilityBySerial, facilityDeep.serial, facilityInfoRedisString);
+        }
+      } else if (facilityDeep?.active === false) {
+        redisUtil.hdel(RedisKeys.InfoFacilityById, facilityDeep.id.toString() || '');
+        redisUtil.hdel(RedisKeys.InfoFacilityBySerial, facilityDeep.serial || '');
+      }
+      logging.ACTION_DEBUG({
+        filename: 'facilityService.ts',
+        error: null,
+        params: null,
+        result: 'facility writeSingleRedis success',
+      });
+    } catch (err) {
+      logging.ACTION_ERROR({
+        filename: 'facilityService.ts',
+        error: 'redis acs facility info값 초기화 실패',
+        params: null,
+        result: false,
+      });
+
+      return new Promise((resolve, reject) => {
+        reject(err);
+      });
+    }
+
+    return new Promise((resolve) => {
+      resolve(result);
+    });
+  },
 };
 
 export { service };

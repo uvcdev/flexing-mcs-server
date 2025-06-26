@@ -248,7 +248,7 @@ export const acsTrackingLogging = async (data: AcsMqttTrackingLogType) => {
           }
 
           // Set Detail Log
-          message = `TO 작업 완료`
+          message = `TO 작업 이력 및 작업 지시 완료`
           // tracking Log 정보
           detailLogInsertParams.trackingLogState = 'COMPLETED'
           detailLogInsertParams.fromFacility = null
@@ -376,7 +376,8 @@ export const acsDockingTrackingLogging = async (data: DockingTrackingLoggingPara
     let trackingLogStatus = '';
     let eqpCallId = data.EQP_CALL_ID.split('$')[0]
 
-    if (data.EXC_CLS === 'AUTO' || data.EXC_CLS === 'MANUAL') {
+    // if (data.EXC_CLS === 'AUTO' || data.EXC_CLS === 'MANUAL') {
+    if (data.EXC_CLS !== 'CHARGE') {
       try {
         const trackingLogRedisInfo = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByEqpCallId, eqpCallId);
         let trackingLogDbInfo
@@ -502,6 +503,9 @@ export const acsDockingTrackingLogging = async (data: DockingTrackingLoggingPara
             }
 
             detailLogInsertParams.trackingLogState = 'PROCESSING'
+            // if (trackingLogStatus === 'TO_DOCKING_COMPLETED') {
+            //   detailLogInsertParams.trackingLogState = 'COMPLETED'
+            // }
             detailLogInsertParams.fromFacility = null
             detailLogInsertParams.toFacility = null
             detailLogInsertParams.assignedRobot = null

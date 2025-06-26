@@ -73,6 +73,7 @@ export enum RedisKeys {
   Setting = 'setting',
   InfoFacility = 'info_facility',
   InfoFacilityById = 'info_facility_by_id',
+  InfoFacilityBySerial = 'info_facility_by_serial',
   // 신규 추가
   InfoTrackingLogByEqpCallId = 'info_tracking_log_by_eqp_call_id', // [ Key : (설비명) + (콜 번호) ] -> EX) BS100001
 }

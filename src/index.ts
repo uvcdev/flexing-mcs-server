@@ -20,6 +20,7 @@ import swaggerJson from '../src/swagger.json';
 import * as process from 'process';
 import { service as workOrderService } from './service/operation/workOrderService';
 import { makeinitDailyWorkOrderstatsScheduleSet } from './lib/scheduleUtil';
+import { service as facilityService } from './service/operation/facilityService';
 
 dotenv.config();
 
@@ -68,7 +69,7 @@ if (env === 'production') {
     .sync({
       force: false,
     })
-    .then(() => {
+    .then(async () => {
       logging.SYSTEM_LOG({
         title: 'Sequelize Table Sync',
         message: {
@@ -81,6 +82,8 @@ if (env === 'production') {
         },
       });
       console.log('Sequelize sync success');
+
+      await facilityService.writeAllRedis();
     })
     .catch((err: Error) => {
       console.error(err);
@@ -115,20 +118,20 @@ if (env === 'production') {
 
     try {
       await logSequelize.sync({ force: false }).then(async () => {
-        // 첫 번째 쿼리 실행
-        try {
-          await logSequelize.query(`SELECT create_hypertable('logs', 'created_at');`);
-        } catch (error) {
-          console.log('Error creating hypertable for logs, but continuing:', error);
-          await logSequelize.query(`SELECT create_hypertable('item_logs', 'created_at');`);
-        }
+        // // 첫 번째 쿼리 실행
+        // try {
+        //   await logSequelize.query(`SELECT create_hypertable('logs', 'created_at');`);
+        // } catch (error) {
+        //   console.log('Error creating hypertable for logs, but continuing:', error);
+        //   await logSequelize.query(`SELECT create_hypertable('item_logs', 'created_at');`);
+        // }
 
-        // 두 번째 쿼리 실행
-        try {
-          await logSequelize.query(`SELECT create_hypertable('item_logs', 'created_at');`);
-        } catch (error) {
-          console.log('Error creating hypertable for item_logs, but continuing:', error);
-        }
+        // // 두 번째 쿼리 실행
+        // try {
+        //   await logSequelize.query(`SELECT create_hypertable('item_logs', 'created_at');`);
+        // } catch (error) {
+        //   console.log('Error creating hypertable for item_logs, but continuing:', error);
+        // }
 
         logging.SYSTEM_LOG({
           title: 'Sequelize Log Table Sync',
@@ -223,6 +226,6 @@ if (httpsOption.key && httpsOption.cert) {
 }
 
 
-if(process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true'){
-  makeinitDailyWorkOrderstatsScheduleSet({hour: 0,minute: 0, second:0})
+if (process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true') {
+  makeinitDailyWorkOrderstatsScheduleSet({ hour: 0, minute: 0, second: 0 })
 }
