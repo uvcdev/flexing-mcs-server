@@ -280,8 +280,8 @@ export const acsTrackingLogging = async (data: AcsMqttTrackingLogType) => {
 
           if (!isTrackingLogExists) {
             // Set Tracking Log
-            trackingLogInsertParams.subject = trackingLogStatus
-            trackingLogInsertParams.detail = trackingLogStatus
+            trackingLogInsertParams.subject = 'UNKNOWN'
+            trackingLogInsertParams.detail = 'UNKNOWN'
             trackingLogInsertParams.state = 'ABORTED'
             await regTrackingLog(trackingLogInsertParams)
           }
@@ -319,14 +319,14 @@ export const acsTrackingLogging = async (data: AcsMqttTrackingLogType) => {
 
           if (!isTrackingLogExists) {
             // Set Tracking Log
-            trackingLogInsertParams.subject = trackingLogStatus
-            trackingLogInsertParams.detail = trackingLogStatus
+            trackingLogInsertParams.subject = 'UNKNOWN'
+            trackingLogInsertParams.detail = 'UNKNOWN'
             trackingLogInsertParams.state = 'ABORTED'
             await regTrackingLog(trackingLogInsertParams)
           }
 
           // Set Detail Log
-          message = `ACS 작업 취소 발생`
+          message = `FMS 작업 중단 발생`
           // tracking Log 정보
           detailLogInsertParams.trackingLogState = 'ABORTED'
           detailLogInsertParams.fromFacility = null
