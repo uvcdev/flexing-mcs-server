@@ -286,7 +286,7 @@ export const imcsWorkOrderTrackingLogging = async (data: ImcsWorkOrderInsertPara
     let fromFacilitySerial = null;
     let toFacilitySerial = null;
 
-    if (data.TYPE === 'OUT') {
+    if (data.TYPE && (data.TYPE).toUpperCase() === 'OUT') {
       fromFacilitySerial = data.EQP_ID;
       toFacilitySerial = data.PORT_ID;
     } else {
@@ -373,9 +373,9 @@ export const imcsWorkOrderTrackingLogging = async (data: ImcsWorkOrderInsertPara
       // tracking Log 정보
       const message = `(${fromFacilityInfo?.name || 'Unknown'}) - (${toFacilityInfo?.name || 'Unknown'}) 작업 지시 생성`
       detailLogInsertParams.trackingLogState = 'PROCESSING'
-      detailLogInsertParams.fromFacility = fromFacilityInfo?.name || null,
-        detailLogInsertParams.toFacility = toFacilityInfo?.name || null,
-        detailLogInsertParams.assignedRobot = null
+      detailLogInsertParams.fromFacility = fromFacilityInfo?.name || null
+      detailLogInsertParams.toFacility = toFacilityInfo?.name || null
+      detailLogInsertParams.assignedRobot = null
       detailLogInsertParams.value = null
       detailLogInsertParams.description = message
       // detail Log 정보

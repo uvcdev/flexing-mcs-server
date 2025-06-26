@@ -282,27 +282,27 @@ export const receiveMqtt = (): void => {
 
               try {
                 void itemLogDao.insert(messageJson);
-                await acsDockingTrackingLogging({ ...messageJson, dockingType: 'request' })
+                // await acsDockingTrackingLogging({ ...messageJson, dockingType: 'request' })
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
               }
             }
-            if (topicSplit.length === 4 && topicSplit[1] === 'docking' && topicSplit[3] === 'permit') {
-              const targetSystem = topicSplit[2];
+            // if (topicSplit.length === 4 && topicSplit[1] === 'docking' && topicSplit[3] === 'permit') {
+            //   const targetSystem = topicSplit[2];
 
-              const messageJson = JSON.parse(message);
-              logging.MQTT_LOG({
-                title: 'imcs docking request',
-                topic: messageTopic,
-                message: messageJson,
-              });
+            //   const messageJson = JSON.parse(message);
+            //   logging.MQTT_LOG({
+            //     title: 'imcs docking permit',
+            //     topic: messageTopic,
+            //     message: messageJson,
+            //   });
 
-              try {
-                await acsDockingTrackingLogging({ ...messageJson, dockingType: 'permit' })
-              } catch (error) {
-                console.log('logging.ITEM_LOG', error);
-              }
-            }
+            //   try {
+            //     await acsDockingTrackingLogging({ ...messageJson, dockingType: 'permit' })
+            //   } catch (error) {
+            //     console.log('logging.ITEM_LOG', error);
+            //   }
+            // }
             if (topicSplit.length === 4 && topicSplit[1] === 'docking' && topicSplit[3] === 'complete') {
               const targetSystem = topicSplit[2];
 
@@ -315,7 +315,7 @@ export const receiveMqtt = (): void => {
 
               try {
                 void itemLogDao.insert(messageJson);
-                await acsDockingTrackingLogging({ ...messageJson, dockingType: 'complete' })
+                // await acsDockingTrackingLogging({ ...messageJson, dockingType: 'complete' })
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
               }
@@ -370,6 +370,26 @@ export const receiveMqtt = (): void => {
 
               try {
                 void itemLogDao.insert(messageJson);
+                // 트래킹 로그 추가
+                await acsDockingTrackingLogging({ ...messageJson, dockingType: 'request' })
+              } catch (error) {
+                console.log('logging.ITEM_LOG', error);
+              }
+            }
+            // 도킹 퍼밋
+            if (topicSplit.length === 4 && topicSplit[1] === 'docking' && topicSplit[3] === 'permit') {
+              const targetSystem = topicSplit[2];
+
+              const messageJson = JSON.parse(message);
+              logging.MQTT_LOG({
+                title: 'acs docking permit',
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                // 트래킹 로그 추가
+                await acsDockingTrackingLogging({ ...messageJson, dockingType: 'permit' })
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
               }
@@ -386,6 +406,8 @@ export const receiveMqtt = (): void => {
 
               try {
                 void itemLogDao.insert(messageJson);
+                // 트래킹 로그 추가
+                await acsDockingTrackingLogging({ ...messageJson, dockingType: 'complete' })
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
               }
