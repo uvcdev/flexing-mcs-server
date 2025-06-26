@@ -145,3 +145,4 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 - Tracking Log Table 기본 기능 및 구조 생성
 - route 정보 , model 정보 추가 - [MCS Call 이력 조회 및 관리] 서버 작업 완료
 - Setting에 `LogDurationSetting` 정보 추가
+- Tracking Log 대시보드 데이터 가공 함수 생성 `fixTrackingLogList()`

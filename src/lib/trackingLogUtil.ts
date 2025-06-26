@@ -2,10 +2,11 @@ import { logging, LogFormat, ActionLog } from '../lib/logging';
 import { DetailLogAttributes, DetailLogInsertParams } from 'models/timescale/detailLog';
 import { TrackingLogAttributes, TrackingLogFindOrCreatedParams, TrackingLogInsertParams, TrackingLogState, TrackingLogUpdateParams } from './../models/common/trackingLog';
 import { dao as trackingLogDao } from '../dao/common/trackingLogDao';
-import { RedisKeys, useRedisUtil } from './redisUtil';
+import { RedisKeys, RedisSettingKeys, useRedisUtil } from './redisUtil';
 import { v4 as uuidv4 } from 'uuid';
 import { sendMqtt } from './mqttUtil';
 import { detailLogDao } from '../dao/timescale/detailLogDao';
+import { LogDurationSetting } from 'models/common/setting';
 
 const redisUtil = useRedisUtil();
 
@@ -15,7 +16,7 @@ export interface DetailLogRedisAttributes extends Omit<DetailLogAttributes, 'cre
 
 export interface TrackingLogRedisAttributes extends Omit<TrackingLogAttributes, 'createdAt' | 'updatedAt' | 'deletedAt'> {
   detailLogList: Array<DetailLogRedisAttributes>;
-  createdDateTime?: string;
+  createdDateTime: string;
   updatedDateTime: string;
 }
 
@@ -236,3 +237,69 @@ export const sendTrackingLogListMqtt = async () => {
 }
 
 // Tracking Log 데이터 처리 함수
+// 설비당 최근 작업은 3개만 보임 - CreatedDateTime 기준
+// 완료된 물류 로그는 리스트 표현에서 삭제
+// 일정 시간 ( 10분 ) 동안 업데이트가 없는 이력은 삭제
+export const fixTrackingLogList = async () => {
+  const dulationSetting = await redisUtil.hgetObject<LogDurationSetting>(RedisKeys.Setting, RedisSettingKeys.LogDuration)
+  const dulationTime = dulationSetting?.data.durationTime || 10
+  const dulationCount = dulationSetting?.data.durationCount || 3
+
+  const trackingLogList = await redisUtil.hgetAllObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByEqpCallId) || []
+
+  // 1. 완료된 작업 지시 리스트에서 제거
+  const sortedNotCompletedTrackingLogList = trackingLogList.filter(trackingLog => trackingLog.state !== 'COMPLETED')
+
+  // 2. 시간 순대로 정렬하기 - CreatedDateTime
+  const sortedCreatedAtList = sortedNotCompletedTrackingLogList.sort((a, b) => {
+    return new Date(b.createdDateTime).getTime() - new Date(a.createdDateTime).getTime()
+  })
+  // 3. Caller가 같은 로그들 중 최근 이력 3개만 보이게 하고 지난 이력은 리스트에서 없애기
+  const callerGrouped = sortedCreatedAtList.reduce((acc, log) => {
+    const caller = log.caller // caller 필드명 확인 필요
+
+    if (!caller) return acc // null이면 스킵
+
+    if (!acc[caller]) {
+      acc[caller] = []
+    }
+    if (acc[caller].length < dulationCount) { // 최근 3개만 유지
+      acc[caller].push(log)
+    }
+    return acc
+  }, {} as Record<string, TrackingLogRedisAttributes[]>)
+
+  const limitedList = Object.values(callerGrouped).flat()
+
+  // 4. 기준 시간(dulationTime) 동안 최근 Update가 안됐다면 리스트에서 없애기
+  const now = new Date();
+  const filteredTrackingLogList = limitedList.filter(trackingLog => {
+    const updatedAt = trackingLog.updatedDateTime
+    const updatedAtTime = new Date(updatedAt)
+    const durationInMs = dulationTime * 60 * 1000
+    const thresholdTime = new Date(updatedAtTime.getTime() + durationInMs);
+
+    return now < thresholdTime
+  })
+
+  // 결과 - Redis에 새로운 데이터 저장
+  await redisUtil.del(RedisKeys.InfoTrackingLogByEqpCallId)
+
+  const savePromises = filteredTrackingLogList
+    .filter(log => log.eqpCallId)
+    .map(trackingLogObj =>
+      redisUtil.hset(RedisKeys.InfoTrackingLogByEqpCallId, trackingLogObj.eqpCallId!, JSON.stringify(trackingLogObj))
+    )
+
+  await Promise.all(savePromises)
+  // for (let i = 0, legnth = trackingLogList.length; i < legnth; i++) {
+  //   const eqpCallId = trackingLogList[i].eqpCallId
+  // }
+  // for (let i = 0, length = filteredTrackingLogList.length; i < length; i++) {
+  //   const trackingLogObj = filteredTrackingLogList[i]
+  //   const eqpCallId = trackingLogObj.eqpCallId;
+  //   if (eqpCallId) {
+  //     redisUtil.hset(RedisKeys.InfoTrackingLogByEqpCallId, eqpCallId, JSON.stringify(trackingLogObj))
+  //   }
+  // }
+}

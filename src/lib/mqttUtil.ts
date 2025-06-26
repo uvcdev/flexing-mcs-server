@@ -11,7 +11,7 @@ import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { WorkOrderAttributesDeep } from 'models/operation/workOrder';
 import { useWorkOrderStatsUtil } from './workOrderUtil';
 import { imcsTrackingLogging, imcsWorkOrderTrackingLogging } from './imcsTrackingLogUtil';
-import { sendTrackingLogListMqtt } from './trackingLogUtil';
+import { fixTrackingLogList, sendTrackingLogListMqtt } from './trackingLogUtil';
 import { acsDockingTrackingLogging, acsTrackingLogging } from './acsTrackingLogUtil';
 
 // mqtt접속 환경
@@ -116,6 +116,8 @@ if (mqttConfig.host !== '') {
   setInterval(async () => {
     try {
       sendMqtt(`${MqttTopics.IsAlive}`, JSON.stringify(true));
+      // Tracking Log 데이터 전처리
+      await fixTrackingLogList()
       // 여기에 Tracking Log 정보 반복 전송 로직 추가 - 함수
       await sendTrackingLogListMqtt()
     } catch (error) {
