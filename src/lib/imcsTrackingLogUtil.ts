@@ -8,8 +8,9 @@ import { dao as facilityDao } from '../dao/operation/facilityDao';
 export const imcsTrackingLogging = async (data: WorkStatus) => {
   try {
     const trackingLogStatus = data.STATUS;
+    const splitEqpCallId = data.EQP_CALL_ID.split('$')[0]
     const checkTrackingLogExistsParams: CheckTrackingLogExists = {
-      eqpCallId: data.EQP_CALL_ID
+      eqpCallId: splitEqpCallId
     }
 
     let message = ''
@@ -17,8 +18,8 @@ export const imcsTrackingLogging = async (data: WorkStatus) => {
     const trackingLogInsertParams: TrackingLogInsertParams = {
       code: null,
       caller: data.EQP_ID,
-      eqpCallId: data.EQP_CALL_ID,
-      callId: data.EQP_CALL_ID?.slice(-4) || '',
+      eqpCallId: splitEqpCallId,
+      callId: splitEqpCallId?.slice(-4) || '',
       itemCode: null,
       subject: null,
       detail: null,
@@ -34,8 +35,8 @@ export const imcsTrackingLogging = async (data: WorkStatus) => {
       topic: trackingLogStatus,
       subject: null,
       trackingLogId: null,
-      callId: data.EQP_CALL_ID?.slice(-4) || '',
-      eqpCallId: data.EQP_CALL_ID,
+      callId: splitEqpCallId?.slice(-4) || '',
+      eqpCallId: splitEqpCallId,
       value: null,
       location: null,
       message: null,
@@ -276,8 +277,9 @@ export const imcsTrackingLogging = async (data: WorkStatus) => {
 export const imcsWorkOrderTrackingLogging = async (data: ImcsWorkOrderInsertParams) => {
   try {
     const trackingLogStatus = 'WORK_CREATE';
+    const splitEqpCallId = data.EQP_CALL_ID.split('$')[0]
     const checkTrackingLogExistsParams: CheckTrackingLogExists = {
-      eqpCallId: data.EQP_CALL_ID
+      eqpCallId: splitEqpCallId
     }
 
     // 설비 정보 GET
@@ -321,8 +323,8 @@ export const imcsWorkOrderTrackingLogging = async (data: ImcsWorkOrderInsertPara
     const trackingLogInsertParams: TrackingLogInsertParams = {
       code: null,
       caller: data.EQP_ID,
-      eqpCallId: data.EQP_CALL_ID,
-      callId: data.EQP_CALL_ID?.slice(-4) || '',
+      eqpCallId: splitEqpCallId,
+      callId: splitEqpCallId?.slice(-4) || '',
       itemCode: data.CALL_TYPE,
       subject: null,
       detail: null,
@@ -358,8 +360,8 @@ export const imcsWorkOrderTrackingLogging = async (data: ImcsWorkOrderInsertPara
       topic: trackingLogStatus,
       subject: null,
       trackingLogId: null,
-      callId: data.EQP_CALL_ID?.slice(-4) || '',
-      eqpCallId: data.EQP_CALL_ID,
+      callId: splitEqpCallId?.slice(-4) || '',
+      eqpCallId: splitEqpCallId,
       value: null,
       location: null,
       message: null,
@@ -408,16 +410,17 @@ export interface FacilityCanceledTrackingLoggingParams {
 export const imcsFacilityCanceledTrackingLogging = async (data: FacilityCanceledTrackingLoggingParams) => {
   try {
     const trackingLogStatus = 'UNKNOWN';
+    const splitEqpCallId = data.eqpCallId.split('$')[0]
     const checkTrackingLogExistsParams: CheckTrackingLogExists = {
-      eqpCallId: data.eqpCallId
+      eqpCallId: splitEqpCallId
     }
 
     // Tracking 로그 만들기
     const trackingLogInsertParams: TrackingLogInsertParams = {
       code: null,
-      caller: data.eqpCallId,
-      eqpCallId: data.eqpCallId,
-      callId: data.eqpCallId?.slice(-4) || '',
+      caller: null,
+      eqpCallId: splitEqpCallId,
+      callId: splitEqpCallId?.slice(-4) || '',
       itemCode: null,
       subject: null,
       detail: null,
@@ -453,8 +456,8 @@ export const imcsFacilityCanceledTrackingLogging = async (data: FacilityCanceled
       topic: trackingLogStatus,
       subject: null,
       trackingLogId: null,
-      callId: data.eqpCallId?.slice(-4) || '',
-      eqpCallId: data.eqpCallId,
+      callId: splitEqpCallId?.slice(-4) || '',
+      eqpCallId: splitEqpCallId,
       value: null,
       location: null,
       message: null,

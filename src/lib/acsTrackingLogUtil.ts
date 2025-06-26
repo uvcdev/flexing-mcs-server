@@ -31,12 +31,13 @@ export interface DockingTrackingLoggingParams {
 export const acsTrackingLogging = async (data: AcsMqttTrackingLogType) => {
   try {
     const trackingLogStatus = data.SUBJECT;
+    const splitEqpCallId = data.EQP_CALL_ID.split('$')[0]
     const checkTrackingLogExistsParams: CheckTrackingLogExists = {
-      eqpCallId: data.EQP_CALL_ID
+      eqpCallId: splitEqpCallId
     }
 
     // EQP CALL ID 데이터 확인
-    if (!data.EQP_CALL_ID) {
+    if (!splitEqpCallId) {
       logging.ACTION_ERROR({
         filename: 'acsTrackingLogUtil.ts - acsTrackingLogging',
         error: `올바르지 않은 데이터 입니다.(EQP_CALL_ID) ${JSON.stringify(data)}`,
@@ -47,15 +48,15 @@ export const acsTrackingLogging = async (data: AcsMqttTrackingLogType) => {
     }
 
     let callId = ''
-    if (!data.EQP_CALL_ID.includes('MANUAL')) {
-      callId = data.EQP_CALL_ID.slice(-4)
+    if (!splitEqpCallId.includes('MANUAL')) {
+      callId = splitEqpCallId.slice(-4)
     }
     let message = ''
     let isTrackingLogExists = true
     const trackingLogInsertParams: TrackingLogInsertParams = {
       code: null,
       caller: null,
-      eqpCallId: data.EQP_CALL_ID,
+      eqpCallId: splitEqpCallId,
       callId: callId,
       itemCode: null,
       subject: null,
@@ -73,7 +74,7 @@ export const acsTrackingLogging = async (data: AcsMqttTrackingLogType) => {
       subject: null,
       trackingLogId: null,
       callId: callId,
-      eqpCallId: data.EQP_CALL_ID,
+      eqpCallId: splitEqpCallId,
       value: null,
       location: null,
       message: null,
@@ -373,7 +374,7 @@ export const acsDockingTrackingLogging = async (data: DockingTrackingLoggingPara
   try {
     // From, To - Docking
     let trackingLogStatus = '';
-    let eqpCallId = data.EQP_CALL_ID
+    let eqpCallId = data.EQP_CALL_ID.split('$')[0]
 
     if (data.EXC_CLS === 'AUTO' || data.EXC_CLS === 'MANUAL') {
       try {

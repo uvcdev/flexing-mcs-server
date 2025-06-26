@@ -36,7 +36,7 @@ export interface RegDetailLogInsertParams extends DetailLogInsertParams {
 // Detail Log 데이터 수집 함수 - 저장
 export const regDetailLog = async (params: RegDetailLogInsertParams) => {
   try {
-    const eqpCallId = params.eqpCallId || ''
+    const eqpCallId = (params.eqpCallId)?.split('$')[0] || ''
 
     const { trackingLogState, fromFacility, toFacility, assignedRobot, value, description, ...newDetailLogInsertParams } = params
 
@@ -220,7 +220,7 @@ export const checkTrackingLogExists = async (params: CheckTrackingLogExists): Pr
 
     // 2. 이미 있는 데이터 인지 조회 - DB
     try {
-      const trackingLogDbInfo = await trackingLogDao.selectInfoByEqpCallId({ eqpCallId: params.eqpCallId })
+      const trackingLogDbInfo = await trackingLogDao.selectInfoByEqpCallId({ eqpCallId: paramsEqpCallId })
       if (trackingLogDbInfo) {
         return true;
       }
@@ -377,7 +377,7 @@ export const sendTrackingLogListMqtt = async () => {
         // KEY = EQP CALL ID ( ex : BM1O202506190001 )
         const trackingLogByEqpCallId = infoTrackingLogByFacilityCode?.eqpCallId;
 
-        if (trackingLogByEqpCallId && !trackingLogByEqpCallId.includes('MANUAL')) {
+        if (trackingLogByEqpCallId && !trackingLogByEqpCallId.includes('MANUAL') && !trackingLogByEqpCallId.includes('dryrun')) {
           await sendMqtt(`tracking_log/${trackingLogByEqpCallId}`, JSON.stringify(infoTrackingLogByFacilityCode))
         }
       } catch (error) {
