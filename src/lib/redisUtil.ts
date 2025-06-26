@@ -83,7 +83,7 @@ export enum RedisSettingKeys {
   WorkPriorityBoost = `workPriorityBoost`, //작업 우선 순위 상향 설정 (기준시간: priorityBoostTimeLimit)
   DailyStartEndSchedule = `dailyStartEndSchedule`, // 주간 시업/종업
   NightlyStartEndSchedule = `nightlyStartEndSchedule`, // 야간 시업/종업
-  LogDisplayDuration = 'logDisplayDuration'  // Tracking Log 중 취소된 작업이 남아있을 수 있는 최대 시간 ( 분 )
+  LogDuration = 'logDurationSetting'  // Tracking Log 중 취소된 작업이 남아있을 수 있는 최대 시간 ( 분 )
 }
 
 // export type AmrCurrentChargerTypes = {

@@ -97,6 +97,15 @@ export interface SettingDeleteParams {
   id?: SettingAttributes['id'];
 }
 
+export type LogDurationSetting = {
+  system: string;
+  type: string;
+  data: {
+    durationTime: number; // 분
+    durationCount: number; // 개수
+  };
+};
+
 /* 인터페이스 정의 끝 */
 
 export default Setting;
