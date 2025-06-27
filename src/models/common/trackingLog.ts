@@ -8,6 +8,7 @@ export interface TrackingLogAttributes {
   caller: string | null;         // Call 발생 설비명
   eqpCallId: string | null;      // mcs call id -> 작업 지시 코드
   callId: string | null;         // Caller 기준 call 번호
+  wcsCallId: string | null;      // 창고 기준 Call 번호
   itemCode: string | null;       // Item 코드
   subject: TrackingLogSubjectType | null | any;        // 물류 로그 subject 정보 ex ) LOAD_COMMAND , MISSION_STATE ... 
   detail: string | null;         // subject의 detail 정보 ex ) subject : MISSION_STATE , detail : AMR_ASSIGNED
@@ -62,6 +63,7 @@ class TrackingLog extends Model implements TrackingLogAttributes {
   public caller!: TrackingLogAttributes['caller'];
   public eqpCallId!: TrackingLogAttributes['eqpCallId'];
   public callId!: TrackingLogAttributes['callId'];
+  public wcsCallId!: TrackingLogAttributes['wcsCallId'];
   public itemCode!: TrackingLogAttributes['itemCode'];
   public subject!: TrackingLogAttributes['subject'];
   public detail!: TrackingLogAttributes['detail'];
@@ -93,6 +95,9 @@ TrackingLog.init(
       type: DataTypes.STRING(50),
     },
     callId: {
+      type: DataTypes.STRING(20),
+    },
+    wcsCallId: {
       type: DataTypes.STRING(20),
     },
     itemCode: {
@@ -140,6 +145,7 @@ export interface TrackingLogInsertParams {
   caller: string | null;
   eqpCallId: string | null;
   callId: string | null;
+  wcsCallId: string | null;
   itemCode: string | null;
   subject: string | null;
   detail: string | null;
@@ -161,6 +167,7 @@ export interface TrackingLogUpsertParams {
   caller?: string | null;
   eqpCallId?: string | null;
   callId?: string | null;
+  wcsCallId?: string | null;
   itemCode?: string | null;
   subject?: TrackingLogSubjectType | null;
   detail?: string | null;
@@ -179,6 +186,7 @@ export interface TrackingLogSelectListParams {
   caller?: string;
   eqpCallId?: string;
   callId?: string;
+  wcsCallId?: string;
   itemCode?: string;
   fromFacility?: string;
   toFacility?: string;
@@ -221,6 +229,10 @@ export interface TrackingLogSelectInfoByCallIdParams {
 export interface TrackingLogSelectInfoByEqpCallIdParams {
   eqpCallId?: string;
 }
+// selectWcsCallId
+export interface TrackingLogSelectInfoByWcsCallIdParams {
+  wcsCallId?: string;
+}
 
 // update
 export interface TrackingLogUpdateParams {
@@ -231,6 +243,7 @@ export interface TrackingLogUpdateParams {
   callId?: TrackingLogAttributes['callId'];
   // 업데이트 내용
   eqpCallId?: TrackingLogAttributes['eqpCallId'];
+  wcsCallId?: TrackingLogAttributes['wcsCallId'];
   itemCode?: TrackingLogAttributes['itemCode'];
   subject?: TrackingLogAttributes['subject'];
   detail?: TrackingLogAttributes['detail'];
@@ -259,6 +272,7 @@ export interface TrackingLogRedisUpdateParams {
   caller?: TrackingLogAttributes['caller'];
   eqpCallId?: TrackingLogAttributes['eqpCallId'];
   callId?: TrackingLogAttributes['callId'];
+  wcsCallId?: TrackingLogAttributes['wcsCallId'];
   itemCode?: TrackingLogAttributes['itemCode'];
   subject?: TrackingLogAttributes['subject'];
   detail?: TrackingLogAttributes['detail'];

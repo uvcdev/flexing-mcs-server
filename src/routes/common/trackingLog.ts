@@ -38,6 +38,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, TrackingLogIn
       caller: req.body.caller,
       eqpCallId: req.body.eqpCallId,
       callId: req.body.callId,
+      wcsCallId: req.body.wcsCallId,
       itemCode: req.body.itemCode,
       subject: req.body.subject,
       detail: req.body.detail,

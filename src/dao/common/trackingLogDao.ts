@@ -21,6 +21,7 @@ import TrackingLog, {
   TrackingLogUpsertParams,
   TrackingLogFindOrCreatedParams,
   TrackingLogSelectInfoByEqpCallIdParams,
+  TrackingLogSelectInfoByWcsCallIdParams,
 } from '../../models/common/trackingLog';
 
 const dao = {
@@ -229,6 +230,20 @@ const dao = {
     return new Promise((resolve, reject) => {
       TrackingLog.findOne({
         where: { eqpCallId: params.eqpCallId },
+      })
+        .then((selectedInfo) => {
+          resolve(selectedInfo);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+  selectInfoByWcsCallId(params: TrackingLogSelectInfoByWcsCallIdParams): Promise<TrackingLogAttributes | null> {
+    return new Promise((resolve, reject) => {
+      TrackingLog.findOne({
+        where: { wcsCallId: params.wcsCallId },
+        order: [['id', 'DESC']]
       })
         .then((selectedInfo) => {
           resolve(selectedInfo);

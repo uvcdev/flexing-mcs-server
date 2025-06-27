@@ -1,9 +1,13 @@
 import { TrackingLogInsertParams } from "../models/common/trackingLog";
 import { WorkStatus, logging } from "./logging";
-import { checkTrackingLogExists, CheckTrackingLogExists, regDetailLog, RegDetailLogInsertParams, regTrackingLog } from "./trackingLogUtil";
+import { checkTrackingLogExists, CheckTrackingLogExists, regDetailLog, RegDetailLogInsertParams, regTrackingLog, TrackingLogRedisAttributes } from "./trackingLogUtil";
 import { DetailLogInsertParams } from "../models/timescale/detailLog";
 import { ImcsWorkOrderInsertParams } from "../models/operation/workOrder";
 import { dao as facilityDao } from '../dao/operation/facilityDao';
+import { RedisKeys, useRedisUtil } from "./redisUtil";
+import { dao as trackingLogDao } from '../dao/common/trackingLogDao';
+
+const redisUtil = useRedisUtil();
 
 export const imcsTrackingLogging = async (data: WorkStatus) => {
   try {
@@ -20,6 +24,7 @@ export const imcsTrackingLogging = async (data: WorkStatus) => {
       caller: data.EQP_ID,
       eqpCallId: splitEqpCallId,
       callId: splitEqpCallId?.slice(-4) || '',
+      wcsCallId: null,
       itemCode: null,
       subject: null,
       detail: null,
@@ -126,6 +131,7 @@ export const imcsTrackingLogging = async (data: WorkStatus) => {
             trackingLogInsertParams.subject = trackingLogStatus
             trackingLogInsertParams.detail = trackingLogStatus
             trackingLogInsertParams.state = 'PROCESSING'
+            trackingLogInsertParams.wcsCallId = data.WCS_CALL_ID || null
             await regTrackingLog(trackingLogInsertParams)
           }
 
@@ -138,6 +144,7 @@ export const imcsTrackingLogging = async (data: WorkStatus) => {
           detailLogInsertParams.assignedRobot = null
           detailLogInsertParams.value = null
           detailLogInsertParams.description = message
+          detailLogInsertParams.wcsCallId = data.WCS_CALL_ID || null
           // detail Log 정보
           detailLogInsertParams.subject = 'CALL_CHECK'
           detailLogInsertParams.value = data.WCS_CALL_ID || null
@@ -164,6 +171,7 @@ export const imcsTrackingLogging = async (data: WorkStatus) => {
             trackingLogInsertParams.subject = trackingLogStatus
             trackingLogInsertParams.detail = trackingLogStatus
             trackingLogInsertParams.state = 'PROCESSING'
+            trackingLogInsertParams.wcsCallId = data.WCS_CALL_ID || null
             await regTrackingLog(trackingLogInsertParams)
           }
 
@@ -176,6 +184,7 @@ export const imcsTrackingLogging = async (data: WorkStatus) => {
           detailLogInsertParams.assignedRobot = null
           detailLogInsertParams.value = null
           detailLogInsertParams.description = message
+          detailLogInsertParams.wcsCallId = data.WCS_CALL_ID || null
           // detail Log 정보
           detailLogInsertParams.subject = 'CALL_RESPONSE'
           detailLogInsertParams.value = null
@@ -325,6 +334,7 @@ export const imcsWorkOrderTrackingLogging = async (data: ImcsWorkOrderInsertPara
       caller: data.EQP_ID,
       eqpCallId: splitEqpCallId,
       callId: splitEqpCallId?.slice(-4) || '',
+      wcsCallId: null,
       itemCode: data.CALL_TYPE,
       subject: null,
       detail: null,
@@ -421,6 +431,7 @@ export const imcsFacilityCanceledTrackingLogging = async (data: FacilityCanceled
       caller: null,
       eqpCallId: splitEqpCallId,
       callId: splitEqpCallId?.slice(-4) || '',
+      wcsCallId: null,
       itemCode: null,
       subject: null,
       detail: null,
@@ -492,6 +503,156 @@ export const imcsFacilityCanceledTrackingLogging = async (data: FacilityCanceled
   } catch (error) {
     logging.ACTION_ERROR({
       filename: 'imcsTrackingLogUtil.ts - imcsFacilityCanceledTrackingLogging - 전체',
+      error: `전체 함수 처리 중 오류: ${error}`,
+      params: data,
+      result: false,
+    });
+  }
+}
+
+export interface PortAssignParams {
+  PORT_ID: string;
+  EX_CALL_ID: string;
+  NX_CALL_ID: string;
+  DATE_TIME: string;
+}
+
+export const imcsWcsPortTrackingLogging = async (data: PortAssignParams) => {
+  try {
+    const trackingLogStatus = 'PORT_ASSIGNED';
+    const wcsCallId = data.NX_CALL_ID;
+    const wcsPort = data.PORT_ID
+
+    if (wcsCallId === '') {
+      return
+    }
+
+    const trackingLogList = await redisUtil.hgetAllObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByEqpCallId)
+
+    const recentTrackingLogRedis = trackingLogList?.find(trackingLog => trackingLog.wcsCallId === wcsCallId)
+
+    let recentTrackingLogDB
+
+    if (!recentTrackingLogRedis) {
+      recentTrackingLogDB = await trackingLogDao.selectInfoByWcsCallId({ wcsCallId: wcsCallId })
+    }
+
+    const recentTrackingLogData = recentTrackingLogRedis || recentTrackingLogDB
+
+    if (!recentTrackingLogData) {
+      logging.ACTION_ERROR({
+        filename: 'imcsTrackingLogUtil.ts - imcsWcsPortTrackingLogging',
+        error: `WCS Call Id(${wcsCallId})와 일치하는 정보가 없습니다.`,
+        params: false,
+        result: false,
+      });
+      return
+    }
+
+    if (recentTrackingLogData.state !== 'PROCESSING') {
+      logging.ACTION_ERROR({
+        filename: 'imcsTrackingLogUtil.ts - imcsWcsPortTrackingLogging',
+        error: `Tracking Log의 진행 상태(${wcsCallId})가 작업중이 아닙니다.`,
+        params: false,
+        result: false,
+      });
+      return
+    }
+
+    const splitEqpCallId = recentTrackingLogData.eqpCallId || ''
+
+    if (!splitEqpCallId) {
+      logging.ACTION_ERROR({
+        filename: 'imcsTrackingLogUtil.ts - imcsWcsPortTrackingLogging',
+        error: `Eqp Call Id(${recentTrackingLogData.eqpCallId}) 데이터 오류 발생`,
+        params: false,
+        result: false,
+      });
+      return
+    }
+
+    const checkTrackingLogExistsParams: CheckTrackingLogExists = {
+      eqpCallId: splitEqpCallId
+    }
+
+    // Tracking 로그 만들기
+    const trackingLogInsertParams: TrackingLogInsertParams = {
+      code: null,
+      caller: recentTrackingLogData.caller,
+      eqpCallId: splitEqpCallId,
+      callId: splitEqpCallId?.slice(-4) || '',
+      wcsCallId: wcsCallId,
+      itemCode: recentTrackingLogData.itemCode,
+      subject: null,
+      detail: null,
+      state: null,
+      fromFacility: null,
+      toFacility: null,
+      assignedRobot: null,
+      value: wcsPort,
+      description: null,
+    }
+
+    try {
+      const isTrackingLogExists = await checkTrackingLogExists(checkTrackingLogExistsParams)
+
+      if (!isTrackingLogExists) {
+        // Set Tracking Log
+        trackingLogInsertParams.subject = trackingLogStatus
+        trackingLogInsertParams.detail = trackingLogStatus
+        trackingLogInsertParams.state = 'PROCESSING'
+        await regTrackingLog(trackingLogInsertParams)
+      }
+    } catch (error) {
+      logging.ACTION_ERROR({
+        filename: 'imcsTrackingLogUtil.ts - imcsWcsPortTrackingLogging - TrackingLog 저장',
+        error: `TrackingLog 저장 중 오류: ${error}`,
+        params: trackingLogInsertParams,
+        result: false,
+      });
+    }
+
+    // Set Detail Log
+    const detailLogInsertParams: RegDetailLogInsertParams = {
+      topic: trackingLogStatus,
+      subject: null,
+      trackingLogId: null,
+      callId: splitEqpCallId?.slice(-4) || '',
+      eqpCallId: splitEqpCallId,
+      value: wcsPort,
+      location: 'WCS',
+      message: null,
+      resultStatus: 'SUCCESS'
+    }
+
+    try {
+      // Set Detail Log
+      // tracking Log 정보
+      const message = `창고 포트 배정 완료: EQP Call Id(${splitEqpCallId}) - WCS Call Id(${wcsCallId})`
+      detailLogInsertParams.trackingLogState = 'PROCESSING'
+      detailLogInsertParams.fromFacility = null
+      detailLogInsertParams.toFacility = null
+      detailLogInsertParams.assignedRobot = null
+      detailLogInsertParams.value = wcsCallId
+      detailLogInsertParams.description = message
+      // detail Log 정보
+      detailLogInsertParams.subject = 'PORT_ASSIGNED'
+      detailLogInsertParams.value = wcsCallId
+      detailLogInsertParams.location = 'WCS'
+      detailLogInsertParams.message = message
+
+      await regDetailLog(detailLogInsertParams)
+    } catch (error) {
+      logging.ACTION_ERROR({
+        filename: 'imcsTrackingLogUtil.ts - imcsWcsPortTrackingLogging - DetailLog 저장',
+        error: `DetailLog 저장 중 오류: ${error}`,
+        params: detailLogInsertParams,
+        result: false,
+      });
+    }
+  } catch (error) {
+    logging.ACTION_ERROR({
+      filename: 'imcsTrackingLogUtil.ts - imcsWcsPortTrackingLogging - 전체',
       error: `전체 함수 처리 중 오류: ${error}`,
       params: data,
       result: false,

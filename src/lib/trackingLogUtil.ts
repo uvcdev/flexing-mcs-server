@@ -26,6 +26,7 @@ export interface CheckTrackingLogExists {
 
 export interface RegDetailLogInsertParams extends DetailLogInsertParams {
   trackingLogState?: TrackingLogState | null,
+  wcsCallId?: string | null,
   fromFacility?: string | null,
   toFacility?: string | null,
   assignedRobot?: string | null,
@@ -38,7 +39,7 @@ export const regDetailLog = async (params: RegDetailLogInsertParams) => {
   try {
     const eqpCallId = (params.eqpCallId)?.split('$')[0] || ''
 
-    const { trackingLogState, fromFacility, toFacility, assignedRobot, value, description, ...newDetailLogInsertParams } = params
+    const { trackingLogState, fromFacility, toFacility, assignedRobot, value, description, wcsCallId, ...newDetailLogInsertParams } = params
 
     let trackingLogId = 0
 
@@ -112,6 +113,7 @@ export const regDetailLog = async (params: RegDetailLogInsertParams) => {
       caller: trackingLogInfo.caller,
       eqpCallId: trackingLogInfo.eqpCallId,
       callId: trackingLogInfo.callId,
+      wcsCallId: wcsCallId ? wcsCallId : trackingLogInfo.wcsCallId,
       itemCode: trackingLogInfo.itemCode,
       subject: newDetailLogInsertParams.topic,
       detail: newDetailLogInsertParams.subject ? newDetailLogInsertParams.subject : trackingLogInfo.subject,
@@ -137,6 +139,7 @@ export const regDetailLog = async (params: RegDetailLogInsertParams) => {
     // Set Detail Log Data
     const detailLogInsertParams: DetailLogInsertParams = {
       ...newDetailLogInsertParams,
+      value: value,
       subject: newDetailLogInsertParams.subject ? newDetailLogInsertParams.subject : trackingLogUpdateParams.subject,
       trackingLogId: trackingLogId,
       createdDateTime: new Date().toISOString(),
@@ -164,6 +167,7 @@ export const regDetailLog = async (params: RegDetailLogInsertParams) => {
         caller: trackingLogUpdateParams.caller ?? null,
         eqpCallId: trackingLogUpdateParams.eqpCallId ?? null,
         callId: trackingLogUpdateParams.callId ?? null,
+        wcsCallId: trackingLogUpdateParams.wcsCallId ?? null,
         itemCode: trackingLogUpdateParams.itemCode ?? null,
         subject: trackingLogUpdateParams.subject ?? null,
         detail: trackingLogUpdateParams.detail ?? null,
@@ -295,6 +299,7 @@ export const regTrackingLog = async (params: TrackingLogInsertParams) => {
           caller: trackingLogFindOrCreatedParams.caller ?? null,
           eqpCallId: trackingLogFindOrCreatedParams.eqpCallId,
           callId: trackingLogFindOrCreatedParams.callId,
+          wcsCallId: trackingLogFindOrCreatedParams.wcsCallId,
           itemCode: trackingLogFindOrCreatedParams.itemCode ?? null,
           subject: trackingLogFindOrCreatedParams.subject,
           detail: trackingLogFindOrCreatedParams.detail,

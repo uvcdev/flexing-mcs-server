@@ -10,7 +10,7 @@ import { service as workOrderService } from '../service/operation/workOrderServi
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { WorkOrderAttributesDeep } from 'models/operation/workOrder';
 import { useWorkOrderStatsUtil } from './workOrderUtil';
-import { imcsTrackingLogging, imcsWorkOrderTrackingLogging } from './imcsTrackingLogUtil';
+import { imcsTrackingLogging, imcsWcsPortTrackingLogging, imcsWorkOrderTrackingLogging, PortAssignParams } from './imcsTrackingLogUtil';
 import { fixTrackingLogList, sendTrackingLogListMqtt } from './trackingLogUtil';
 import { acsDockingTrackingLogging, acsTrackingLogging } from './acsTrackingLogUtil';
 
@@ -253,6 +253,16 @@ export const receiveMqtt = (): void => {
               logging.WORK_STATUS(messageJson);
               // 트래킹 로그 데이터 수집 추가
               await imcsTrackingLogging(messageJson)
+            }
+            // 포트 배정
+            if (topicSplit.length === 3 && topicSplit[2] === 'port_changed') {
+              const messageJson = JSON.parse(message) as PortAssignParams;
+              logging.MQTT_LOG({
+                title: 'imcs Port Assigned',
+                topic: messageTopic,
+                message: messageJson,
+              });
+              await imcsWcsPortTrackingLogging(messageJson)
             }
             // 미사용
             // if(logicTopic === 'notify'){
