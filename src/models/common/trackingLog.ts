@@ -93,6 +93,7 @@ TrackingLog.init(
     },
     eqpCallId: {
       type: DataTypes.STRING(50),
+      unique: true
     },
     callId: {
       type: DataTypes.STRING(20),
