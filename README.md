@@ -147,3 +147,6 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 - Setting에 `LogDurationSetting` 정보 추가
 - Tracking Log 대시보드 데이터 가공 함수 생성 `fixTrackingLogList()`
 - Tracking Log 관련 비정상 시나리오 해결
+
+## v0.1.2-ljk
+- 포트 배정 로직 추가

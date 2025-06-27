@@ -1,6 +1,6 @@
 {
   "name": "flexing-mcs-server",
-  "version": "0.1.1-ljk",
+  "version": "0.1.2-ljk",
   "description": "",
   "main": "index.js",
   "scripts": {
