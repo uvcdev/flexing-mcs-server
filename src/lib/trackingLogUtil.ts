@@ -509,6 +509,39 @@ export const fixTrackingLogList = async () => {
       }
     })
 
+    // Call Create 랑 Call Request 중 둘 중 하나라도 없으면 데이터 재 조회 후 Detail로그 재성성
+    for (let i = 0; i < filteredTrackingLogList.length; i++) {
+      const trackingLog = filteredTrackingLogList[i];
+
+      const isExistCallCreate = trackingLog.detailLogList.find(detailLog => detailLog.subject === 'CALL_CREATE')
+      const isExistCallRequest = trackingLog.detailLogList.find(detailLog => detailLog.subject === 'CALL_REQUEST')
+      const isExistCallCheck = trackingLog.detailLogList.find(detailLog => detailLog.subject === 'CALL_CHECK')
+
+      if (!isExistCallCreate || (!isExistCallRequest && isExistCallCheck)) {
+        // DB에서 CALL_CREATE를 찾아서 넣어줌
+        const detailLogList = await detailLogDao.selectList({ trackingLogId: trackingLog.id })
+        const newDetailLogList = detailLogList.rows.map(detailLog => {
+          return {
+            topic: detailLog.topic,
+            subject: detailLog.subject,
+            trackingLogId: detailLog.trackingLogId,
+            callId: detailLog.callId,
+            state: detailLog.state,
+            eqpCallId: detailLog.eqpCallId,
+            location: detailLog.location,
+            message: detailLog.message,
+            resultStatus: detailLog.resultStatus,
+            value: detailLog.value,
+            // createdDateTime: (detailLog.createdAt).toISOString()
+            createdDateTime: detailLog.createdAt instanceof Date
+              ? detailLog.createdAt.toISOString()
+              : detailLog.createdAt
+          }
+        })
+        trackingLog.detailLogList = newDetailLogList
+      }
+    }
+
     // 결과 - Redis에 새로운 데이터 저장
     try {
       await redisUtil.del(RedisKeys.InfoTrackingLogByEqpCallId)
