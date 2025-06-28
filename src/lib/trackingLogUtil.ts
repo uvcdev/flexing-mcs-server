@@ -441,7 +441,8 @@ export const fixTrackingLogList = async () => {
     }
 
     // 1. 완료된 작업 지시 리스트에서 제거
-    const sortedNotCompletedTrackingLogList = trackingLogList.filter(trackingLog => trackingLog?.state !== 'COMPLETED')
+    // const sortedNotCompletedTrackingLogList = trackingLogList.filter(trackingLog => trackingLog?.state !== 'COMPLETED')
+    const sortedNotCompletedTrackingLogList = trackingLogList
 
     // 2. 시간 순대로 정렬하기 - CreatedDateTime
     const sortedCreatedAtList = sortedNotCompletedTrackingLogList.sort((a, b) => {

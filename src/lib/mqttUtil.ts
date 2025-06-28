@@ -116,10 +116,10 @@ if (mqttConfig.host !== '') {
   setInterval(async () => {
     try {
       sendMqtt(`${MqttTopics.IsAlive}`, JSON.stringify(true));
-      // Tracking Log 데이터 전처리
-      await fixTrackingLogList()
       // 여기에 Tracking Log 정보 반복 전송 로직 추가 - 함수
       await sendTrackingLogListMqtt()
+      // Tracking Log 데이터 전처리
+      await fixTrackingLogList()
     } catch (error) {
       console.log("🚀 ~ setInterval ~ error:", error)
     }
