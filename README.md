@@ -233,3 +233,10 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 ## v1.0.0
 - Approve version v0.2.1-cyk
 - Frist stage (2025/06/10)
+
+## v1.0.0-ljk
+- 설비 관리
+  - cancelType 컬럼 추가
+  ```sql
+    ALTER TABLE public.facilities ADD cancel_type varchar(30) NULL;
+  ```

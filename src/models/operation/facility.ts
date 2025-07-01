@@ -21,6 +21,7 @@ export interface FacilityAttributes {
   isMissionOrderCapable: boolean | null;
   linkedEqpIds: Array<number> | null;
   linkedWmsIds: Array<number> | null;
+  cancelType: CancelType | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -29,6 +30,13 @@ export interface FacilityAttributes {
 export interface FacilityAttributesDeep extends FacilityAttributes {
   Zone: ZoneAttributes;
 }
+
+export type CancelType =
+  'NON_CANCELLABLE' |           // 취소 로직을 실행하지 않는 설비 
+  'CANCEL_STOP_ONLY' |          // ACS에서 바로 멈춤 실행
+  'AUTO_RETURN_CANCEL' |        // 자동 재반입 로직 실행
+  'WMS_DEPENDENT_CANCEL' |      // WMS 응답 별 취소 로직 실행 ( CANCEL_STOP_ONLY | AUTO_RETURN_CANCEL )
+  'CANCEL_WITH_DOCKING';        // 취소가 오더라도 도킹까지는 진행하고 도킹 불가 처리를 받고 취소 되는 경우 ( 사용 안 할 가능성 95% )
 
 class Facility extends Model implements FacilityAttributes {
   public readonly id!: FacilityAttributes['id'];
@@ -48,13 +56,15 @@ class Facility extends Model implements FacilityAttributes {
   public isMissionOrderCapable!: FacilityAttributes['isMissionOrderCapable'];
   public linkedEqpIds!: FacilityAttributes['linkedEqpIds'];
   public linkedWmsIds!: FacilityAttributes['linkedWmsIds'];
+  public cancelType!: FacilityAttributes['cancelType'];
   public readonly createdAt!: FacilityAttributes['createdAt'];
   public readonly updatedAt!: FacilityAttributes['updatedAt'];
   public readonly deletedAt!: FacilityAttributes['deletedAt'];
 }
 export const FacilityDefaultValue = {
   linkedEqpIds: [],
-  linkedWmsIds: []
+  linkedWmsIds: [],
+  cancelType: 'CANCEL_STOP_ONLY'
 };
 
 Facility.init(
@@ -120,6 +130,10 @@ Facility.init(
       type: DataTypes.ARRAY(DataTypes.INTEGER),
       defaultValue: FacilityDefaultValue.linkedWmsIds,
     },
+    cancelType: {
+      type: DataTypes.STRING(30),
+      defaultValue: FacilityDefaultValue.cancelType,
+    },
   },
   {
     sequelize,
@@ -148,6 +162,7 @@ export interface FacilityInsertParams {
   isMissionOrderCapable: boolean;
   linkedEqpIds: Array<number>;
   linkedWmsIds: Array<number>;
+  cancelType: FacilityAttributes['cancelType'] | null;
   description: string | null;
 }
 
@@ -216,6 +231,7 @@ export interface FacilityUpdateParams {
   isMissionOrderCapable?: boolean;
   linkedEqpIds?: Array<number>;
   linkedWmsIds?: Array<number>;
+  cancelType?: FacilityAttributes['cancelType'] | null;
 }
 
 // update state
@@ -248,6 +264,7 @@ export const FacilityAttributesInclude = [
   'isMissionOrderCapable',
   'linkedEqpIds',
   'linkedWmsIds',
+  'cancelType',
   'createdAt',
 ];
 

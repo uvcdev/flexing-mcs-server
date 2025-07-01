@@ -28,4 +28,5 @@ uploads
 .idea
 
 src/config/kepserverConfig.ts
+# kepserver settings
 kepserverTag.json

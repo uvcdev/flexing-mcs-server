@@ -48,7 +48,8 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, FacilityInser
       description: req.body.description,
       isMissionOrderCapable: req.body.isMissionOrderCapable,
       linkedEqpIds: req.body.linkedEqpIds || [],
-      linkedWmsIds: []
+      linkedWmsIds: [],
+      cancelType: req.body.cancelType
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -208,7 +209,8 @@ router.put(
         alwaysFill: req.body.alwaysFill,
         description: req.body.description,
         isMissionOrderCapable: req.body.isMissionOrderCapable,
-        linkedEqpIds: req.body.linkedEqpIds || []
+        linkedEqpIds: req.body.linkedEqpIds || [],
+        cancelType: req.body.cancelType
       };
       logging.REQUEST_PARAM(logFormat);
 
