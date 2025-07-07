@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { AttributeIds } from "node-opcua-client";
 import { PendingWorkOrderAttributes } from '../models/operation/workOrder';
-import { FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
+import { CancelType, FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
 import { TagValue, useKepServerUtil } from "./kepServerUtil";
 import { logging, makeLogFormat, RequestLog } from './logging';
 import opcuaUtil from "./opcuaUtil";
@@ -12,6 +12,7 @@ import { initTrackingLogRedis } from "./process/trackingLog";
 import { TrackingLogRedisAttributes } from "../models/common/trackingLog";
 import { sendMqtt } from "./mqttUtil";
 import { service as workOrderService } from '../service/operation/workOrderService';
+import { dao as facilityDao } from '../dao/operation/facilityDao';
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -32,6 +33,7 @@ export interface CancelWorkOrderRequestType {
   EQP_ID: string;
   EQP_CALL_ID: string;
   CALL_ID: string;
+  CANCEL_TYPE: CancelType;
 }
 
 export const useCallCancelUtil = () => {
@@ -44,6 +46,16 @@ export const useCallCancelUtil = () => {
         : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
       const targetCode = targetTagInfo.EQ_CODE;
+
+      // 설비(caller) 설비 데이터 조회 - DB or REDIS
+      // const facilityInfo = await facilityDao.selectSerial({ serial: targetCode })
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, targetCode)
+      const cancelType = facilityInfo?.cancelType || 'NON_CANCELLABLE'
+
+      // NON_CANCELLABLE일 경우 해당 설비에서 들어온 취소 요청에 대해서 응답하지 않음
+      if (cancelType === 'NON_CANCELLABLE') {
+        return
+      }
 
       // 필요한 태그 값들 가져오기    
       const callRequest = opcuaUtil.tagMap.get(`${targetCode}.Call_Request`);
@@ -120,7 +132,8 @@ export const useCallCancelUtil = () => {
           ZONE_ID: process.env.FLOOR || '1F',
           EQP_ID: targetCode,
           EQP_CALL_ID: infoTrackingLogByFacilityCode?.eqpCallId || '',
-          CALL_ID: infoTrackingLogByFacilityCode?.callId || ''
+          CALL_ID: infoTrackingLogByFacilityCode?.callId || '',
+          CANCEL_TYPE: cancelType,
         }
         const result = await workOrderService.facilityCancel(
           { code: params.CALL_ID },
