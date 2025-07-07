@@ -244,3 +244,5 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
   ```sql
    ALTER TABLE public.facilities ADD "mode" varchar(20) DEFAULT 'auto' NULL;
   ```
+- Cancel Type 정보 ACS에 전달(MQTT) 로직 추가
+- 설비 수동/자동 모드 작업 진행 로직 추가
