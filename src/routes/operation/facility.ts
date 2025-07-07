@@ -49,7 +49,8 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, FacilityInser
       isMissionOrderCapable: req.body.isMissionOrderCapable,
       linkedEqpIds: req.body.linkedEqpIds || [],
       linkedWmsIds: [],
-      cancelType: req.body.cancelType
+      cancelType: req.body.cancelType,
+      mode: req.body.mode || 'auto',
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -110,6 +111,7 @@ router.get(
         floor: req.query.floor,
         active: req.query.active,
         alwaysFill: req.query.alwaysFill,
+        mode: req.query.mode,
         limit: Number(req.query.limit || 'NaN'),
         offset: Number(req.query.offset || 'NaN'),
         order: req.query.order,
@@ -210,7 +212,8 @@ router.put(
         description: req.body.description,
         isMissionOrderCapable: req.body.isMissionOrderCapable,
         linkedEqpIds: req.body.linkedEqpIds || [],
-        cancelType: req.body.cancelType
+        cancelType: req.body.cancelType,
+        mode: req.body.mode,
       };
       logging.REQUEST_PARAM(logFormat);
 

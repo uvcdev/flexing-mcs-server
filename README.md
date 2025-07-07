@@ -240,3 +240,7 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
   ```sql
     ALTER TABLE public.facilities ADD cancel_type varchar(30) NULL;
   ```
+  - mode 컬럼 추가
+  ```sql
+   ALTER TABLE public.facilities ADD "mode" varchar(20) DEFAULT 'auto' NULL;
+  ```

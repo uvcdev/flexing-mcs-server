@@ -22,6 +22,7 @@ export interface FacilityAttributes {
   linkedEqpIds: Array<number> | null;
   linkedWmsIds: Array<number> | null;
   cancelType: CancelType | null;
+  mode: 'auto' | 'manual',
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -57,6 +58,7 @@ class Facility extends Model implements FacilityAttributes {
   public linkedEqpIds!: FacilityAttributes['linkedEqpIds'];
   public linkedWmsIds!: FacilityAttributes['linkedWmsIds'];
   public cancelType!: FacilityAttributes['cancelType'];
+  public mode!: FacilityAttributes['mode'];
   public readonly createdAt!: FacilityAttributes['createdAt'];
   public readonly updatedAt!: FacilityAttributes['updatedAt'];
   public readonly deletedAt!: FacilityAttributes['deletedAt'];
@@ -64,7 +66,8 @@ class Facility extends Model implements FacilityAttributes {
 export const FacilityDefaultValue = {
   linkedEqpIds: [],
   linkedWmsIds: [],
-  cancelType: 'CANCEL_STOP_ONLY'
+  cancelType: 'CANCEL_STOP_ONLY',
+  mode: 'auto',
 };
 
 Facility.init(
@@ -134,6 +137,10 @@ Facility.init(
       type: DataTypes.STRING(30),
       defaultValue: FacilityDefaultValue.cancelType,
     },
+    mode: {
+      type: DataTypes.STRING(20),
+      defaultValue: FacilityDefaultValue.mode,
+    },
   },
   {
     sequelize,
@@ -163,6 +170,7 @@ export interface FacilityInsertParams {
   linkedEqpIds: Array<number>;
   linkedWmsIds: Array<number>;
   cancelType: FacilityAttributes['cancelType'] | null;
+  mode: 'auto' | 'manual' | null;
   description: string | null;
 }
 
@@ -182,6 +190,7 @@ export interface FacilitySelectListParams {
   floor?: string | null;
   active?: boolean | null;
   alwaysFill?: boolean | null;
+  mode?: 'auto' | 'manual' | null;
   limit?: number;
   offset?: number;
   order?: string;
@@ -232,6 +241,7 @@ export interface FacilityUpdateParams {
   linkedEqpIds?: Array<number>;
   linkedWmsIds?: Array<number>;
   cancelType?: FacilityAttributes['cancelType'] | null;
+  mode?: 'auto' | 'manual';
 }
 
 // update state
@@ -265,6 +275,7 @@ export const FacilityAttributesInclude = [
   'linkedEqpIds',
   'linkedWmsIds',
   'cancelType',
+  'mode',
   'createdAt',
 ];
 
