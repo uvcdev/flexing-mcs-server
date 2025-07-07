@@ -339,7 +339,7 @@ const service = {
       }
 
       await facilityDao.update(updateParams);
-      if (params.id) {
+      if (updateParams.id) {
         void this.writeSingleRedis(facilityInfo.id);
       }
     } catch (err) {
