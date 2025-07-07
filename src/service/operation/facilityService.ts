@@ -309,6 +309,45 @@ const service = {
       });
     }
   },
+  // update MQTT - mode
+  async editFacilityMode(params: FacilityUpdateParams) {
+    try {
+      if (!params.serial) {
+        logging.ACTION_ERROR({
+          filename: `facilityService.ts - editFacilityMode`,
+          params: `Serial(${params.serial}) 값이 올바르지 않습니다.`,
+          result: null,
+          error: false,
+        });
+        return
+      }
+      const facilityInfo = await facilityDao.selectSerial({ serial: params.serial })
+
+      if (!facilityInfo) {
+        logging.ACTION_ERROR({
+          filename: `facilityService.ts - editFacilityMode`,
+          params: `Serail(${params.serial})에 해당하는 설비 정보를 찾을 수 없습니다.`,
+          result: null,
+          error: false,
+        });
+        return
+      }
+
+      const updateParams = {
+        id: facilityInfo.id,
+        mode: params.mode
+      }
+
+      await facilityDao.update(updateParams);
+      if (params.id) {
+        void this.writeSingleRedis(facilityInfo.id);
+      }
+    } catch (err) {
+      return new Promise((resolve, reject) => {
+        reject(err);
+      });
+    }
+  },
 };
 
 export { service };
