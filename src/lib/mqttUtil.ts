@@ -34,6 +34,7 @@ import { useKepServerUtil } from './kepServerUtil';
 import { routeMissionOrderMqttMessage } from './process/commonUtils';
 import { FacilityAttributes } from '../models/operation/facility';
 import { RedisKeys, useRedisUtil } from './redisUtil';
+import { service as facilityService } from '../service/operation/facilityService';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -121,6 +122,7 @@ export enum MqttTopics {
   ImcsEqpDockingRequest = 'imcs/docking/eqp/request',
   ImcsEqpDockingOutRequest = 'imcs/docking/eqp/out_request',
   ImcsWcsDockingRequest = 'imcs/docking/wcs/request',
+  EditFacility = 'edit-facility',
 }
 
 export interface MbsMqttHeader {
@@ -675,6 +677,24 @@ export const receiveMqtt = (): void => {
                 console.log('same_pio request', error);
                 throw error
               }
+            }
+            if (topicSplit.length === 3 && topicSplit[1] === 'edit-facility') {
+              const facilitySerial = topicSplit[2]
+              const messageJson = JSON.parse(message);
+
+              const mode = messageJson.mode;
+
+              if (!mode || mode === '') {
+                // error 발생
+                logging.MQTT_LOG({
+                  title: 'mcs workorder',
+                  topic: messageTopic,
+                  message: messageJson,
+                });
+                return
+              }
+
+              await facilityService.editFacilityMode({ serial: facilitySerial, mode: mode })
             }
           }
 

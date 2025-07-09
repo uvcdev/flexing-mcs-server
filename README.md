@@ -233,3 +233,16 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 ## v1.0.0
 - Approve version v0.2.1-cyk
 - Frist stage (2025/06/10)
+
+## v1.0.0-ljk
+- 설비 관리
+  - cancelType 컬럼 추가
+  ```sql
+    ALTER TABLE public.facilities ADD cancel_type varchar(30) NULL;
+  ```
+  - mode 컬럼 추가
+  ```sql
+   ALTER TABLE public.facilities ADD "mode" varchar(20) DEFAULT 'auto' NULL;
+  ```
+- Cancel Type 정보 ACS에 전달(MQTT) 로직 추가
+- 설비 수동/자동 모드 작업 진행 로직 추가

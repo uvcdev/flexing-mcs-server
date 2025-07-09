@@ -158,6 +158,13 @@ export const useCallRegisterUtil = () => {
         }
         const dryrunMode = dryrunSetting.data.mode || 'normal'
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityBySerial, callInfo.Caller || '')
+
+        // 설비 상태가 수동인 경우에는 아래 로직을 실행하지 않음.
+        // 콜이 켜진 순간에는 해당 로직으로 돌고 콜이 켜져 있을 때 설비 상태가 manual에서 auto로 변한 경우에는 멀티콜에서 추가 될 콜 모니터링 확인 쪽에서 로직이 돌 예정이다.
+        if (facilityInfo?.mode === 'manual') {
+          return
+        }
+
         // 설비 시스템인 경우에만 콜 생성(셀창고는 제외하기 위함)
         if (facilityInfo?.system === 'EQP') {
           const callInfoString = JSON.stringify(callInfo);
