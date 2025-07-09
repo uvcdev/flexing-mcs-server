@@ -21,6 +21,7 @@ export interface FacilityAttributes {
   isMissionOrderCapable: boolean | null;
   linkedEqpIds: Array<number> | null;
   linkedWmsIds: Array<number> | null;
+  mode: 'auto' | 'manual';
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -48,6 +49,7 @@ class Facility extends Model implements FacilityAttributes {
   public isMissionOrderCapable!: FacilityAttributes['isMissionOrderCapable'];
   public linkedEqpIds!: FacilityAttributes['linkedEqpIds'];
   public linkedWmsIds!: FacilityAttributes['linkedWmsIds'];
+  public mode!: FacilityAttributes['mode'];
   public readonly createdAt!: FacilityAttributes['createdAt'];
   public readonly updatedAt!: FacilityAttributes['updatedAt'];
   public readonly deletedAt!: FacilityAttributes['deletedAt'];
@@ -119,6 +121,9 @@ Facility.init(
     linkedWmsIds: {
       type: DataTypes.ARRAY(DataTypes.INTEGER),
       defaultValue: FacilityDefaultValue.linkedWmsIds,
+    },
+    mode: {
+      type: DataTypes.STRING(20),
     },
   },
   {

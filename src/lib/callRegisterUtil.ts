@@ -31,15 +31,21 @@ export const useCallRegisterUtil = () => {
   const redisUtil = useRedisUtil();
   const callRegister = async (targetTagInfo: TagValue) => {
     try {
+      // 콜이 켜졌는데 설비가 수동모드인 경우 레디스 저장하고 return
+      const targetCode = targetTagInfo.EQ_CODE;
+      if (!targetCode) return; // 코드 없으면 처리 불가
 
-      // targetKey 형식: STACK01.SC11 || SC.11
-      const lastNodeNameIndex = targetTagInfo.NODE_ID.lastIndexOf('.')
-      const nodeName = targetTagInfo.NODE_ID.substring(0, lastNodeNameIndex);
+      const facilityModeInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityBySerial, targetCode || '')
+
+      if (facilityModeInfo?.mode === 'manual') {
+        redisUtil.hset(RedisKeys.InfoFacilityModeBySerial, targetCode, JSON.stringify(targetTagInfo))
+        return
+      }
+
       const targetKey = targetTagInfo.TAGGROUP
         ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
         : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
       // targetCode 형식: SC11
-      const targetCode = targetTagInfo.EQ_CODE;
       // 필요한 태그 값들 가져오기    
       const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
       const callPriority = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`);
@@ -473,6 +479,47 @@ export const useCallRegisterUtil = () => {
       throw error
     }
   };
+  const createAfterResponseWorkOrder = async () => {
+    try {
+      const reRegisterFacilityList = await redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoFacilityReRegisterBySerial);
+      if (!reRegisterFacilityList) return;
+
+      for (const facility of reRegisterFacilityList) {
+        const eqCode = facility.EQ_CODE;
+        if (!eqCode) continue;
+
+        await callRegister(facility);
+        await redisUtil.hdel(RedisKeys.InfoFacilityReRegisterBySerial, eqCode);
+      }
+    } catch (error) {
+      console.error('[callRegisterUtil.createFacilityModeWorkOrder] error :', error);
+      throw error;
+    }
+  }
+  const createFacilityModeWorkOrder = async () => {
+    try {
+      const manualList = await redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoFacilityModeBySerial);
+      if (!manualList) return;
+
+      for (const facility of manualList) {
+        const eqCode = facility.EQ_CODE;
+        if (!eqCode) continue;
+
+        const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+          RedisKeys.InfoFacilityBySerial,
+          eqCode
+        );
+
+        if (facilityInfo?.mode === 'auto') {
+          await callRegister(facility);
+          await redisUtil.hdel(RedisKeys.InfoFacilityModeBySerial, eqCode);
+        }
+      }
+    } catch (error) {
+      console.error('[callRegisterUtil.createFacilityModeWorkOrder] error :', error);
+      throw error;
+    }
+  }
   // callRequestMulti1Value와 callRequestMulti2Value의 값을 기반으로 multiValue 결정
   const determineMultiValue = (callRequestMulti1Value: string, callRequestMulti2Value: string): number => {
     if (callRequestMulti1Value === "true" && callRequestMulti2Value === "true") {
@@ -625,5 +672,5 @@ export const useCallRegisterUtil = () => {
       }
     }
   };
-  return { callRegister, checkRemainEqpCall };
+  return { callRegister, createFacilityModeWorkOrder, createAfterResponseWorkOrder, checkRemainEqpCall };
 };

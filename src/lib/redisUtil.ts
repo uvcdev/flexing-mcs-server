@@ -71,6 +71,9 @@ export enum RedisKeys {
   DockingDetachBySerialId = 'docking_detach_by_serial_id',                // acs로부터 온 도킹해제정보와 imcs가 acs로 보내는 도킹해제응답정보 
   InfoPlcBySerial = 'info_plc_by_serial',
   InfoRemainCallById = 'info_remain_call_by_id',
+  MultiWorkOrderCountBySerial = 'multi_work_order_count_by_serial',    // 멀티콜을 위한 현재 작업 중인 작업 개수
+  InfoFacilityModeBySerial = 'info_facility_mode_by_searial',            // 설비 시리얼로 설비 모드 조회
+  InfoFacilityReRegisterBySerial = 'info_facility_re_register_by_serial'  // ACS를 통해 취소된 작업에 대해 재시작할 때
 }
 export enum RedisSettingKeys {
   // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

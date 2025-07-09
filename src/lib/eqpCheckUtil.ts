@@ -7,6 +7,9 @@ import { useCallRemoveUtil } from "./callRemoveUtil";
 import { useDockingUtil } from "./process/dockingUtil";
 import { useCallCancelUtil } from "./callCancelUtil";
 import { useCallTypeUtil } from "./callTypeUtil";
+import { useCallRequestMultiUtil } from "./callRequestMultiUtil";
+import { useCallResponseUtil } from "./callResponseUtil";
+
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -22,10 +25,17 @@ export const useEqpCheckUtil = () => {
       switch (targetTagInfo.TAG_NAME) {
         case 'Call_Request':
           console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          if (targetTagInfo.value == true) {
+          if (targetTagInfo.value === true) {
             await useCallRegisterUtil().callRegister(targetTagInfo)
           } else {
             await useCallRemoveUtil().callRemove(targetTagInfo)
+          }
+          break;
+
+        case 'Call_Response':
+          console.log(`Changed Call_Response`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          if (targetTagInfo.value === false) {
+            await useCallResponseUtil().callReRegister(targetTagInfo);
           }
           break;
 
@@ -90,6 +100,15 @@ export const useEqpCheckUtil = () => {
 
           break;
 
+        case 'Call_Request_Multi_1':
+          console.log(`Changed Call_Request_Multi_1`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          await useCallRequestMultiUtil().callResponse(targetTagInfo)
+          break;
+
+        case 'Call_Request_Multi_2':
+          console.log(`Changed Call_Request_Multi_2`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          await useCallRequestMultiUtil().callResponse(targetTagInfo)
+          break;
       }
 
     } catch (error) {

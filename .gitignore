@@ -27,5 +27,5 @@ uploads
 # webstorm env
 .idea
 
-src/config/kepserverConfig.ts
+# src/config/kepserverConfig.ts
 kepserverTag.json
