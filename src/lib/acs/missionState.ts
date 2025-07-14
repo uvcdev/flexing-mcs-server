@@ -1,4 +1,5 @@
 import { TrackingLogRedisUpdateParams, TrackingLogState } from "../../models/common/trackingLog";
+import { useKepServerUtil } from "../kepServerUtil";
 import { separateMqttMessage, MbsMqttMesaage } from "../mqttUtil"
 import { editTrackingLogRedis } from "../process/trackingLog";
 import { sendAckToWms } from "../process/wmsAck";
@@ -45,41 +46,64 @@ export interface MissionFailed {
 }
 
 const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
-  console.log('catch acs missionState')
-  const missionStateBody = messageJson.body as MissionStateBody
-  const state = missionStateBody.state
-  const callId = (missionStateBody.mission).split('$')[0]
-  const assignAmrName = missionStateBody.assign.robot || ''
-  // let assignState = missionStateBody.assign.task as TrackingLogState || ''
-  let assignState = 'PROCESSING' as TrackingLogState
+  try {
+    console.log('catch acs missionState')
+    const kepServerUtil = useKepServerUtil()
+    const missionStateBody = messageJson.body as MissionStateBody
+    const state = missionStateBody.state
+    const callId = (missionStateBody.mission).split('$')[0]
+    const assignAmrName = missionStateBody.assign.robot || ''
+    // let assignState = missionStateBody.assign.task as TrackingLogState || ''
+    let assignState = 'PROCESSING' as TrackingLogState
 
-  if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED' || state === 'MISSION_COMPLETED') {
-    assignState = "COMPLETED"
-  }
-  // 물류 로그 저장
-  const trackingLogSubject = 'MISSION_STATE'
-  const trackingLogDetail = state
-  const trackingLogState = assignState
-  const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-    callId: callId,
-    subject: trackingLogSubject,
-    detail: trackingLogDetail,
-    state: trackingLogState,
-    transferId: null,
-    startFacility: null,
-    destFacility: null,
-    assignedRobot: assignAmrName,
-    value: assignAmrName,
-    description: `AMR(${assignAmrName}) Mission State : ${state}`
-  }
-  await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS')
+    if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED' || state === 'MISSION_COMPLETED') {
+      assignState = "COMPLETED"
+    }
+    // 물류 로그 저장
+    const trackingLogSubject = 'MISSION_STATE'
+    const trackingLogDetail = state
+    const trackingLogState = assignState
+    const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+      callId: callId,
+      subject: trackingLogSubject,
+      detail: trackingLogDetail,
+      state: trackingLogState,
+      transferId: null,
+      startFacility: null,
+      destFacility: null,
+      assignedRobot: assignAmrName,
+      value: assignAmrName,
+      description: `AMR(${assignAmrName}) Mission State : ${state}`
+    }
+    await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS')
 
-  if (state === 'MISSION_CANCELED') {
+    if (state === 'MISSION_CANCELED') {
+      // ACS로부터 취소된 작업에 대한 설비의 AMR 정보 내리기
+      const targetCode = messageJson.body.facilitySerial
+      console.log('취소할 설비', messageJson.body.facilitySerial)
+      await kepServerUtil.writeSimpleTagValue({
+        targetFacility: targetCode,
+        tagName: 'Call_Response',
+        value: false,
+      });
+      await kepServerUtil.writeSimpleTagValue({
+        targetFacility: targetCode,
+        tagName: 'Call_Robot_Assigned',
+        value: false,
+      });
+      await kepServerUtil.writeSimpleTagValue({
+        targetFacility: targetCode,
+        tagName: 'Call_Response_Count',
+        value: '0',
+      });
 
-  } else if (state === 'MISSION_FAILED') {
+    } else if (state === 'MISSION_FAILED') {
 
-  } else if (state === 'MISSION_COMPLETED') {
+    } else if (state === 'MISSION_COMPLETED') {
 
+    }
+  } catch (error) {
+    throw error
   }
 }
 

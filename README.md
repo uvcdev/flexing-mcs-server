@@ -230,5 +230,19 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 - acs로부터 same_pio mqtt 통신되면 in/out 포트에 맞는 데이터 써주기
 - Update dockingParams.SERAIL_ID => PORT_ID
 
-## v0.2.1-ssb
-- acs heartbeat: acs/is_alive mqtt 데이터로 acs heartbeat 판단
+## v1.0.0
+- Approve version v0.2.1-cyk
+- Frist stage (2025/06/10)
+
+## v1.0.0-ljk
+- 설비 관리
+  - cancelType 컬럼 추가
+  ```sql
+    ALTER TABLE public.facilities ADD cancel_type varchar(30) NULL;
+  ```
+  - mode 컬럼 추가
+  ```sql
+   ALTER TABLE public.facilities ADD "mode" varchar(20) DEFAULT 'auto' NULL;
+  ```
+- Cancel Type 정보 ACS에 전달(MQTT) 로직 추가
+- 설비 수동/자동 모드 작업 진행 로직 추가

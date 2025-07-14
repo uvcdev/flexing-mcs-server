@@ -7,6 +7,9 @@ import { useCallRemoveUtil } from "./callRemoveUtil";
 import { useDockingUtil } from "./process/dockingUtil";
 import { useCallCancelUtil } from "./callCancelUtil";
 import { useCallTypeUtil } from "./callTypeUtil";
+import { useCallRequestMultiUtil } from "./callRequestMultiUtil";
+import { useCallResponseUtil } from "./callResponseUtil";
+
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -21,46 +24,53 @@ export const useEqpCheckUtil = () => {
       // TAG_NAME에 따라 다른 함수 실행
       switch (targetTagInfo.TAG_NAME) {
         case 'Call_Request':
-          console.log(`Action Method Tag: Call_Request`);
-          if (targetTagInfo.value == true) {
+          console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          if (targetTagInfo.value === true) {
             await useCallRegisterUtil().callRegister(targetTagInfo)
           } else {
             await useCallRemoveUtil().callRemove(targetTagInfo)
           }
           break;
 
+        case 'Call_Response':
+          console.log(`Changed Call_Response`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          if (targetTagInfo.value === false) {
+            await useCallResponseUtil().callReRegister(targetTagInfo);
+          }
+          break;
+
         case 'Call_Cancel_Request':
-          console.log(`Action Method Tag: Call_Cancel_Request`);
+          console.log(`Changed Call_Cancel_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           await useCallCancelUtil().callCancel(targetTagInfo);
           break;
 
         case 'Dock_Permit':
-          console.log(`Action Method Tag: Dock_Permit`);
+          console.log(`Changed Dock_Permit`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           await useDockingUtil().dockingStart(targetTagInfo);
           break;
 
         case 'Dock_Not_Permit':
-          console.log(`Action Method Tag: Dock_Not_Permit`);
+          console.log(`Changed Dock_Not_Permit`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           await useDockingUtil().dockingFailed(targetTagInfo);
           break;
 
         case 'Dock_EQ_Status':
-          console.log(`Action Method Tag: Dock_EQ_Status`);
+          console.log(`Changed Dock_EQ_Status`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           await useDockingUtil().dockingComplete(targetTagInfo);
           break;
 
         case 'Dock_Out_Permit':
-          console.log(`Action Method Tag: Dock_Out_Permit`);
+          console.log(`Changed Dock_Out_Permit`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           await useDockingUtil().dockingOutStart(targetTagInfo);
           break;
 
         case 'Call_Type_01':
-          console.log(`Action Method Tag: Call_Type_01`);
+          console.log(`Changed Call_Type_01`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           await useCallTypeUtil().callTypeResponse(targetTagInfo);
           break;
 
         case 'Complete':
-          console.log(`Action Method Tag: Complete`);
+          console.log(`Changed Complete`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           // await useCallTypeUtil().callTypeResponse(targetTagInfo);
           // await useKepServerUtil().writeSimpleTagValue({
           //   targetFacility: targetTagInfo.EQ_CODE,
@@ -90,6 +100,15 @@ export const useEqpCheckUtil = () => {
 
           break;
 
+        case 'Call_Request_Multi_1':
+          console.log(`Changed Call_Request_Multi_1`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          await useCallRequestMultiUtil().callResponse(targetTagInfo)
+          break;
+
+        case 'Call_Request_Multi_2':
+          console.log(`Changed Call_Request_Multi_2`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          await useCallRequestMultiUtil().callResponse(targetTagInfo)
+          break;
       }
 
     } catch (error) {

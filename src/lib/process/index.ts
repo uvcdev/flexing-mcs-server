@@ -78,6 +78,19 @@ export const processMcs = async () => {
       // 설비-설비 간에 작업 미생성된 콜에 대해 재판단(Call_Response) 처리
       await useCallRegisterUtil().checkRemainEqpCall()
 
+      // Call_Response 가 꺼졌을 때 Call_Request 가 켜져 있는 경우
+      // ACS에서 작업 취소했을 때 그 설비에 해당하는 Call_Response 다시 켜주기
+      await useCallRegisterUtil().createAfterResponseWorkOrder()
+
+      // 설비 수동모드인 경우 등록해놓은 redis 조회해서 작업지시 생성
+      await useCallRegisterUtil().createFacilityModeWorkOrder()
+
+      // todo: 멀티콜 로직 - 항상 켜져 있는 값을 보고 작업지시 만들도록 하는건 어떨까
+      // createWorkOrder() 여기에서 멀티콜 로직을 제외하고
+      // 멀티콜 로직을 계속 판단해서 작업을 만들도록 pending 쪽에 추가하는건?
+      // await useWorkOrderUtil().createWorkOrder()
+
+
     } else if (dryrunMode === 'facility') {
       // 설비 기준 드라이런 시나리오(창고 IF / PIO 삭제 로직)
       // WMS 관련 프로세스

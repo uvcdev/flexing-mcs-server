@@ -31,15 +31,21 @@ export const useCallRegisterUtil = () => {
   const redisUtil = useRedisUtil();
   const callRegister = async (targetTagInfo: TagValue) => {
     try {
+      // 콜이 켜졌는데 설비가 수동모드인 경우 레디스 저장하고 return
+      const targetCode = targetTagInfo.EQ_CODE;
+      if (!targetCode) return; // 코드 없으면 처리 불가
 
-      // targetKey 형식: STACK01.SC11 || SC.11
-      const lastNodeNameIndex = targetTagInfo.NODE_ID.lastIndexOf('.')
-      const nodeName = targetTagInfo.NODE_ID.substring(0, lastNodeNameIndex);
+      const facilityModeInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityBySerial, targetCode || '')
+
+      if (facilityModeInfo?.mode === 'manual') {
+        redisUtil.hset(RedisKeys.InfoFacilityModeBySerial, targetCode, JSON.stringify(targetTagInfo))
+        return
+      }
+
       const targetKey = targetTagInfo.TAGGROUP
         ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
         : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
       // targetCode 형식: SC11
-      const targetCode = targetTagInfo.EQ_CODE;
       // 필요한 태그 값들 가져오기    
       const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
       const callPriority = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`);
@@ -152,6 +158,13 @@ export const useCallRegisterUtil = () => {
         }
         const dryrunMode = dryrunSetting.data.mode || 'normal'
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityBySerial, callInfo.Caller || '')
+
+        // 설비 상태가 수동인 경우에는 아래 로직을 실행하지 않음.
+        // 콜이 켜진 순간에는 해당 로직으로 돌고 콜이 켜져 있을 때 설비 상태가 manual에서 auto로 변한 경우에는 멀티콜에서 추가 될 콜 모니터링 확인 쪽에서 로직이 돌 예정이다.
+        if (facilityInfo?.mode === 'manual') {
+          return
+        }
+
         // 설비 시스템인 경우에만 콜 생성(셀창고는 제외하기 위함)
         if (facilityInfo?.system === 'EQP') {
           const callInfoString = JSON.stringify(callInfo);
@@ -296,6 +309,8 @@ export const useCallRegisterUtil = () => {
                 value: callCountValue,
               });
             }
+
+            console.log(`Call request sent to EQP from EQP for dryrunMode. TYPE: ${callType}, CallID: ${callCountValue}`);
             /* 설비 - 창고 드라이런 필요시 주석해제
             else {
               // 설비 - 창고 로직
@@ -443,6 +458,8 @@ export const useCallRegisterUtil = () => {
                   }))
                 }
               }
+
+              console.log(`Call request sent to EQP from EQP. TYPE: ${callType}, CallID: ${callCountValue}`);
               // } else if (facilityInfo?.linkedWmsIds) {
             } else {
               // 설비 - 창고 로직
@@ -452,6 +469,8 @@ export const useCallRegisterUtil = () => {
               } else {
                 await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
               }
+
+              console.log(`Call request sent to WCS from EQP. TYPE: ${callType}, CallID: ${callCountValue}`);
             }
             // else {
             //   // todo: 도착지와 통신 없이 바로 작업 생성
@@ -459,14 +478,55 @@ export const useCallRegisterUtil = () => {
           }
         } else if (facilityInfo?.system === 'WMS') {
           // todo: 창고 to 창고 작업지시
+          console.log(`Call request sent to WCS. TYPE: ${callType}, CallID: ${callCountValue}`);
         }
       }
-      console.log(`Call request sent to WCS. TYPE: ${callType}, CallID: ${callCountValue}`);
 
     } catch (error) {
       throw error
     }
   };
+  const createAfterResponseWorkOrder = async () => {
+    try {
+      const reRegisterFacilityList = await redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoFacilityReRegisterBySerial);
+      if (!reRegisterFacilityList) return;
+
+      for (const facility of reRegisterFacilityList) {
+        const eqCode = facility.EQ_CODE;
+        if (!eqCode) continue;
+
+        await callRegister(facility);
+        await redisUtil.hdel(RedisKeys.InfoFacilityReRegisterBySerial, eqCode);
+      }
+    } catch (error) {
+      console.error('[callRegisterUtil.createFacilityModeWorkOrder] error :', error);
+      throw error;
+    }
+  }
+  const createFacilityModeWorkOrder = async () => {
+    try {
+      const manualList = await redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoFacilityModeBySerial);
+      if (!manualList) return;
+
+      for (const facility of manualList) {
+        const eqCode = facility.EQ_CODE;
+        if (!eqCode) continue;
+
+        const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+          RedisKeys.InfoFacilityBySerial,
+          eqCode
+        );
+
+        if (facilityInfo?.mode === 'auto') {
+          await callRegister(facility);
+          await redisUtil.hdel(RedisKeys.InfoFacilityModeBySerial, eqCode);
+        }
+      }
+    } catch (error) {
+      console.error('[callRegisterUtil.createFacilityModeWorkOrder] error :', error);
+      throw error;
+    }
+  }
   // callRequestMulti1Value와 callRequestMulti2Value의 값을 기반으로 multiValue 결정
   const determineMultiValue = (callRequestMulti1Value: string, callRequestMulti2Value: string): number => {
     if (callRequestMulti1Value === "true" && callRequestMulti2Value === "true") {
@@ -601,11 +661,23 @@ export const useCallRegisterUtil = () => {
             description: `Call ID ${infoTrackingLogByResFacilityCode?.callId} responsed`
           }
           await editTrackingLogRedis(trackingLogUpdateResData, undefined, 'SUCCESS', remainCall.toFacilityName?.toString())
-
+          const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+            callId: remainCall.callId,
+            eqpName: remainCall.eqpName,
+            portName: remainCall.portName,
+            type: remainCall?.type.toUpperCase() === 'IN' ? 'IN' : 'OUT',
+            isMissionOrder: false,
+            callPriority: remainCall.callPriority,
+            callType: remainCall.callType || 'NC11',
+            fromFacilityName: remainCall?.type.toUpperCase() === 'IN' ? remainCall.toFacilityName! : remainCall.fromFacilityName,
+            toFacilityName: remainCall?.type.toUpperCase() === 'IN' ? remainCall.fromFacilityName : remainCall.toFacilityName
+          }
+          // 작업지시 예정 레디스 저장
+          redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, remainCall.callId || '', JSON.stringify(infoPendingWorkOrder))
           redisUtil.hdel(RedisKeys.InfoRemainCallById, remainCall.callId || '');
         }
       }
     }
   };
-  return { callRegister, checkRemainEqpCall };
+  return { callRegister, createFacilityModeWorkOrder, createAfterResponseWorkOrder, checkRemainEqpCall };
 };

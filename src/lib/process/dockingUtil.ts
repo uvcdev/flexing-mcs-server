@@ -682,7 +682,7 @@ export const useDockingUtil = () => {
           await useKepServerUtil().writeTagsValue(callTypeResponseTag);
         }
           */
-        console.log("🚀 ~ sendAcsDockingRequest ~ dockingParams:", dockingParams)
+        console.log("🚀 ~ sendAcsDockingRequest ~ params:", dockingParams.PORT_ID, dockingParams.WORKER_ID)
         switch (dockingParams.EXC_CLS) {
           case EXC_CLS.AUTO:  //일반도킹
             // TODO: 도킹 요청 기종 확인(기종은 콜 호출 응답 시, 혹은 도킹요청 하기 전 기록되어있어야함)
@@ -702,7 +702,7 @@ export const useDockingUtil = () => {
                 tagName: 'Dock_Signal_Reset',
                 value: false,
               });
-            }, 1000)
+            }, 500)
             // 일반 도킹 요청 PLC 쓰기
             const dockingRequestTag = await useKepServerUtil().makeWriteDatas({
               targetFacility: paramsSerial,
@@ -790,7 +790,7 @@ export const useDockingUtil = () => {
                 tagName: 'Dock_Signal_Reset',
                 value: false,
               });
-            }, 1000)
+            }, 500)
             // 수동 도킹 요청 PLC 쓰기
             const dockingManualRequestTag = await useKepServerUtil().makeWriteDatas({
               targetFacility: paramsSerial,
@@ -951,7 +951,7 @@ export const useDockingUtil = () => {
       if (usageFacilitylist && usageFacilitylist.length > 0) {
         for (const facility of usageFacilitylist) {
           const paramsSerial = facility.serial || ''
-          console.log("🚀 ~ sendAcsDockingComplete ~ params:", dockingParams)
+          console.log("🚀 ~ sendAcsDockingComplete ~ params:", dockingParams.PORT_ID, dockingParams.WORKER_ID)
 
           redisUtil.hset(RedisKeys.DockingCompleteBySerialId, paramsSerial, JSON.stringify(dockingParams));
 
@@ -1003,7 +1003,7 @@ export const useDockingUtil = () => {
   // acs에서 도킹진출완료 응답이 왔을 때, 설비에 도킹진출완료 응답하는 함수
   const sendAcsDockingDetach = async (params: AcsDockingDetachType) => {
     try {
-      console.log("🚀 ~ sendAcsDockingDetach ~ params:", params)
+      console.log("🚀 ~ sendAcsDockingDetach ~ params:", params.PORT_ID, params.WORKER_ID)
       params.SERIAL_ID = params.PORT_ID
       const dockingResponse: AcsDockingDetachResponse = {
         ...params,
@@ -1034,7 +1034,7 @@ export const useDockingUtil = () => {
           tagName: 'Dock_Signal_Reset',
           value: false,
         });
-      }, 1000)
+      }, 500)
       await useKepServerUtil().writeSimpleTagValue({
         targetFacility: params.SERIAL_ID || '',
         tagName: 'Dock_AMR_Status',

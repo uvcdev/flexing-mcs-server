@@ -34,6 +34,7 @@ import { useKepServerUtil } from './kepServerUtil';
 import { routeMissionOrderMqttMessage } from './process/commonUtils';
 import { FacilityAttributes } from '../models/operation/facility';
 import { RedisKeys, useRedisUtil } from './redisUtil';
+import { service as facilityService } from '../service/operation/facilityService';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -121,6 +122,7 @@ export enum MqttTopics {
   ImcsEqpDockingRequest = 'imcs/docking/eqp/request',
   ImcsEqpDockingOutRequest = 'imcs/docking/eqp/out_request',
   ImcsWcsDockingRequest = 'imcs/docking/wcs/request',
+  EditFacility = 'edit-facility',
 }
 
 export interface MbsMqttHeader {
@@ -625,8 +627,17 @@ export const receiveMqtt = (): void => {
             if (topicSplit[1] === 'same_pio') {
               const messageJson = JSON.parse(message);
               try {
-                console.log('messageJson123', messageJson.IN_SERIAL, messageJson.OUT_SERIAL)
-                // Dock_AMR_Status / Dock_EQ_Status 값 write
+                // BS11 값 write
+                await useKepServerUtil().writeSimpleTagValue({
+                  targetFacility: messageJson.IN_SERIAL,
+                  tagName: 'Dock_Request',
+                  value: false,
+                });
+                await useKepServerUtil().writeSimpleTagValue({
+                  targetFacility: messageJson.IN_SERIAL,
+                  tagName: 'Dock_Out_Request',
+                  value: true,
+                });
                 await kepServerUtil.writeSimpleTagValue({
                   targetFacility: messageJson.IN_SERIAL,
                   tagName: 'Dock_AMR_Status',
@@ -637,18 +648,20 @@ export const receiveMqtt = (): void => {
                   tagName: 'Dock_Signal_Reset',
                   value: true,
                 });
-                await useKepServerUtil().writeSimpleTagValue({
-                  targetFacility: messageJson.IN_SERIAL,
-                  tagName: 'Dock_Request',
-                  value: false,
-                });
                 setTimeout(() => {
                   useKepServerUtil().writeSimpleTagValue({
                     targetFacility: messageJson.IN_SERIAL,
                     tagName: 'Dock_Signal_Reset',
                     value: false,
                   });
-                }, 1000)
+                }, 500)
+                await useKepServerUtil().writeSimpleTagValue({
+                  targetFacility: messageJson.IN_SERIAL,
+                  tagName: 'Dock_Out_Request',
+                  value: false,
+                });
+
+                // BS12 값 write
                 await kepServerUtil.writeSimpleTagValue({
                   targetFacility: messageJson.OUT_SERIAL,
                   tagName: 'Dock_AMR_Status',
@@ -664,6 +677,24 @@ export const receiveMqtt = (): void => {
                 console.log('same_pio request', error);
                 throw error
               }
+            }
+            if (topicSplit.length === 3 && topicSplit[1] === 'edit-facility') {
+              const facilitySerial = topicSplit[2]
+              const messageJson = JSON.parse(message);
+
+              const mode = messageJson.mode;
+
+              if (!mode || mode === '') {
+                // error 발생
+                logging.MQTT_LOG({
+                  title: 'mcs workorder',
+                  topic: messageTopic,
+                  message: messageJson,
+                });
+                return
+              }
+
+              await facilityService.editFacilityMode({ serial: facilitySerial, mode: mode })
             }
           }
 

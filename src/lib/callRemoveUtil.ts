@@ -7,6 +7,8 @@ import { sendMqtt } from "./mqttUtil";
 import opcuaUtil from "./opcuaUtil";
 import { RedisKeys, useRedisUtil } from "./redisUtil";
 import { service as workOrderService } from '../service/operation/workOrderService';
+import { dao as facilityDao } from '../dao/operation/facilityDao';
+import { FacilityAttributes } from "../models/operation/facility";
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -32,6 +34,11 @@ export const useCallRemoveUtil = () => {
         : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
       const targetCode = targetTagInfo.EQ_CODE;
+
+      // 설비(caller) 설비 데이터 조회 - DB or REDIS
+      // const facilityInfo = await facilityDao.selectSerial({ serial: targetCode })
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, targetCode)
+      const cancelType = facilityInfo?.cancelType || 'NON_CANCELLABLE'
 
       // 필요한 태그 값들 가져오기    
       const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
@@ -86,6 +93,12 @@ export const useCallRemoveUtil = () => {
       // 로봇 할당 되어 있는 경우 콜 취소 응답이 켜져 있는 상태에서
       // 콜이 내려간다면 콜 취소 응답 내리기
       if (callCancelResponseValue === true) {
+        // NON_CANCELLABLE일 경우 해당 설비에서 들어온 취소 요청에 대해서 응답하지 않음
+        // 해당 로직에 대한 고민 필요 -> 
+        // if (cancelType === 'NON_CANCELLABLE') {
+        //   return
+        // }
+
         await kepServerUtil.writeSimpleTagValue({
           targetFacility: targetCode,
           tagName: 'Call_Cancel_Response',
@@ -98,7 +111,8 @@ export const useCallRemoveUtil = () => {
           ZONE_ID: process.env.FLOOR || '1F',
           EQP_ID: targetCode,
           EQP_CALL_ID: infoTrackingLogByFacilityCode?.eqpCallId || '',
-          CALL_ID: infoTrackingLogByFacilityCode?.callId || ''
+          CALL_ID: infoTrackingLogByFacilityCode?.callId || '',
+          CANCEL_TYPE: cancelType,
         }
         const result = await workOrderService.facilityCancel(
           { code: params.CALL_ID },

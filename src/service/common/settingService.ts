@@ -34,18 +34,18 @@ const service = {
     try {
       result = await settingDao.insert(params);
       void this.redisInit();
-      if (params.type === 'logRetentionPeriod') {
+      if (params.type === 'logSetting') {
         try {
           const logPeriod = params.data as unknown as { mcsLog: number };
           try {
             const remove = await logSequelize.query(`SELECT remove_retention_policy('logs');`);
           } catch (err) {
             const add = await logSequelize.query(
-              `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} day');`
+              `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
             );
           }
           const add = await logSequelize.query(
-            `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} day');`
+            `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
           );
         } catch (err) {
           // 에러 응답값 세팅
@@ -110,18 +110,18 @@ const service = {
     try {
       result = await settingDao.update(params);
       void this.redisInit();
-      if (params.type === 'logRetentionPeriod') {
+      if (params.type === 'logSetting') {
         try {
           const logPeriod = params.data as unknown as { mcsLog: number };
           try {
             const remove = await logSequelize.query(`SELECT remove_retention_policy('logs');`);
           } catch (err) {
             const add = await logSequelize.query(
-              `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} day');`
+              `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
             );
           }
           const add = await logSequelize.query(
-            `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} day');`
+            `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
           );
         } catch (err) {
           // 에러 응답값 세팅
