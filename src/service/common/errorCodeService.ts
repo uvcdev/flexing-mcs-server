@@ -3,11 +3,11 @@ import {
   ErrorCodeDeleteParams,
   ErrorCodeInsertParams,
   ErrorCodeSelectInfoByCodeParams,
-  ErrorCodeSelectInfoByLocationAndCodeParams,
+  ErrorCodeSelectInfoByErrorFromAndCodeParams,
   ErrorCodeSelectInfoParams,
   ErrorCodeSelectListParams,
   ErrorCodeUpdateParams,
-  LocationType,
+  ErrorFromType,
 } from '../../models/common/errorCode';
 import { dao as errorCodeDao } from '../../dao/common/errorCodeDao';
 import { LogFormat, logging } from '../../lib/logging';
@@ -63,12 +63,12 @@ export const errorCodeService = {
       resolve(result);
     });
   },
-  // selectLocations
-  async locationList(logFormat: LogFormat<unknown>): Promise<LocationType[]> {
-    let result: LocationType[];  // ✅ 타입 수정
+  // selectErrorFroms
+  async errorFromList(logFormat: LogFormat<unknown>): Promise<ErrorFromType[]> {
+    let result: ErrorFromType[];  // ✅ 타입 수정
 
     try {
-      result = await errorCodeDao.selectLocations();
+      result = await errorCodeDao.selectErrorFroms();
 
       logging.METHOD_ACTION(logFormat, __filename, {}, result);
     } catch (err) {
@@ -123,12 +123,12 @@ export const errorCodeService = {
       resolve(result);
     });
   },
-  // selectInfoByLocationAndCode
-  async infoByLocationByCode(params: ErrorCodeSelectInfoByLocationAndCodeParams, logFormat: LogFormat<unknown>): Promise<ErrorCodeAttributes | null> {
+  // selectInfoByErrorFromAndCode
+  async infoByErrorFromByCode(params: ErrorCodeSelectInfoByErrorFromAndCodeParams, logFormat: LogFormat<unknown>): Promise<ErrorCodeAttributes | null> {
     let result: ErrorCodeAttributes | null;
 
     try {
-      result = await errorCodeDao.selectInfoByLocationAndCode(params);
+      result = await errorCodeDao.selectInfoByErrorFromAndCode(params);
       logging.METHOD_ACTION(logFormat, __filename, params, result);
     } catch (err) {
       logging.ERROR_METHOD(logFormat, __filename, params, err);

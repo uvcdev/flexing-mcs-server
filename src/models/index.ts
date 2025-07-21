@@ -68,7 +68,6 @@ export type dbType = typeof db;
 AlarmEmail.belongsTo(User, { foreignKey: { name: 'UserId' }, onDelete: 'SET NULL', as: 'User' });
 
 // Alarm
-McsAlarm.belongsTo(Facility, { foreignKey: { name: 'FacilityId' }, onDelete: 'SET NULL', as: 'Facility' });
 
 /* operation */
 // Facility

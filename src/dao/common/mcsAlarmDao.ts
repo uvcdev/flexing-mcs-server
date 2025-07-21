@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import { InsertedResult, SelectedListResult, UpdatedResult, DeletedResult } from '../../lib/resUtil';
 import McsAlarm, {
   McsAlarmInsertParams,
@@ -7,6 +8,7 @@ import McsAlarm, {
   McsAlarmDeleteParams,
   McsAlarmAttributes,
   McsAlarmSelectInfoParams,
+  McsAlarmSelectInfoByCodeParams,
 } from '../../models/common/mcsAlarm';
 import Facility, { FacilityAttributesInclude } from '../../models/operation/facility';
 
@@ -36,10 +38,10 @@ const dao = {
         id: params.ids, // 'in'검색,
       };
     }
-    if (params.facilityId) {
+    if (params.code) {
       setQuery.where = {
         ...setQuery.where,
-        facilityId: params.facilityId, // 'in'검색,
+        code: { [Op.like]: `%${params.code}%` }, // 'like' 검색
       };
     }
     if (params.state) {
@@ -53,13 +55,6 @@ const dao = {
       McsAlarm.findAndCountAll({
         ...setQuery,
         distinct: true,
-        include: [
-          {
-            model: Facility,
-            as: 'Facility',
-            attributes: FacilityAttributesInclude,
-          },
-        ],
       })
         .then((selectedList) => {
           resolve(selectedList);
@@ -72,13 +67,21 @@ const dao = {
   selectInfo(params: McsAlarmSelectInfoParams): Promise<McsAlarmAttributes | null> {
     return new Promise((resolve, reject) => {
       McsAlarm.findByPk(params.id, {
-        include: [
-          // {
-          //   model: AlarmGroup,
-          //   as: 'AlarmGroup',
-          //   attributes: AlarmGroupAttributesInclude,
-          // },
-        ],
+      })
+        .then((selectedInfo) => {
+          resolve(selectedInfo);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+  selectInfoByCode(params: McsAlarmSelectInfoByCodeParams): Promise<McsAlarmAttributes | null> {
+    return new Promise((resolve, reject) => {
+      McsAlarm.findOne({
+        where: {
+          code: params.code
+        }
       })
         .then((selectedInfo) => {
           resolve(selectedInfo);

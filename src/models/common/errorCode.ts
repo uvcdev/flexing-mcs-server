@@ -4,7 +4,7 @@ import { sequelize } from '../sequelize';
 export interface ErrorCodeAttributes {
   id: number;
   code: string;        // 에러 코드
-  location: LocationType;    // 에러 발생 위치
+  errorFrom: ErrorFromType;    // 에러 발생 위치
   messageKo: string;   // 국문 내용
   messageEn: string;   // 영문 내용
   messageEs: string;   // 스페인어 내용
@@ -17,7 +17,7 @@ export interface ErrorCodeAttributes {
 class ErrorCode extends Model implements ErrorCodeAttributes {
   public readonly id!: ErrorCodeAttributes['id'];
   public code!: ErrorCodeAttributes['code'];
-  public location!: ErrorCodeAttributes['location'];
+  public errorFrom!: ErrorCodeAttributes['errorFrom'];
   public messageKo!: ErrorCodeAttributes['messageKo'];
   public messageEn!: ErrorCodeAttributes['messageEn'];
   public messageEs!: ErrorCodeAttributes['messageEs'];
@@ -27,9 +27,9 @@ class ErrorCode extends Model implements ErrorCodeAttributes {
   public readonly deletedAt!: ErrorCodeAttributes['deletedAt'];
 }
 
-export type LocationType =
+export type ErrorFromType =
   'WMS' |           // 창고 관련 에러
-  'FACILITY' |      // 설비 관련 에러
+  'FAC' |      // 설비 관련 에러
   'MCS' |           // MCS 서버 관련 에러
   'ACS' |           // ACS 서버 관련 에러
   'ETC';            // 이외의 에러
@@ -37,7 +37,7 @@ export type LocationType =
 export type ErrorLevel = 'info' | 'warning' | 'error';
 
 export const ErrorCodeDefaultValue = {
-  location: 'ETC',
+  errorFrom: 'ETC',
   errorLevel: 'error'
 };
 
@@ -52,10 +52,10 @@ ErrorCode.init(
       type: DataTypes.STRING(50),
       allowNull: false,
     },
-    location: {
+    errorFrom: {
       type: DataTypes.STRING(20),
       allowNull: false,
-      defaultValue: ErrorCodeDefaultValue.location
+      defaultValue: ErrorCodeDefaultValue.errorFrom
     },
     messageKo: {
       type: DataTypes.TEXT,
@@ -81,8 +81,8 @@ ErrorCode.init(
     indexes: [      // location 과 code 를 묶어서 유니크 처리
       {
         unique: true,
-        fields: ['location', 'code'],
-        name: 'unique_location_code'
+        fields: ['error_from', 'code'],
+        name: 'unique_error_from_code'
       }
     ]
   }
@@ -92,7 +92,7 @@ ErrorCode.init(
 // insert
 export interface ErrorCodeInsertParams {
   code: string;
-  location: ErrorCodeAttributes['location'];
+  errorFrom: ErrorCodeAttributes['errorFrom'];
   messageKo: string | null;
   messageEn: string | null;
   messageEs: string | null;
@@ -102,7 +102,7 @@ export interface ErrorCodeInsertParams {
 export interface ErrorCodeSelectListParams {
   ids?: Array<number> | null;
   code?: string;
-  location?: ErrorCodeAttributes['location'];
+  errorFrom?: ErrorCodeAttributes['errorFrom'];
   errorLevel?: ErrorCodeAttributes['errorLevel'];
   limit?: number;
   offset?: number;
@@ -128,8 +128,8 @@ export interface ErrorCodeSelectInfoByCodeParams {
 }
 
 // selectInfo by location and code
-export interface ErrorCodeSelectInfoByLocationAndCodeParams {
-  location: ErrorCodeAttributes['location'];
+export interface ErrorCodeSelectInfoByErrorFromAndCodeParams {
+  errorFrom: ErrorCodeAttributes['errorFrom'];
   code: string;
 }
 
@@ -137,7 +137,7 @@ export interface ErrorCodeSelectInfoByLocationAndCodeParams {
 export interface ErrorCodeUpdateParams {
   id?: ErrorCodeAttributes['id'];
   code?: string;
-  location?: ErrorCodeAttributes['location'];
+  errorFrom?: ErrorCodeAttributes['errorFrom'];
   messageKo?: string;
   messageEn?: string;
   messageEs?: string;

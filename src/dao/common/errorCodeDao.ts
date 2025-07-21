@@ -9,8 +9,8 @@ import ErrorCode, {
   ErrorCodeAttributes,
   ErrorCodeSelectInfoParams,
   ErrorCodeSelectInfoByCodeParams,
-  ErrorCodeSelectInfoByLocationAndCodeParams,
-  LocationType,
+  ErrorCodeSelectInfoByErrorFromAndCodeParams,
+  ErrorFromType,
 } from '../../models/common/errorCode';
 
 const dao = {
@@ -45,10 +45,10 @@ const dao = {
         code: { [Op.like]: `%${params.code}%` }, // 'like' 검색
       };
     }
-    if (params.location) {
+    if (params.errorFrom) {
       setQuery.where = {
         ...setQuery.where,
-        location: params.location, // 'in'검색,
+        errorFrom: params.errorFrom, // 'in'검색,
       };
     }
     if (params.errorLevel) {
@@ -71,17 +71,17 @@ const dao = {
         });
     });
   },
-  // 데이터들의 Location 목록 추출
-  selectLocations(): Promise<LocationType[]> {
+  // 데이터들의 ErrorFroms 목록 추출
+  selectErrorFroms(): Promise<ErrorFromType[]> {
     return new Promise((resolve, reject) => {
       ErrorCode.findAll({
-        attributes: ['location'],  // location 컬럼만 선택
-        group: ['location'],       // location별로 그룹화 (중복 제거)
+        attributes: ['errorFrom'],  // errorFrom 컬럼만 선택
+        group: ['errorFrom'],       // errorFrom 별로 그룹화 (중복 제거)
         raw: true                  // 순수 객체로 반환
       })
-        .then((locations) => {
-          const locationList = locations.map(item => item.location as LocationType);
-          resolve(locationList);
+        .then((errorFroms) => {
+          const errorFromList = errorFroms.map(errorCode => errorCode.errorFrom as ErrorFromType);
+          resolve(errorFromList);
         })
         .catch((err) => {
           reject(err);
@@ -114,11 +114,11 @@ const dao = {
         });
     });
   },
-  selectInfoByLocationAndCode(params: ErrorCodeSelectInfoByLocationAndCodeParams): Promise<ErrorCodeAttributes | null> {
+  selectInfoByErrorFromAndCode(params: ErrorCodeSelectInfoByErrorFromAndCodeParams): Promise<ErrorCodeAttributes | null> {
     return new Promise((resolve, reject) => {
       ErrorCode.findOne({
         where: {
-          location: params.location,
+          errorFrom: params.errorFrom,
           code: params.code,
           deletedAt: null
         }

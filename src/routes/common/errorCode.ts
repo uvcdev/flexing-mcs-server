@@ -34,7 +34,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, ErrorCodeInse
   try {
     const params: ErrorCodeInsertParams = {
       code: req.body.code,
-      location: req.body.location || 'ETC',
+      errorFrom: req.body.errorFrom || 'ETC',
       messageKo: req.body.messageKo,
       messageEn: req.body.messageEn,
       messageEs: req.body.messageEs,
@@ -42,8 +42,8 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, ErrorCodeInse
     };
     logging.REQUEST_PARAM(logFormat);
     // 입력값 체크
-    if (!params.code || !params.location) {
-      throw new ErrorClass(resCode.BAD_REQUEST_NOTNULL, 'Not allowed null (code , location)');
+    if (!params.code || !params.errorFrom) {
+      throw new ErrorClass(resCode.BAD_REQUEST_NOTNULL, 'Not allowed null (code , errorFrom)');
     }
 
     // 비즈니스 로직 호출
@@ -76,7 +76,7 @@ router.get(
       const params: ErrorCodeSelectListParams = {
         ids: req.query.ids ? (req.query.ids as unknown as string).split(',').map((i) => Number(i)) : null,
         code: req.query.code,
-        location: req.query.location,
+        errorFrom: req.query.errorFrom,
         errorLevel: req.query.errorLevel,
         limit: Number(req.query.limit),
         offset: Number(req.query.offset),
@@ -100,9 +100,9 @@ router.get(
   }
 );
 
-// ErrorCode Location 리스트 조회
+// ErrorCode ErrorFrom 리스트 조회
 router.get(
-  '/locations',
+  '/error-froms',
   isLoggedIn,
   async (req: Request<unknown, unknown, unknown, unknown>, res: Response) => {
     const logFormat = makeLogFormat(req);
@@ -110,7 +110,7 @@ router.get(
     try {
       logging.REQUEST_PARAM(logFormat);
       // 비즈니스 로직 호출
-      const result = await errorCodeService.locationList(logFormat);
+      const result = await errorCodeService.errorFromList(logFormat);
       // 최종 응답값 세팅
       // front test 필요
       const resJson = resSuccess(result, resType.LIST);
@@ -230,7 +230,7 @@ router.put(
       const params: ErrorCodeUpdateParams = {
         id: Number(req.params.id),
         code: req.body.code,
-        location: req.body.location,
+        errorFrom: req.body.errorFrom,
         messageKo: req.body.messageKo,
         messageEn: req.body.messageEn,
         messageEs: req.body.messageEs,
