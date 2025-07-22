@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { InsertedResult, SelectedListResult, UpdatedResult, DeletedResult } from '../../lib/resUtil';
+import { InsertedResult, SelectedListResult, UpdatedResult, DeletedResult, UpdatedAndDataIds } from '../../lib/resUtil';
 import McsAlarm, {
   McsAlarmInsertParams,
   McsAlarmSelectListParams,
@@ -9,6 +9,7 @@ import McsAlarm, {
   McsAlarmAttributes,
   McsAlarmSelectInfoParams,
   McsAlarmSelectInfoByCodeParams,
+  McsAlarmUpdateStateByCodeParams,
 } from '../../models/common/mcsAlarm';
 import Facility, { FacilityAttributesInclude } from '../../models/operation/facility';
 
@@ -96,6 +97,18 @@ const dao = {
       McsAlarm.update(params, { where: { id: params.id } })
         .then(([updated]) => {
           resolve({ updatedCount: updated });
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+  updateStateByCode(params: McsAlarmUpdateStateByCodeParams): Promise<UpdatedAndDataIds> {
+    return new Promise((resolve, reject) => {
+      McsAlarm.update(params, { where: { code: params.code }, returning: true })
+        .then(([updatedCount, updatedRows]) => {
+          const updatedIds = updatedRows.map(row => row.id)
+          resolve({ updatedCount: updatedCount, updatedIds: updatedIds });
         })
         .catch((err) => {
           reject(err);

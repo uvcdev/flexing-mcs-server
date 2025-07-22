@@ -6,7 +6,7 @@ export interface McsAlarmAttributes {
   code: string;
   alarmFrom: AlarmFromType;
   errorCode: string;
-  target: string;
+  target: string | null;
   level: McsAlarmLevel;
   state: McsAlarmState;
   data: JSON | null;
@@ -92,7 +92,7 @@ export interface McsAlarmInsertParams {
   code: string;
   alarmFrom: McsAlarmAttributes['alarmFrom'];
   errorCode: string;
-  target: string;
+  target: string | null;
   level: McsAlarmAttributes['level'];
   state: McsAlarmAttributes['state'] | null;
   data: Record<string, any> | null;
@@ -129,6 +129,13 @@ export interface McsAlarmSelectInfoByCodeParams {
 // update
 export interface McsAlarmUpdateParams {
   id?: McsAlarmAttributes['id'];
+  state?: McsAlarmAttributes['state'] | null;
+  data?: Record<string, any> | null;
+}
+
+// updateStateByCode
+export interface McsAlarmUpdateStateByCodeParams {
+  code?: McsAlarmAttributes['code'];
   state?: McsAlarmAttributes['state'] | null;
   data?: Record<string, any> | null;
 }

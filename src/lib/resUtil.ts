@@ -61,6 +61,11 @@ export interface UpdatedAndDataResult {
   updatedData: Record<string, any>[];
 }
 
+export interface UpdatedAndDataIds {
+  updatedCount: number;
+  updatedIds: number[];
+}
+
 // delete 응답 타입
 export interface DeletedResult {
   deletedCount: number;
