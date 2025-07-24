@@ -1,16 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { AttributeIds } from "node-opcua-client";
-import { PendingWorkOrderAttributes } from '../models/operation/workOrder';
 import { FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
-import { makeCallType, TagValue, useKepServerUtil } from "./kepServerUtil";
-import { logging } from './logging';
-import opcuaUtil from "./opcuaUtil";
-import { EQP_WCS } from "./eqpCheckUtil";
-import { formatToDateCode } from "./usefullToolUtil";
-import { RedisKeys, RedisSettingKeys, useRedisUtil } from "./redisUtil";
-import { editTrackingLogRedis, initTrackingLogRedis } from "./process/trackingLog";
-import { TrackingLogRedisAttributes, TrackingLogRedisUpdateParams } from "../models/common/trackingLog";
-import { DryrunSetting } from "../models/common/setting";
+import { TagValue } from './kepServerUtil';
+import opcuaUtil from './opcuaUtil';
+import { RedisKeys, useRedisUtil } from './redisUtil';
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -20,14 +11,13 @@ export interface EqpCallStats {
   Call_Priority: string;
   SYSTEM_NAME?: string;
   // NODE_ID: string;
-};
+}
 
 export interface EqpCallStatsForAck extends EqpCallStats {
   Cmd_ID: string;
-};
+}
 
 export const useCallResponseUtil = () => {
-  const kepServerUtil = useKepServerUtil()
   const redisUtil = useRedisUtil();
   const callReRegister = async (targetTagInfo: TagValue) => {
     try {
@@ -35,15 +25,78 @@ export const useCallResponseUtil = () => {
       const targetCode = targetTagInfo.EQ_CODE;
       if (!targetCode) return; // 코드 없으면 처리 불가
 
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityById, targetCode);
       const callRequestValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Request`)?.value;
-
-      if (callRequestValue === true) {
-        redisUtil.hset(RedisKeys.InfoFacilityReRegisterBySerial, targetCode, JSON.stringify(targetTagInfo))
-        return
-      }
+      // 콜 주체가 되는 설비의 Call_Response 가 꺼진 경우
+      // if (callRequestValue === true && facilityInfo?.linkedEqpIds && facilityInfo.linkedEqpIds.length > 0) {
+      //   // redisUtil.hset(RedisKeys.InfoFacilityReRegisterBySerial, targetCode, JSON.stringify(targetTagInfo))
+      //   targetTagInfo.reRegister = '_RE';
+      //   await useRedisUtil().hset(
+      //     RedisKeys.InfoCallRequestOnBySerial,
+      //     targetTagInfo.EQ_CODE,
+      //     JSON.stringify(targetTagInfo)
+      //   );
+      //   return;
+      // }
+      // else if (callRequestValue === true) {
+      //   // 콜 주체가 아닌 콜이 항상 켜져 있는 설비에 Call_Response 가 꺼진 경우
+      //   // 항상 켜져 있는 설비를 linked 로 등록되어 있는 설비를 찾아서 그 설비 Call_Request 가 켜져 있으면
+      //   // 그 설비로 hest ??
+      //   targetTagInfo.reRegister = '_RE';
+      //   await useRedisUtil().hset(
+      //     RedisKeys.InfoCallRequestOnBySerial,
+      //     targetTagInfo.EQ_CODE,
+      //     JSON.stringify(targetTagInfo)
+      //   );
+      //   return;
+      // }
     } catch (error) {
-      throw error
+      throw error;
     }
   };
-  return { useCallResponseUtil, callReRegister };
+
+  const decisionWorkOrder = async (targetTagInfo: TagValue) => {
+    try {
+      const targetCode = targetTagInfo.EQ_CODE;
+      if (!targetCode) return;
+
+      const multiCallFirstValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Request_Multi_1`)?.value;
+      const multiCallSecondValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Request_Multi_2`)?.value;
+
+      const workOrderCountInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
+        RedisKeys.InfoWorkOrderCountBySerial,
+        targetCode
+      );
+      if (!workOrderCountInfo) return;
+
+      const workOrderCaluntValue = workOrderCountInfo.count;
+
+      // 멀티콜 2개 켜져 있는 경우
+      if (workOrderCaluntValue && multiCallFirstValue === true && multiCallSecondValue === true) {
+        // 현재 진행중인 작업지시 갯수 판단해서 작업지시 만들기
+        if (workOrderCaluntValue <= 2) {
+          await useRedisUtil().hset(
+            RedisKeys.InfoMultiCallRequestOnBySerial,
+            `${targetTagInfo.EQ_CODE}_2`,
+            JSON.stringify(targetTagInfo)
+          );
+        }
+      }
+      // 멀티콜 1개 켜져 있는 경우
+      if (workOrderCaluntValue && multiCallFirstValue === true) {
+        // 현재 진행중인 작업지시 갯수 판단해서 작업지시 만들기
+        if (workOrderCaluntValue <= 1) {
+          await useRedisUtil().hset(
+            RedisKeys.InfoMultiCallRequestOnBySerial,
+            `${targetTagInfo.EQ_CODE}_1`,
+            JSON.stringify(targetTagInfo)
+          );
+          return;
+        }
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+  return { useCallResponseUtil, callReRegister, decisionWorkOrder };
 };

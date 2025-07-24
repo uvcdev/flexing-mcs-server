@@ -147,10 +147,53 @@ const dao = {
           },
           {
             model: Amr,
-            as :'Amr',
+            as: 'Amr',
             attributes: AmrAttributesInclude,
-          }
+          },
         ],
+      })
+        .then((selectedList) => {
+          resolve(selectedList);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+
+  selectListCount(params: WorkOrderSelectListParams): Promise<SelectedListResult<WorkOrderAttributes>> {
+    // DB에 넘길 최종 쿼리 세팅
+    const setQuery: WorkOrderSelectListQuery = {};
+    // 1. where조건 세팅
+    if (params.ids) {
+      setQuery.where = {
+        ...setQuery.where,
+        id: params.ids, // '=' 검색
+      };
+    }
+    if (params.code) {
+      setQuery.where = {
+        ...setQuery.where,
+        code: { [Op.like]: `%${params.code}%` }, // 'like' 검색
+      };
+    }
+    if (params.itemId) {
+      setQuery.where = {
+        ...setQuery.where,
+        itemId: params.itemId, // in 검색
+      };
+    }
+    // 2. limit, offset 세팅
+    if (params.limit && params.limit > 0) setQuery.limit = params.limit;
+    if (params.offset && params.offset > 0) setQuery.offset = params.offset;
+    // 3. orderby 세팅
+    setQuery.order = getOrderby(params.order);
+
+    return new Promise((resolve, reject) => {
+      WorkOrder.findAndCountAll({
+        ...setQuery,
+        attributes: ['id', 'code'],
+        distinct: true,
       })
         .then((selectedList) => {
           resolve(selectedList);
@@ -205,9 +248,9 @@ const dao = {
           },
           {
             model: Amr,
-            as :'Amr',
+            as: 'Amr',
             attributes: AmrAttributesInclude,
-          }
+          },
         ],
       })
         .then((selectedInfo) => {
@@ -240,9 +283,9 @@ const dao = {
           },
           {
             model: Amr,
-            as :'Amr',
+            as: 'Amr',
             attributes: AmrAttributesInclude,
-          }
+          },
         ],
       })
         .then((selectedInfo) => {

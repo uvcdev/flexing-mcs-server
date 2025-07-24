@@ -1,12 +1,21 @@
-import fs from "fs/promises";
-import { NodeId, AttributeIds, DataValue, ReadValueIdOptions, WriteValueOptions, StatusCode, DataType } from 'node-opcua-client';
+import fs from 'fs/promises';
+import fsOrigin from 'fs';
+import {
+  NodeId,
+  AttributeIds,
+  DataValue,
+  ReadValueIdOptions,
+  WriteValueOptions,
+  StatusCode,
+  DataType,
+} from 'node-opcua-client';
 import { logging, logToConsoleAndFile } from './logging';
 import opcuaUtil from './opcuaUtil';
 import { MqttTopics, sendMqtt } from './mqttUtil';
-import path from "path";
-import { KepwareWriteParams } from "../models/kepware/kepware";
-import { RedisKeys, useRedisUtil } from "./redisUtil";
-import { FacilityAttributes } from "../models/operation/facility";
+import path from 'path';
+import { KepwareWriteParams } from '../models/kepware/kepware';
+import { RedisKeys, useRedisUtil } from './redisUtil';
+import { FacilityAttributes } from '../models/operation/facility';
 
 export interface MonitorTagValue {
   key: string;
@@ -17,11 +26,17 @@ export interface MonitorTag {
   readValueIdOptions: ReadValueIdOptions[];
   tagValue: MonitorTagValue[];
 }
+
+export interface TagInfo {
+  NODE_ID?: string;
+  CHANNEL?: string;
+}
 export interface TagValue {
   value: boolean | number | string;
   prevValue: boolean | number | string;
   timestamp: number;
   quality?: string;
+  reRegister: string;
   CHANNEL: string;
   DEVICE: string;
   TAGGROUP: string;
@@ -30,6 +45,10 @@ export interface TagValue {
   INPUT_TYPE: string;
   NODE_ID: string;
   EQ_CODE: string;
+}
+
+interface TagValueJson {
+  MBS: TagValue[];
 }
 export interface Tag {
   NODE_ID: string;
@@ -57,13 +76,13 @@ export interface Subscription {
 export interface MakeWriteDatasParams {
   targetFacility: string;
   tagInfo: {
-    tagName: string,
-    value: string | boolean | number
+    tagName: string;
+    value: string | boolean | number;
   }[];
 }
 export interface WriteDataParams {
   targetFacility: string;
-  tagName: string,
+  tagName: string;
   value: boolean | string;
 }
 
@@ -81,22 +100,22 @@ export const parseAsciiToWord = (value: string): number => {
 
 // WORD 타입 태그에서 ASCII 값을 추출하는 함수
 export const parseWordToAscii = (value: number): string => {
-  if (typeof value !== 'number' || value < 0 || value > 0xFFFF) {
+  if (typeof value !== 'number' || value < 0 || value > 0xffff) {
     // throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
     return '';
   }
 
   if (value === 0) return '';
 
-  const lowByte = (value >> 8) & 0xFF;  // 반대로!
-  const highByte = value & 0xFF;
+  const lowByte = (value >> 8) & 0xff; // 반대로!
+  const highByte = value & 0xff;
 
   const char1 = String.fromCharCode(lowByte);
   const char2 = String.fromCharCode(highByte);
   return char1 + char2;
-}
+};
 
-// call_type 함축축 함수
+// call_type 함축 함수
 export const makeCallType = async (value: string): Promise<string> => {
   // if (value < 0 || value > 0xFFFF) {
   //   throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
@@ -111,23 +130,22 @@ export const makeCallType = async (value: string): Promise<string> => {
       callType += tag.value;
     }
   }
-  callType = callType.replace(/[\s]/g, '')
+  callType = callType.replace(/[\s]/g, '');
 
-  return callType
-}
+  return callType;
+};
 
-const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
+const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5;
 
 export const useKepServerUtil = () => {
   const redisUtil = useRedisUtil();
   // JSON 파일 읽기
   const loadTags = async (filePath: string) => {
-    const data = await fs.readFile(filePath, "utf8");
+    const data = await fs.readFile(filePath, 'utf8');
     return data;
   };
 
   const getTagMapKey = (nodeId: string) => {
-
     // nodeId 형식: STACK01.SC11.Call_Request 일때
     const tagMapKey = nodeId.split('.').slice(1, 3).join('.');
     // nodeId 형식: SC.11.Call_Request 일때
@@ -135,7 +153,7 @@ export const useKepServerUtil = () => {
     // const tagMapKey = parts.slice(0, 2).join('') + '.' + parts.slice(2)[0];
 
     return tagMapKey;
-  }
+  };
 
   const getTagCode = (targetKey: string) => {
     // targetKey 형식: STACK01.SC11
@@ -143,13 +161,16 @@ export const useKepServerUtil = () => {
     // targetKey 형식: SC.11
     // const tagCode = targetKey.split('.').join('');
     return tagCode;
-  }
+  };
 
   // 태그 쓰는 함수 호출
   const writeSimpleTagValue = async (params: WriteDataParams): Promise<void> => {
     const tagMap = opcuaUtil.tagMap;
     try {
-      const targetFacility = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, params.targetFacility);
+      const targetFacility = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        params.targetFacility
+      );
       if (!targetFacility) {
         logging.ACTION_ERROR({
           filename: 'kepServerUtil.ts',
@@ -168,14 +189,14 @@ export const useKepServerUtil = () => {
           value: {
             value: {
               dataType: tagMapValue.DATA_TYPE,
-              value: params.value
-            }
-          }
+              value: params.value,
+            },
+          },
         };
         await writeTagValue(writeDatas);
       }
     } catch (error) {
-      logToConsoleAndFile(`Error making write datas from kepServerUtil.writeSimpleTagValue: ${error}`, "red");
+      logToConsoleAndFile(`Error making write datas from kepServerUtil.writeSimpleTagValue: ${error}`, 'red');
       throw error;
     }
   };
@@ -186,7 +207,7 @@ export const useKepServerUtil = () => {
       const session = opcuaUtil.session;
 
       if (!session) {
-        throw new Error("OPC UA 세션이 존재하지 않습니다.");
+        throw new Error('OPC UA 세션이 존재하지 않습니다.');
       }
 
       const [statusCode] = await session.write([tag]); // 단건도 배열로 전달해야 함
@@ -200,7 +221,7 @@ export const useKepServerUtil = () => {
       });
       return statusCode;
     } catch (error) {
-      logToConsoleAndFile(`Error writing value to node: ${tag}. Error: ${error}`, "red");
+      logToConsoleAndFile(`Error writing value to node: ${tag}. Error: ${error}`, 'red');
       logging.KEPWARE_ERROR({
         action: 'TAG_WRITE',
         tag: tag.toString(),
@@ -210,7 +231,7 @@ export const useKepServerUtil = () => {
       });
       throw error;
     }
-  }
+  };
 
   // 태그 쓰는 함수
   const writeTagsValue = async (data: WriteValueOptions[]): Promise<StatusCode[]> => {
@@ -231,7 +252,7 @@ export const useKepServerUtil = () => {
       });
       return statusCodes;
     } catch (error) {
-      logToConsoleAndFile(`Error writing value to node: ${data}. Error: ${error}`, "red");
+      logToConsoleAndFile(`Error writing value to node: ${data}. Error: ${error}`, 'red');
       logging.KEPWARE_ERROR({
         action: 'TAG_WRITE',
         tag: data.toString(),
@@ -241,7 +262,7 @@ export const useKepServerUtil = () => {
       });
       throw error;
     }
-  }
+  };
 
   // 태그 읽는 함수
   const readTagsValue = async (nodeIds: string[]): Promise<DataValue[]> => {
@@ -250,7 +271,7 @@ export const useKepServerUtil = () => {
 
       let result: DataValue[] = [];
 
-      const nodesToRead: ReadValueIdOptions[] = nodeIds.map(nodeId => ({
+      const nodesToRead: ReadValueIdOptions[] = nodeIds.map((nodeId) => ({
         nodeId,
         attributeId: AttributeIds.Value,
       }));
@@ -261,7 +282,7 @@ export const useKepServerUtil = () => {
       }
       return result;
     } catch (error) {
-      logToConsoleAndFile(`Error reading value from node: ${nodeIds}. Error: ${error}`, "red");
+      logToConsoleAndFile(`Error reading value from node: ${nodeIds}. Error: ${error}`, 'red');
       logging.KEPWARE_ERROR({
         action: 'TAG_READ',
         tag: null,
@@ -271,7 +292,7 @@ export const useKepServerUtil = () => {
       });
       throw error;
     }
-  }
+  };
 
   // 전체 노드 읽는 함수
   const monitorTagData = async () => {
@@ -302,13 +323,16 @@ export const useKepServerUtil = () => {
           });
 
           // MQTT로 결과 전송
-          await redisUtil.hset(RedisKeys.InfoPlcBySerial, key.split('.').pop()?.toString() || '', JSON.stringify(result));
+          await redisUtil.hset(
+            RedisKeys.InfoPlcBySerial,
+            key.split('.').pop()?.toString() || '',
+            JSON.stringify(result)
+          );
           sendMqtt(`${MqttTopics.KepwareStatus}/${key}`, JSON.stringify(result));
-
         }
       } catch (error) {
         logging.MQTT_ERROR({
-          title: "Error reading value from kepServerUtil.monitorTagData",
+          title: 'Error reading value from kepServerUtil.monitorTagData',
           topic: `${MqttTopics.KepwareStatus}`,
           message: null,
           error: error,
@@ -317,9 +341,9 @@ export const useKepServerUtil = () => {
         session = null; // 세션 초기화 (다음 루프에서 재연결 시도)
       }
 
-      await new Promise(resolve => setTimeout(resolve, kepwareStatusIntervalTime * 1000)); // n초 후 반복
+      await new Promise((resolve) => setTimeout(resolve, kepwareStatusIntervalTime * 1000)); // n초 후 반복
     }
-  }
+  };
 
   const heartbeat = async (): Promise<DataValue | null> => {
     try {
@@ -337,7 +361,7 @@ export const useKepServerUtil = () => {
       }
       return result;
     } catch (error) {
-      logToConsoleAndFile(`Error reading value from node: i=2256. Error: ${error}`, "red");
+      logToConsoleAndFile(`Error reading value from node: i=2256. Error: ${error}`, 'red');
       logging.KEPWARE_ERROR({
         action: 'TAG_READ',
         tag: null,
@@ -347,7 +371,7 @@ export const useKepServerUtil = () => {
       });
       throw error;
     }
-  }
+  };
 
   const initTagData = async () => {
     const allTagsStringData = await loadTags(path.join(__dirname, '../../kepserverTag.json'));
@@ -365,10 +389,11 @@ export const useKepServerUtil = () => {
       //   ? `${tag.CHANNEL}.${tag.DEVICE}.${tag.TAGGROUP}`
       //   : `${tag.CHANNEL}.${tag.DEVICE}`;
       opcuaUtil.tagMap.set(key, {
-        value: "",
-        prevValue: "",
+        value: '',
+        prevValue: '',
         timestamp: Date.now(),
-        quality: "unknown",
+        quality: 'unknown',
+        reRegister: '',
         CHANNEL: tag.CHANNEL,
         DEVICE: tag.DEVICE,
         TAGGROUP: tag.TAGGROUP,
@@ -389,13 +414,13 @@ export const useKepServerUtil = () => {
           existingEntry.readValueIdOptions.push({ nodeId: tag.NODE_ID, attributeId: AttributeIds.Value });
 
           // 기존 항목에 새로운 TAG_NAME을 키로 추가
-          existingEntry.tagValue.push({ key: tag.TAG_NAME, value: "", inputType: tag.INPUT_TYPE });
+          existingEntry.tagValue.push({ key: tag.TAG_NAME, value: '', inputType: tag.INPUT_TYPE });
         }
       } else {
         // 키가 존재하지 않는 경우, 새로운 항목 생성
         opcuaUtil.allTagNodeIds.set(monitorKey, {
           readValueIdOptions: [{ nodeId: tag.NODE_ID, attributeId: AttributeIds.Value }],
-          tagValue: [{ key: tag.TAG_NAME, value: "", inputType: tag.INPUT_TYPE }],
+          tagValue: [{ key: tag.TAG_NAME, value: '', inputType: tag.INPUT_TYPE }],
         });
       }
     });
@@ -405,7 +430,7 @@ export const useKepServerUtil = () => {
       value: null,
       message: `subscribing value from kepServerUtil.initTagData`,
     });
-  }
+  };
 
   // 변경된 태그 데이터 값 처리
   const updateTagValue = (nodeId: string, value: DataValue): TagValue => {
@@ -418,7 +443,7 @@ export const useKepServerUtil = () => {
 
     if (!targetTagInfo) {
       const errorMessage = `No Tag found with name: ${nodeId}, ${value}`;
-      logToConsoleAndFile(errorMessage, "red");
+      logToConsoleAndFile(errorMessage, 'red');
       logging.KEPWARE_ERROR({
         action: 'TAG_WRITE',
         tag: null,
@@ -430,19 +455,19 @@ export const useKepServerUtil = () => {
     }
 
     switch (targetTagInfo.INPUT_TYPE) {
-      case "ASCII":
+      case 'ASCII':
         targetTagInfo.prevValue = targetTagInfo.value;
         targetTagInfo.value = parseWordToAscii(value.value.value);
         targetTagInfo.timestamp = value.sourceTimestamp ? value.sourceTimestamp.getTime() : Date.now();
         targetTagInfo.quality = value.statusCode.toString();
         break;
-      case "DEC":
+      case 'DEC':
         targetTagInfo.prevValue = targetTagInfo.value;
         targetTagInfo.value = value.value.value;
         targetTagInfo.timestamp = value.sourceTimestamp ? value.sourceTimestamp.getTime() : Date.now();
         targetTagInfo.quality = value.statusCode.toString();
         break;
-      case "Bool":
+      case 'Bool':
         targetTagInfo.prevValue = targetTagInfo.value;
         targetTagInfo.value = value.value.value;
         targetTagInfo.timestamp = value.sourceTimestamp ? value.sourceTimestamp.getTime() : Date.now();
@@ -450,7 +475,7 @@ export const useKepServerUtil = () => {
         break;
       default:
         const errorMessage = `Unhandled type for nodeId:: ${nodeId}, ${value}`;
-        logToConsoleAndFile(errorMessage, "yellow");
+        logToConsoleAndFile(errorMessage, 'yellow');
         logging.KEPWARE_ERROR({
           action: 'TAG_SUBSCRIBE',
           tag: null,
@@ -462,14 +487,16 @@ export const useKepServerUtil = () => {
     }
 
     return targetTagInfo;
-  }
-
+  };
 
   const makeWriteDatas = async (params: MakeWriteDatasParams): Promise<WriteValueOptions[]> => {
     const writeDatas: WriteValueOptions[] = [];
     const tagMap = opcuaUtil.tagMap;
     try {
-      const targetFacility = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, params.targetFacility);
+      const targetFacility = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        params.targetFacility
+      );
       // if (!targetFacility) {
       //   throw new Error(`No facility found with name: ${params.targetFacility}`);
       // }
@@ -500,20 +527,24 @@ export const useKepServerUtil = () => {
             value: {
               value: {
                 dataType: tagMapValue.DATA_TYPE,
-                value: params.tagInfo[i].value
-              }
-            }
+                value: params.tagInfo[i].value,
+              },
+            },
           });
         }
       }
       return writeDatas;
-
     } catch (error) {
-      logToConsoleAndFile(`Error making write datas from kepServerUtil.makeWriteDatas: ${error}`, "red");
+      logToConsoleAndFile(`Error making write datas from kepServerUtil.makeWriteDatas: ${error}`, 'red');
       throw error;
     }
-  }
+  };
 
+  const findTagInfo = (device: string, tagName: string): TagInfo | null => {
+    const jsonData: TagValueJson = JSON.parse(fsOrigin.readFileSync('kepserverTag.json', 'utf-8'));
+    const tag = jsonData.MBS.find((t: TagValue) => t.DEVICE === device && t.TAG_NAME === tagName);
+    return tag || null;
+  };
 
   return {
     writeSimpleTagValue,
@@ -525,6 +556,7 @@ export const useKepServerUtil = () => {
     updateTagValue,
     makeWriteDatas,
     getTagMapKey,
-    getTagCode
-  }
-}
+    getTagCode,
+    findTagInfo,
+  };
+};
