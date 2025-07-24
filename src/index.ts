@@ -24,7 +24,7 @@ import { makeinitDailyWorkOrderstatsScheduleSet, makeSendServerStatusInterval } 
 import opcuaUtil from './lib/opcuaUtil';
 import { logToConsoleAndFile } from "./lib/logging";
 
-import { processMcs } from './lib/process/index';
+import { processMcs, syncWithWms } from './lib/process/index';
 import { initAllRedisData } from './lib/redis/init';
 import { useKepServerUtil } from './lib/kepServerUtil';
 
@@ -230,6 +230,8 @@ if (env === 'development') {
       // 설비 정보 동기화
 
       // WMS 정보 동기화
+      syncWithWms()
+      // WMS 로직
       await processMcs()
 
 

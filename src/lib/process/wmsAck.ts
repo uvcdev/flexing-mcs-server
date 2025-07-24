@@ -38,6 +38,11 @@ export interface ReceivedAckCommand {
   message: MbsMqttMesaage;
 }
 
+export interface CheckRetryCallInfoByCallIdParams {
+  callId: string,
+  caller: string
+}
+
 // wms
 export const sendAckToWms = (topic: string, subject: string, ackBody: MbsMqttBody, systemName: string) => {
   const mqttHeader = makeMbsMqttHeader(subject);

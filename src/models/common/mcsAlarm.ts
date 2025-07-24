@@ -103,6 +103,8 @@ export interface McsAlarmSelectListParams {
   code?: string;
   errorCode?: string;
   state?: McsAlarmAttributes['state'] | null;
+  createdAtFrom?: Date | null;
+  createdAtTo?: Date | null;
   limit?: number;
   offset?: number;
   attributes?: Array<string>;

@@ -52,6 +52,29 @@ const dao = {
       };
     }
 
+    // 기간 검색 - 등록일
+    if (params.createdAtFrom || params.createdAtTo) {
+      if (params.createdAtFrom && params.createdAtTo) {
+        setQuery.where = {
+          ...setQuery.where,
+          createdAt: { [Op.between]: [params.createdAtFrom, params.createdAtTo] }, // 'between '검색
+        };
+      } else {
+        if (params.createdAtFrom) {
+          setQuery.where = {
+            ...setQuery.where,
+            createdAt: { [Op.gte]: params.createdAtFrom }, // '>=' 검색
+          };
+        }
+        if (params.createdAtTo) {
+          setQuery.where = {
+            ...setQuery.where,
+            createdAt: { [Op.lte]: params.createdAtTo }, // '<=' 검색
+          };
+        }
+      }
+    }
+
     return new Promise((resolve, reject) => {
       McsAlarm.findAndCountAll({
         ...setQuery,
@@ -105,7 +128,7 @@ const dao = {
   },
   updateStateByCode(params: McsAlarmUpdateStateByCodeParams): Promise<UpdatedAndDataIds> {
     return new Promise((resolve, reject) => {
-      McsAlarm.update(params, { where: { code: params.code }, returning: true })
+      McsAlarm.update(params, { where: { code: params.code, state: { [Op.ne]: 'completed' } }, returning: true })
         .then(([updatedCount, updatedRows]) => {
           const updatedIds = updatedRows.map(row => row.id)
           resolve({ updatedCount: updatedCount, updatedIds: updatedIds });

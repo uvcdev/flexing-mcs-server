@@ -60,6 +60,8 @@ export enum RedisKeys {
   InfoTrackingLogByFacilityCode = 'info_tracking_log_by_facility_code',    // 물류 현황 redis 데이터 by facility code 
   InfoTrackingLogByCallId = 'info_tracking_log_by_call_id',                // 물류 현황 redis 데이터 by Call Id => 해당 내용은 사용하고 나서 지워줘야함 ( 콜 생성 시점에서 )
   RecentCallInfoTaskByCmdId = 'recent_call_info_task_by_cmd_id',          // recent call info 정보 ( CALLINFO 부터 PORT 배정까지 : 창고 입고)
+  AbnormalCompletedCallInfoTaskByCallId = 'abnormal_completed_call_info_task_by_call_id',  // 비정상 완료된 Call Id
+  CheckRetryCallInfoByCallId = 'check_retry_call_info_by_call_id',        // TRANSFER_CANCEL_COMPLETED, TRANSFER_ABORT_COMPLETED 등의 이유로 설비 Call 정보를 확인 후 Call Info를 재 송부 해야 하는 경우
   InfoInCallByNodeId = 'info_in_call_by_node_id',                         // in 설비에서 발생한 콜에 해당하는 node 정보
   InfoOutCallByNodeId = 'info_out_call_by_node_id',                        // out 설비에서 발생한 콜에 해당하는 node 정보
   DockingRequestByPortId = 'docking_request_by_port_id',

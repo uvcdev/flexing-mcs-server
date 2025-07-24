@@ -246,3 +246,8 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
   ```
 - Cancel Type 정보 ACS에 전달(MQTT) 로직 추가
 - 설비 수동/자동 모드 작업 진행 로직 추가
+- MCS 알람 관리
+  - MCS 알람 컬럼 변경 ( 거의 신규라서 SQL 문 미작성 )
+- ErrorCode 관리
+  - errorCode 관련 테이블 신규 작성
+- WMS 동기화 로직 구현

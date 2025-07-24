@@ -16,6 +16,7 @@ import { checkMissionBranchInfoReqForWms, checkOutBranchInfoReqForWms } from './
 import { sendTrackingLogs } from './trackingLog';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
 import { DryrunSetting } from '../../models/common/setting';
+import { sendCallInfoList, sendReqPortStateList } from './wmsSyncronization';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
 const heapUse = () => {
@@ -123,5 +124,18 @@ export const processMcs = async () => {
     setTimeout(() => {
       processMcs()
     }, 1000);
+  }
+}
+
+
+// 동기화 함수
+export const syncWithWms = () => {
+  try {
+    sendReqPortStateList()
+
+    sendCallInfoList()
+  } catch (error) {
+    console.error("Error in syncWithWms:", error);
+    // 에러 로깅 또는 알림 처리
   }
 }
