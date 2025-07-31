@@ -44,6 +44,7 @@ export type McsWorkOrderRequestType = {
   CALL_PRIORITY: string;
   CALL_TYPE: string; // 배터리 타입 PLC 맵에서 콜타입 이라 명명
   IS_MISSION_ORDER: string; // 작업 지시의 mission order 여부
+  CALL_COUNT: number;
 };
 
 export type McsPendingWorkOrderRequestType = {
@@ -56,6 +57,7 @@ export type McsPendingWorkOrderRequestType = {
   typeofisMissionOrder: string;
   callPriority: string;
   callType: string;
+  callCount: number;
 };
 
 export const useWorkOrderUtil = () => {
@@ -80,6 +82,7 @@ export const useWorkOrderUtil = () => {
             TAG_ID: '',
             TX_ID: '',
             ZONE_ID: process.env.FLOOR || '1F',
+            CALL_COUNT: workOrder.callCount,
           };
           const message = JSON.stringify(params);
           const messageJson = JSON.parse(message);
@@ -89,7 +92,6 @@ export const useWorkOrderUtil = () => {
           if (existWorkOrder) {
             continue;
           }
-
           await workOrderService.regWorkOrder(messageJson);
           const trackingLogSubject = 'WORK_ORDER_CREATED';
           const trackingLogDetail = 'WORK_ORDER_CREATED';
@@ -119,7 +121,6 @@ export const useWorkOrderUtil = () => {
             });
           }
 
-          console.log('🚀 ~ createWorkOrder ~ params.CALL_ID:', params.CALL_ID);
           redisUtil.hdel(RedisKeys.InfoPendingWorkOrderByCallId, params.CALL_ID);
           redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, params.EQP_ID);
           // todo: 250708 멀티콜 작업지시에서도 숫자 -1 해주기

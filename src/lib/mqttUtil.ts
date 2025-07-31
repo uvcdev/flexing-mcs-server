@@ -455,6 +455,9 @@ export const receiveMqtt = (): void => {
                   RedisKeys.InfoWorkOrderCountBySerial,
                   toFacilitySerial
                 );
+
+                // todo 250724: 작업완료된 이후 멀티콜 판단해서 작업지시 만드는 로직
+                // await useCallResponseUtil().decisionWorkOrder(targetTagInfo);
               }
 
               // 작업 취소, 작업 실패
@@ -499,7 +502,7 @@ export const receiveMqtt = (): void => {
                   // fromSerial 에 linkedId 가 있으면 fromSerial 로 작업 지시
                   targetTagInfo.DEVICE = fromFacilitySerial;
                   targetTagInfo.EQ_CODE = fromFacilitySerial;
-                  targetTagInfo.reRegister = '_RE';
+                  targetTagInfo.reRegister = '_R';
                   await useRedisUtil().hset(
                     RedisKeys.InfoCallRequestOnBySerial,
                     fromFacilitySerial,
@@ -512,7 +515,7 @@ export const receiveMqtt = (): void => {
                   // fromSerial 에 linkedId 가 없으면 toSerial 로 작업 지시
                   targetTagInfo.DEVICE = toFacilitySerial;
                   targetTagInfo.EQ_CODE = toFacilitySerial;
-                  targetTagInfo.reRegister = '_RE';
+                  targetTagInfo.reRegister = '_R';
 
                   await useRedisUtil().hset(
                     RedisKeys.InfoCallRequestOnBySerial,

@@ -22,7 +22,7 @@ import { service as workOrderService } from './service/operation/workOrderServic
 import { makeinitDailyWorkOrderstatsScheduleSet, makeSendServerStatusInterval } from './lib/scheduleUtil';
 
 import opcuaUtil from './lib/opcuaUtil';
-import { logToConsoleAndFile } from "./lib/logging";
+import { logToConsoleAndFile } from './lib/logging';
 
 import { processMcs } from './lib/process/index';
 import { initAllRedisData } from './lib/redis/init';
@@ -72,23 +72,25 @@ if (env === 'production') {
   // production인 경우에만 자동 생성 한다. (개발시에는 POST {{url}}/tables 를 이용할 것)
   void (async () => {
     try {
-      await sequelize.sync({ force: false }).then(() => {
-        logging.SYSTEM_LOG({
-          title: 'Sequelize Table Sync',
-          message: {
-            DB_HOST: process.env.DB_HOST,
-            DB_PORT: process.env.DB_PORT,
-            DB_DATABASE: process.env.DB_DATABASE,
-            DB_ID: process.env.DB_ID,
-            DB_PASS: '******',
-            DB_DIALECT: process.env.DB_DIALECT,
-          },
-        });
-        console.log('Sequelize sync success');
+      await sequelize
+        .sync({ force: false })
+        .then(() => {
+          logging.SYSTEM_LOG({
+            title: 'Sequelize Table Sync',
+            message: {
+              DB_HOST: process.env.DB_HOST,
+              DB_PORT: process.env.DB_PORT,
+              DB_DATABASE: process.env.DB_DATABASE,
+              DB_ID: process.env.DB_ID,
+              DB_PASS: '******',
+              DB_DIALECT: process.env.DB_DIALECT,
+            },
+          });
+          console.log('Sequelize sync success');
 
-        // 여기에 redis 데이터 초기화 로직 추가
-        initAllRedisData()
-      })
+          // 여기에 redis 데이터 초기화 로직 추가
+          initAllRedisData();
+        })
         .catch((err: Error) => {
           console.error(err);
         });
@@ -131,7 +133,7 @@ if (env === 'production') {
     } catch (error) {
       console.error(error);
     }
-  })
+  });
 }
 
 // NODE_ENV 환경에 따른 설정
@@ -225,13 +227,12 @@ if (env === 'development') {
     .then(async () => {
       // =====🔥MCS 관련🔥=====
       // MCS 로직 실행
-      await initAllRedisData()
+      await initAllRedisData();
 
       // 설비 정보 동기화
 
       // WMS 정보 동기화
-      await processMcs()
-
+      await processMcs();
 
       // =====🔥kepserver 관련🔥=====
       // 초기 태그 데이터 초기화
@@ -241,8 +242,7 @@ if (env === 'development') {
       await opcuaUtil.initKepserverex();
 
       // PLC 데이터 수집 (kepware 상태 불러와서 mqtt 전송)
-      await useKepServerUtil().monitorTagData();
-
+      // await useKepServerUtil().monitorTagData();
     })
     .catch((error: Error) => {
       console.log(error);
@@ -252,12 +252,11 @@ if (env === 'development') {
 }
 try {
   if (process.env.SCHEDULER_SERVER_STATUS === 'true') {
-    makeSendServerStatusInterval({ second: Number(process.env.SERVER_STATUS_CHECK_TIME || 1) })
+    makeSendServerStatusInterval({ second: Number(process.env.SERVER_STATUS_CHECK_TIME || 1) });
   }
   if (process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true') {
-    makeinitDailyWorkOrderstatsScheduleSet({ hour: 0, minute: 0, second: 0 })
+    makeinitDailyWorkOrderstatsScheduleSet({ hour: 0, minute: 0, second: 0 });
   }
-
 } catch (err) {
   const actionLog: ActionLog = {
     filename: 'index.ts-scheduleUtil',
@@ -275,20 +274,20 @@ const gracefulShutdown = (signal: string) => {
 
   // 정리해야 할 로직 추가 (예: DB 연결 해제, 로그 저장 등)
   setTimeout(() => {
-    console.log("서버 종료 완료.");
+    console.log('서버 종료 완료.');
     global.process.exit(0);
   }, 1000); // 1초 후 종료 (비동기 작업이 있다면 고려)
 };
 
 // 정상 종료 이벤트 처리
-global.process.on("exit", () => gracefulShutdown("exit"));
-global.process.on("SIGINT", () => gracefulShutdown("SIGINT")); // Ctrl + C
-global.process.on("SIGTERM", () => gracefulShutdown("SIGTERM")); // PM2 등에서 종료 요청
-global.process.on("uncaughtException", (err) => {
-  console.error("예기치 않은 오류 발생:", err);
-  gracefulShutdown("uncaughtException");
+global.process.on('exit', () => gracefulShutdown('exit'));
+global.process.on('SIGINT', () => gracefulShutdown('SIGINT')); // Ctrl + C
+global.process.on('SIGTERM', () => gracefulShutdown('SIGTERM')); // PM2 등에서 종료 요청
+global.process.on('uncaughtException', (err) => {
+  console.error('예기치 않은 오류 발생:', err);
+  gracefulShutdown('uncaughtException');
 });
-global.process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Promise Rejection:", reason);
-  gracefulShutdown("unhandledRejection");
+global.process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Promise Rejection:', reason);
+  gracefulShutdown('unhandledRejection');
 });

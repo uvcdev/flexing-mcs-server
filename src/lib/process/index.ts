@@ -15,6 +15,7 @@ import { checkMissionBranchInfoReqForWms, checkOutBranchInfoReqForWms } from './
 import { sendTrackingLogs } from './trackingLog';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
 import { DryrunSetting } from '../../models/common/setting';
+import { useMultiCallRegisterUtil } from '../multiCallRegisterUtil';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5;
 const heapUse = () => {
@@ -90,7 +91,9 @@ export const processMcs = async () => {
     // 설비 수동모드인 경우 등록해놓은 redis 조회해서 작업지시 생성
     await useCallRegisterUtil().createFacilityModeWorkOrder();
 
-    // createWorkOrder() 여기에서 멀티콜 로직을 제외하고
+    // pending 된 멀티콜 작업 지시 생성
+    await useMultiCallRegisterUtil().multiCallRegister();
+
     // 멀티콜 로직을 계속 판단해서 작업을 만들도록 pending 쪽에 추가하는건?
     await useWorkOrderUtil().createMultiWorkOrder();
 

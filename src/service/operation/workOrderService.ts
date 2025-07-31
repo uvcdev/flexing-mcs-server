@@ -39,7 +39,7 @@ import { DailyWorkOrderStats, WorkOrderStats, useWorkOrderUtil } from '../../lib
 import { calculateDurationInSeconds } from '../../lib/dateUtil';
 
 let accessToken = '';
-const workOrderStatsUtil = useWorkOrderUtil()
+const workOrderStatsUtil = useWorkOrderUtil();
 
 const service = {
   // insert
@@ -92,7 +92,7 @@ const service = {
     // };
 
     // 3. (Promise.all)설비당 작업자 입력 처리
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     // const [insertedWorkOrderUserJoin] = await Promise.all([
     //   promiseInsertWorkOrderUserJoin(result.insertedId, params.userIds),
     // ]);
@@ -154,6 +154,7 @@ const service = {
         cancelUserId: 0,
         cancelDate: null,
         description: null,
+        plcCallCount: params.CALL_COUNT, // 설비에서 주는 Call_Count
       };
       workOrderResult = await workOrderDao.insertTransac(transParams, transaction);
       await transaction.commit(); // 트랜잭션 커밋
@@ -336,7 +337,7 @@ const service = {
             const updateParams: WorkOrderUpdateByCodeParams = {
               code: code,
               state: params.state,
-              fromAmrId: amr && amr.id || undefined,
+              fromAmrId: (amr && amr.id) || undefined,
               fromStartDate:
                 params.state === 'pending1' ? (!workOrderInfo.fromStartDate ? new Date() : undefined) : undefined,
               fromEndDate: params.state === 'pending2' ? new Date() : undefined,
@@ -345,38 +346,74 @@ const service = {
               toEndDate: params.state === 'completed2' ? new Date() : undefined,
               cancelDate: params.cancelDate,
               description: params.description,
-            }
+            };
             workOrderDao.updateByCode(updateParams);
-            const newWorkOrderInfo = workOrderInfo as WorkOrderAttributesDeep
+            const newWorkOrderInfo = workOrderInfo as WorkOrderAttributesDeep;
             if (params.state === 'pending1' && !workOrderInfo.fromStartDate) {
-              const fromFacility = newWorkOrderInfo.FromFacility
-              workOrderStatsUtil.setStats('Facility', fromFacility.id, fromFacility.code, fromFacility.system, fromFacility.name, { created: 1 })
+              const fromFacility = newWorkOrderInfo.FromFacility;
+              workOrderStatsUtil.setStats(
+                'Facility',
+                fromFacility.id,
+                fromFacility.code,
+                fromFacility.system,
+                fromFacility.name,
+                { created: 1 }
+              );
               if (amr) {
-                workOrderStatsUtil.setStats('Amr', amr.id, amr.code, '', amr.name || '', { created: 1 })
+                workOrderStatsUtil.setStats('Amr', amr.id, amr.code, '', amr.name || '', { created: 1 });
               }
             }
-            if (params.state === 'pending2' && workOrderInfo.fromStartDate && updateParams.fromEndDate && !workOrderInfo.fromEndDate) {
-              const fromFacility = newWorkOrderInfo.FromFacility
-              const duration = calculateDurationInSeconds(workOrderInfo.fromStartDate, updateParams.fromEndDate)
-              workOrderStatsUtil.setStats('Facility', fromFacility.id, fromFacility.code, fromFacility.system, fromFacility.name, { completed: 1, duration: duration })
+            if (
+              params.state === 'pending2' &&
+              workOrderInfo.fromStartDate &&
+              updateParams.fromEndDate &&
+              !workOrderInfo.fromEndDate
+            ) {
+              const fromFacility = newWorkOrderInfo.FromFacility;
+              const duration = calculateDurationInSeconds(workOrderInfo.fromStartDate, updateParams.fromEndDate);
+              workOrderStatsUtil.setStats(
+                'Facility',
+                fromFacility.id,
+                fromFacility.code,
+                fromFacility.system,
+                fromFacility.name,
+                { completed: 1, duration: duration }
+              );
             }
             if (params.state === 'pending2') {
-              const toFacility = newWorkOrderInfo.ToFacility
-              workOrderStatsUtil.setStats('Facility', toFacility.id, toFacility.code, toFacility.system, toFacility.name, { created: 1 })
+              const toFacility = newWorkOrderInfo.ToFacility;
+              workOrderStatsUtil.setStats(
+                'Facility',
+                toFacility.id,
+                toFacility.code,
+                toFacility.system,
+                toFacility.name,
+                { created: 1 }
+              );
             }
             if (params.state === 'completed2' && workOrderInfo.toStartDate && updateParams.toEndDate) {
-              const toFacility = newWorkOrderInfo.ToFacility
-              const amr = newWorkOrderInfo.Amr
-              const duration = calculateDurationInSeconds(workOrderInfo.toStartDate, updateParams.toEndDate)
-              workOrderStatsUtil.setStats('Facility', toFacility.id, toFacility.code, toFacility.system, toFacility.name || '', { completed: 1, duration: duration })
+              const toFacility = newWorkOrderInfo.ToFacility;
+              const amr = newWorkOrderInfo.Amr;
+              const duration = calculateDurationInSeconds(workOrderInfo.toStartDate, updateParams.toEndDate);
+              workOrderStatsUtil.setStats(
+                'Facility',
+                toFacility.id,
+                toFacility.code,
+                toFacility.system,
+                toFacility.name || '',
+                { completed: 1, duration: duration }
+              );
               if (amr) {
-                let amrDuration = 0
+                let amrDuration = 0;
                 if (workOrderInfo.fromStartDate) {
-                  amrDuration = calculateDurationInSeconds(workOrderInfo.fromStartDate, updateParams.toEndDate)
+                  amrDuration = calculateDurationInSeconds(workOrderInfo.fromStartDate, updateParams.toEndDate);
                 } else if (workOrderInfo.toStartDate) {
-                  amrDuration = calculateDurationInSeconds(workOrderInfo.toStartDate, updateParams.toEndDate)
+                  amrDuration = calculateDurationInSeconds(workOrderInfo.toStartDate, updateParams.toEndDate);
                 }
-                workOrderStatsUtil.setStats('Amr', amr.id, amr.code, '', amr.name || '', { completed: 1, duration: amrDuration })
+                workOrderStatsUtil.setStats('Amr', amr.id, amr.code, '', amr.name || '', {
+                  completed: 1,
+                  duration: amrDuration,
+                });
               }
             }
           }
@@ -399,6 +436,7 @@ const service = {
             type: params.type,
             isClosed: false,
             description: params.description,
+            plcCallCount: params.plcCallCount,
           });
           result.updatedCount = insertResult.insertedId > 0 ? 1 : 0;
         }
@@ -423,7 +461,7 @@ const service = {
     let result: UpdatedResult = { updatedCount: 0 };
 
     try {
-      await workOrderStatsUtil.initStats()
+      await workOrderStatsUtil.initStats();
       const startOfToDay = dayjs().startOf('day').toDate();
       const endOfToDay = dayjs().endOf('day').toDate();
 
@@ -433,10 +471,10 @@ const service = {
       });
 
       todayWorkOrderList.rows.forEach((v) => {
-        const workOrder = v as WorkOrderAttributesDeep
-        workOrderStatsUtil.setInitStats(workOrder)
-      })
-      workOrderStatsUtil.sendStats()
+        const workOrder = v as WorkOrderAttributesDeep;
+        workOrderStatsUtil.setInitStats(workOrder);
+      });
+      workOrderStatsUtil.sendStats();
       logging.METHOD_ACTION(logFormat, __filename, null, result);
     } catch (err) {
       logging.ERROR_METHOD(logFormat, __filename, null, err);

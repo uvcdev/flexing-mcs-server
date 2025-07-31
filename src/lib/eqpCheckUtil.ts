@@ -34,11 +34,12 @@ export const useEqpCheckUtil = () => {
         case 'Call_Request':
           console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
-            await useRedisUtil().hset(
-              RedisKeys.InfoCallRequestOnBySerial,
-              targetTagInfo.EQ_CODE,
-              JSON.stringify(targetTagInfo)
-            );
+            await useCallResponseUtil().decisionWorkOrder(targetTagInfo);
+            // await useRedisUtil().hset(
+            //   RedisKeys.InfoCallRequestOnBySerial,
+            //   targetTagInfo.EQ_CODE,
+            //   JSON.stringify(targetTagInfo)
+            // );
           } else {
             await useCallRemoveUtil().callRemove(targetTagInfo);
           }
@@ -109,38 +110,57 @@ export const useEqpCheckUtil = () => {
           //     value: false,
           //   });
           // }, 1000);
-
-          // todo 250724: 작업완료된 이후 멀티콜 판단해서 작업지시 만드는 로직
-          await useCallResponseUtil().decisionWorkOrder(targetTagInfo);
           break;
 
         case 'Call_Request_Multi_1':
           console.log(`Changed Call_Request_Multi_1`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
-            await useMultiCallRegisterUtil().hsetWithIncrementCount(
-              RedisKeys.InfoWorkOrderCountBySerial,
-              targetTagInfo.EQ_CODE
-            );
-            await useRedisUtil().hset(
-              RedisKeys.InfoMultiCallRequestOnBySerial,
-              `${targetTagInfo.EQ_CODE}_1`,
-              JSON.stringify(targetTagInfo)
-            );
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_1',
+              value: true,
+            });
+            // await useMultiCallRegisterUtil().hsetWithIncrementCount(
+            //   RedisKeys.InfoWorkOrderCountBySerial,
+            //   targetTagInfo.EQ_CODE
+            // );
+            // await useRedisUtil().hset(
+            //   RedisKeys.InfoCallRequestOnBySerial,
+            //   targetTagInfo.EQ_CODE,
+            //   JSON.stringify(targetTagInfo)
+            // );
+          } else if (targetTagInfo.value === false) {
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_1',
+              value: false,
+            });
           }
           break;
 
         case 'Call_Request_Multi_2':
           console.log(`Changed Call_Request_Multi_2`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
-            await useMultiCallRegisterUtil().hsetWithIncrementCount(
-              RedisKeys.InfoWorkOrderCountBySerial,
-              targetTagInfo.EQ_CODE
-            );
-            await useRedisUtil().hset(
-              RedisKeys.InfoMultiCallRequestOnBySerial,
-              `${targetTagInfo.EQ_CODE}_2`,
-              JSON.stringify(targetTagInfo)
-            );
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_2',
+              value: true,
+            });
+            // await useMultiCallRegisterUtil().hsetWithIncrementCount(
+            //   RedisKeys.InfoWorkOrderCountBySerial,
+            //   targetTagInfo.EQ_CODE
+            // );
+            // await useRedisUtil().hset(
+            //   RedisKeys.InfoMultiCallRequestOnBySerial,
+            //   targetTagInfo.EQ_CODE,
+            //   JSON.stringify(targetTagInfo)
+            // );
+          } else if (targetTagInfo.value === false) {
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_2',
+              value: false,
+            });
           }
           break;
       }

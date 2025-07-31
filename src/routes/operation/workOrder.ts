@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import * as express from 'express';
 import { Request, Response } from 'express';
 import { isLoggedIn } from '../../lib/middleware';
@@ -46,6 +45,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, WorkOrderInse
       cancelDate: req.body.cancelDate,
       description: req.body.description,
       type: req.body.type,
+      plcCallCount: req.body.plcCallCount,
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -170,39 +170,35 @@ router.get(
   }
 );
 // workOrder stats 조회
-router.get(
-  '/daily-stats',
-  isLoggedIn,
-  async (req: Request<unknown, unknown, unknown, unknown>, res: Response) => {
-    const logFormat = makeLogFormat(req);
-    const tokenUser = (req as { decoded?: Payload }).decoded;
+router.get('/daily-stats', isLoggedIn, async (req: Request<unknown, unknown, unknown, unknown>, res: Response) => {
+  const logFormat = makeLogFormat(req);
+  const tokenUser = (req as { decoded?: Payload }).decoded;
 
-    try {
-      // 요청 파라미터
-      logging.REQUEST_PARAM(logFormat);
+  try {
+    // 요청 파라미터
+    logging.REQUEST_PARAM(logFormat);
 
-      // 입력 값 체크
+    // 입력 값 체크
 
-      // 비즈니스 로직 호출
-      const result = useWorkOrderUtil().getStats()
+    // 비즈니스 로직 호출
+    const result = useWorkOrderUtil().getStats();
 
-      // 최종 응답 값 세팅
-      const resJson = resSuccess(result, resType.INFO);
-      logging.RESPONSE_DATA(logFormat, resJson);
+    // 최종 응답 값 세팅
+    const resJson = resSuccess(result, resType.INFO);
+    logging.RESPONSE_DATA(logFormat, resJson);
 
-      // 이벤트 로그 기록(비동기)
-      void eventHistoryService.reg(tokenUser as Payload, resJson, logFormat, 'SelectInfo', TABLE_NAME);
+    // 이벤트 로그 기록(비동기)
+    void eventHistoryService.reg(tokenUser as Payload, resJson, logFormat, 'SelectInfo', TABLE_NAME);
 
-      return res.status(resJson.status).json(resJson);
-    } catch (err) {
-      // 에러 응답 값 세팅
-      const resJson = resError(err);
-      logging.RESPONSE_DATA(logFormat, resJson);
+    return res.status(resJson.status).json(resJson);
+  } catch (err) {
+    // 에러 응답 값 세팅
+    const resJson = resError(err);
+    logging.RESPONSE_DATA(logFormat, resJson);
 
-      return res.status(resJson.status).json(resJson);
-    }
+    return res.status(resJson.status).json(resJson);
   }
-);
+});
 // workOrder 정보 수정
 router.put(
   '/id/:id',
@@ -223,6 +219,7 @@ router.put(
         state: req.body.state,
         isClosed: req.body.isClosed,
         description: req.body.description,
+        plcCallCount: req.body.plcCallCount,
       };
       logging.REQUEST_PARAM(logFormat);
 

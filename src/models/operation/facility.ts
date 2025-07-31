@@ -23,6 +23,8 @@ export interface FacilityAttributes {
   linkedWmsIds: Array<number> | null;
   cancelType: CancelType | null;
   mode: 'auto' | 'manual';
+  generatedCallCount: number | null;
+  isActiveCallTrigger: boolean | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -30,7 +32,6 @@ export interface FacilityAttributes {
 
 export interface FacilityAttributesDeep extends FacilityAttributes {
   Zone: ZoneAttributes;
-  count?: number;
 }
 
 export type CancelType =
@@ -60,6 +61,8 @@ class Facility extends Model implements FacilityAttributes {
   public linkedWmsIds!: FacilityAttributes['linkedWmsIds'];
   public cancelType!: FacilityAttributes['cancelType'];
   public mode!: FacilityAttributes['mode'];
+  public generatedCallCount!: FacilityAttributes['generatedCallCount'];
+  public isActiveCallTrigger!: FacilityAttributes['isActiveCallTrigger'];
   public readonly createdAt!: FacilityAttributes['createdAt'];
   public readonly updatedAt!: FacilityAttributes['updatedAt'];
   public readonly deletedAt!: FacilityAttributes['deletedAt'];
@@ -142,6 +145,13 @@ Facility.init(
       type: DataTypes.STRING(20),
       defaultValue: FacilityDefaultValue.mode,
     },
+    generatedCallCount: {
+      type: DataTypes.INTEGER,
+    },
+    isActiveCallTrigger: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     sequelize,
@@ -173,6 +183,8 @@ export interface FacilityInsertParams {
   cancelType: FacilityAttributes['cancelType'] | null;
   mode: 'auto' | 'manual' | null;
   description: string | null;
+  generatedCallCount: number | null;
+  isActiveCallTrigger: boolean;
 }
 
 // selectList
@@ -243,6 +255,8 @@ export interface FacilityUpdateParams {
   linkedWmsIds?: Array<number>;
   cancelType?: FacilityAttributes['cancelType'] | null;
   mode?: 'auto' | 'manual';
+  generatedCallCount?: number;
+  isActiveCallTrigger?: boolean;
 }
 
 // update state
@@ -277,6 +291,8 @@ export const FacilityAttributesInclude = [
   'linkedWmsIds',
   'cancelType',
   'mode',
+  'generatedCallCount',
+  'isActiveCallTrigger',
   'createdAt',
 ];
 

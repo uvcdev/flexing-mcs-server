@@ -42,6 +42,7 @@ export enum RedisKeys {
   InfoFacilityBySerial = 'info_facility_by_serial',
   InfoFacilityByResource = 'info_facility_by_resource',
   // MBS
+  WorkOrderCount = 'work_order_count', // MBS 설비별 자체 작업지시 카운트
   Heartbeat = 'heartbeat', // HEARTBEAT 리스트
   ReceivedAckCommandBySubjectCmdId = 'received_ack_command_by_subject_cmd_id', // MQTT로 받은 WMS 데이터
   RemainingAckCommandBySubjectCmdId = 'remaining_ack_command_by_subject_cmd_id', // MQTT로 WMS에 보낸 데이터 ( ACK 판단 유무 )
