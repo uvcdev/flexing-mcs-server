@@ -3,23 +3,47 @@ import { sequelize } from '../sequelize';
 
 export interface McsAlarmAttributes {
   id: number;
-  facilityId: number;
+  code: string;
+  alarmFrom: AlarmFromType;
+  errorCode: string;
+  target: string | null;
+  level: McsAlarmLevel;
+  state: McsAlarmState;
   data: JSON | null;
-  state: 'registered' | 'confirmed' | 'completed';
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
 }
 
+export type McsAlarmLevel = 'info' | 'warning' | 'error';
+
+export type McsAlarmState = 'registered' | 'confirmed' | 'completed';
+
+export type AlarmFromType =
+  'WMS' |           // 창고 관련 에러
+  'FAC' |      // 설비 관련 에러
+  'MCS' |           // MCS 서버 관련 에러
+  'ACS' |           // ACS 서버 관련 에러
+  'ETC';            // 이외의 에러
+
 class McsAlarm extends Model implements McsAlarmAttributes {
   public readonly id!: McsAlarmAttributes['id'];
-  public facilityId!: McsAlarmAttributes['facilityId'];
-  public data!: McsAlarmAttributes['data'];
+  public code!: McsAlarmAttributes['code'];
+  public alarmFrom!: McsAlarmAttributes['alarmFrom'];
+  public errorCode!: McsAlarmAttributes['errorCode'];
+  public target!: McsAlarmAttributes['target'];
+  public level!: McsAlarmAttributes['level'];
   public state!: McsAlarmAttributes['state'];
+  public data!: McsAlarmAttributes['data'];
   public readonly createdAt!: McsAlarmAttributes['createdAt'];
   public readonly updatedAt!: McsAlarmAttributes['updatedAt'];
   public readonly deletedAt!: McsAlarmAttributes['deletedAt'];
 }
+
+export const McsAlarmDefaultValue = {
+  alarmFrom: 'ETC',
+  alarmLevel: 'error'
+};
 
 McsAlarm.init(
   {
@@ -28,15 +52,28 @@ McsAlarm.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    facilityId: {
-      type: DataTypes.INTEGER,
+    code: {
+      type: DataTypes.STRING(50),
       allowNull: false,
     },
-    data: {
-      type: DataTypes.JSONB,
+    errorFrom: {
+      type: DataTypes.STRING(20),
+      defaultValue: McsAlarmDefaultValue.alarmFrom
+    },
+    errorCode: {
+      type: DataTypes.STRING(50),
+    },
+    target: {
+      type: DataTypes.STRING(50),
+    },
+    level: {
+      type: DataTypes.STRING(20),
     },
     state: {
       type: DataTypes.STRING(10),
+    },
+    data: {
+      type: DataTypes.JSONB,
     },
   },
   {
@@ -52,15 +89,22 @@ McsAlarm.init(
 /* 인터페이스 정의 시작 */
 // insert
 export interface McsAlarmInsertParams {
-  facilityId: number;
-  data: string | null;
+  code: string;
+  alarmFrom: McsAlarmAttributes['alarmFrom'];
+  errorCode: string;
+  target: string | null;
+  level: McsAlarmAttributes['level'];
   state: McsAlarmAttributes['state'] | null;
+  data: Record<string, any> | null;
 }
 
 export interface McsAlarmSelectListParams {
   ids?: Array<number> | null;
-  facilityId?: number;
+  code?: string;
+  errorCode?: string;
   state?: McsAlarmAttributes['state'] | null;
+  createdAtFrom?: Date | null;
+  createdAtTo?: Date | null;
   limit?: number;
   offset?: number;
   attributes?: Array<string>;
@@ -79,12 +123,23 @@ export interface McsAlarmSelectInfoParams {
   id?: number;
 }
 
+// selectInfoByCode
+export interface McsAlarmSelectInfoByCodeParams {
+  code?: string;
+}
+
 // update
 export interface McsAlarmUpdateParams {
   id?: McsAlarmAttributes['id'];
-  facilityId?: number;
-  data?: JSON | null;
   state?: McsAlarmAttributes['state'] | null;
+  data?: Record<string, any> | null;
+}
+
+// updateStateByCode
+export interface McsAlarmUpdateStateByCodeParams {
+  code?: McsAlarmAttributes['code'];
+  state?: McsAlarmAttributes['state'] | null;
+  data?: Record<string, any> | null;
 }
 
 // delete

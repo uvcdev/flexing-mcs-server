@@ -9,6 +9,7 @@ import { RedisKeys, useRedisUtil } from "./redisUtil";
 import { service as workOrderService } from '../service/operation/workOrderService';
 import { dao as facilityDao } from '../dao/operation/facilityDao';
 import { FacilityAttributes } from "../models/operation/facility";
+import { useMultiCallRegisterUtil } from "./multiCallRegisterUtil";
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -88,56 +89,63 @@ export const useCallRemoveUtil = () => {
         tagName: 'Call_Response_Count',
         value: '0',
       });
+      await kepServerUtil.writeSimpleTagValue({
+        targetFacility: targetCode,
+        tagName: 'Dock_Request',
+        value: false,
+      });
       // }
-
+      await useMultiCallRegisterUtil().hsetWithDecrementCount(RedisKeys.InfoWorkOrderCountBySerial, targetCode);
+      // 반대편 Call_Reqeust 가 켜져있지 않은 상태에서 Call_Requst 꺼지면 삭제
+      redisUtil.hdel(RedisKeys.InfoRemainCallById, targetCode);
       // 로봇 할당 되어 있는 경우 콜 취소 응답이 켜져 있는 상태에서
       // 콜이 내려간다면 콜 취소 응답 내리기
-      if (callCancelResponseValue === true) {
-        // NON_CANCELLABLE일 경우 해당 설비에서 들어온 취소 요청에 대해서 응답하지 않음
-        // 해당 로직에 대한 고민 필요 -> 
-        // if (cancelType === 'NON_CANCELLABLE') {
-        //   return
-        // }
+      // if (callCancelResponseValue === true) {
+      //   // NON_CANCELLABLE일 경우 해당 설비에서 들어온 취소 요청에 대해서 응답하지 않음
+      //   // 해당 로직에 대한 고민 필요 -> 
+      //   // if (cancelType === 'NON_CANCELLABLE') {
+      //   //   return
+      //   // }
 
-        await kepServerUtil.writeSimpleTagValue({
-          targetFacility: targetCode,
-          tagName: 'Call_Cancel_Response',
-          value: false,
-        });
-        // acs 작업지시 취소 요청
-        const infoTrackingLogByFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByFacilityCode, targetCode);
-        const params: CancelWorkOrderRequestType =
-        {
-          ZONE_ID: process.env.FLOOR || '1F',
-          EQP_ID: targetCode,
-          EQP_CALL_ID: infoTrackingLogByFacilityCode?.eqpCallId || '',
-          CALL_ID: infoTrackingLogByFacilityCode?.callId || '',
-          CANCEL_TYPE: cancelType,
-        }
-        const result = await workOrderService.facilityCancel(
-          { code: params.CALL_ID },
-          makeLogFormat({} as RequestLog)
-        );
+      //   await kepServerUtil.writeSimpleTagValue({
+      //     targetFacility: targetCode,
+      //     tagName: 'Call_Cancel_Response',
+      //     value: false,
+      //   });
+      //   // acs 작업지시 취소 요청
+      //   const infoTrackingLogByFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByFacilityCode, targetCode);
+      //   const params: CancelWorkOrderRequestType =
+      //   {
+      //     ZONE_ID: process.env.FLOOR || '1F',
+      //     EQP_ID: targetCode,
+      //     EQP_CALL_ID: infoTrackingLogByFacilityCode?.eqpCallId || '',
+      //     CALL_ID: infoTrackingLogByFacilityCode?.callId || '',
+      //     CANCEL_TYPE: cancelType,
+      //   }
+      //   const result = await workOrderService.facilityCancel(
+      //     { code: params.CALL_ID },
+      //     makeLogFormat({} as RequestLog)
+      //   );
 
-        if (result.updatedCount > 0) {
-          const messageTopic = 'acs/cancelworkorder'
-          try {
-            logging.MQTT_LOG({
-              title: 'callRemoveUtil cancel workorder',
-              topic: messageTopic,
-              message: params,
-            });
-            sendMqtt(messageTopic, JSON.stringify(params));
-          } catch (err) {
-            logging.MQTT_ERROR({
-              title: 'mqtt message error',
-              topic: messageTopic,
-              message: params,
-              error: err,
-            });
-          }
-        }
-      }
+      //   if (result.updatedCount > 0) {
+      //     const messageTopic = 'acs/cancelworkorder'
+      //     try {
+      //       logging.MQTT_LOG({
+      //         title: 'callRemoveUtil cancel workorder',
+      //         topic: messageTopic,
+      //         message: params,
+      //       });
+      //       sendMqtt(messageTopic, JSON.stringify(params));
+      //     } catch (err) {
+      //       logging.MQTT_ERROR({
+      //         title: 'mqtt message error',
+      //         topic: messageTopic,
+      //         message: params,
+      //         error: err,
+      //       });
+      //     }
+      //   }
+      // }
     } catch (error) {
       console.error("Error in callRemove:", error);
     }

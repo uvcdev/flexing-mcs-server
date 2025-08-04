@@ -1,10 +1,12 @@
-import { TrackingLogRedisUpdateParams, TrackingLogState } from "../../models/common/trackingLog";
-import { useKepServerUtil } from "../kepServerUtil";
-import { separateMqttMessage, MbsMqttMesaage } from "../mqttUtil"
-import { editTrackingLogRedis } from "../process/trackingLog";
-import { sendAckToWms } from "../process/wmsAck";
+import { TrackingLogRedisUpdateParams, TrackingLogState } from '../../models/common/trackingLog';
+import { useKepServerUtil } from '../kepServerUtil';
+import { separateMqttMessage, MbsMqttMesaage } from '../mqttUtil';
+import { useMultiCallRegisterUtil } from '../multiCallRegisterUtil';
+import { editTrackingLogRedis } from '../process/trackingLog';
+import { sendAckToWms } from '../process/wmsAck';
+import { RedisKeys } from '../redisUtil';
 
-const topic = 'MISSION_STATE'
+const topic = 'MISSION_STATE';
 
 export type MissionStateType =
   | 'MISSION_INITIATED'
@@ -29,11 +31,11 @@ export interface MissionStateBody {
   assign: {
     robot: string;
     task: string;
-  }
+  };
 }
 
 export interface AllMissionState {
-  missions: MissionStateBody[]
+  missions: MissionStateBody[];
 }
 
 export interface MissionCompleted {
@@ -47,22 +49,22 @@ export interface MissionFailed {
 
 const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
   try {
-    console.log('catch acs missionState')
-    const kepServerUtil = useKepServerUtil()
-    const missionStateBody = messageJson.body as MissionStateBody
-    const state = missionStateBody.state
-    const callId = (missionStateBody.mission).split('$')[0]
-    const assignAmrName = missionStateBody.assign.robot || ''
+    console.log('catch acs missionState');
+    const kepServerUtil = useKepServerUtil();
+    const missionStateBody = messageJson.body as MissionStateBody;
+    const state = missionStateBody.state;
+    const callId = missionStateBody.mission.split('$')[0];
+    const assignAmrName = missionStateBody.assign.robot || '';
     // let assignState = missionStateBody.assign.task as TrackingLogState || ''
-    let assignState = 'PROCESSING' as TrackingLogState
+    let assignState = 'PROCESSING' as TrackingLogState;
 
     if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED' || state === 'MISSION_COMPLETED') {
-      assignState = "COMPLETED"
+      assignState = 'COMPLETED';
     }
     // 물류 로그 저장
-    const trackingLogSubject = 'MISSION_STATE'
-    const trackingLogDetail = state
-    const trackingLogState = assignState
+    const trackingLogSubject = 'MISSION_STATE';
+    const trackingLogDetail = state;
+    const trackingLogState = assignState;
     const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
       callId: callId,
       subject: trackingLogSubject,
@@ -73,81 +75,59 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
       destFacility: null,
       assignedRobot: assignAmrName,
       value: assignAmrName,
-      description: `AMR(${assignAmrName}) Mission State : ${state}`
-    }
-    await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS')
+      description: `AMR(${assignAmrName}) Mission State : ${state}`,
+    };
+    await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
 
     if (state === 'MISSION_CANCELED') {
-      // ACS로부터 취소된 작업에 대한 설비의 AMR 정보 내리기
-      const targetCode = messageJson.body.facilitySerial
-      console.log('취소할 설비', messageJson.body.facilitySerial)
-      await kepServerUtil.writeSimpleTagValue({
-        targetFacility: targetCode,
-        tagName: 'Call_Response',
-        value: false,
-      });
-      await kepServerUtil.writeSimpleTagValue({
-        targetFacility: targetCode,
-        tagName: 'Call_Robot_Assigned',
-        value: false,
-      });
-      await kepServerUtil.writeSimpleTagValue({
-        targetFacility: targetCode,
-        tagName: 'Call_Response_Count',
-        value: '0',
-      });
-
     } else if (state === 'MISSION_FAILED') {
-
     } else if (state === 'MISSION_COMPLETED') {
-
     }
   } catch (error) {
-    throw error
+    throw error;
   }
-}
+};
 
 const allMissionState = (acsName: string) => {
-  console.log('catch acs allMissionState')
-}
+  console.log('catch acs allMissionState');
+};
 
 const missionCompleted = (acsName: string, messageJson: MbsMqttMesaage) => {
-  console.log('catch acs missionCompleted')
-  const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
+  console.log('catch acs missionCompleted');
+  const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
   // acs 물류 로그 저장
   // 작업 완료 처리
   // ACK 전송
   const ackBody = {
-    mission: messageBody.mission || ''
-  }
-  sendAckToWms(topic, subject, ackBody, acsName)
-}
+    mission: messageBody.mission || '',
+  };
+  sendAckToWms(topic, subject, ackBody, acsName);
+};
 
 const missionFailed = (acsName: string, messageJson: MbsMqttMesaage) => {
-  console.log('catch acs missionFailed')
-  const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
+  console.log('catch acs missionFailed');
+  const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
   // acs 물류 로그 저장
   // 작업 완료 처리
   // ACK 전송
   const ackBody = {
-    mission: messageBody.mission || ''
-  }
-  sendAckToWms(topic, subject, ackBody, acsName)
-}
-
+    mission: messageBody.mission || '',
+  };
+  sendAckToWms(topic, subject, ackBody, acsName);
+};
 
 export const acsMissionState = (acsName: string, messageJson: MbsMqttMesaage) => {
-  const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
+  const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
 
   if (subject === 'MISSION_STATE') {
-    missionState(acsName, messageJson)
+    missionState(acsName, messageJson);
   } else if (subject === 'ALL_MISSION_STATE') {
-    allMissionState(acsName)
+    allMissionState(acsName);
   } else if (subject === 'MISSION_COMPLETED') {
-    missionCompleted(acsName, messageJson)
+    missionCompleted(acsName, messageJson);
   } else if (subject === 'MISSION_FAILED') {
-    missionFailed(acsName, messageJson)
+    missionFailed(acsName, messageJson);
   }
-}
+};

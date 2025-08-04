@@ -246,3 +246,23 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
   ```
 - Cancel Type 정보 ACS에 전달(MQTT) 로직 추가
 - 설비 수동/자동 모드 작업 진행 로직 추가
+- MCS 알람 관리
+  - MCS 알람 컬럼 변경 ( 거의 신규라서 SQL 문 미작성 )
+- ErrorCode 관리
+  - errorCode 관련 테이블 신규 작성
+- WMS 동기화 로직 구현
+
+## v1.0.0-cyk
+- 설비(PLC)에서 쓰는 Call_Count 값은 저장만하고(CALL_COUNT) MCS에서 자체채번 (generated_call_count)
+- generated_call_count 컬럼 추가 (작업지시코드 채번을 위한 설비별 작업순번 1 ~ 9999)
+- is_active_call_trigger 컬럼 추가 (콜 생성 주체 설비 확인용)
+- always_call_count 컬럼 추가 (항상 켜져있는 설비에 대한 Call_Count)
+- trigger_call_count 컬럼 추가 (작업 생성 주체가 되는 설비에 대한 Call_Count)
+- todo 250731 : MCS_info_work_order_count_by_serial 에 현재 진행중인 작업지시 업데이트 먼저해주기
+```sql
+ALTER TABLE public.facilities ADD generated_call_count int4 NULL;
+ALTER TABLE public.facilities ADD is_active_call_trigger bool NULL DEFAULT false;
+ALTER TABLE public.work_orders ADD always_call_count int4 NULL;
+ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
+
+```

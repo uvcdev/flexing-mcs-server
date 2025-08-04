@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import * as express from 'express';
 import { Request, Response } from 'express';
 import { isLoggedIn } from '../../lib/middleware';
@@ -51,6 +50,8 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, FacilityInser
       linkedWmsIds: [],
       cancelType: req.body.cancelType,
       mode: req.body.mode || 'auto',
+      generatedCallCount: req.body.generatedCallCount,
+      isActiveCallTrigger: req.body.isActiveCallTrigger,
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -214,6 +215,8 @@ router.put(
         linkedEqpIds: req.body.linkedEqpIds || [],
         cancelType: req.body.cancelType,
         mode: req.body.mode,
+        generatedCallCount: req.body.generatedCallCount,
+        isActiveCallTrigger: req.body.isActiveCallTrigger,
       };
       logging.REQUEST_PARAM(logFormat);
 

@@ -1,4 +1,5 @@
-import { InsertedResult, SelectedListResult, UpdatedResult, DeletedResult } from '../../lib/resUtil';
+import { Op } from 'sequelize';
+import { InsertedResult, SelectedListResult, UpdatedResult, DeletedResult, UpdatedAndDataIds } from '../../lib/resUtil';
 import McsAlarm, {
   McsAlarmInsertParams,
   McsAlarmSelectListParams,
@@ -7,6 +8,8 @@ import McsAlarm, {
   McsAlarmDeleteParams,
   McsAlarmAttributes,
   McsAlarmSelectInfoParams,
+  McsAlarmSelectInfoByCodeParams,
+  McsAlarmUpdateStateByCodeParams,
 } from '../../models/common/mcsAlarm';
 import Facility, { FacilityAttributesInclude } from '../../models/operation/facility';
 
@@ -36,10 +39,10 @@ const dao = {
         id: params.ids, // 'in'검색,
       };
     }
-    if (params.facilityId) {
+    if (params.code) {
       setQuery.where = {
         ...setQuery.where,
-        facilityId: params.facilityId, // 'in'검색,
+        code: { [Op.like]: `%${params.code}%` }, // 'like' 검색
       };
     }
     if (params.state) {
@@ -49,17 +52,33 @@ const dao = {
       };
     }
 
+    // 기간 검색 - 등록일
+    if (params.createdAtFrom || params.createdAtTo) {
+      if (params.createdAtFrom && params.createdAtTo) {
+        setQuery.where = {
+          ...setQuery.where,
+          createdAt: { [Op.between]: [params.createdAtFrom, params.createdAtTo] }, // 'between '검색
+        };
+      } else {
+        if (params.createdAtFrom) {
+          setQuery.where = {
+            ...setQuery.where,
+            createdAt: { [Op.gte]: params.createdAtFrom }, // '>=' 검색
+          };
+        }
+        if (params.createdAtTo) {
+          setQuery.where = {
+            ...setQuery.where,
+            createdAt: { [Op.lte]: params.createdAtTo }, // '<=' 검색
+          };
+        }
+      }
+    }
+
     return new Promise((resolve, reject) => {
       McsAlarm.findAndCountAll({
         ...setQuery,
         distinct: true,
-        include: [
-          {
-            model: Facility,
-            as: 'Facility',
-            attributes: FacilityAttributesInclude,
-          },
-        ],
       })
         .then((selectedList) => {
           resolve(selectedList);
@@ -72,13 +91,21 @@ const dao = {
   selectInfo(params: McsAlarmSelectInfoParams): Promise<McsAlarmAttributes | null> {
     return new Promise((resolve, reject) => {
       McsAlarm.findByPk(params.id, {
-        include: [
-          // {
-          //   model: AlarmGroup,
-          //   as: 'AlarmGroup',
-          //   attributes: AlarmGroupAttributesInclude,
-          // },
-        ],
+      })
+        .then((selectedInfo) => {
+          resolve(selectedInfo);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+  selectInfoByCode(params: McsAlarmSelectInfoByCodeParams): Promise<McsAlarmAttributes | null> {
+    return new Promise((resolve, reject) => {
+      McsAlarm.findOne({
+        where: {
+          code: params.code
+        }
       })
         .then((selectedInfo) => {
           resolve(selectedInfo);
@@ -93,6 +120,18 @@ const dao = {
       McsAlarm.update(params, { where: { id: params.id } })
         .then(([updated]) => {
           resolve({ updatedCount: updated });
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+  updateStateByCode(params: McsAlarmUpdateStateByCodeParams): Promise<UpdatedAndDataIds> {
+    return new Promise((resolve, reject) => {
+      McsAlarm.update(params, { where: { code: params.code, state: { [Op.ne]: 'completed' } }, returning: true })
+        .then(([updatedCount, updatedRows]) => {
+          const updatedIds = updatedRows.map(row => row.id)
+          resolve({ updatedCount: updatedCount, updatedIds: updatedIds });
         })
         .catch((err) => {
           reject(err);

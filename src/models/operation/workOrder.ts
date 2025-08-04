@@ -11,7 +11,7 @@ export interface WorkOrderAttributes {
   toFacilityId: number | null;
   code: string;
   fromAmrId: number | null;
-  itemId: number | null;
+  itemId: number | null; // 실질적인 call_type
   level: number | null;
   state:
   | 'registered'
@@ -51,6 +51,8 @@ export interface WorkOrderAttributes {
   description: string | null;
   type: 'IN' | 'OUT' | 'MISSION'; // 반출 OUT, 반입 IN , 미션 MISSION
   isMissionOrder: boolean;
+  alwaysCallCount: number | null; // 항상 켜져있는 설비에 대한 Call_Count
+  triggerCallCount: number | null; // 작업 생성 주체가 되는 설비에 대한 Call_Count
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -82,6 +84,8 @@ class WorkOrder extends Model implements WorkOrderAttributes {
   public description!: WorkOrderAttributes['description'];
   public type!: WorkOrderAttributes['type'];
   public isMissionOrder!: WorkOrderAttributes['isMissionOrder'];
+  public alwaysCallCount!: WorkOrderAttributes['alwaysCallCount'];
+  public triggerCallCount!: WorkOrderAttributes['triggerCallCount'];
   public readonly createdAt!: WorkOrderAttributes['createdAt'];
   public readonly updatedAt!: WorkOrderAttributes['updatedAt'];
   public readonly deletedAt!: WorkOrderAttributes['deletedAt'];
@@ -156,6 +160,12 @@ WorkOrder.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    alwaysCallCount: {
+      type: DataTypes.INTEGER,
+    },
+    triggerCallCount: {
+      type: DataTypes.INTEGER,
+    },
   },
   {
     sequelize,
@@ -184,6 +194,8 @@ export interface WorkOrderInsertParams {
   description: string | null;
   type: WorkOrderAttributes['type'];
   isMissionOrder?: boolean;
+  alwaysCallCount?: number | null;
+  triggerCallCount: number | null;
 }
 export interface ImcsWorkOrderInsertParams {
   newItemId?: number | null;
@@ -196,6 +208,8 @@ export interface ImcsWorkOrderInsertParams {
   TYPE: WorkOrderAttributes['type']; // 타입
   CALL_PRIORITY: number; // 우선순위
   CALL_TYPE: string;
+  ALWAYS_CALL_COUNT?: number;
+  TRIGGER_CALL_COUNT: number;
 }
 
 export interface WorkOrderCancelByCodeParams {
@@ -270,6 +284,8 @@ export interface WorkOrderUpdateParams {
   isMissionOrder?: boolean;
   description?: string | null;
   type?: string | null;
+  alwaysCallCount?: number | null;
+  triggerCallCount?: number | null;
 }
 
 export interface WorkOrderUpdateByCodeParams {
@@ -292,6 +308,8 @@ export interface WorkOrderUpdateByCodeParams {
   isMissionOrder?: boolean;
   description?: string | null;
   type?: string | null;
+  alwaysCallCount?: number | null;
+  triggerCallCount?: number | null;
 }
 
 // delete
@@ -310,6 +328,8 @@ export interface PendingWorkOrderAttributes {
   callType?: string;
   eqpName?: string;
   portName?: string | null;
+  alwaysCallCount?: number;
+  triggerCallCount?: number;
 }
 
 // include attributes
@@ -334,6 +354,8 @@ export const WorkOrderAttributesInclude = [
   'description',
   'type',
   'isMissionOrder',
+  'alwaysCallCount',
+  'triggerCallCount',
   'createdAt',
 ];
 

@@ -42,6 +42,15 @@ export interface CancelCallInfo {
   systemName?: string;
 }
 
+export interface AbnormalCompletedCallInfo {
+  cmdId: string;
+  callId: string;
+  callType: string;
+  caller: string;
+  callQuantity: string;
+  callPriority: string;
+}
+
 export const setAbortedCommandForRetry = (systemName: string, subject: string, messageTopic: string, mqttMessage: MbsMqttMesaage) => {
   const newMqttBody = { ...mqttMessage.body };
   newMqttBody.Cmd_ID = generateUUIDNode();
@@ -99,6 +108,20 @@ export const checkAbortedCommandForRetry = async () => {
       const newMqttHeader = makeMbsMqttHeader(abortedCommandForRetryInfo.messageSubject)
       // 해당 내용 MQTT 재전송
       sendMbsMqtt(abortedCommandForRetryInfo.messageTopic, newMqttHeader, abortedCommandForRetryInfo.message.body, abortedCommandForRetryInfo.systemName);
+      if (newMqttHeader.subject.includes('CALL_INFO')) {
+
+        const recentCallInfoTaskByCmdIdParams: RecentCallInfo = {
+          cmdId: abortedCommandForRetryInfo.subjectCmdId,
+          callId: abortedCommandForRetryInfo.message.body.Call_ID,
+          caller: abortedCommandForRetryInfo.message.body.Caller,
+          port: null,
+          callType: abortedCommandForRetryInfo.message.body.Call_Type,
+          callPriority: abortedCommandForRetryInfo.message.body.Call_Priority,
+          callQuantity: abortedCommandForRetryInfo.message.body.Call_Quantity,
+          transferId: null
+        }
+        setRecentCallInfoTaskByCmdId(recentCallInfoTaskByCmdIdParams)
+      }
       // 해당 내용 REDIS 삭제
       deleteAbortedCommandForRetry(abortedCommandForRetryKey)
     }

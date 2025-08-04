@@ -1,8 +1,10 @@
 import { TrackingLogRedisAttributes, TrackingLogRedisUpdateParams, TrackingLogState } from "../../../models/common/trackingLog";
 import { logging } from "../../logging";
-import { separateMqttMessage, MbsMqttMesaage } from "../../mqttUtil"
+import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody } from "../../mqttUtil"
 import { editTrackingLogRedis } from "../../process/trackingLog";
-import { setReceivedAckCommand } from "../../process/wmsAck"
+import { CheckRetryCallInfoByCallIdParams, setReceivedAckCommand } from "../../process/wmsAck"
+import { deleteInfoAckInCallByCallId } from "../../process/wmsCallInfo";
+import { AbnormalCompletedCallInfo, deleteRecentCallInfoTaskByCmdId, RecentCallInfo } from "../../process/wmsCommon";
 import { RedisKeys, useRedisUtil } from "../../redisUtil";
 
 const redisUtil = useRedisUtil();
@@ -16,6 +18,24 @@ export interface TransferCompletedBody {
   PairTransferID: string,
   CarrierLoc: string,
   ResultCode: "4" | "11" | "12" | "21" | "31" | "64"
+}
+
+export interface TransferCancelCompletedBody extends MbsMqttBody {
+  Cmd_ID: string,
+  TransferID: string,
+  Call_ID: string,
+  CarrierID: string,
+  PairTransferID: string,
+  ResultCode: string
+}
+
+export interface TransferAbortCompletedBody extends MbsMqttBody {
+  Cmd_ID: string,
+  TransferID: string,
+  Call_ID: string,
+  CarrierID: string,
+  PairTransferID: string,
+  ResultCode: string
 }
 
 
@@ -52,17 +72,57 @@ const transferInitiated = async (wmsName: string, subject: string, messageMessag
 const transferCancelCompleted = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsTransferCancelCompleted')
 
-  const callId: string = 'TODO transfer CALL ID'
+  const transferCancelCompletedBody = messageMessage.body as TransferCancelCompletedBody
+  const cmdId = transferCancelCompletedBody.Cmd_ID
+  const callId: string = transferCancelCompletedBody.Call_ID
+
+  // resultCode 별 분기 미정의
+  const resultCode = transferCancelCompletedBody.ResultCode
 
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
+
+  // 진행 중인 콜 정보 삭제
+  // infoAckInCallByCallId 정보 삭제
+  deleteInfoAckInCallByCallId(callId)
+
+  // RecentCallInfoTaskByCmdId 정보 삭제
+  deleteRecentCallInfoTaskByCmdId(cmdId)
+
+  // 설비의 Call 정보 확인 후 재 송부가 필요한 내용을 Redis에 저장
+  const checkRetryCallInfoByCallIdParams: CheckRetryCallInfoByCallIdParams = {
+    callId: callId,
+    caller: callId.slice(0, 4)
+  }
+
+  redisUtil.hset(RedisKeys.CheckRetryCallInfoByCallId, callId, JSON.stringify(checkRetryCallInfoByCallIdParams))
 }
 
 const transferAbortCompleted = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsTransferAbortCompleted')
 
-  const callId: string = 'TODO transfer CALL ID'
+  const transferCancelCompletedBody = messageMessage.body as TransferAbortCompletedBody
+  const cmdId = transferCancelCompletedBody.Cmd_ID
+  const callId: string = transferCancelCompletedBody.Call_ID
+
+  // resultCode 별 분기 미정의
+  const resultCode = transferCancelCompletedBody.ResultCode
 
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
+
+  // 진행 중인 콜 정보 삭제
+  // infoAckInCallByCallId 정보 삭제
+  deleteInfoAckInCallByCallId(callId)
+
+  // RecentCallInfoTaskByCmdId 정보 삭제
+  deleteRecentCallInfoTaskByCmdId(cmdId)
+
+  // 설비의 Call 정보 확인 후 재 송부가 필요한 내용을 Redis에 저장
+  const checkRetryCallInfoByCallIdParams: CheckRetryCallInfoByCallIdParams = {
+    callId: callId,
+    caller: callId.slice(0, 4)
+  }
+
+  redisUtil.hset(RedisKeys.CheckRetryCallInfoByCallId, callId, JSON.stringify(checkRetryCallInfoByCallIdParams))
 }
 
 const transferPaused = (wmsName: string, messageMessage: MbsMqttMesaage) => {
@@ -200,6 +260,33 @@ const transferCompleted = async (wmsName: string, subject: string, messageMessag
     case '64':
       // Item Log 생성 - 공출고
       // abort 로그만 기록한 후창고에서 CALL_REQUEST 요청한 것에 대한 응답만 잘 주면 됨.
+
+      // 공출고 로직
+      // 적용 여부 고민 중... => Call Request에서 기존에 있던 콜 정보 목록에서 원하는 콜 정보를 보내는 방향으로 작업 중
+      // const cmdId = messageBody.Cmd_ID;
+
+      // const recentCallInfoTaskByCmdIdInfo = await redisUtil.hgetObject<RecentCallInfo>(RedisKeys.RecentCallInfoTaskByCmdId, cmdId)
+
+      // if (recentCallInfoTaskByCmdIdInfo) {
+      //   // 현재 진행 중인 콜 정보 삭제 한 후 해당 정보를 AbnormalCompletedCommandBySubjectCmdId Redis에 저장
+      //   // 공 출고에 해당하는 알람 자체는 ALARM 로직에서 진행 될 예정
+      //   const abnormalCompletedCallInfoValue: AbnormalCompletedCallInfo = {
+      //     cmdId: '',
+      //     callId: recentCallInfoTaskByCmdIdInfo?.callId,
+      //     callType: recentCallInfoTaskByCmdIdInfo?.callType,
+      //     caller: recentCallInfoTaskByCmdIdInfo?.caller,
+      //     callQuantity: recentCallInfoTaskByCmdIdInfo?.callQuantity,
+      //     callPriority: recentCallInfoTaskByCmdIdInfo?.callPriority,
+      //   }
+
+      //   redisUtil.hset(RedisKeys.AbnormalCompletedCallInfoTaskByCallId, abnormalCompletedCallInfoValue.callId, JSON.stringify(abnormalCompletedCallInfoValue))
+
+      //   redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId)
+      // } else {
+      //   // 공출고를 진행 할 Call Info 정보가 없음
+      //   // 추가 작업 필요 -> ALARM ? 
+      // }
+
       logging.ACTION_ERROR({
         filename: `transfer.ts - transferCompleted`,
         error: `[ResultCode = ${resultCode}] ResultCode(${resultCode}): Empty shipment`,

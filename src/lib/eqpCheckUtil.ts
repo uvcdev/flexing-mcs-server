@@ -1,15 +1,15 @@
-import { AttributeIds } from "node-opcua-client";
-import { TagValue, useKepServerUtil } from "./kepServerUtil";
-import { logging } from "./logging";
-import opcuaUtil from "./opcuaUtil";
-import { useCallRegisterUtil } from "./callRegisterUtil";
-import { useCallRemoveUtil } from "./callRemoveUtil";
-import { useDockingUtil } from "./process/dockingUtil";
-import { useCallCancelUtil } from "./callCancelUtil";
-import { useCallTypeUtil } from "./callTypeUtil";
-import { useCallRequestMultiUtil } from "./callRequestMultiUtil";
-import { useCallResponseUtil } from "./callResponseUtil";
-
+import { AttributeIds } from 'node-opcua-client';
+import { TagValue, useKepServerUtil } from './kepServerUtil';
+import { logging } from './logging';
+import opcuaUtil from './opcuaUtil';
+import { useCallRegisterUtil } from './callRegisterUtil';
+import { useCallRemoveUtil } from './callRemoveUtil';
+import { useDockingUtil } from './process/dockingUtil';
+import { useCallCancelUtil } from './callCancelUtil';
+import { useCallTypeUtil } from './callTypeUtil';
+import { useMultiCallRegisterUtil } from './multiCallRegisterUtil';
+import { useCallResponseUtil } from './callResponseUtil';
+import { RedisKeys, useRedisUtil } from './redisUtil';
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -23,18 +23,34 @@ export const useEqpCheckUtil = () => {
     try {
       // TAG_NAME에 따라 다른 함수 실행
       switch (targetTagInfo.TAG_NAME) {
+        // case 'Call_Request':
+        //   console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+        //   if (targetTagInfo.value === true) {
+        //     await useCallRegisterUtil().callRegister(targetTagInfo)
+        //   } else {
+        //     await useCallRemoveUtil().callRemove(targetTagInfo)
+        //   }
+        //   break;
         case 'Call_Request':
           console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
-            await useCallRegisterUtil().callRegister(targetTagInfo)
+            await useRedisUtil().hset(
+              RedisKeys.InfoCallRequestOnBySerial,
+              targetTagInfo.EQ_CODE,
+              JSON.stringify(targetTagInfo)
+            );
           } else {
-            await useCallRemoveUtil().callRemove(targetTagInfo)
+            await useCallRemoveUtil().callRemove(targetTagInfo);
           }
           break;
 
         case 'Call_Response':
           console.log(`Changed Call_Response`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === false) {
+            await useMultiCallRegisterUtil().hsetWithDecrementCount(
+              RedisKeys.InfoWorkOrderCountBySerial,
+              targetTagInfo.EQ_CODE
+            );
             await useCallResponseUtil().callReRegister(targetTagInfo);
           }
           break;
@@ -96,36 +112,81 @@ export const useEqpCheckUtil = () => {
           //     value: false,
           //   });
           // }, 1000);
-
-
           break;
 
         case 'Call_Request_Multi_1':
           console.log(`Changed Call_Request_Multi_1`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          await useCallRequestMultiUtil().callResponse(targetTagInfo)
+          if (targetTagInfo.value === true) {
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_1',
+              value: true,
+            });
+            // await useCallResponseUtil().decisionWorkOrder(targetTagInfo);
+            // await useMultiCallRegisterUtil().hsetWithIncrementCount(
+            //   RedisKeys.InfoWorkOrderCountBySerial,
+            //   targetTagInfo.EQ_CODE
+            // );
+            // await useRedisUtil().hset(
+            //   RedisKeys.InfoCallRequestOnBySerial,
+            //   targetTagInfo.EQ_CODE,
+            //   JSON.stringify(targetTagInfo)
+            // );
+          } else if (targetTagInfo.value === false) {
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_1',
+              value: false,
+            });
+          }
           break;
 
         case 'Call_Request_Multi_2':
           console.log(`Changed Call_Request_Multi_2`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          await useCallRequestMultiUtil().callResponse(targetTagInfo)
+          if (targetTagInfo.value === true) {
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_2',
+              value: true,
+            });
+            // await useCallResponseUtil().decisionWorkOrder(targetTagInfo);
+            // await useMultiCallRegisterUtil().hsetWithIncrementCount(
+            //   RedisKeys.InfoWorkOrderCountBySerial,
+            //   targetTagInfo.EQ_CODE
+            // );
+            // await useRedisUtil().hset(
+            //   RedisKeys.InfoMultiCallRequestOnBySerial,
+            //   targetTagInfo.EQ_CODE,
+            //   JSON.stringify(targetTagInfo)
+            // );
+          } else if (targetTagInfo.value === false) {
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_2',
+              value: false,
+            });
+          }
           break;
       }
-
     } catch (error) {
-      console.error("DoCheck error:", error);
+      console.error('DoCheck error:', error);
     }
-  }
+  };
   // callRequestMulti1Value와 callRequestMulti2Value의 값을 기반으로 multiValue 결정
   const determineMultiValue = (callRequestMulti1Value: string, callRequestMulti2Value: string): number => {
-    if (callRequestMulti1Value === "true" && callRequestMulti2Value === "true") {
+    if (callRequestMulti1Value === 'true' && callRequestMulti2Value === 'true') {
       return 3;
-    } else if (callRequestMulti1Value === "true") {
+    } else if (callRequestMulti1Value === 'true') {
       return 2;
     } else {
       return 1;
     }
   };
-  const createEQPCallId = async (targetKey: string, callCountValue: string, multiValue: number): Promise<string[] | null> => {
+  const createEQPCallId = async (
+    targetKey: string,
+    callCountValue: string,
+    multiValue: number
+  ): Promise<string[] | null> => {
     try {
       // 설비코드 1 + 설비코드 2 + 콜 ID 시간1(년도) + 콜 ID시간2(월,일) + 콜ID(0~9999)
       const EQCode01 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_01`);
@@ -142,7 +203,7 @@ export const useEqpCheckUtil = () => {
       ].filter((nodeId): nodeId is string => nodeId !== undefined);
 
       const readDatas = await useKepServerUtil().readTagsValue(needNodeIds);
-      console.log("🚀 ~ createEQPCallId ~ readDatas:", readDatas)
+      console.log('🚀 ~ createEQPCallId ~ readDatas:', readDatas);
 
       const needKeys = [
         EQCode01?.TAG_NAME,
@@ -155,24 +216,29 @@ export const useEqpCheckUtil = () => {
         useKepServerUtil().updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
       }
 
-
-      const EQCode01Value = EQCode01?.value.toString() || "0";
-      const EQCode02Value = EQCode02?.value.toString() || "0";
-      const callTimeYearValue = callTimeYear?.value.toString() || "0";
-      const callTimeMonthDayValue = callTimeMonthDay?.value.toString() || "0";
+      const EQCode01Value = EQCode01?.value.toString() || '0';
+      const EQCode02Value = EQCode02?.value.toString() || '0';
+      const callTimeYearValue = callTimeYear?.value.toString() || '0';
+      const callTimeMonthDayValue = callTimeMonthDay?.value.toString() || '0';
 
       // callTimeMonthDay 값을 4자릿수로 변환
       const callTimeMonthDayStr = callTimeMonthDayValue.toString().padStart(4, '0');
 
       const result = [];
       for (let i = 0; i < multiValue; i++) {
-        const callId = EQCode01Value + EQCode02Value + callTimeYearValue + callTimeMonthDayStr + callCountValue + ((i >= 1) ? "_" + i.toString() : "");
+        const callId =
+          EQCode01Value +
+          EQCode02Value +
+          callTimeYearValue +
+          callTimeMonthDayStr +
+          callCountValue +
+          (i >= 1 ? '_' + i.toString() : '');
         result.push(callId);
       }
 
       return result;
     } catch (error) {
-      console.error("Error creating EQP Call ID:", error);
+      console.error('Error creating EQP Call ID:', error);
       return null;
     }
   };
@@ -298,7 +364,5 @@ export const useEqpCheckUtil = () => {
     // 구현 필요
   };
 
-
-
-  return { eqpTaskStatus }
-}
+  return { eqpTaskStatus };
+};
