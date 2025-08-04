@@ -23,6 +23,7 @@ module.exports = [
           endOfLine: 'auto',
         },
       ],
+      "indent": ["tab"], // tab 키 허용, 경고만 표시
       // 사용하지 않는 변수/import 경고 끄기
       '@typescript-eslint/no-unused-vars': 'off',
       'no-unused-vars': 'off',

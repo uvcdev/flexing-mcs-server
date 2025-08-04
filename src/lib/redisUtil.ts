@@ -63,6 +63,8 @@ export enum RedisKeys {
   InfoOutCallByNodeId = 'info_out_call_by_node_id', // out 설비에서 발생한 콜에 해당하는 node 정보
   DockingRequestByPortId = 'docking_request_by_port_id',
   DockingCompleteByPortId = 'docking_complete_by_port_id',
+  AbnormalCompletedCallInfoTaskByCallId = 'abnormal_completed_call_info_task_by_call_id',  // 비정상 완료된 Call Id
+  CheckRetryCallInfoByCallId = 'check_retry_call_info_by_call_id',        // TRANSFER_CANCEL_COMPLETED, TRANSFER_ABORT_COMPLETED 등의 이유로 설비 Call 정보를 확인 후 Call Info를 재 송부 해야 하는 경우
   DockingDetachByPortId = 'docking_detach_by_port_id',
   DockingRequestBySerialId = 'docking_request_by_serial_id', // acs로부터 온 도킹요청정보와 imcs가 acs로 보내는 도킹요청응답정보
   DockingOutRequestBySerialId = 'docking_out_request_by_serial_id', // acs로부터 온 도킹요청정보와 imcs가 acs로 보내는 도킹아웃요청응답정보

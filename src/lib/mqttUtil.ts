@@ -114,6 +114,7 @@ export enum MqttTopics {
   // AlarmClear = 'alarm/clear',
   // ItemLogging = 'item_logging',
   AlarmRegist = 'alarm/regist',
+  AlarmClear = 'alarm/clear',
   IsAlive = 'is_alive',
   WorkOrderStats = 'work_order_stats',
   InsertFacilityInfo = 'facility_info',

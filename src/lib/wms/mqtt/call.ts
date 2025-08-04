@@ -1,17 +1,23 @@
-import { TrackingLogRedisUpdateParams } from "../../../models/common/trackingLog"
-import { EqpCallStatsForAck } from "../../callRegisterUtil"
-import { useKepServerUtil } from "../../kepServerUtil"
-import { generateUUIDNode } from "../../hashUtil"
-import { logging } from "../../logging"
-import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, makeMbsMqttHeader, sendMbsMqtt } from "../../mqttUtil"
-import { editTrackingLogRedis } from "../../process/trackingLog"
-import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand, setRemainingAckCommand } from "../../process/wmsAck"
-import { CallInfoBody } from "../../process/wmsCallInfo"
-import { setAbortedCommandForRetry } from "../../process/wmsCommon"
-import { RedisKeys, useRedisUtil } from "../../redisUtil"
-import { removeAckPrefix } from "../../usefullToolUtil"
+import { TrackingLogRedisUpdateParams } from '../../../models/common/trackingLog';
+import { EqpCallStatsForAck } from '../../callRegisterUtil';
+import { useKepServerUtil } from '../../kepServerUtil';
+import { generateUUIDNode } from '../../hashUtil';
+import { logging } from '../../logging';
+import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, makeMbsMqttHeader, sendMbsMqtt } from '../../mqttUtil';
+import { editTrackingLogRedis } from '../../process/trackingLog';
+import {
+  deleteRemainingAckCommand,
+  RemainingAckCommand,
+  setReceivedAckCommand,
+  setRemainingAckCommand,
+} from '../../process/wmsAck';
+import { CallInfoBody, deleteInfoAckInCallByCallId } from '../../process/wmsCallInfo';
+import { deleteRecentCallInfoTaskByCmdId, setAbortedCommandForRetry } from '../../process/wmsCommon';
+import { RedisKeys, useRedisUtil } from '../../redisUtil';
+import { removeAckPrefix } from '../../usefullToolUtil';
+import opcuaUtil from '../../opcuaUtil';
 
-const systemTopic = 'CALL'
+const systemTopic = 'CALL';
 const redisUtil = useRedisUtil();
 interface ackCallInfoBody extends MbsMqttBody {
   HCACK: string;
@@ -19,8 +25,8 @@ interface ackCallInfoBody extends MbsMqttBody {
 }
 
 interface CallRequestBody extends MbsMqttBody {
-  Cmd_ID: string
-  Call_ID: string
+  Cmd_ID: string;
+  Call_ID: string;
 }
 
 interface AckCancelCallInfoBody extends MbsMqttBody {
@@ -29,17 +35,31 @@ interface AckCancelCallInfoBody extends MbsMqttBody {
   Comment: string;
 }
 
+interface CallInfoData {
+  Call_ID: string;
+  Cmd_ID: string;
+  Call_Type: string;
+  Caller: string;
+  Call_Quantity: string;
+  Call_Priority: string;
+}
+
+interface AckReqCallInfoListBody extends MbsMqttBody {
+  Call_InfoList: Array<CallInfoData>;
+}
+
 const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
-  console.log('catch wmsCallRequest')
+  console.log('catch wmsCallRequest');
   // set Data
-  const callRequestBody = messageMessage.body as CallRequestBody
-  const callId = callRequestBody.Call_ID
+  const callRequestBody = messageMessage.body as CallRequestBody;
+  const callId = callRequestBody.Call_ID;
 
   // set GetAckCommandByCmdId - Call Request
-  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 
+  // 1안
   // 1. 콜 아이디에 해당하는 정보 다시 쓰기
-  const infoAckInCallByCallId = await redisUtil.hgetObject<EqpCallStatsForAck>(RedisKeys.InfoAckInCallByCallId, callId)
+  const infoAckInCallByCallId = await redisUtil.hgetObject<EqpCallStatsForAck>(RedisKeys.InfoAckInCallByCallId, callId);
 
   if (!infoAckInCallByCallId) {
     // TODO - ljk ) 이때 해당 CALL ID 가 없어서 HCACK = 6 으로 회신해야 하는지 질문해야함
@@ -50,13 +70,13 @@ const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
       result: true,
     });
 
-    return
+    return;
   }
 
-  // CALL INFO 재전송 가능한 경우 해당 내용으로 CALLINFO 재전송 
-  const callInfoTopic = 'CALL'
-  const callInfoSubject = 'CALL_INFO'
-  const newCmdId = generateUUIDNode()
+  // CALL INFO 재전송 가능한 경우 해당 내용으로 CALLINFO 재전송
+  const callInfoTopic = 'CALL';
+  const callInfoSubject = 'CALL_INFO';
+  const newCmdId = generateUUIDNode();
 
   const mqttHeader = makeMbsMqttHeader(callInfoSubject);
   const mqttBody: MbsMqttBody = {
@@ -65,7 +85,7 @@ const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
     Call_Type: infoAckInCallByCallId.Call_Type,
     Caller: infoAckInCallByCallId.Caller,
     Call_Quantity: infoAckInCallByCallId.Call_Quantity,
-    Call_Priority: infoAckInCallByCallId.Call_Priority
+    Call_Priority: infoAckInCallByCallId.Call_Priority,
   };
   // CALLINFO MQTT 데이터 전송
   sendMbsMqtt(callInfoTopic, mqttHeader, mqttBody, wmsName);
@@ -82,13 +102,13 @@ const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
     Caller: infoAckInCallByCallId.Caller,
     Call_Priority: infoAckInCallByCallId.Call_Priority,
     Call_Quantity: Number(infoAckInCallByCallId.Call_Quantity) || 1,
-  }
-  redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData))
+  };
+  redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
 
   // CALL INFO 추가 로깅
-  const trackingLogSubject = 'CALL_INFO'
-  const trackingLogDetail = 'CALL_INFO'
-  const trackingLogState = 'PROCESSING'
+  const trackingLogSubject = 'CALL_INFO';
+  const trackingLogDetail = 'CALL_INFO';
+  const trackingLogState = 'PROCESSING';
   const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
     callId: callId,
     subject: trackingLogSubject,
@@ -99,17 +119,22 @@ const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
     destFacility: null,
     assignedRobot: null,
     value: null,
-    description: `Requesting CALL_INFO from WMS(${wmsName}) for Call ID ${callId}`
-  }
-  await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
-}
+    description: `Requesting CALL_INFO from WMS(${wmsName}) for Call ID ${callId}`,
+  };
+  await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
+
+  // 2안
+  // AbnormalCompletedCallInfoTaskByCallId Redis 정보에서 빼서 해당 정보로 CallInfo 다시 만들기
+};
 
 const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCallInfoBody) => {
   // 1. 필요한 데이터 세팅
-  const prefixSubject = removeAckPrefix(subject)
-  const cmdId = messageBody.Cmd_ID
-  const hcack = messageBody.HCACK
-  const ackComment = messageBody.Comment
+  const prefixSubject = removeAckPrefix(subject);
+  const cmdId = messageBody.Cmd_ID;
+  const hcack = messageBody.HCACK;
+  const ackComment = messageBody.Comment;
+
+  console.log('hcack', hcack, '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
 
   if (!cmdId || cmdId === '') {
     logging.ACTION_ERROR({
@@ -118,12 +143,17 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       params: null,
       result: false,
     });
-    return
+    return;
   }
 
-  const remainingAckCommandSubjectCmdId = `${prefixSubject}-${cmdId}`
+  const remainingAckCommandSubjectCmdId = `${prefixSubject}-${cmdId}`;
 
-  const remainingCommandInfo = await redisUtil.hgetObject<RemainingAckCommand>(RedisKeys.RemainingAckCommandBySubjectCmdId, remainingAckCommandSubjectCmdId) || null;
+  console.log('come on !!!!', remainingAckCommandSubjectCmdId)
+  const remainingCommandInfo =
+    (await redisUtil.hgetObject<RemainingAckCommand>(
+      RedisKeys.RemainingAckCommandBySubjectCmdId,
+      remainingAckCommandSubjectCmdId
+    )) || null;
   if (!remainingCommandInfo) {
     logging.ACTION_ERROR({
       filename: `call.ts - ackCallInfo`,
@@ -131,14 +161,14 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       params: null,
       result: false,
     });
-    return
+    return;
   }
 
-  const callId = remainingCommandInfo.message.body.Call_ID
-  const callInfoData = remainingCommandInfo.message.body as CallInfoBody
+  const callId = remainingCommandInfo.message.body.Call_ID;
+  const callInfoData = remainingCommandInfo.message.body as CallInfoBody;
 
   // 2. CALLINFO에 해당하는 RemainingAckCommandBySubjectCmdId 삭제
-  deleteRemainingAckCommand(remainingAckCommandSubjectCmdId)
+  deleteRemainingAckCommand(remainingAckCommandSubjectCmdId);
 
   // 3. HCACK 결과 별 로직 처리
   switch (hcack) {
@@ -155,8 +185,8 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
-      }
-      redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData))
+      };
+      redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
 
       logging.ACTION_INFO({
         filename: `call.ts - ackBranchInfoReq`,
@@ -165,9 +195,9 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: true,
       });
 
-      const trackingLogSubject = 'ACK_CALL_INFO'
-      const trackingLogDetail = 'ACK_CALL_INFO'
-      const trackingLogState = 'PROCESSING'
+      const trackingLogSubject = 'ACK_CALL_INFO';
+      const trackingLogDetail = 'ACK_CALL_INFO';
+      const trackingLogState = 'PROCESSING';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,
         subject: trackingLogSubject,
@@ -178,9 +208,9 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         destFacility: null,
         assignedRobot: null,
         value: null,
-        description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`
-      }
-      await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+        description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
       // call_response 작성
       await useKepServerUtil().writeSimpleTagValue({
@@ -189,9 +219,9 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         value: true,
       });
 
-      const callResponseTrackingLogSubject = 'CALL_RESPONSE'
-      const callResponseTrackingLogDetail = 'CALL_RESPONSE'
-      const callResponseTrackingLogState = 'PROCESSING'
+      const callResponseTrackingLogSubject = 'CALL_RESPONSE';
+      const callResponseTrackingLogDetail = 'CALL_RESPONSE';
+      const callResponseTrackingLogState = 'PROCESSING';
       const callResponseTrackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,
         subject: callResponseTrackingLogSubject,
@@ -202,16 +232,15 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         destFacility: null,
         assignedRobot: null,
         value: null,
-        description: `[Call ID ${callId}] Call responsed`
-      }
-      await editTrackingLogRedis(callResponseTrackingLogUpdateData, undefined, 'SUCCESS', wmsName)
-
-
+        description: `[Call ID ${callId}] Call responsed`,
+      };
+      await editTrackingLogRedis(callResponseTrackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
       break;
 
     // hcack = 0 : Command가 이미 실행 되었음
-    // 해당 내용 로깅 처리 후 알람 발생 
+    // 해당 내용 로깅 처리 후 알람 발생
+    // 동일한 Call Info 수신
     case '0':
       logging.ACTION_ERROR({
         filename: `call.ts - ackCallInfo`,
@@ -220,10 +249,17 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: false,
       });
 
+      // 콜 진행 정보를 삭제
+      // 동일 Call 정보를 수신 했다면 해당 정보 있어야 하기 때문에 Call Id 쪽 삭제는 보류
+      // infoAckInCallByCallId 정보 삭제
+      // deleteInfoAckInCallByCallId(callId)
+      // RecentCallInfoTaskByCmdId 정보 삭제
+      deleteRecentCallInfoTaskByCmdId(cmdId);
+
       break;
 
     // hcack = 1 : 커맨드가 존재하지 않음
-    // 해당 내용 로깅 처리 후 알람 발생 
+    // 해당 내용 로깅 처리 후 알람 발생
     case '1':
       logging.ACTION_ERROR({
         filename: `call.ts - ackCallInfo`,
@@ -244,11 +280,11 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: false,
       });
 
-      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message)
+      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 
-    // hcack = 3 : 1개 이상의 값들이 Valid 하지 않음 
+    // hcack = 3 : 1개 이상의 값들이 Valid 하지 않음
     // 해당 내용 로깅 처리 후 알람 발생
     case '3':
       logging.ACTION_ERROR({
@@ -260,7 +296,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
 
       break;
 
-    // hcack = 5 : 거부, 이미 요청 받은 Command 
+    // hcack = 5 : 거부, 이미 요청 받은 Command
     // 해당 내용 로깅 처리
     case '5':
       logging.ACTION_ERROR({
@@ -297,9 +333,18 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       break;
 
     // hcack = 51 : 재고 없음 실행 불가
-    // 실행 불가 로깅 처리 후 
+    // 실행 불가 로깅 처리 후
     // 설비에 관련 정보 삭제 할 수 있는 판단 레디스 값 추가
+    // 재고 없음 알람 발생
+    // 사용자 개입 후 호출 취소를 진행할 것으로 예상됨
     case '51':
+      // 콜 진행 정보를 삭제
+      // infoAckInCallByCallId 정보 삭제
+      deleteInfoAckInCallByCallId(callId);
+
+      // RecentCallInfoTaskByCmdId 정보 삭제
+      deleteRecentCallInfoTaskByCmdId(cmdId);
+
       logging.ACTION_ERROR({
         filename: `call.ts - ackCallInfo`,
         error: `[HCACK = ${hcack}] CallId (${callId}) execution unavailable due to insufficient inventory - comment : ${ackComment}`,
@@ -319,11 +364,14 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: false,
       });
 
-      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message)
+      // RecentCallInfoTaskByCmdId 정보 삭제
+      deleteRecentCallInfoTaskByCmdId(cmdId);
+
+      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 
-    // 정의되지 않은 hcack 수신 오류 발생 후 로깅 처리 
+    // 정의되지 않은 hcack 수신 오류 발생 후 로깅 처리
     default:
       logging.ACTION_ERROR({
         filename: `call.ts - ackCallInfo`,
@@ -333,15 +381,15 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       });
       break;
   }
-}
+};
 
 const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: AckCancelCallInfoBody) => {
-  console.log('catch wmsAckCancelCallInfo')
+  console.log('catch wmsAckCancelCallInfo');
   // 1. 필요한 데이터 세팅
-  const prefixSubject = removeAckPrefix(subject)
-  const cmdId = messageBody.Cmd_ID
-  const hcack = messageBody.HCACK
-  const ackComment = messageBody.Comment
+  const prefixSubject = removeAckPrefix(subject);
+  const cmdId = messageBody.Cmd_ID;
+  const hcack = messageBody.HCACK;
+  const ackComment = messageBody.Comment;
 
   if (!cmdId || cmdId === '') {
     logging.ACTION_ERROR({
@@ -350,12 +398,16 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
       params: null,
       result: false,
     });
-    return
+    return;
   }
 
-  const remainingAckCommandSubjectCmdId = `${prefixSubject}-${cmdId}`
+  const remainingAckCommandSubjectCmdId = `${prefixSubject}-${cmdId}`;
 
-  const remainingCommandInfo = await redisUtil.hgetObject<RemainingAckCommand>(RedisKeys.RemainingAckCommandBySubjectCmdId, remainingAckCommandSubjectCmdId) || null;
+  const remainingCommandInfo =
+    (await redisUtil.hgetObject<RemainingAckCommand>(
+      RedisKeys.RemainingAckCommandBySubjectCmdId,
+      remainingAckCommandSubjectCmdId
+    )) || null;
   if (!remainingCommandInfo) {
     logging.ACTION_ERROR({
       filename: `call.ts - ackCallInfo`,
@@ -363,17 +415,17 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
       params: null,
       result: false,
     });
-    return
+    return;
   }
 
-  const callId = remainingCommandInfo.message.body.Call_ID
-  const callInfoData = remainingCommandInfo.message.body as CallInfoBody
+  const callId = remainingCommandInfo.message.body.Call_ID;
+  const callInfoData = remainingCommandInfo.message.body as CallInfoBody;
 
   // 2. Cancel_CALLINFO에 해당하는 RemainingAckCommandBySubjectCmdId 삭제
-  deleteRemainingAckCommand(remainingAckCommandSubjectCmdId)
+  deleteRemainingAckCommand(remainingAckCommandSubjectCmdId);
 
-  const trackingLogSubject = subject
-  const trackingLogDetail = subject
+  const trackingLogSubject = subject;
+  const trackingLogDetail = subject;
   // 3. HCACK 결과 별 로직 처리
   switch (hcack) {
     // hcack = 4 : OK 실행 예정 - 정상
@@ -387,7 +439,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
       //   result: true,
       // });
 
-      const trackingLogState = 'CANCELED'
+      const trackingLogState = 'CANCELED';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,
         subject: trackingLogSubject,
@@ -398,77 +450,75 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         destFacility: null,
         assignedRobot: null,
         value: callId,
-        description: `Call ID ${callId} cancellation successful on EQP ${callInfoData.Caller}`
-      }
-      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName)
+        description: `Call ID ${callId} cancellation successful on EQP ${callInfoData.Caller}`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
       // 진행중 정보를 가지고 있는 CALL 정보 삭제
-      redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
+      redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId);
 
       break;
     }
 
     // hcack = 0 : Command가 이미 실행 되었음
-    // 해당 내용 로깅 처리 후 알람 발생 
-    case '0':
-      {
-        // logging.ACTION_ERROR({
-        //   filename: `call.ts - ackCancelCallInfo`,
-        //   error: `[HCACK = ${hcack}] Cmd_ID(${cmdId}) Command has already been executed - comment : ${ackComment}`,
-        //   params: null,
-        //   result: false,
-        // });
-        // 물류 로그 기록
-        const trackingLogState = 'ABORTED'
-        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-          callId: callId,
-          subject: trackingLogSubject,
-          detail: trackingLogDetail,
-          state: trackingLogState,
-          startFacility: callInfoData.Caller,
-          transferId: null,
-          destFacility: null,
-          assignedRobot: null,
-          value: callId,
-          description: `Cmd_ID(${cmdId}) Command has already been executed - comment : ${ackComment}`
-        }
-        await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName)
+    // 해당 내용 로깅 처리 후 알람 발생
+    case '0': {
+      // logging.ACTION_ERROR({
+      //   filename: `call.ts - ackCancelCallInfo`,
+      //   error: `[HCACK = ${hcack}] Cmd_ID(${cmdId}) Command has already been executed - comment : ${ackComment}`,
+      //   params: null,
+      //   result: false,
+      // });
+      // 물류 로그 기록
+      const trackingLogState = 'ABORTED';
+      const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+        callId: callId,
+        subject: trackingLogSubject,
+        detail: trackingLogDetail,
+        state: trackingLogState,
+        startFacility: callInfoData.Caller,
+        transferId: null,
+        destFacility: null,
+        assignedRobot: null,
+        value: callId,
+        description: `Cmd_ID(${cmdId}) Command has already been executed - comment : ${ackComment}`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
-        // 진행중 정보를 가지고 있는 CALL 정보 삭제 - 이미 실행 되었다면 삭제되었기 때문에 redis 정보 삭제
-        redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
+      // 진행중 정보를 가지고 있는 CALL 정보 삭제 - 이미 실행 되었다면 삭제되었기 때문에 redis 정보 삭제
+      redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId);
 
-        break;
-      }
+      break;
+    }
     // hcack = 1 : 커맨드가 존재하지 않음
-    // 해당 내용 로깅 처리 후 알람 발생 
-    case '1':
-      {
-        // logging.ACTION_ERROR({
-        //   filename: `call.ts - ackCancelCallInfo`,
-        //   error: `[HCACK = ${hcack}] Cmd_ID(${cmdId}) Command does not exist - comment : ${ackComment}`,
-        //   params: null,
-        //   result: false,
-        // });
+    // 해당 내용 로깅 처리 후 알람 발생
+    case '1': {
+      // logging.ACTION_ERROR({
+      //   filename: `call.ts - ackCancelCallInfo`,
+      //   error: `[HCACK = ${hcack}] Cmd_ID(${cmdId}) Command does not exist - comment : ${ackComment}`,
+      //   params: null,
+      //   result: false,
+      // });
 
-        const trackingLogState = 'ABORTED'
-        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-          callId: callId,
-          subject: trackingLogSubject,
-          detail: trackingLogDetail,
-          state: trackingLogState,
-          startFacility: callInfoData.Caller,
-          transferId: null,
-          destFacility: null,
-          assignedRobot: null,
-          value: callId,
-          description: `Call ID ${callId} cancellation failed on EQP ${callInfoData.Caller} - cancellation not possible`
-        }
-        await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName)
+      const trackingLogState = 'ABORTED';
+      const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+        callId: callId,
+        subject: trackingLogSubject,
+        detail: trackingLogDetail,
+        state: trackingLogState,
+        startFacility: callInfoData.Caller,
+        transferId: null,
+        destFacility: null,
+        assignedRobot: null,
+        value: callId,
+        description: `Call ID ${callId} cancellation failed on EQP ${callInfoData.Caller} - cancellation not possible`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
-        // 실행 불가능인 경우 해당 CALL 정보를 계속 진행 해야함
+      // 실행 불가능인 경우 해당 CALL 정보를 계속 진행 해야함
 
-        break;
-      }
+      break;
+    }
     // hcack = 2 : 현재 실행 가능하지 않음
     // 정해진 시간이 지난 후 같은 내용 재전송 (redis만 저장)
     case '2': {
@@ -479,7 +529,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
       //   result: false,
       // });
 
-      const trackingLogState = 'ABORTED'
+      const trackingLogState = 'ABORTED';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,
         subject: trackingLogSubject,
@@ -490,17 +540,16 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         destFacility: null,
         assignedRobot: null,
         value: callId,
-        description: `CallId (${callId}) Execution not possible at this time - comment : ${ackComment}`
-      }
-      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName)
+        description: `CallId (${callId}) Execution not possible at this time - comment : ${ackComment}`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
       // 정보 재전송
-      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message)
+      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
-
     }
-    // hcack = 3 : 1개 이상의 값들이 Valid 하지 않음 
+    // hcack = 3 : 1개 이상의 값들이 Valid 하지 않음
     // 해당 내용 로깅 처리 후 알람 발생
     case '3': {
       // logging.ACTION_ERROR({
@@ -510,7 +559,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
       //   result: false,
       // });
 
-      const trackingLogState = 'ERROR'
+      const trackingLogState = 'ERROR';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,
         subject: trackingLogSubject,
@@ -521,16 +570,16 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         destFacility: null,
         assignedRobot: null,
         value: callId,
-        description: `One or more values are invalid - comment : ${ackComment}`
-      }
-      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName)
+        description: `One or more values are invalid - comment : ${ackComment}`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
-      // TODO ) 진행 중인 콜을 어떻게 해야할지 기준이 없음. 
+      // TODO ) 진행 중인 콜을 어떻게 해야할지 기준이 없음.
       // redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
 
       break;
     }
-    // hcack = 5 : 거부, 이미 요청 받은 Command 
+    // hcack = 5 : 거부, 이미 요청 받은 Command
     // 해당 내용 로깅 처리
     case '5': {
       // logging.ACTION_ERROR({
@@ -540,7 +589,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
       //   result: false,
       // });
 
-      const trackingLogState = 'ERROR'
+      const trackingLogState = 'ERROR';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,
         subject: trackingLogSubject,
@@ -551,78 +600,76 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         destFacility: null,
         assignedRobot: null,
         value: callId,
-        description: `Command already received - comment : ${ackComment}`
-      }
-      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName)
+        description: `Command already received - comment : ${ackComment}`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
-      redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
+      redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId);
 
       break;
     }
 
     // hcack = 6 : 객체 존재하지 않음
     // 해당 내용 로깅 처리
-    case '6':
-      {
-        // logging.ACTION_ERROR({
-        //   filename: `call.ts - ackCancelCallInfo`,
-        //   error: `[HCACK = ${hcack}] Object does not exist - comment : ${ackComment}`,
-        //   params: null,
-        //   result: false,
-        // });
+    case '6': {
+      // logging.ACTION_ERROR({
+      //   filename: `call.ts - ackCancelCallInfo`,
+      //   error: `[HCACK = ${hcack}] Object does not exist - comment : ${ackComment}`,
+      //   params: null,
+      //   result: false,
+      // });
 
-        const trackingLogState = 'ERROR'
-        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-          callId: callId,
-          subject: trackingLogSubject,
-          detail: trackingLogDetail,
-          state: trackingLogState,
-          startFacility: callInfoData.Caller,
-          transferId: null,
-          destFacility: null,
-          assignedRobot: null,
-          value: callId,
-          description: `Object does not exist - comment : ${ackComment}`
-        }
-        await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName)
+      const trackingLogState = 'ERROR';
+      const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+        callId: callId,
+        subject: trackingLogSubject,
+        detail: trackingLogDetail,
+        state: trackingLogState,
+        startFacility: callInfoData.Caller,
+        transferId: null,
+        destFacility: null,
+        assignedRobot: null,
+        value: callId,
+        description: `Object does not exist - comment : ${ackComment}`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
-        // TODO - 해당 내용 정의 필요
-        // redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
+      // TODO - 해당 내용 정의 필요
+      // redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
 
-        break;
-      }
+      break;
+    }
     // hcack = 7 : NG
     // 해당 내용 로깅 처리
-    case '7':
-      {
-        // logging.ACTION_ERROR({
-        //   filename: `call.ts - ackCancelCallInfo`,
-        //   error: `[HCACK = ${hcack}] NG error occurred - comment : ${ackComment}`,
-        //   params: null,
-        //   result: false,
-        // });
+    case '7': {
+      // logging.ACTION_ERROR({
+      //   filename: `call.ts - ackCancelCallInfo`,
+      //   error: `[HCACK = ${hcack}] NG error occurred - comment : ${ackComment}`,
+      //   params: null,
+      //   result: false,
+      // });
 
-        const trackingLogState = 'ERROR'
-        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-          callId: callId,
-          subject: trackingLogSubject,
-          detail: trackingLogDetail,
-          state: trackingLogState,
-          startFacility: callInfoData.Caller,
-          transferId: null,
-          destFacility: null,
-          assignedRobot: null,
-          value: hcack,
-          description: `NG error occurred - comment : ${ackComment}`
-        }
-        await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName)
+      const trackingLogState = 'ERROR';
+      const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+        callId: callId,
+        subject: trackingLogSubject,
+        detail: trackingLogDetail,
+        state: trackingLogState,
+        startFacility: callInfoData.Caller,
+        transferId: null,
+        destFacility: null,
+        assignedRobot: null,
+        value: hcack,
+        description: `NG error occurred - comment : ${ackComment}`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
-        redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
+      redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId);
 
-        break;
-      }
+      break;
+    }
     // hcack = 51 : 재고 없음 실행 불가
-    // 실행 불가 로깅 처리 후 
+    // 실행 불가 로깅 처리 후
     // 설비에 관련 정보 삭제 할 수 있는 판단 레디스 값 추가
     // CANCEL CALL 에서는 사용하지 않을 것 같음
     // case '51': {
@@ -653,7 +700,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
     //     break;
     //   }
 
-    // 정의되지 않은 hcack 수신 오류 발생 후 로깅 처리 
+    // 정의되지 않은 hcack 수신 오류 발생 후 로깅 처리
     default:
       // logging.ACTION_ERROR({
       //   filename: `call.ts - ackCancelCallInfo`,
@@ -662,7 +709,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
       //   result: false,
       // });
 
-      const trackingLogState = 'ERROR'
+      const trackingLogState = 'ERROR';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,
         subject: trackingLogSubject,
@@ -673,32 +720,76 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         destFacility: null,
         assignedRobot: null,
         value: hcack,
-        description: `HCACK Id ${hcack} is invalid - Undefined HCACK received - comment : ${ackComment}`
-      }
-      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName)
+        description: `HCACK Id ${hcack} is invalid - Undefined HCACK received - comment : ${ackComment}`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
-      redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
+      redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId);
 
       break;
   }
-}
+};
 
-const ackReqCallInfoList = (wmsName: string) => {
-  console.log('catch wmsAckReqCallInfoList')
-}
+// WMS에서 전달해주는 CALL 정보 중 겹치는 내용은 등록 안함 / WMS 리스트에만 있으면 신규 등록 / MCS에만 있으면 삭제
+// 트래킹 로그 추가하면 해당 내용도 같이 추가해야함
+const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody: AckReqCallInfoListBody) => {
+  // set Data
+  const ackReqCallInfoListBody: AckReqCallInfoListBody = messageBody;
 
-export const wmsCall = (wmsName: string, messageJson: MbsMqttMesaage) => {
-  const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
+  // WMS에서 온 Call 리스트
+  const wmsCallInfoList = ackReqCallInfoListBody.Call_InfoList || [];
+
+  // MCS가 관리하고 있는 Call 리스트
+  const mcsCallInfoList = (await redisUtil.hgetAllObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId)) || [];
+
+  // 각 리스트에서 Call_ID만 추출 (비교용)
+  const wmsCallIds = new Set(wmsCallInfoList.map((call) => call.Call_ID));
+  const mcsCallIds = new Set(mcsCallInfoList.map((call) => call.Call_ID));
+
+  // WMS에만 있는 Call 객체들
+  const wmsOnlyCallInfoList = wmsCallInfoList.filter((call) => !mcsCallIds.has(call.Call_ID));
+
+  // WMS에만 있으면 해당 Call 등록
+  // 콜 Request가 켜져 있으면 Call_Response True를 한 번 더 써줌
+  for (let i = 0, length = wmsOnlyCallInfoList.length; i < length; i++) {
+    const callInfoData = wmsOnlyCallInfoList[i];
+    // 1. 콜이 있으면 해당 설비에 호출 응답 적어줌
+    const caller = callInfoData.Caller;
+    const callRequestValue = opcuaUtil.tagMap.get(`${caller}.Call_Request`)?.value;
+    if (callRequestValue === true) {
+      await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: callInfoData.Caller,
+        tagName: 'Call_Response',
+        value: true,
+      });
+    }
+    // 2. 해당 콜에 대한 트래킹 로그 만들어줌
+  }
+
+  // MCS에만 있는 Call 객체들
+  const mcsOnlyCallInfoList = mcsCallInfoList.filter((call) => !wmsCallIds.has(call.Call_ID));
+  // MCS에만 있으면 해당 Call 정보들 삭제
+  for (let i = 0, length = mcsOnlyCallInfoList.length; i < length; i++) {
+    // 1. 트래킹 로그 정보 있으면 Cancel
+
+    // 2. CallInfo 정보 삭제
+    const callInfoData = mcsOnlyCallInfoList[i];
+    deleteInfoAckInCallByCallId(callInfoData.Call_ID);
+  }
+};
+
+export const wmsCall = async (wmsName: string, messageJson: MbsMqttMesaage) => {
+  const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
-
+  console.log('wmsName 콜 들어올 때', wmsName)
   if (subject === 'CALL_REQUEST') {
-    callRequest(wmsName, messageJson)
+    await callRequest(wmsName, messageJson);
   } else if (subject === 'ACK_CALL_INFO') {
-    ackCallInfo(wmsName, subject, messageBody as ackCallInfoBody)
+    await ackCallInfo(wmsName, subject, messageBody as ackCallInfoBody);
   } else if (subject === 'ACK_CANCEL_CALL_INFO') {
-    ackCancelCallInfo(wmsName, subject, messageBody as AckCancelCallInfoBody)
+    await ackCancelCallInfo(wmsName, subject, messageBody as AckCancelCallInfoBody);
   } else if (subject === 'ACK_REQ_CALL_INFO_LIST') {
-    ackReqCallInfoList(wmsName)
+    await ackReqCallInfoList(wmsName, subject, messageBody as AckReqCallInfoListBody);
   }
-}
+};

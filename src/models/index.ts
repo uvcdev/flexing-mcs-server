@@ -9,6 +9,7 @@ import Setting from './common/setting';
 import AlarmEmail from './common/alarmEmail';
 import McsAlarm from './common/mcsAlarm';
 import Amr from './common/amr';
+import ErrorCode from './common/errorCode'
 
 // dashboard
 import DailyStatistic from './dashboard/dailyStatistic';
@@ -40,6 +41,7 @@ const db = {
   AlarmEmail,
   McsAlarm,
   Amr,
+  ErrorCode,
   /* dashboard */
   DailyStatistic,
   MonthlyStatistic,
@@ -66,7 +68,6 @@ export type dbType = typeof db;
 AlarmEmail.belongsTo(User, { foreignKey: { name: 'UserId' }, onDelete: 'SET NULL', as: 'User' });
 
 // Alarm
-McsAlarm.belongsTo(Facility, { foreignKey: { name: 'FacilityId' }, onDelete: 'SET NULL', as: 'Facility' });
 
 /* operation */
 // Facility
