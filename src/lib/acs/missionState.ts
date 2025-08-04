@@ -79,36 +79,9 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     };
     await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
 
-    // todo 0723: 작업지시 상태마다 수동인지 자동인지에 따라 작업지시 갯수
     if (state === 'MISSION_CANCELED') {
-      // ACS로부터 취소된 작업에 대한 설비의 AMR 정보 내리기
-      const targetCode = messageJson.body.facilitySerial;
-      console.log('취소할 설비', messageJson.body.facilitySerial);
-      // todo 250718: ACS로부터 취소될 때 출발/도착 설비에 대한 정보가 있어야함
-      // if (targetCode) {
-      //   // await useMultiCallRegisterUtil().hsetWithDecrementCount(RedisKeys.InfoWorkOrderCountBySerial, targetCode);
-      //   await kepServerUtil.writeSimpleTagValue({
-      //     targetFacility: targetCode,
-      //     tagName: 'Call_Response',
-      //     value: false,
-      //   });
-      //   await kepServerUtil.writeSimpleTagValue({
-      //     targetFacility: targetCode,
-      //     tagName: 'Call_Robot_Assigned',
-      //     value: false,
-      //   });
-      //   await kepServerUtil.writeSimpleTagValue({
-      //     targetFacility: targetCode,
-      //     tagName: 'Call_Response_Count',
-      //     value: '0',
-      //   });
-      // }
     } else if (state === 'MISSION_FAILED') {
     } else if (state === 'MISSION_COMPLETED') {
-      // const targetCode = messageJson.body.facilitySerial;
-      // if (targetCode) {
-      //   await useMultiCallRegisterUtil().hsetWithDecrementCount(RedisKeys.InfoWorkOrderCountBySerial, targetCode);
-      // }
     }
   } catch (error) {
     throw error;

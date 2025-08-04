@@ -20,18 +20,14 @@ export interface EqpCallStats {
   Call_Priority: string;
   SYSTEM_NAME?: string;
   DATA_TYPE?: string;
-  CALL_COUNT: number;
+  ALWAYS_CALL_COUNT?: number;
+  TRIGGER_CALL_COUNT: number;
   // NODE_ID: string;
 }
 
 export interface EqpCallStatsForAck extends EqpCallStats {
   Cmd_ID: string;
 }
-
-type DataObject = {
-  count?: number;
-  [key: string]: any;
-};
 
 export const useMultiCallRegisterUtil = () => {
   const kepServerUtil = useKepServerUtil();
@@ -95,11 +91,17 @@ export const useMultiCallRegisterUtil = () => {
 
         const callCountValue = Number(callCount?.value) || 0;
         const callPriorityValue = callPriority?.value.toString() || '0';
-
+        console.log('facilityInfo?.generatedCallCount123', facilityInfo?.generatedCallCount);
         if (facilityInfo?.generatedCallCount) {
-          let eqpCallId = await createEQPMultiCallId(targetKey, facilityInfo, targetTagInfo.reRegister);
-          console.log('🚀 ~ callRegister ~ eqpCallId:', eqpCallId);
+          let eqpCallId = await createMultiWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
           if (eqpCallId) {
+            let multiCallEqCode = '';
+            if (targetTagInfo.TAG_NAME === 'Call_Request_Multi_1') {
+              multiCallEqCode = `${targetTagInfo.EQ_CODE}_1`;
+            } else if (targetTagInfo.TAG_NAME === 'Call_Request_Multi_2') {
+              multiCallEqCode = `${targetTagInfo.EQ_CODE}_2`;
+            }
+            console.log('🚀 ~ multiCallRegister ~ multiCallEqCode:', multiCallEqCode);
             const eqpWcsInfo: EQP_WCS = {
               EQP_ID: eqpCallId.toString().substring(0, 4), // 앞의 4자리
               EQP_CALL_ID: parseInt(eqpCallId.toString().slice(-4), 10).toString(), // 뒤의 4자리
@@ -114,7 +116,8 @@ export const useMultiCallRegisterUtil = () => {
               Call_Quantity: 1,
               Call_Priority: callPriorityValue === 'true' ? '99' : '1',
               DATA_TYPE: targetTagInfo.DATA_TYPE,
-              CALL_COUNT: callCountValue,
+              TRIGGER_CALL_COUNT: callCountValue,
+              ALWAYS_CALL_COUNT: -1,
             };
 
             // 작업 생성 트리거 판단
@@ -134,7 +137,7 @@ export const useMultiCallRegisterUtil = () => {
                   callType: callInfo.Call_Type || 'NC11',
                   portName: null,
                   eqpName: callInfo.Caller,
-                  callCount: callCountValue,
+                  triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
                 };
 
                 // 작업지시 예정 레디스 저장
@@ -144,11 +147,11 @@ export const useMultiCallRegisterUtil = () => {
                   JSON.stringify(infoPendingMissionWorkOrder)
                 );
                 // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
-                await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
+                await redisUtil.hdel(RedisKeys.InfoMultiCallRequestOnBySerial, multiCallEqCode);
                 // 현재 설비에 대한 작업지시 개수 증가
                 await useMultiCallRegisterUtil().hsetWithIncrementCount(
                   RedisKeys.InfoWorkOrderCountBySerial,
-                  callInfo.CALL_ID.substring(0, 4)
+                  callInfo.Caller
                 );
                 await kepServerUtil.writeSimpleTagValue({
                   targetFacility: callInfo.Caller,
@@ -202,7 +205,8 @@ export const useMultiCallRegisterUtil = () => {
                       fromFacilityName:
                         (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
                       toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,
-                      callCount: callInfo.CALL_COUNT,
+                      alwaysCallCount: callInfo.ALWAYS_CALL_COUNT,
+                      triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
                     };
 
                     console.log('plcInfoToJson123', linkedFacilityCallRequestValue);
@@ -214,7 +218,7 @@ export const useMultiCallRegisterUtil = () => {
                         JSON.stringify(infoPendingWorkOrder)
                       );
                       // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
-                      await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
+                      await redisUtil.hdel(RedisKeys.InfoMultiCallRequestOnBySerial, multiCallEqCode);
                       // 작업지시 개수 증가
                       await useMultiCallRegisterUtil().hsetWithIncrementCount(
                         RedisKeys.InfoWorkOrderCountBySerial,
@@ -282,7 +286,7 @@ export const useMultiCallRegisterUtil = () => {
                         })
                       );
                       // 반대 콜에 대한 판단을 지속적으로 하기 때문에 더이상 callRegister 판단 필요 없음
-                      await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
+                      await redisUtil.hdel(RedisKeys.InfoMultiCallRequestOnBySerial, multiCallEqCode);
                     }
                   }
 
@@ -315,47 +319,15 @@ export const useMultiCallRegisterUtil = () => {
   // callRequestMulti1Value와 callRequestMulti2Value의 값을 기반으로 multiValue 결정
   const hsetWithIncrementCount = async (key: string, field: string): Promise<void> => {
     const existing = await redisUtil.hget(key, field);
-
-    let parsed: DataObject = {};
-    if (existing) {
-      try {
-        parsed = JSON.parse(existing);
-      } catch (existing) {
-        console.error('Redis JSON parse error:', existing);
-      }
-    }
-
-    const newCount = Math.min((parsed.count ?? 0) + 1, 3); // 3 초과 불가
-    // const updated: DataObject = {
-    //   ...parsed,
-    //   ...data,
-    //   count: newCount,
-    // };
-
+    const newCount = Math.min((Number(existing) || 0) + 1, 3); // 최대 3까지만 증가
     await redisUtil.hset(key, field, String(newCount));
   };
   const hsetWithDecrementCount = async (key: string, field: string): Promise<void> => {
     const existing = await redisUtil.hget(key, field);
-
-    let parsed: DataObject = {};
-    if (existing) {
-      try {
-        parsed = JSON.parse(existing);
-      } catch (existing) {
-        console.error('Redis JSON parse error:', existing);
-      }
-    }
-
-    const currentCount = (parsed.count ?? 0) - 1;
-    const newCount = Math.max(currentCount - 1, 0); // 0 이하 불가
-    // const updated: DataObject = {
-    //   ...parsed,
-    //   count: newCount,
-    // };
-
+    const newCount = Math.max(Number(existing) - 1, 0);
     await redisUtil.hset(key, field, String(newCount));
   };
-  const createEQPMultiCallId = async (
+  const createMultiWorkOrderCode = async (
     targetKey: string,
     facilityInfo: FacilityAttributesDeep,
     reRegister: string
@@ -387,7 +359,8 @@ export const useMultiCallRegisterUtil = () => {
       const facilityYearMonthDayValue = targetCode + callTimeYearValue + callTimeMonthDayStr;
       const callCountValueStr = await makeCallCount(facilityInfo, facilityYearMonthDayValue);
 
-      let result = `_M${callCountValueStr}`;
+      const result = targetCode + callTimeYearValue + callTimeMonthDayStr + callCountValueStr;
+      // let result = `_M${callCountValueStr}`;
 
       // if (reRegister === '_R') {
       //   // ACS로부터 취소돼서 MCS가 자동으로 만드는 작업

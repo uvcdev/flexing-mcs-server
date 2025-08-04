@@ -160,7 +160,53 @@ const dao = {
         });
     });
   },
+  selectRecentList(params: WorkOrderSelectListParams): Promise<SelectedListResult<WorkOrderAttributes>> {
+    // DB에 넘길 최종 쿼리 세팅
+    const setQuery: WorkOrderSelectListQuery = {};
+    // 1. where조건 세팅
+    if (params.fromFacilityId) {
+      setQuery.where = {
+        ...setQuery.where,
+        fromFacilityId: params.fromFacilityId, // '=' 검색
+      };
+    }
+    if (params.toFacilityId) {
+      setQuery.where = {
+        ...setQuery.where,
+        toFacilityId: params.toFacilityId, // '=' 검색
+      };
+    }
+    // 2. limit, offset 세팅
+    if (params.limit && params.limit > 0) setQuery.limit = params.limit;
+    if (params.offset && params.offset > 0) setQuery.offset = params.offset;
+    // 3. orderby 세팅
+    setQuery.order = getOrderby(params.code);
 
+    return new Promise((resolve, reject) => {
+      WorkOrder.findAndCountAll({
+        ...setQuery,
+        distinct: true,
+        include: [
+          {
+            model: Facility,
+            as: 'FromFacility',
+            attributes: FacilityAttributesInclude,
+          },
+          {
+            model: Facility,
+            as: 'ToFacility',
+            attributes: FacilityAttributesInclude,
+          },
+        ],
+      })
+        .then((selectedList) => {
+          resolve(selectedList);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
   selectListCount(params: WorkOrderSelectListParams): Promise<SelectedListResult<WorkOrderAttributes>> {
     // DB에 넘길 최종 쿼리 세팅
     const setQuery: WorkOrderSelectListQuery = {};

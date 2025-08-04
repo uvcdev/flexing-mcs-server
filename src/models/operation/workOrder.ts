@@ -51,7 +51,8 @@ export interface WorkOrderAttributes {
   description: string | null;
   type: 'IN' | 'OUT' | 'MISSION'; // 반출 OUT, 반입 IN , 미션 MISSION
   isMissionOrder: boolean;
-  plcCallCount: number | null; // PLC로부터 들어오는 Call_Count
+  alwaysCallCount: number | null; // 항상 켜져있는 설비에 대한 Call_Count
+  triggerCallCount: number | null; // 작업 생성 주체가 되는 설비에 대한 Call_Count
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -83,7 +84,8 @@ class WorkOrder extends Model implements WorkOrderAttributes {
   public description!: WorkOrderAttributes['description'];
   public type!: WorkOrderAttributes['type'];
   public isMissionOrder!: WorkOrderAttributes['isMissionOrder'];
-  public plcCallCount!: WorkOrderAttributes['plcCallCount'];
+  public alwaysCallCount!: WorkOrderAttributes['alwaysCallCount'];
+  public triggerCallCount!: WorkOrderAttributes['triggerCallCount'];
   public readonly createdAt!: WorkOrderAttributes['createdAt'];
   public readonly updatedAt!: WorkOrderAttributes['updatedAt'];
   public readonly deletedAt!: WorkOrderAttributes['deletedAt'];
@@ -158,7 +160,10 @@ WorkOrder.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
-    plcCallCount: {
+    alwaysCallCount: {
+      type: DataTypes.INTEGER,
+    },
+    triggerCallCount: {
       type: DataTypes.INTEGER,
     },
   },
@@ -189,7 +194,8 @@ export interface WorkOrderInsertParams {
   description: string | null;
   type: WorkOrderAttributes['type'];
   isMissionOrder?: boolean;
-  plcCallCount: number | null;
+  alwaysCallCount?: number | null;
+  triggerCallCount: number | null;
 }
 export interface ImcsWorkOrderInsertParams {
   newItemId?: number | null;
@@ -202,7 +208,8 @@ export interface ImcsWorkOrderInsertParams {
   TYPE: WorkOrderAttributes['type']; // 타입
   CALL_PRIORITY: number; // 우선순위
   CALL_TYPE: string;
-  CALL_COUNT: number; // PLC Call_Count
+  ALWAYS_CALL_COUNT?: number;
+  TRIGGER_CALL_COUNT: number;
 }
 
 export interface WorkOrderCancelByCodeParams {
@@ -277,7 +284,8 @@ export interface WorkOrderUpdateParams {
   isMissionOrder?: boolean;
   description?: string | null;
   type?: string | null;
-  plcCallCount?: number | null;
+  alwaysCallCount?: number | null;
+  triggerCallCount?: number | null;
 }
 
 export interface WorkOrderUpdateByCodeParams {
@@ -300,7 +308,8 @@ export interface WorkOrderUpdateByCodeParams {
   isMissionOrder?: boolean;
   description?: string | null;
   type?: string | null;
-  plcCallCount?: number | null;
+  alwaysCallCount?: number | null;
+  triggerCallCount?: number | null;
 }
 
 // delete
@@ -319,7 +328,8 @@ export interface PendingWorkOrderAttributes {
   callType?: string;
   eqpName?: string;
   portName?: string | null;
-  callCount?: number;
+  alwaysCallCount?: number;
+  triggerCallCount?: number;
 }
 
 // include attributes
@@ -344,7 +354,8 @@ export const WorkOrderAttributesInclude = [
   'description',
   'type',
   'isMissionOrder',
-  'plcCallCount',
+  'alwaysCallCount',
+  'triggerCallCount',
   'createdAt',
 ];
 

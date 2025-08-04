@@ -34,12 +34,11 @@ export const useEqpCheckUtil = () => {
         case 'Call_Request':
           console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
-            await useCallResponseUtil().decisionWorkOrder(targetTagInfo);
-            // await useRedisUtil().hset(
-            //   RedisKeys.InfoCallRequestOnBySerial,
-            //   targetTagInfo.EQ_CODE,
-            //   JSON.stringify(targetTagInfo)
-            // );
+            await useRedisUtil().hset(
+              RedisKeys.InfoCallRequestOnBySerial,
+              targetTagInfo.EQ_CODE,
+              JSON.stringify(targetTagInfo)
+            );
           } else {
             await useCallRemoveUtil().callRemove(targetTagInfo);
           }
@@ -47,10 +46,13 @@ export const useEqpCheckUtil = () => {
 
         case 'Call_Response':
           console.log(`Changed Call_Response`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          // 아래 주석 : ACS 로부터 직접 작업 취소/실패를 받아서 mqttUtil 에서 처리
-          // if (targetTagInfo.value === false) {
-          //   await useCallResponseUtil().callReRegister(targetTagInfo);
-          // }
+          if (targetTagInfo.value === false) {
+            await useMultiCallRegisterUtil().hsetWithDecrementCount(
+              RedisKeys.InfoWorkOrderCountBySerial,
+              targetTagInfo.EQ_CODE
+            );
+            await useCallResponseUtil().callReRegister(targetTagInfo);
+          }
           break;
 
         case 'Call_Cancel_Request':
@@ -120,6 +122,7 @@ export const useEqpCheckUtil = () => {
               tagName: 'Call_Response_Multi_1',
               value: true,
             });
+            // await useCallResponseUtil().decisionWorkOrder(targetTagInfo);
             // await useMultiCallRegisterUtil().hsetWithIncrementCount(
             //   RedisKeys.InfoWorkOrderCountBySerial,
             //   targetTagInfo.EQ_CODE
@@ -146,6 +149,7 @@ export const useEqpCheckUtil = () => {
               tagName: 'Call_Response_Multi_2',
               value: true,
             });
+            // await useCallResponseUtil().decisionWorkOrder(targetTagInfo);
             // await useMultiCallRegisterUtil().hsetWithIncrementCount(
             //   RedisKeys.InfoWorkOrderCountBySerial,
             //   targetTagInfo.EQ_CODE

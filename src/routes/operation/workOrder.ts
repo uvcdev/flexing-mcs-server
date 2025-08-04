@@ -45,7 +45,8 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, WorkOrderInse
       cancelDate: req.body.cancelDate,
       description: req.body.description,
       type: req.body.type,
-      plcCallCount: req.body.plcCallCount,
+      alwaysCallCount: req.body.alwaysCallCount,
+      triggerCallCount: req.body.triggerCallCount,
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -219,7 +220,8 @@ router.put(
         state: req.body.state,
         isClosed: req.body.isClosed,
         description: req.body.description,
-        plcCallCount: req.body.plcCallCount,
+        alwaysCallCount: req.body.alwaysCallCount,
+        triggerCallCount: req.body.triggerCallCount,
       };
       logging.REQUEST_PARAM(logFormat);
 

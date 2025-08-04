@@ -154,7 +154,8 @@ const service = {
         cancelUserId: 0,
         cancelDate: null,
         description: null,
-        plcCallCount: params.CALL_COUNT, // 설비에서 주는 Call_Count
+        alwaysCallCount: params.ALWAYS_CALL_COUNT,
+        triggerCallCount: params.TRIGGER_CALL_COUNT,
       };
       workOrderResult = await workOrderDao.insertTransac(transParams, transaction);
       await transaction.commit(); // 트랜잭션 커밋
@@ -178,6 +179,28 @@ const service = {
 
     try {
       result = await workOrderDao.selectList(params);
+      logging.METHOD_ACTION(logFormat, __filename, params, result);
+    } catch (err) {
+      logging.ERROR_METHOD(logFormat, __filename, params, err);
+
+      return new Promise((resolve, reject) => {
+        reject(err);
+      });
+    }
+
+    return new Promise((resolve) => {
+      resolve(result);
+    });
+  },
+  // selectRecentTaskList
+  async selectRecentList(
+    params: WorkOrderSelectListParams,
+    logFormat: LogFormat<unknown>
+  ): Promise<SelectedListResult<WorkOrderAttributes>> {
+    let result: SelectedListResult<WorkOrderAttributes>;
+
+    try {
+      result = await workOrderDao.selectRecentList(params);
       logging.METHOD_ACTION(logFormat, __filename, params, result);
     } catch (err) {
       logging.ERROR_METHOD(logFormat, __filename, params, err);
@@ -436,7 +459,8 @@ const service = {
             type: params.type,
             isClosed: false,
             description: params.description,
-            plcCallCount: params.plcCallCount,
+            alwaysCallCount: params.alwaysCallCount,
+            triggerCallCount: params.triggerCallCount,
           });
           result.updatedCount = insertResult.insertedId > 0 ? 1 : 0;
         }

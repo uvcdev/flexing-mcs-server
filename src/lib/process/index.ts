@@ -16,6 +16,7 @@ import { sendTrackingLogs } from './trackingLog';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
 import { DryrunSetting } from '../../models/common/setting';
 import { useMultiCallRegisterUtil } from '../multiCallRegisterUtil';
+import { useCallResponseUtil } from '../callResponseUtil';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5;
 const heapUse = () => {
@@ -94,8 +95,11 @@ export const processMcs = async () => {
     // pending 된 멀티콜 작업 지시 생성
     await useMultiCallRegisterUtil().multiCallRegister();
 
+    // 멀티콜 커져있는 설비들 조회해서 pending (InfoMultiCallRequestOnBySerial)
+    await useCallResponseUtil().decisionWorkOrder();
+
     // 멀티콜 로직을 계속 판단해서 작업을 만들도록 pending 쪽에 추가하는건?
-    await useWorkOrderUtil().createMultiWorkOrder();
+    // await useWorkOrderUtil().createMultiWorkOrder();
 
     // }
     // else if (dryrunMode === 'facility') {
