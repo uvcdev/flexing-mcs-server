@@ -76,6 +76,8 @@ export enum RedisKeys {
   InfoFacilityModeBySerial = 'info_facility_mode_by_searial', // 설비 시리얼로 설비 모드 조회
   InfoCallRequestOnBySerial = 'info_call_request_on_by_serial', // Call_Request ON 인 작업 데이터
   InfoMultiCallRequestOnBySerial = 'info_multi_call_request_on_by_serial', // Call_Request ON 인 작업 데이터
+  InfoWorkOrderCreatedByCallId = 'info_work_order_created_by_call_id',     // 작업지시 생성 및 ACS에 전송 유무 확인용
+  ReinboundIfPortAssignedForFacilityCancelByCallId = 'reinbound_if_port_assigned_for_facility_cancel_by_call_id', // 설비취소 작업에 대해 창고의 포트 배정 시 일반작업지시가 아닌 재반입작업지시로 만들기 위한 키
 }
 export enum RedisSettingKeys {
   // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

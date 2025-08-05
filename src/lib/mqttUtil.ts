@@ -36,6 +36,7 @@ import { RedisKeys, useRedisUtil } from './redisUtil';
 import { service as facilityService } from '../service/operation/facilityService';
 import { opcuaUtil } from './opcuaUtil';
 import { useMultiCallRegisterUtil } from './multiCallRegisterUtil';
+import { useCallCancelUtil } from './callCancelUtil';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -828,6 +829,22 @@ export const receiveMqtt = (): void => {
               }
 
               await facilityService.editFacilityMode({ serial: facilitySerial, mode: mode });
+            }
+            if (topicSplit.length === 3 && topicSplit[1] === 'res-cancel-work-order') {
+              const callId = topicSplit[2]
+              const messageJson = JSON.parse(message);
+              logging.MQTT_LOG({
+                title: `mcs res-cancel-work-order ${callId}`,
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                // Todo[ssb] acs로부터 온 취소 응답 처리 로직 추가
+                useCallCancelUtil().processCancelResponseFromAcs(messageJson)
+              } catch (error) {
+                console.log('logging.res-cancel-work-order', error);
+              }
             }
           }
 
