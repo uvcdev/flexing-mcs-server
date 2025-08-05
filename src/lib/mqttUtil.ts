@@ -438,7 +438,6 @@ export const receiveMqtt = (): void => {
               const workOrderMode = messageJson.mode;
               const targetFacility = messageJson.facilityName.substring(0, 4);
 
-              // todo 250723: 로봇할당 값 write 테스트 필요
               if (state === 'AMR_ARRIVED') {
                 await kepServerUtil.writeSimpleTagValue({
                   targetFacility: messageJson.fromSerial,
@@ -450,8 +449,7 @@ export const receiveMqtt = (): void => {
               // 작업 완료
               if (state === 'MISSION_COMPLETED') {
                 // todo 250723: workOrder mode 보고 수동이면 패스
-                // if (workOrderMode === 'manual') return;
-
+                if (workOrderMode === 'manual') return;
                 await useMultiCallRegisterUtil().hsetWithDecrementCount(
                   RedisKeys.InfoWorkOrderCountBySerial,
                   targetFacility
@@ -460,36 +458,24 @@ export const receiveMqtt = (): void => {
 
               // 작업 취소, 작업 실패
               if (state === 'MISSION_CANCELED' || state === 'MISSION_FAILED') {
+                await useMultiCallRegisterUtil().hsetWithDecrementCount(
+                  RedisKeys.InfoWorkOrderCountBySerial,
+                  targetFacility
+                );
                 // todo 250723: workOrder mode 보고 수동이면 패스
-                // if (workOrderMode === 'manual') return;
-
+                if (workOrderMode === 'manual') return;
                 const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
                   RedisKeys.InfoFacilityById,
                   messageJson.fromSerial
                 );
                 let alwaysOnFacility = messageJson.fromSerial;
                 let triggerFacility = messageJson.toSerial;
-                const workOrderCount = await useRedisUtil().hget(
-                  RedisKeys.InfoWorkOrderCountBySerial,
-                  triggerFacility || ''
-                );
-                if (!workOrderCount) return;
-                const workOrderCountNum = Number(workOrderCount);
 
-                // todo 250805 : ACS에서 취소된 작업 다시 만들 때 멀티콜 판단해서 작업지시 만들어야 하나?
-                // 멀티콜일 때 acs 작업 취소하면 어떻게 되야 하나
-
-                // const multiCallFirstValue = opcuaUtil.tagMap.get(`${triggerFacility}.Call_Request_Multi_1`)?.value;
-                // const multiCallSecondValue = opcuaUtil.tagMap.get(`${triggerFacility}.Call_Request_Multi_2`)?.value;
-                // if (
-                //   ((multiCallFirstValue === true && multiCallSecondValue === true) ||
-                //     (multiCallFirstValue === false && multiCallSecondValue === false)) &&
-                //   workOrderCountNum === 0
-                // ) {
                 if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
                   alwaysOnFacility = messageJson.toSerial;
                   triggerFacility = messageJson.fromSerial;
                 }
+
                 await kepServerUtil.writeSimpleTagValue({
                   targetFacility: alwaysOnFacility,
                   tagName: 'Call_Response',
@@ -522,24 +508,31 @@ export const receiveMqtt = (): void => {
                   value: '0',
                 });
 
-                const tagInfo = useKepServerUtil().findTagInfo(targetFacility, 'Call_Request');
+                // todo 250805 : ACS에서 취소된 작업 다시 만들 때 멀티콜 판단해서 작업지시 만들어야 하나?
+                // 멀티콜일 때 acs 작업 취소하면 어떻게 되야 하는지 문의 필요
+                // const triggerCallRequestValue = opcuaUtil.tagMap.get(`${triggerFacility}.Call_Request`)?.value;
+                // const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysOnFacility}.Call_Request`)?.value;
+                // if (triggerCallRequestValue === false || alwaysCallRequestValue === false) return;
+
+                const tagInfo = useKepServerUtil().findTagInfo(triggerFacility, 'Call_Request');
                 const targetTagInfo: TagValue = {
                   value: true,
                   prevValue: '',
                   timestamp: Date.now(),
                   CHANNEL: tagInfo?.CHANNEL || '',
-                  DEVICE: targetFacility,
+                  DEVICE: triggerFacility,
                   TAGGROUP: '',
                   TAG_NAME: 'Call_Request',
                   DATA_TYPE: 'Boolean',
                   INPUT_TYPE: 'Bool',
                   NODE_ID: tagInfo?.NODE_ID || '',
-                  EQ_CODE: targetFacility,
-                  reRegister: '',
+                  EQ_CODE: triggerFacility,
+                  reRegister: 'cancel',
                 };
+
                 await useRedisUtil().hset(
                   RedisKeys.InfoCallRequestOnBySerial,
-                  targetFacility,
+                  triggerFacility,
                   JSON.stringify(targetTagInfo)
                 );
               }

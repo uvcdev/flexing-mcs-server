@@ -59,8 +59,9 @@ export const processMcs = async () => {
     // 수집한 ack 데이터 처리 ( ACK )
     await checkReceivedAckCommand();
 
+    // todo 250805 : 로직 수정 필요 / 아래 프로세스 제대로 타지 못함 (너무 느려짐)
     // ACK 응답 여부 확인 ( ACK )
-    await checkRemainingAckCommand();
+    // await checkRemainingAckCommand();
 
     // Aborted 된 작업 재전송 여부 확인
     await checkAbortedCommandForRetry();
@@ -86,13 +87,13 @@ export const processMcs = async () => {
     await useCallRegisterUtil().checkRemainEqpCall();
 
     // 설비 수동모드인 경우 등록해놓은 redis 조회해서 작업지시 생성
-    await useCallRegisterUtil().createFacilityModeWorkOrder();
+    // await useCallRegisterUtil().createFacilityModeWorkOrder();
 
-    // pending 된 멀티콜 작업 지시 생성
-    // await useMultiCallRegisterUtil().multiCallRegister();
+    // 멀티콜 판단로직
+    await useCallResponseUtil().decisionWorkOrder();
 
-    // 멀티콜 커져있는 설비들 조회해서 pending (InfoMultiCallRequestOnBySerial)
-    // await useCallResponseUtil().decisionWorkOrder();
+    // 멀티콜 작업을 pending 처리
+    await useMultiCallRegisterUtil().multiCallRegister();
   } catch (error) {
     console.error('Error in processMcs:', error);
     // 에러 로깅 또는 알림 처리

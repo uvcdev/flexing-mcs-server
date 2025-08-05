@@ -260,7 +260,9 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 - always_call_count 컬럼 추가 (항상 켜져있는 설비에 대한 Call_Count)
 - trigger_call_count 컬럼 추가 (작업 생성 주체가 되는 설비에 대한 Call_Count)
 - todo 250731 : MCS_info_work_order_count_by_serial 에 현재 진행중인 작업지시 업데이트 먼저해주기
-- ACS 작업 취소로 인해 MCS 상황 판단해서 작업지시 재생성하는 로직 추가
+- ACS 작업 취소로 인해 MCS 상황 판단해서 작업지시 재생성하는 로직 수정
+- 멀티콜 로직 반영 (테스트 필요)
+- 
 - 
 ```sql
 ALTER TABLE public.facilities ADD generated_call_count int4 NULL;

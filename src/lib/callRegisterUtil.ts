@@ -74,37 +74,11 @@ export const useCallRegisterUtil = () => {
         for (let i = 0; i < needKeys.length; i++) {
           kepServerUtil.updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
         }
-
-        // setting 에서 설비기준 dryrun 인 경우
-        // const dryrunSetting = await redisUtil.hgetObject<DryrunSetting>(
-        //   RedisKeys.Setting,
-        //   RedisSettingKeys.DryrunSetting
-        // );
-        // if (!dryrunSetting) {
-        //   logging.ACTION_DEBUG({
-        //     filename: 'index.ts',
-        //     error: 'redis에 dryrunSetting 데이터가 없습니다.',
-        //     params: null,
-        //     result: false,
-        //   });
-        //   break;
-        // }
-        // const dryrunMode = dryrunSetting.data.mode || 'normal';
-
         const callCountValue = Number(callCount?.value) || 0;
         const callPriorityValue = callPriority?.value.toString() || '0';
 
         // 유효성 검사 필요할 수도
         if (facilityInfo?.generatedCallCount) {
-          // let eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
-          // console.log('🚀 ~ callRegister ~ eqpCallId:', eqpCallId);
-          // if (eqpCallId) {
-          // const eqpWcsInfo: EQP_WCS = {
-          //   EQP_ID: eqpCallId.toString().substring(0, 4), // 앞의 4자리
-          //   EQP_CALL_ID: parseInt(eqpCallId.toString().slice(-4), 10).toString(), // 뒤의 4자리
-          //   CALL_ID: eqpCallId, // 작업지시코드
-          // };
-
           const callInfo: EqpCallStats = {
             EQP_CALL_ID: String(callCountValue), // 뒤의 4자리
             CALL_ID: '', // 작업지시코드
@@ -120,7 +94,6 @@ export const useCallRegisterUtil = () => {
           // 작업 생성 트리거 판단
           // if (facilityInfo?.isActiveCallTrigger === true) {
           const callInfoString = JSON.stringify(callInfo);
-          // init TrackingLog
           await initTrackingLogRedis(callInfo);
           if (facilityInfo?.isMissionOrderCapable) {
             // ======= 미션결정 작업지시 (설비기준 회수) =======
@@ -181,6 +154,7 @@ export const useCallRegisterUtil = () => {
             if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 0) {
               // 설비 - 설비로직
               // todo 250801: linkedEqp 우선순위에 따라 정렬 필요할 수 있음
+              // todo 250805: 아예 link 하나 걸려 있는 거랑 두개 이상 걸려 있는 설비랑 분기해서 처리하는게 어떨지
               for (let i = 0; i < facilityInfo.linkedEqpIds.length; i++) {
                 const linkedEqpId = facilityInfo.linkedEqpIds[i];
                 const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
@@ -306,7 +280,7 @@ export const useCallRegisterUtil = () => {
               }
 
               console.log(`Call request sent to EQP from EQP. TYPE: ${callType}, CallID: ${callCountValue}`);
-              // } else if (facilityInfo?.linkedWmsIds) {
+              // } else if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 1) {
             } else {
               // 설비 - 창고 로직
               // 설비 테이블에 어떤 창고와 통신을 해야한다는 창고를 등록하고

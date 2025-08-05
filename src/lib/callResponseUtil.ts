@@ -90,15 +90,36 @@ export const useCallResponseUtil = () => {
           const workOrderCountNum = Number(workOrderCount);
 
           const multiCallStatus = [
-            { value: multiCallFirstValue, limit: 1, tagName: 'Call_Request_Multi_1' },
-            { value: multiCallSecondValue, limit: 2, tagName: 'Call_Request_Multi_2' },
+            { value: multiCallFirstValue, tagName: 'Call_Request_Multi_1' },
+            { value: multiCallSecondValue, tagName: 'Call_Request_Multi_2' },
           ];
-          // 2 → 1 순서대로 확인 (둘 다 true면 2부터 처리)
-          for (let i = multiCallStatus.length - 1; i >= 0; i--) {
-            const { value, limit, tagName } = multiCallStatus[i];
 
-            // 조건 만족하는 경우만 실행
-            if (workOrderCountNum && value === true && workOrderCountNum <= limit) {
+          let maxAllowed = 0;
+
+          // true	  true	3	2개 저장 (Multi_2, Multi_1)
+          // true	  true	2	저장 안 함
+          // true	  false	2	1개 저장 (Multi_1)
+          // true	  false	3	저장 안 함
+          // false	false	  아무 값	저장 안 함
+          if (multiCallFirstValue && multiCallSecondValue) {
+            if (workOrderCountNum <= 3) {
+              maxAllowed = 2;
+            }
+          } else if (multiCallFirstValue && !multiCallSecondValue) {
+            if (workOrderCountNum <= 2) {
+              maxAllowed = 1;
+            }
+          }
+          if (maxAllowed === 0) return;
+
+          // 역순 처리: Multi_2 → Multi_1
+          let savedCount = 0;
+          for (let i = multiCallStatus.length - 1; i >= 0; i--) {
+            if (savedCount >= maxAllowed) break;
+
+            const { value, tagName } = multiCallStatus[i];
+
+            if (value === true) {
               const tagInfo = useKepServerUtil().findTagInfo(facilityCode, tagName);
 
               const targetTagInfo: TagValue = {
@@ -113,70 +134,17 @@ export const useCallResponseUtil = () => {
                 INPUT_TYPE: 'Bool',
                 NODE_ID: tagInfo?.NODE_ID || '',
                 EQ_CODE: facilityCode,
-                reRegister: '',
+                reRegister: 'multi',
               };
-
               await useRedisUtil().hset(
                 RedisKeys.InfoMultiCallRequestOnBySerial,
                 `${facilityCode}_${i + 1}`,
                 JSON.stringify(targetTagInfo)
               );
+
+              savedCount++;
             }
           }
-
-          // // 멀티콜 2개 켜져 있는 경우
-          // if (workOrderCountNum && multiCallFirstValue === true && multiCallSecondValue === true) {
-          //   // 현재 진행중인 작업지시 갯수 판단해서 작업지시 만들기
-          //   if (workOrderCountNum <= 2) {
-          //     const tagInfo = useKepServerUtil().findTagInfo(facilityCode, 'Call_Request_Multi_2');
-          //     const targetTagInfo: TagValue = {
-          //       value: true,
-          //       prevValue: '',
-          //       timestamp: Date.now(),
-          //       CHANNEL: tagInfo?.CHANNEL || '',
-          //       DEVICE: '',
-          //       TAGGROUP: '', // 태그 그룹 없음
-          //       TAG_NAME: 'Call_Request_Multi_2',
-          //       DATA_TYPE: 'Boolean',
-          //       INPUT_TYPE: 'Bool',
-          //       NODE_ID: tagInfo?.NODE_ID || '',
-          //       EQ_CODE: '',
-          //       reRegister: '',
-          //     };
-          //     await useRedisUtil().hset(
-          //       RedisKeys.InfoMultiCallRequestOnBySerial,
-          //       `${facilityCode}_2`,
-          //       JSON.stringify(targetTagInfo)
-          //     );
-          //   }
-          // }
-          // // 멀티콜 1개 켜져 있는 경우
-          // if (workOrderCountNum && multiCallFirstValue === true) {
-          //   // 현재 진행중인 작업지시 갯수 판단해서 작업지시 만들기
-          //   if (workOrderCountNum <= 1) {
-          //     const tagInfo = useKepServerUtil().findTagInfo(facilityCode, 'Call_Request_Multi_1');
-          //     const targetTagInfo: TagValue = {
-          //       value: true,
-          //       prevValue: '',
-          //       timestamp: Date.now(),
-          //       CHANNEL: tagInfo?.CHANNEL || '',
-          //       DEVICE: '',
-          //       TAGGROUP: '', // 태그 그룹 없음
-          //       TAG_NAME: 'Call_Request_Multi_1',
-          //       DATA_TYPE: 'Boolean',
-          //       INPUT_TYPE: 'Bool',
-          //       NODE_ID: tagInfo?.NODE_ID || '',
-          //       EQ_CODE: '',
-          //       reRegister: '',
-          //     };
-          //     await useRedisUtil().hset(
-          //       RedisKeys.InfoMultiCallRequestOnBySerial,
-          //       `${facilityCode}_1`,
-          //       JSON.stringify(targetTagInfo)
-          //     );
-          //     return;
-          //   }
-          // }
         }
       }
     } catch (error) {
