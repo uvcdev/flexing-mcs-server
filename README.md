@@ -253,12 +253,15 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 - WMS 동기화 로직 구현
 
 ## v1.0.0-cyk
-- 설비(PLC)에서 쓰는 Call_Count 값은 저장만하고(CALL_COUNT) MCS에서 자체채번 (generated_call_count)
+- 설비(PLC)에서 쓰는 Call_Count 값은 저장만하고(CALL_COUNT) MCS에서 자체채번하는 기능 추가 (generated_call_count)
+- createWorkOrderCode 함수 위치 이동
 - generated_call_count 컬럼 추가 (작업지시코드 채번을 위한 설비별 작업순번 1 ~ 9999)
 - is_active_call_trigger 컬럼 추가 (콜 생성 주체 설비 확인용)
 - always_call_count 컬럼 추가 (항상 켜져있는 설비에 대한 Call_Count)
 - trigger_call_count 컬럼 추가 (작업 생성 주체가 되는 설비에 대한 Call_Count)
 - todo 250731 : MCS_info_work_order_count_by_serial 에 현재 진행중인 작업지시 업데이트 먼저해주기
+- ACS 작업 취소로 인해 MCS 상황 판단해서 작업지시 재생성하는 로직 추가
+- 
 ```sql
 ALTER TABLE public.facilities ADD generated_call_count int4 NULL;
 ALTER TABLE public.facilities ADD is_active_call_trigger bool NULL DEFAULT false;

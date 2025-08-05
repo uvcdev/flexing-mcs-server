@@ -51,7 +51,7 @@ export const useEqpCheckUtil = () => {
               RedisKeys.InfoWorkOrderCountBySerial,
               targetTagInfo.EQ_CODE
             );
-            await useCallResponseUtil().callReRegister(targetTagInfo);
+            // await useCallResponseUtil().callReRegister(targetTagInfo);
           }
           break;
 
@@ -77,7 +77,9 @@ export const useEqpCheckUtil = () => {
 
         case 'Dock_Out_Permit':
           console.log(`Changed Dock_Out_Permit`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          await useDockingUtil().dockingOutStart(targetTagInfo);
+          if (targetTagInfo.value === true) {
+            await useDockingUtil().dockingOutStart(targetTagInfo);
+          }
           break;
 
         case 'Call_Type_01':
@@ -122,16 +124,6 @@ export const useEqpCheckUtil = () => {
               tagName: 'Call_Response_Multi_1',
               value: true,
             });
-            // await useCallResponseUtil().decisionWorkOrder(targetTagInfo);
-            // await useMultiCallRegisterUtil().hsetWithIncrementCount(
-            //   RedisKeys.InfoWorkOrderCountBySerial,
-            //   targetTagInfo.EQ_CODE
-            // );
-            // await useRedisUtil().hset(
-            //   RedisKeys.InfoCallRequestOnBySerial,
-            //   targetTagInfo.EQ_CODE,
-            //   JSON.stringify(targetTagInfo)
-            // );
           } else if (targetTagInfo.value === false) {
             await useKepServerUtil().writeSimpleTagValue({
               targetFacility: targetTagInfo.EQ_CODE,
@@ -149,16 +141,6 @@ export const useEqpCheckUtil = () => {
               tagName: 'Call_Response_Multi_2',
               value: true,
             });
-            // await useCallResponseUtil().decisionWorkOrder(targetTagInfo);
-            // await useMultiCallRegisterUtil().hsetWithIncrementCount(
-            //   RedisKeys.InfoWorkOrderCountBySerial,
-            //   targetTagInfo.EQ_CODE
-            // );
-            // await useRedisUtil().hset(
-            //   RedisKeys.InfoMultiCallRequestOnBySerial,
-            //   targetTagInfo.EQ_CODE,
-            //   JSON.stringify(targetTagInfo)
-            // );
           } else if (targetTagInfo.value === false) {
             await useKepServerUtil().writeSimpleTagValue({
               targetFacility: targetTagInfo.EQ_CODE,
