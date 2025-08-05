@@ -96,275 +96,241 @@ export const useCallRegisterUtil = () => {
 
         // 유효성 검사 필요할 수도
         if (facilityInfo?.generatedCallCount) {
-          let eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
-          console.log('🚀 ~ callRegister ~ eqpCallId:', eqpCallId);
-          if (eqpCallId) {
-            const eqpWcsInfo: EQP_WCS = {
-              EQP_ID: eqpCallId.toString().substring(0, 4), // 앞의 4자리
-              EQP_CALL_ID: parseInt(eqpCallId.toString().slice(-4), 10).toString(), // 뒤의 4자리
-              CALL_ID: eqpCallId, // 작업지시코드
-            };
+          // let eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
+          // console.log('🚀 ~ callRegister ~ eqpCallId:', eqpCallId);
+          // if (eqpCallId) {
+          // const eqpWcsInfo: EQP_WCS = {
+          //   EQP_ID: eqpCallId.toString().substring(0, 4), // 앞의 4자리
+          //   EQP_CALL_ID: parseInt(eqpCallId.toString().slice(-4), 10).toString(), // 뒤의 4자리
+          //   CALL_ID: eqpCallId, // 작업지시코드
+          // };
 
-            const callInfo: EqpCallStats = {
-              EQP_CALL_ID: eqpWcsInfo.EQP_CALL_ID,
-              CALL_ID: eqpWcsInfo.CALL_ID,
-              Call_Type: callType || 'NC11',
-              Caller: eqpWcsInfo.EQP_ID,
-              Call_Quantity: 1,
-              Call_Priority: callPriorityValue === 'true' ? '99' : '1',
-              DATA_TYPE: targetTagInfo.DATA_TYPE,
-              TRIGGER_CALL_COUNT: callCountValue,
-              ALWAYS_CALL_COUNT: -1,
-            };
+          const callInfo: EqpCallStats = {
+            EQP_CALL_ID: String(callCountValue), // 뒤의 4자리
+            CALL_ID: '', // 작업지시코드
+            Call_Type: callType || 'NC11',
+            Caller: targetCode, // 앞의 4자리
+            Call_Quantity: 1,
+            Call_Priority: callPriorityValue === 'true' ? '99' : '1',
+            DATA_TYPE: targetTagInfo.DATA_TYPE,
+            TRIGGER_CALL_COUNT: callCountValue,
+            ALWAYS_CALL_COUNT: -1,
+          };
 
-            // 작업 생성 트리거 판단
-            if (facilityInfo?.isActiveCallTrigger === true) {
-              const callInfoString = JSON.stringify(callInfo);
-              // init TrackingLog
-              await initTrackingLogRedis(callInfo);
-              if (facilityInfo?.isMissionOrderCapable) {
-                // ======= 미션결정 작업지시 (설비기준 회수) =======
-                const infoPendingMissionWorkOrder: PendingWorkOrderAttributes = {
-                  callId: callInfo.CALL_ID,
-                  fromFacilityName: callInfo.Caller,
-                  toFacilityName: null,
-                  type: 'MISSION',
-                  isMissionOrder: true,
-                  callPriority: callInfo.Call_Priority || '',
-                  callType: callInfo.Call_Type || 'NC11',
-                  portName: null,
+          // 작업 생성 트리거 판단
+          // if (facilityInfo?.isActiveCallTrigger === true) {
+          const callInfoString = JSON.stringify(callInfo);
+          // init TrackingLog
+          await initTrackingLogRedis(callInfo);
+          if (facilityInfo?.isMissionOrderCapable) {
+            // ======= 미션결정 작업지시 (설비기준 회수) =======
+            const eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
+            const infoPendingMissionWorkOrder: PendingWorkOrderAttributes = {
+              callId: String(eqpCallId),
+              fromFacilityName: callInfo.Caller,
+              toFacilityName: null,
+              type: 'MISSION',
+              isMissionOrder: true,
+              callPriority: callInfo.Call_Priority || '',
+              callType: callInfo.Call_Type || 'NC11',
+              portName: null,
+              eqpName: callInfo.Caller,
+              triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
+            };
+            // 작업지시 예정 레디스 저장
+            redisUtil.hset(
+              RedisKeys.InfoPendingWorkOrderByCallId,
+              String(eqpCallId),
+              JSON.stringify(infoPendingMissionWorkOrder)
+            );
+            // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
+            await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
+            // 현재 설비에 대한 작업지시 개수 증가
+            await useMultiCallRegisterUtil().hsetWithIncrementCount(
+              RedisKeys.InfoWorkOrderCountBySerial,
+              callInfo.Caller
+            );
+            await kepServerUtil.writeSimpleTagValue({
+              targetFacility: callInfo.Caller,
+              tagName: 'Call_Response',
+              value: true,
+            });
+            await kepServerUtil.writeSimpleTagValue({
+              targetFacility: callInfo.Caller,
+              tagName: 'Call_Response_Count',
+              value: callCountValue.toString(),
+            });
+            const trackingLogSubject = 'CALL_RESPONSE';
+            const trackingLogDetail = 'CALL_RESPONSE';
+            const trackingLogState = 'PROCESSING';
+            const trackingLogUpdateMissionData: TrackingLogRedisUpdateParams = {
+              callId: infoPendingMissionWorkOrder?.callId,
+              subject: trackingLogSubject,
+              detail: trackingLogDetail,
+              state: trackingLogState,
+              startFacility: null,
+              transferId: null,
+              destFacility: null,
+              assignedRobot: null,
+              value: null,
+              description: `Call ID ${infoPendingMissionWorkOrder?.callId} responsed`,
+            };
+            await editTrackingLogRedis(trackingLogUpdateMissionData, undefined, 'SUCCESS', callInfo.Caller);
+          } else {
+            // ======= to 작업지시 =======
+            if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 0) {
+              // 설비 - 설비로직
+              // todo 250801: linkedEqp 우선순위에 따라 정렬 필요할 수 있음
+              for (let i = 0; i < facilityInfo.linkedEqpIds.length; i++) {
+                const linkedEqpId = facilityInfo.linkedEqpIds[i];
+                const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+                  RedisKeys.InfoFacilityById,
+                  linkedEqpId.toString() || ''
+                );
+                const linkedFacilityCallRequestValue = opcuaUtil.tagMap.get(
+                  `${linkedFacilityInfo?.serial}.Call_Request`
+                )?.value;
+                const linkedFacilityCallResponseValue = opcuaUtil.tagMap.get(
+                  `${linkedFacilityInfo?.serial}.Call_Response`
+                )?.value;
+                const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(
+                  `${linkedFacilityInfo?.serial}.Call_Count`
+                )?.value;
+                const eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
+                const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+                  callId: String(eqpCallId),
                   eqpName: callInfo.Caller,
+                  portName: linkedFacilityInfo?.serial,
+                  type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
+                  isMissionOrder: false,
+                  callPriority: callInfo.Call_Priority,
+                  callType: callInfo.Call_Type || 'NC11',
+                  fromFacilityName: (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
+                  toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,
+                  alwaysCallCount: Number(linkedFacilityCallCountValue),
                   triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
                 };
-                // 작업지시 예정 레디스 저장
-                redisUtil.hset(
-                  RedisKeys.InfoPendingWorkOrderByCallId,
-                  callInfo.CALL_ID,
-                  JSON.stringify(infoPendingMissionWorkOrder)
-                );
-                // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
-                await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
-                // 현재 설비에 대한 작업지시 개수 증가
-                await useMultiCallRegisterUtil().hsetWithIncrementCount(
-                  RedisKeys.InfoWorkOrderCountBySerial,
-                  callInfo.Caller
-                );
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: callInfo.Caller,
-                  tagName: 'Call_Response',
-                  value: true,
-                });
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: callInfo.Caller,
-                  tagName: 'Call_Response_Count',
-                  value: callCountValue.toString(),
-                });
-                const trackingLogSubject = 'CALL_RESPONSE';
-                const trackingLogDetail = 'CALL_RESPONSE';
-                const trackingLogState = 'PROCESSING';
-                const trackingLogUpdateMissionData: TrackingLogRedisUpdateParams = {
-                  callId: infoPendingMissionWorkOrder?.callId,
-                  subject: trackingLogSubject,
-                  detail: trackingLogDetail,
-                  state: trackingLogState,
-                  startFacility: null,
-                  transferId: null,
-                  destFacility: null,
-                  assignedRobot: null,
-                  value: null,
-                  description: `Call ID ${infoPendingMissionWorkOrder?.callId} responsed`,
-                };
-                await editTrackingLogRedis(trackingLogUpdateMissionData, undefined, 'SUCCESS', callInfo.Caller);
-              } else {
-                // ======= to 작업지시 =======
-                if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 0) {
-                  // 설비 - 설비로직
-                  // todo 250801: linkedEqp 우선순위에 따라 정렬 필요할 수 있음
-                  for (let i = 0; i < facilityInfo.linkedEqpIds.length; i++) {
-                    const linkedEqpId = facilityInfo.linkedEqpIds[i];
-                    const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-                      RedisKeys.InfoFacilityById,
-                      linkedEqpId.toString() || ''
-                    );
-                    const linkedFacilityCallRequestValue = opcuaUtil.tagMap.get(
-                      `${linkedFacilityInfo?.serial}.Call_Request`
-                    )?.value;
-                    const linkedFacilityCallResponseValue = opcuaUtil.tagMap.get(
-                      `${linkedFacilityInfo?.serial}.Call_Response`
-                    )?.value;
-                    const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(
-                      `${linkedFacilityInfo?.serial}.Call_Count`
-                    )?.value;
-                    const infoPendingWorkOrder: PendingWorkOrderAttributes = {
-                      callId: callInfo.CALL_ID,
-                      eqpName: callInfo.Caller,
-                      portName: linkedFacilityInfo?.serial,
-                      type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
-                      isMissionOrder: false,
-                      callPriority: callInfo.Call_Priority,
-                      callType: callInfo.Call_Type || 'NC11',
-                      fromFacilityName:
-                        (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
-                      toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,
-                      alwaysCallCount: Number(linkedFacilityCallCountValue),
-                      triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
-                    };
-                    // 반대쪽에 콜 요청 떠 있고 콜 응답 내려가 있는 경우 작업 생성
-                    if (
-                      linkedFacilityInfo &&
-                      linkedFacilityCallRequestValue === true &&
-                      linkedFacilityCallResponseValue === false
-                    ) {
-                      // 작업지시 예정 레디스 저장
-                      redisUtil.hset(
-                        RedisKeys.InfoPendingWorkOrderByCallId,
-                        callInfo.CALL_ID,
-                        JSON.stringify(infoPendingWorkOrder)
-                      );
-                      // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
-                      await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
-                      // 작업지시 개수 증가
-                      await useMultiCallRegisterUtil().hsetWithIncrementCount(
-                        RedisKeys.InfoWorkOrderCountBySerial,
-                        targetTagInfo.EQ_CODE
-                      );
-                      // 콜 응답 관련 데이터 쓰기
-                      await useKepServerUtil().writeSimpleTagValue({
-                        targetFacility: facilityInfo.serial || '',
-                        tagName: 'Call_Response',
-                        value: true,
-                      });
-                      await useKepServerUtil().writeSimpleTagValue({
-                        targetFacility: facilityInfo.serial || '',
-                        tagName: 'Call_Response_Count',
-                        value: String(infoPendingWorkOrder.triggerCallCount),
-                      });
+                // 반대쪽에 콜 요청 떠 있고 콜 응답 내려가 있는 경우 작업 생성
+                if (
+                  linkedFacilityInfo &&
+                  linkedFacilityCallRequestValue === true &&
+                  linkedFacilityCallResponseValue === false
+                ) {
+                  // 작업지시 예정 레디스 저장
+                  redisUtil.hset(
+                    RedisKeys.InfoPendingWorkOrderByCallId,
+                    String(eqpCallId),
+                    JSON.stringify(infoPendingWorkOrder)
+                  );
+                  // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
+                  await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
+                  // 작업지시 개수 증가
+                  await useMultiCallRegisterUtil().hsetWithIncrementCount(
+                    RedisKeys.InfoWorkOrderCountBySerial,
+                    targetTagInfo.EQ_CODE
+                  );
+                  // 콜 응답 관련 데이터 쓰기
+                  await useKepServerUtil().writeSimpleTagValue({
+                    targetFacility: facilityInfo.serial || '',
+                    tagName: 'Call_Response',
+                    value: true,
+                  });
+                  await useKepServerUtil().writeSimpleTagValue({
+                    targetFacility: facilityInfo.serial || '',
+                    tagName: 'Call_Response_Count',
+                    value: String(infoPendingWorkOrder.triggerCallCount),
+                  });
 
-                      const trackingLogSubject = 'CALL_RESPONSE';
-                      const trackingLogDetail = 'CALL_RESPONSE';
-                      const trackingLogState = 'PROCESSING';
-                      const trackingLogUpdateReqData: TrackingLogRedisUpdateParams = {
-                        callId: callInfo.CALL_ID,
-                        subject: trackingLogSubject,
-                        detail: trackingLogDetail,
-                        state: trackingLogState,
-                        startFacility: callInfo.Caller,
-                        transferId: null,
-                        destFacility: linkedFacilityInfo?.serial,
-                        assignedRobot: null,
-                        value: null,
-                        description: `Call ID ${callInfo.CALL_ID} responsed`,
-                      };
-                      await editTrackingLogRedis(trackingLogUpdateReqData, undefined, 'SUCCESS', callInfo.Caller);
+                  const trackingLogSubject = 'CALL_RESPONSE';
+                  const trackingLogDetail = 'CALL_RESPONSE';
+                  const trackingLogState = 'PROCESSING';
+                  const trackingLogUpdateReqData: TrackingLogRedisUpdateParams = {
+                    callId: String(eqpCallId),
+                    subject: trackingLogSubject,
+                    detail: trackingLogDetail,
+                    state: trackingLogState,
+                    startFacility: callInfo.Caller,
+                    transferId: null,
+                    destFacility: linkedFacilityInfo?.serial,
+                    assignedRobot: null,
+                    value: null,
+                    description: `Call ID ${String(eqpCallId)} responsed`,
+                  };
+                  await editTrackingLogRedis(trackingLogUpdateReqData, undefined, 'SUCCESS', callInfo.Caller);
 
-                      // 콜 응답 관련 데이터 쓰기
-                      await useKepServerUtil().writeSimpleTagValue({
-                        targetFacility: linkedFacilityInfo.serial || '',
-                        tagName: 'Call_Response',
-                        value: true,
-                      });
-                      await useKepServerUtil().writeSimpleTagValue({
-                        targetFacility: linkedFacilityInfo.serial || '',
-                        tagName: 'Call_Response_Count',
-                        value: String(infoPendingWorkOrder.alwaysCallCount),
-                      });
+                  // 콜 응답 관련 데이터 쓰기
+                  await useKepServerUtil().writeSimpleTagValue({
+                    targetFacility: linkedFacilityInfo.serial || '',
+                    tagName: 'Call_Response',
+                    value: true,
+                  });
+                  await useKepServerUtil().writeSimpleTagValue({
+                    targetFacility: linkedFacilityInfo.serial || '',
+                    tagName: 'Call_Response_Count',
+                    value: String(infoPendingWorkOrder.alwaysCallCount),
+                  });
 
-                      const trackingLogUpdateResData: TrackingLogRedisUpdateParams = {
-                        callId: callInfo.CALL_ID,
-                        subject: trackingLogSubject,
-                        detail: trackingLogDetail,
-                        state: trackingLogState,
-                        startFacility: linkedFacilityInfo?.serial,
-                        transferId: null,
-                        destFacility: callInfo.Caller,
-                        assignedRobot: null,
-                        value: null,
-                        description: `Call ID ${callInfo.CALL_ID} responsed`,
-                      };
-                      await editTrackingLogRedis(
-                        trackingLogUpdateResData,
-                        undefined,
-                        'SUCCESS',
-                        linkedFacilityInfo?.serial?.toString()
-                      );
-                      break;
-                    } else if (linkedFacilityInfo && linkedFacilityCallRequestValue === false) {
-                      // 반대쪽에 콜이 떠 있지 않은 경우 반복해서 판단하는 redis에 저장
-                      redisUtil.hset(
-                        RedisKeys.InfoRemainCallById,
-                        callInfo.CALL_ID,
-                        JSON.stringify({
-                          ...infoPendingWorkOrder,
-                          // fromFacilityName: facilityInfo.serial,
-                          // toFacilityName: linkedFacilityInfo.serial,
-                        })
-                      );
-                      // 반대 콜에 대한 판단을 지속적으로 하기 때문에 더이상 callRegister 판단 필요 없음
-                      await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
-                    }
-                  }
-
-                  console.log(`Call request sent to EQP from EQP. TYPE: ${callType}, CallID: ${callCountValue}`);
-                  // } else if (facilityInfo?.linkedWmsIds) {
-                } else {
-                  // 설비 - 창고 로직
-                  // 설비 테이블에 어떤 창고와 통신을 해야한다는 창고를 등록하고
-                  if (facilityInfo?.type === 'in') {
-                    await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.CALL_ID, callInfoString);
-                  } else {
-                    await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
-                  }
+                  const trackingLogUpdateResData: TrackingLogRedisUpdateParams = {
+                    callId: String(eqpCallId),
+                    subject: trackingLogSubject,
+                    detail: trackingLogDetail,
+                    state: trackingLogState,
+                    startFacility: linkedFacilityInfo?.serial,
+                    transferId: null,
+                    destFacility: callInfo.Caller,
+                    assignedRobot: null,
+                    value: null,
+                    description: `Call ID ${String(eqpCallId)} responsed`,
+                  };
+                  await editTrackingLogRedis(
+                    trackingLogUpdateResData,
+                    undefined,
+                    'SUCCESS',
+                    linkedFacilityInfo?.serial?.toString()
+                  );
+                  break;
+                } else if (linkedFacilityInfo && linkedFacilityCallRequestValue === false) {
+                  // 반대쪽에 콜이 떠 있지 않은 경우 반복해서 판단하는 redis에 저장
+                  redisUtil.hset(
+                    RedisKeys.InfoRemainCallById,
+                    String(eqpCallId),
+                    JSON.stringify({
+                      ...infoPendingWorkOrder,
+                      // fromFacilityName: facilityInfo.serial,
+                      // toFacilityName: linkedFacilityInfo.serial,
+                    })
+                  );
+                  // 반대 콜에 대한 판단을 지속적으로 하기 때문에 더이상 callRegister 판단 필요 없음
+                  await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
                 }
-                // else {
-                //   // todo: 도착지와 통신 없이 바로 작업 생성
-                // }
               }
-            } else if (facilityInfo?.isActiveCallTrigger === false) {
-              // todo: 창고 to 창고 작업지시
-              console.log(`Call request sent to WCS. TYPE: ${callType}, CallID: ${callCountValue}`);
+
+              console.log(`Call request sent to EQP from EQP. TYPE: ${callType}, CallID: ${callCountValue}`);
+              // } else if (facilityInfo?.linkedWmsIds) {
+            } else {
+              // 설비 - 창고 로직
+              // 설비 테이블에 어떤 창고와 통신을 해야한다는 창고를 등록하고
+              const eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
+              if (facilityInfo?.type === 'in') {
+                await redisUtil.hset(RedisKeys.InfoInCallByCallId, String(eqpCallId), callInfoString);
+              } else {
+                await redisUtil.hset(RedisKeys.InfoOutCallByCallId, String(eqpCallId), callInfoString);
+              }
             }
+            // else {
+            //   // todo: 도착지와 통신 없이 바로 작업 생성
+            // }
           }
+          // } else if (facilityInfo?.isActiveCallTrigger === false) {
+          // todo: 창고 to 창고 작업지시
+          // console.log(
+          //   `Call request sent to WCS. serial: ${facilityInfo.serial} TYPE: ${callType}, CallID: ${callCountValue}`
+          // );
+          // }
+          // }
         }
       }
     } catch (error) {
-      throw error;
-    }
-  };
-  const createAfterResponseWorkOrder = async () => {
-    try {
-      // const reRegisterFacilityList = await redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoFacilityReRegisterBySerial);
-      // if (!reRegisterFacilityList) return;
-      // for (const facility of reRegisterFacilityList) {
-      //   const eqCode = facility.EQ_CODE;
-      //   if (!eqCode) continue;
-      //   const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, eqCode);
-      //   if (facilityInfo?.mode === 'manual') {
-      //     continue;
-      //   }
-      //   // Call_Request 가 켜져있으면 CallRegister 꺼져있으면 레디스만 삭제
-      //   const callRequestValue = opcuaUtil.tagMap.get(`${eqCode}.Call_Request`)?.value;
-      //   if (callRequestValue === true) {
-      //     // await callRegister(facility);
-      //   }
-      //   await redisUtil.hdel(RedisKeys.InfoFacilityReRegisterBySerial, eqCode);
-      //   // if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 0) {
-      //   //   // 해당 설비가 linkedFacility 가 있으면 callRegister(facility) 실행
-      //   //   // 콜 주체가 되는 설비인 경우로 보면 안되고
-      //   //   // 해당 설비에 대한 작업이 스키드를 뜨는 작업이라면
-      //   //   console.log('callRegister(facility)123', facility)
-      //   //   // await callRegister(facility);
-      //   // } else {
-      //   //   // 해당 설비의 linkedFacility 가 없으면 단순 response 작성하고 끝
-      //   //   await useKepServerUtil().writeSimpleTagValue({
-      //   //     targetFacility: eqCode || '',
-      //   //     tagName: 'Call_Response',
-      //   //     value: true,
-      //   //   });
-      //   // }
-      //   // await redisUtil.hdel(RedisKeys.InfoFacilityReRegisterBySerial, eqCode);
-      // }
-    } catch (error) {
-      console.error('[callRegisterUtil.createFacilityModeWorkOrder] error :', error);
       throw error;
     }
   };
@@ -425,9 +391,9 @@ export const useCallRegisterUtil = () => {
       // callTimeMonthDayValue, generatedCallCountValue 값을 4자릿수로 변환
       const callTimeMonthDayStr = formatToDateCode(Number(callTimeMonthDayValue)).toString();
       const facilityYearMonthDayValue = targetCode + callTimeYearValue + callTimeMonthDayStr;
-      const callCountValueStr = await makeCallCount(facilityInfo, facilityYearMonthDayValue);
+      const callCountValueStr = await makeCallCount(facilityInfo);
 
-      const result = targetCode + callTimeYearValue + callTimeMonthDayStr + callCountValueStr;
+      const result = facilityYearMonthDayValue + callCountValueStr;
 
       // if (reRegister === '_R') {
       //   // ACS로부터 취소돼서 MCS가 자동으로 만드는 작업

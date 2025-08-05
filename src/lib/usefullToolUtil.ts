@@ -167,26 +167,25 @@ export const formatToDateCode = (input: number): string => {
   return `${monthStr}${dayStr}`;
 };
 
-export const makeCallCount = async (facilityInfo: FacilityAttributesDeep, redisKey: string): Promise<string> => {
-  const facilityCode = redisKey.substring(0, 4);
-
+export const makeCallCount = async (facilityInfo: FacilityAttributesDeep): Promise<string> => {
   // Redis에서 기존 객체 가져오기
-  const current = facilityInfo.generatedCallCount || 0;
-  let next = current + 1;
+  const facilityCode = facilityInfo.serial || '';
+  const currentValue = facilityInfo.generatedCallCount || 0;
+  let nextValue = currentValue + 1;
 
   // 9999 넘어가면 다시 1로
-  if (next > 9999) {
-    next = 1;
+  if (nextValue > 9999) {
+    nextValue = 1;
   }
 
-  const newData = { ...facilityInfo, generatedCallCount: next };
+  const newData = { ...facilityInfo, generatedCallCount: nextValue };
   const facilityInfoRedisString = JSON.stringify(newData);
 
   await useRedisUtil().hset(RedisKeys.InfoFacilityBySerial, facilityCode, facilityInfoRedisString);
   await useRedisUtil().hset(RedisKeys.InfoFacilityById, facilityInfo.id.toString(), facilityInfoRedisString);
-  void facilityService.edit({ id: facilityInfo.id, generatedCallCount: next }, makeLogFormat({} as RequestLog));
+  void facilityService.edit({ id: facilityInfo.id, generatedCallCount: nextValue }, makeLogFormat({} as RequestLog));
 
   // 4자리 패딩된 값 리턴
-  const paddedSeq = next.toString().padStart(4, '0');
+  const paddedSeq = nextValue.toString().padStart(4, '0');
   return paddedSeq;
 };

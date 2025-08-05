@@ -131,12 +131,6 @@ export const useWorkOrderUtil = () => {
       throw error;
     }
   };
-  const createMultiWorkOrder = async () => {
-    try {
-    } catch (error) {
-      throw error;
-    }
-  };
   const initializeWorkOrderStats = (id: number, code: string, system: string, name: string): WorkOrderStats => ({
     id,
     code,
@@ -282,5 +276,5 @@ export const useWorkOrderUtil = () => {
     sendMqtt(MqttTopics.WorkOrderStats, JSON.stringify(getStats()));
   };
 
-  return { createWorkOrder, createMultiWorkOrder, getStats, setStats, setInitStats, initStats, sendStats };
+  return { createWorkOrder, getStats, setStats, setInitStats, initStats, sendStats };
 };
