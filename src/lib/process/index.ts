@@ -17,6 +17,7 @@ import { sendTrackingLogs } from './trackingLog';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
 import { DryrunSetting } from '../../models/common/setting';
 import { sendCallInfoList, sendReqPortStateList } from './wmsSyncronization';
+import { checkMissionOrder } from '../missionOrderUtil';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5
 const heapUse = () => {
@@ -78,6 +79,9 @@ export const processMcs = async () => {
 
       // 설비-설비 간에 작업 미생성된 콜에 대해 재판단(Call_Response) 처리
       await useCallRegisterUtil().checkRemainEqpCall()
+
+      // 미션 결정지에 있는 AMR 이동
+      await checkMissionOrder()
 
     } else if (dryrunMode === 'facility') {
       // 설비 기준 드라이런 시나리오(창고 IF / PIO 삭제 로직)

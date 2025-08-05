@@ -73,6 +73,7 @@ export enum RedisKeys {
   DockingDetachBySerialId = 'docking_detach_by_serial_id',                // acs로부터 온 도킹해제정보와 imcs가 acs로 보내는 도킹해제응답정보 
   InfoPlcBySerial = 'info_plc_by_serial',
   InfoRemainCallById = 'info_remain_call_by_id',
+  InfoMissionOrderByWorkOrderCode = 'info_mission_order_by_work_order_code',                 // ACS에서 MCS로 전달한 미션 오더 정보
 }
 export enum RedisSettingKeys {
   // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

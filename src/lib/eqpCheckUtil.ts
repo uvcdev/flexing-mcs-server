@@ -51,7 +51,10 @@ export const useEqpCheckUtil = () => {
 
         case 'Dock_Out_Permit':
           console.log(`Changed Dock_Out_Permit`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          await useDockingUtil().dockingOutStart(targetTagInfo);
+          if (targetTagInfo.value === true) {
+            await useDockingUtil().dockingOutStart(targetTagInfo);
+          }
+
           break;
 
         case 'Call_Type_01':

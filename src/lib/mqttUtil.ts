@@ -550,70 +550,75 @@ export const receiveMqtt = (): void => {
               try {
                 // void itemLogDao.insert(messageJson);
                 // mission order 수집 구역
-                const missionOrderType = await routeMissionOrderMqttMessage(messageJson as MqttBranchInfoDataFromAcs)
-                if (missionOrderType?.state === 'EQP') {
-                  // 링크 된 설비에 콜 살아있는지 판별해서 들어가는 로직 
-                  const missionFromfacilityInfo = missionOrderType.facilityInfo
-                  if (missionFromfacilityInfo?.linkedEqpIds && missionFromfacilityInfo?.linkedEqpIds.length > 0) {
-                    const redisUtil = useRedisUtil();
-                    for (let i = 0; i < missionFromfacilityInfo.linkedEqpIds.length; i++) {
-                      const linkedEqpId = missionFromfacilityInfo.linkedEqpIds[i]
-                      const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-                        RedisKeys.InfoFacilityById,
-                        linkedEqpId.toString() || ''
-                      );
-                      const plcInfo = await redisUtil.hgetObject<FacilityAttributes>(
-                        RedisKeys.InfoPlcBySerial,
-                        linkedFacilityInfo?.serial?.toString() || ''
-                      );
-                      const plcInfoToJson = JSON.parse(JSON.stringify(plcInfo))
+                const workOrderCode = messageJson.workOrderCode
+                const redisUtil = useRedisUtil();
+                redisUtil.hset(RedisKeys.InfoMissionOrderByWorkOrderCode, workOrderCode.toString(), JSON.stringify(messageJson))
 
-                      const missionOrderMqttMessage = {
-                        EQP_CALL_ID: (messageJson.missionOrderCode).slice(-4),
-                        TYPE: 'MISSION',
-                        WORK_ORDER_ID: messageJson.workOrderId,
-                        EQP_ID: linkedFacilityInfo?.serial,
-                        AMR_ID: messageJson.amrName,
-                        AMR_DB_ID: Number(messageJson.amrId) || 0,
-                        CALL_TYPE: messageJson.callType,
-                        CALL_ID: messageJson.missionOrderCode,
-                        IS_MISSION_ORDER: "TRUE",
-                        TX_ID: "",
-                        TAG_ID: "",
-                        CALL_PRIORITY: messageJson.callPriority,
-                      }
 
-                      if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
-                        // 링크된 설비 콜이 떠 있는 경우 작업 생성 
-                        sendMqtt('acs/missionorder', JSON.stringify(missionOrderMqttMessage));
+                // const missionOrderType = await routeMissionOrderMqttMessage(messageJson as MqttBranchInfoDataFromAcs)
+                // if (missionOrderType?.state === 'EQP') {
+                //   // 링크 된 설비에 콜 살아있는지 판별해서 들어가는 로직 
+                //   const missionFromfacilityInfo = missionOrderType.facilityInfo
+                //   if (missionFromfacilityInfo?.linkedEqpIds && missionFromfacilityInfo?.linkedEqpIds.length > 0) {
+                //     const redisUtil = useRedisUtil();
+                //     for (let i = 0; i < missionFromfacilityInfo.linkedEqpIds.length; i++) {
+                //       const linkedEqpId = missionFromfacilityInfo.linkedEqpIds[i]
+                //       const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+                //         RedisKeys.InfoFacilityById,
+                //         linkedEqpId.toString() || ''
+                //       );
+                //       const plcInfo = await redisUtil.hgetObject<FacilityAttributes>(
+                //         RedisKeys.InfoPlcBySerial,
+                //         linkedFacilityInfo?.serial?.toString() || ''
+                //       );
+                //       const plcInfoToJson = JSON.parse(JSON.stringify(plcInfo))
 
-                        // 콜 기준 설비 call_response 작성
-                        await useKepServerUtil().writeSimpleTagValue({
-                          targetFacility: missionFromfacilityInfo.serial || '',
-                          tagName: 'Call_Response',
-                          value: true,
-                        });
-                        // call_response 작성
-                        await useKepServerUtil().writeSimpleTagValue({
-                          targetFacility: linkedFacilityInfo.serial || '',
-                          tagName: 'Call_Response',
-                          value: true,
-                        });
+                //       const missionOrderMqttMessage = {
+                //         EQP_CALL_ID: (messageJson.missionOrderCode).slice(-4),
+                //         TYPE: 'MISSION',
+                //         WORK_ORDER_ID: messageJson.workOrderId,
+                //         EQP_ID: linkedFacilityInfo?.serial,
+                //         AMR_ID: messageJson.amrName,
+                //         AMR_DB_ID: Number(messageJson.amrId) || 0,
+                //         CALL_TYPE: messageJson.callType,
+                //         CALL_ID: messageJson.missionOrderCode,
+                //         IS_MISSION_ORDER: "TRUE",
+                //         TX_ID: "",
+                //         TAG_ID: "",
+                //         CALL_PRIORITY: messageJson.callPriority,
+                //       }
 
-                        break
-                      } else if (!plcInfoToJson.Call_Request && linkedFacilityInfo) {
-                        // 반대쪽에 콜이 떠 있지 않은 경우 반복해서 판단하는 redis에 저장
-                        redisUtil.hset(RedisKeys.InfoRemainCallById, messageJson.missionOrderCode, JSON.stringify({
-                          ...missionOrderMqttMessage,
-                          fromFacilityName: missionFromfacilityInfo.serial,
-                          toFacilityName: linkedFacilityInfo.serial
-                        }))
-                      }
-                    }
-                  }
-                } else if (missionOrderType?.state === 'WMS') {
-                  await receiveBranchInfoFromACS(messageJson as MqttBranchInfoDataFromAcs)
-                }
+                //       if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
+                //         // 링크된 설비 콜이 떠 있는 경우 작업 생성 
+                //         sendMqtt('acs/missionorder', JSON.stringify(missionOrderMqttMessage));
+
+                //         // 콜 기준 설비 call_response 작성
+                //         await useKepServerUtil().writeSimpleTagValue({
+                //           targetFacility: missionFromfacilityInfo.serial || '',
+                //           tagName: 'Call_Response',
+                //           value: true,
+                //         });
+                //         // call_response 작성
+                //         await useKepServerUtil().writeSimpleTagValue({
+                //           targetFacility: linkedFacilityInfo.serial || '',
+                //           tagName: 'Call_Response',
+                //           value: true,
+                //         });
+
+                //         break
+                //       } else if (!plcInfoToJson.Call_Request && linkedFacilityInfo) {
+                //         // 반대쪽에 콜이 떠 있지 않은 경우 반복해서 판단하는 redis에 저장
+                //         redisUtil.hset(RedisKeys.InfoRemainCallById, messageJson.missionOrderCode, JSON.stringify({
+                //           ...missionOrderMqttMessage,
+                //           fromFacilityName: missionFromfacilityInfo.serial,
+                //           toFacilityName: linkedFacilityInfo.serial
+                //         }))
+                //       }
+                //     }
+                //   }
+                // } else if (missionOrderType?.state === 'WMS') {
+                //   await receiveBranchInfoFromACS(messageJson as MqttBranchInfoDataFromAcs)
+                // }
               } catch (error) {
                 console.log('logging.missionOrder', error);
               }

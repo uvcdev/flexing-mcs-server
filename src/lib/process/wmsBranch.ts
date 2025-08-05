@@ -69,6 +69,7 @@ export interface MqttBranchInfoDataFromAcs {
   callType: string;
   mode: 'auto' | 'manual';
   amrId: number;
+  callPriority: string;
 }
 
 export interface MqttMissionOrderAttributes {

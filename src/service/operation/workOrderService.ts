@@ -128,7 +128,7 @@ const service = {
        * OUT: EQP에서 뺀다 = from설비(EQP) → to설비(WCS)
        * IN: EQP에 넣는다 = from설비(WCS) → to설비(EQP)
        */
-      if (params.TYPE === 'OUT') {
+      if (params.TYPE === 'OUT' || params.TYPE === 'MISSION') {
         fromFacilitySerial = params.EQP_ID;
         toFacilitySerial = params.PORT_ID;
       } else {
