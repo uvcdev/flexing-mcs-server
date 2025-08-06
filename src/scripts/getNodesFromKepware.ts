@@ -75,7 +75,18 @@ const opcuaClient = {
 
 
   needToSubscribe(tagName: string): boolean {
-    return tagName === 'Call_Request' || tagName === 'Call_Cancel' || tagName === 'Dock_Permit' || tagName === 'Dock_Not_Permit' || tagName === 'Dock_EQ_Status'
+    return tagName === 'Call_Request' ||
+      tagName === 'Call_Cancel_Request' ||
+      tagName === 'Dock_Permit' ||
+      tagName === 'Dock_Not_Permit' ||
+      tagName === 'Dock_EQ_Status' ||
+      tagName === 'Dock_Out_Permit' ||
+      tagName === 'Call_Priority' ||
+      tagName === 'Call_Request_Multi_1' ||
+      tagName === 'Call_Request_Multi_2' ||
+      tagName === 'Complete' ||
+      tagName === 'EQ_Auto' ||
+      tagName === 'EQ_Manual'
   },
 
   isASCII(tagName: string): boolean {
