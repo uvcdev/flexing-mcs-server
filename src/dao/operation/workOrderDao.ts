@@ -22,6 +22,8 @@ import WorkOrder, {
   WorkOrderDeleteParams,
   WorkOrderSelectInfoByCodeParams,
   WorkOrderSelectInfoByFacilityIdParams,
+  WorkOrderSelectInfoByAlwaysCallCountParams,
+  WorkOrderSelectInfoByTriggerCallCountParams,
 } from '../../models/operation/workOrder';
 import CommonCode, { CommonCodeAttributesInclude } from '../../models/common/commonCode';
 import User, { UserAttributesInclude } from '../../models/common/user';
@@ -345,28 +347,39 @@ const dao = {
   },
   selectInfoByFacilityId(params: WorkOrderSelectInfoByFacilityIdParams): Promise<WorkOrderAttributes | null> {
     return new Promise((resolve, reject) => {
-      WorkOrder.findOne({
-        where: {
-          fromFacilityId: params.fromFacilityId,
-          toFacilityId: params.toFacilityId,
-          state: {
-            [Op.in]: [
-              'pending1',
-              'pending2',
-              'pending3',
-              'assigned1',
-              'assigned2',
-              'assigned3',
-              'working1',
-              'docking1',
-              'lift1',
-              'completed1',
-              'registered',
-              'preReregistered',
-              'reregistered',
-            ],
-          },
+
+      const setQuery: any = {
+        state: {
+          [Op.in]: [
+            'pending1',
+            'pending2',
+            'assigned1',
+            'assigned2',
+            'working1',
+            'working2',
+            'docking1',
+            'docking2',
+            'lift1',
+            'lift2',
+            'completed1',
+            'registered',
+            'preReregistered',
+            'reregistered',
+          ],
         },
+      };
+
+      if (params.fromFacilityId !== undefined) {
+        setQuery.fromFacilityId = params.fromFacilityId;
+      }
+
+      if (params.toFacilityId !== undefined) {
+        setQuery.toFacilityId = params.toFacilityId;
+      }
+
+      WorkOrder.findOne({
+        where: setQuery,
+
         order: [['updatedAt', 'DESC']],
         include: [
           {
@@ -393,6 +406,32 @@ const dao = {
       })
         .then((selectedInfo) => {
           resolve(selectedInfo);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+  selectInfoByAlwaysCallCount(params: WorkOrderSelectInfoByAlwaysCallCountParams): Promise<WorkOrderAttributes | null> {
+    return new Promise((resolve, reject) => {
+      WorkOrder.findOne({
+        where: { alwaysCallCount: params.alwaysCallCount },
+      })
+        .then((selectedOne) => {
+          resolve(selectedOne);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+  selectInfoByTriggerCallCount(params: WorkOrderSelectInfoByTriggerCallCountParams): Promise<WorkOrderAttributes | null> {
+    return new Promise((resolve, reject) => {
+      WorkOrder.findOne({
+        where: { triggerCallCount: params.triggerCallCount },
+      })
+        .then((selectedOne) => {
+          resolve(selectedOne);
         })
         .catch((err) => {
           reject(err);

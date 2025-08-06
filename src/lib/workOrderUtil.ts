@@ -45,6 +45,8 @@ export type McsWorkOrderRequestType = {
   CALL_TYPE: string; // 배터리 타입 PLC 맵에서 콜타입 이라 명명
   IS_MISSION_ORDER: string; // 작업 지시의 mission order 여부
   CALL_COUNT: number;
+  ALWAYS_CALL_COUNT: number;
+  TRIGGER_CALL_COUNT: number;
 };
 
 export type McsPendingWorkOrderRequestType = {
@@ -58,6 +60,8 @@ export type McsPendingWorkOrderRequestType = {
   callPriority: string;
   callType: string;
   callCount: number;
+  alwaysCallCount: number;
+  triggerCallCount: number;
 };
 
 export const useWorkOrderUtil = () => {
@@ -83,6 +87,8 @@ export const useWorkOrderUtil = () => {
             TX_ID: '',
             ZONE_ID: process.env.FLOOR || '1F',
             CALL_COUNT: workOrder.callCount,
+            ALWAYS_CALL_COUNT: workOrder.alwaysCallCount,
+            TRIGGER_CALL_COUNT: workOrder.triggerCallCount,
           };
           const message = JSON.stringify(params);
           const messageJson = JSON.parse(message);

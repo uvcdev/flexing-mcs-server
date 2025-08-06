@@ -425,13 +425,13 @@ export const useCallCancelUtil = () => {
       const callCountStr = callCount.toString().padStart(4, '0');
 
       let workOrderInfo = null;
-      if (facilityInfo.type === 'in') {
-        workOrderInfo = await workOrderDao.selectInfoByFacilityId({
-          toFacilityId: facilityInfo.id,
+      if (facilityInfo.isActiveCallTrigger === true) {
+        workOrderInfo = await workOrderDao.selectInfoByTriggerCallCount({
+          triggerCallCount: callCount,
         });
-      } else if (facilityInfo.type === 'out') {
-        workOrderInfo = await workOrderDao.selectInfoByFacilityId({
-          fromFacilityId: facilityInfo.id,
+      } else if (facilityInfo.isActiveCallTrigger === false) {
+        workOrderInfo = await workOrderDao.selectInfoByAlwaysCallCount({
+          alwaysCallCount: callCount,
         });
       } else {
         logToConsoleAndFile(`[cancelType = ${cancelType}] 포트 타입 없음`, "red");
