@@ -55,23 +55,16 @@ export const useMultiCallRegisterUtil = () => {
           ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
           : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
         // 필요한 태그 값들 가져오기
+
+        await kepServerUtil.updateTagMapValues(
+          targetKey,
+          targetCode,
+          ['Call_Count', 'Call_Priority']
+        );
+
         const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
         const callPriority = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`);
         const callType = await makeCallType(targetCode);
-
-        // 필요한 모든 nodeId들을 배열로 모음
-        const needNodeIds = [callCount?.NODE_ID, callPriority?.NODE_ID].filter(
-          (nodeId): nodeId is string => nodeId !== undefined
-        );
-        const readDatas = await kepServerUtil.readTagsValue(needNodeIds);
-
-        const needKeys = [callCount?.TAG_NAME, callPriority?.TAG_NAME].filter(
-          (tagName): tagName is string => tagName !== undefined
-        );
-
-        for (let i = 0; i < needKeys.length; i++) {
-          kepServerUtil.updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
-        }
 
         // setting 에서 설비기준 dryrun 인 경우
         // const dryrunSetting = await redisUtil.hgetObject<DryrunSetting>(
@@ -189,6 +182,14 @@ export const useMultiCallRegisterUtil = () => {
                       RedisKeys.InfoFacilityById,
                       linkedEqpId.toString() || ''
                     );
+
+                    const linkedTargetKey = kepServerUtil.getTargetKey(linkedFacilityInfo?.serial || '');
+                    await kepServerUtil.updateTagMapValues(
+                      linkedTargetKey,
+                      linkedFacilityInfo?.serial || '',
+                      ['Call_Request']
+                    );
+
                     const linkedFacilityCallRequestValue = opcuaUtil.tagMap.get(
                       `${linkedFacilityInfo?.serial}.Call_Request`
                     )?.value;
@@ -334,6 +335,12 @@ export const useMultiCallRegisterUtil = () => {
   ): Promise<string | null> => {
     try {
       const targetCode = kepServerUtil.getTagCode(targetKey);
+      await kepServerUtil.updateTagMapValues(
+        targetKey,
+        targetCode,
+        ['Call_Time_Year', 'Call_Time_MonthDay']
+      );
+
       const callTimeYear = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_Year`);
       const callTimeMonthDay = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_MonthDay`);
 
