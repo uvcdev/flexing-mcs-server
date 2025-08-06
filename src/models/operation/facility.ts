@@ -20,6 +20,7 @@ export interface FacilityAttributes {
   description: string | null;
   isMissionOrderCapable: boolean | null;
   linkedEqpIds: Array<number> | null;
+  cancelLinkedEqpIds: Array<number> | null;
   linkedWmsIds: Array<number> | null;
   cancelType: CancelType | null;
   mode: 'auto' | 'manual';
@@ -71,6 +72,7 @@ class Facility extends Model implements FacilityAttributes {
   public description!: FacilityAttributes['description'];
   public isMissionOrderCapable!: FacilityAttributes['isMissionOrderCapable'];
   public linkedEqpIds!: FacilityAttributes['linkedEqpIds'];
+  public cancelLinkedEqpIds!: FacilityAttributes['cancelLinkedEqpIds'];
   public linkedWmsIds!: FacilityAttributes['linkedWmsIds'];
   public cancelType!: FacilityAttributes['cancelType'];
   public mode!: FacilityAttributes['mode'];
@@ -82,6 +84,7 @@ class Facility extends Model implements FacilityAttributes {
 }
 export const FacilityDefaultValue = {
   linkedEqpIds: [],
+  cancelLinkedEqpIds: [],
   linkedWmsIds: [],
   cancelType: 'NON_CANCELLABLE',
   mode: 'auto',
@@ -145,6 +148,10 @@ Facility.init(
     linkedEqpIds: {
       type: DataTypes.ARRAY(DataTypes.INTEGER),
       defaultValue: FacilityDefaultValue.linkedEqpIds,
+    },
+    cancelLinkedEqpIds: {
+      type: DataTypes.ARRAY(DataTypes.INTEGER),
+      defaultValue: FacilityDefaultValue.cancelLinkedEqpIds,
     },
     linkedWmsIds: {
       type: DataTypes.ARRAY(DataTypes.INTEGER),
