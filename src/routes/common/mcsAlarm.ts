@@ -79,6 +79,8 @@ router.get(
         code: req.query.code,
         errorCode: req.query.errorCode,
         state: req.query.state,
+        createdAtFrom: req.query.createdAtFrom ? new Date(req.query.createdAtFrom) : null,
+        createdAtTo: req.query.createdAtTo ? new Date(req.query.createdAtTo) : null,
         limit: Number(req.query.limit),
         offset: Number(req.query.offset),
       };

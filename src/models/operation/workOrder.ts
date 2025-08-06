@@ -219,6 +219,11 @@ export interface WorkOrderSelectInfoByCodeParams {
   code: string;
 }
 
+export interface WorkOrderSelectInfoByFacilityIdParams {
+  fromFacilityId?: number;
+  toFacilityId?: number;
+}
+
 // selectList
 export interface WorkOrderSelectListParams {
   ids?: Array<number> | null;
