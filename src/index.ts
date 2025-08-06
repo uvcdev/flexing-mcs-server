@@ -245,7 +245,7 @@ if (env === 'development') {
       await opcuaUtil.initKepserverex();
 
       // PLC 데이터 수집 (kepware 상태 불러와서 mqtt 전송)
-      // await useKepServerUtil().monitorTagData();
+      await useKepServerUtil().monitorTagData();
     })
     .catch((error: Error) => {
       console.log(error);

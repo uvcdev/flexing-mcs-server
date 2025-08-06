@@ -38,46 +38,30 @@ export const checkMissionOrder = async () => {
 
           const targetCode = linkedFacilityInfo?.serial;
 
+          const targetKey = kepServerUtil.getTargetKey(targetCode || '');
+          await kepServerUtil.updateTagMapValues(
+            targetKey,
+            targetCode || '',
+            ['EQ_Auto', 'Call_Request', 'Call_Count', 'Dock_EQ_Status', 'Call_Response']
+          );
+
           const eqAuto = opcuaUtil.tagMap.get(`${targetCode}.EQ_Auto`);
           const callRequest = opcuaUtil.tagMap.get(`${targetCode}.Call_Request`);
           const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
           const dockEqStatus = opcuaUtil.tagMap.get(`${targetCode}.Dock_EQ_Status`);
           const callResponse = opcuaUtil.tagMap.get(`${targetCode}.Call_Response`);
 
-          const eqAutoValue = eqAuto?.value || false;
-          const callRequestValue = callRequest?.value || false;
-          const callCountValue = Number(callCount?.value) || 0;
-          const dockEqStatusValue = dockEqStatus?.value || false;
-          const callResponseValue = callResponse?.value || false;
+          const eqAutoValue = eqAuto?.value as boolean || false;
+          const callRequestValue = callRequest?.value as boolean || false;
+          const callCountValue = Number(callCount?.value) as number || 0;
+          const dockEqStatusValue = dockEqStatus?.value as boolean || false;
+          const callResponseValue = callResponse?.value as boolean || false;
 
-          console.log('eqAutoValue', eqAutoValue, 'callRequestValue', callRequestValue, 'callCountValue', callCountValue, 'dockEqStatusValue', dockEqStatusValue, 'callResponseValue', callResponseValue)
-
-          // 필요한 모든 nodeId들을 배열로 모음
-          // const needNodeIds = [
-          //   eqAuto?.NODE_ID,
-          //   callRequest?.NODE_ID,
-          //   callCount?.NODE_ID,
-          //   dockEqStatus?.NODE_ID,
-          //   callResponse?.NODE_ID,
-          // ].filter((nodeId): nodeId is string => nodeId !== undefined);
-          // const readDatas = await kepServerUtil.readTagsValue(needNodeIds);
-
-          // const needKeys = [
-          //   eqAuto?.TAG_NAME,
-          //   callRequest?.TAG_NAME,
-          //   callCount?.TAG_NAME,
-          //   dockEqStatus?.TAG_NAME,
-          //   callResponse?.TAG_NAME,
-          // ].filter((tagName): tagName is string => tagName !== undefined);
-
-          // for (let i = 0; i < needKeys.length; i++) {
-          //   kepServerUtil.updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
-          // }
           // 콜 카운트 없어도 되나욤 ?
           if (
-            // eqAutoValue === true &&
+            eqAutoValue === true &&
             callRequestValue === true &&
-            // callCountValue > 0 && 
+            // callCountValue > 0 &&
             dockEqStatusValue === false &&
             callResponseValue === false
           ) {

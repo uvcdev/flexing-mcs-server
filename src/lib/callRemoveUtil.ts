@@ -41,6 +41,12 @@ export const useCallRemoveUtil = () => {
       const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, targetCode)
       const cancelType = facilityInfo?.cancelType || 'NON_CANCELLABLE'
 
+      await kepServerUtil.updateTagMapValues(
+        targetKey,
+        targetCode,
+        ['Call_Count', 'Call_Priority', 'Call_Cancel_Response']
+      );
+
       // 필요한 태그 값들 가져오기    
       const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
       // const callType01 = opcuaUtil.tagMap.get(`${targetCode}.Call_Type_01`);
@@ -48,24 +54,6 @@ export const useCallRemoveUtil = () => {
       const callType = await makeCallType(targetCode)
       const callPriority = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`);
       const callCancelResponse = opcuaUtil.tagMap.get(`${targetCode}.Call_Cancel_Response`);
-
-      const needNodeIds = [
-        callCount?.NODE_ID,
-        callPriority?.NODE_ID,
-        callCancelResponse?.NODE_ID
-      ].filter((nodeId): nodeId is string => nodeId !== undefined);
-
-      const readDatas = await kepServerUtil.readTagsValue(needNodeIds);
-
-      const needKeys = [
-        callCount?.TAG_NAME,
-        callPriority?.TAG_NAME,
-        callCancelResponse?.TAG_NAME,
-      ].filter((tagName): tagName is string => tagName !== undefined);
-
-      for (let i = 0; i < needKeys.length; i++) {
-        kepServerUtil.updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
-      }
 
       // const callCountValue = callCount?.value || 0;
       // const callTypeValue = callType

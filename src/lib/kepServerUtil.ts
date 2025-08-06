@@ -17,6 +17,7 @@ import { KepwareWriteParams } from '../models/kepware/kepware';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { FacilityAttributes } from '../models/operation/facility';
 
+
 export interface MonitorTagValue {
   key: string;
   value: boolean | number | string;
@@ -49,6 +50,9 @@ export interface TagValue {
 
 interface TagValueJson {
   MBS: TagValue[];
+}
+interface TagsJson {
+  MBS: Tag[];
 }
 export interface Tag {
   NODE_ID: string;
@@ -123,9 +127,15 @@ export const makeCallType = async (value: string): Promise<string> => {
 
   let callType = '';
 
+  const kepServerUtil = useKepServerUtil();
+  const targetKey = kepServerUtil.getTargetKey(value);
+  const targetCode = value;
+
+  await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Type_01', 'Call_Type_02', 'Call_Type_03', 'Call_Type_04', 'Call_Type_05', 'Call_Type_06', 'Call_Type_07', 'Call_Type_08', 'Call_Type_09', 'Call_Type_10']);
+
   for (let i = 1; i <= 10; i++) {
     const suffix = i < 10 ? `0${i}` : `${i}`;
-    const tag = await opcuaUtil.tagMap.get(`${value}.Call_Type_${suffix}`);
+    const tag = opcuaUtil.tagMap.get(`${value}.Call_Type_${suffix}`);
     if (tag?.value) {
       callType += tag.value;
     }
@@ -142,7 +152,9 @@ export const useKepServerUtil = () => {
 
   // 필요한 태그 값들 읽어서 tagMap 업데이트 함수
   const updateTagMapValues = async (targetKey: string, targetCode: string, tagNames: string[]) => {
-
+    if (!targetKey || !targetCode) {
+      return;
+    }
     const tagValues = tagNames.map(tagName => {
       const tag = opcuaUtil.tagMap.get(`${targetCode}.${tagName}`);
       return tag;
@@ -567,6 +579,45 @@ export const useKepServerUtil = () => {
     return tag || null;
   };
 
+  const getTargetTag = (device: string, tagName: string): Tag | null => {
+    const jsonData: TagsJson = JSON.parse(fsOrigin.readFileSync('kepserverTag.json', 'utf-8'));
+    const tag = jsonData.MBS.find((t: Tag) => t.DEVICE === device && t.TAG_NAME === tagName);
+    return tag || null;
+  };
+
+  const getTargetKey = (targetCode: string): string => {
+    if (!targetCode) {
+      return '';
+    }
+    const tag = getTargetTag(targetCode, 'Call_Request');
+
+    if (!tag) {
+      return '';
+    }
+
+    const targetTagInfo: TagValue = {
+      value: true,
+      prevValue: '',
+      timestamp: Date.now(),
+      CHANNEL: tag?.CHANNEL || '',
+      DEVICE: tag?.DEVICE || '',
+      TAGGROUP: tag?.TAGGROUP || '',
+      TAG_NAME: tag?.TAG_NAME || '',
+      DATA_TYPE: tag?.DATA_TYPE || '',
+      INPUT_TYPE: tag?.INPUT_TYPE || '',
+      NODE_ID: tag?.NODE_ID || '',
+      EQ_CODE: tag?.EQ_CODE || '',
+      reRegister: '',
+    };
+
+    const targetKey = targetTagInfo.TAGGROUP
+      ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
+      : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+
+    return targetKey;
+  }
+
+
   return {
     writeSimpleTagValue,
     writeTagsValue,
@@ -579,6 +630,7 @@ export const useKepServerUtil = () => {
     getTagMapKey,
     getTagCode,
     findTagInfo,
+    getTargetKey,
     updateTagMapValues
   };
 };

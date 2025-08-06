@@ -733,6 +733,8 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
 // WMS에서 전달해주는 CALL 정보 중 겹치는 내용은 등록 안함 / WMS 리스트에만 있으면 신규 등록 / MCS에만 있으면 삭제
 // 트래킹 로그 추가하면 해당 내용도 같이 추가해야함
 const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody: AckReqCallInfoListBody) => {
+
+  const kepServerUtil = useKepServerUtil();
   // set Data
   const ackReqCallInfoListBody: AckReqCallInfoListBody = messageBody;
 
@@ -755,6 +757,14 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
     const callInfoData = wmsOnlyCallInfoList[i];
     // 1. 콜이 있으면 해당 설비에 호출 응답 적어줌
     const caller = callInfoData.Caller;
+
+    const targetKey = kepServerUtil.getTargetKey(caller);
+    await kepServerUtil.updateTagMapValues(
+      targetKey,
+      caller,
+      ['Call_Request']
+    );
+
     const callRequestValue = opcuaUtil.tagMap.get(`${caller}.Call_Request`)?.value;
     if (callRequestValue === true) {
       await useKepServerUtil().writeSimpleTagValue({
