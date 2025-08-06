@@ -262,6 +262,15 @@ export interface WorkOrderSelectOneParams {
   id?: number;
 }
 
+// selectInfoByAlwaysCallCount
+export interface WorkOrderSelectInfoByAlwaysCallCountParams {
+  alwaysCallCount: number;
+}
+
+// selectInfoByTriggerCallCount
+export interface WorkOrderSelectInfoByTriggerCallCountParams {
+  triggerCallCount: number;
+}
 // selectOneWorkOrder
 export interface WorkOrderSelectOneCodeParams {
   code?: string;
