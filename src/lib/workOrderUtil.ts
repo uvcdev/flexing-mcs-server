@@ -6,7 +6,7 @@ import { calculateDurationInSeconds } from './dateUtil';
 import { EqpCallStats } from './callRegisterUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { service as workOrderService } from '../service/operation/workOrderService';
-import { logging } from './logging';
+import { logging, makeLogFormat, RequestLog } from './logging';
 import { TrackingLogRedisUpdateParams } from '../models/common/trackingLog';
 import { editTrackingLogRedis } from './process/trackingLog';
 import { dao as workOrderDao } from '../dao/operation/workOrderDao';
@@ -90,9 +90,10 @@ export const useWorkOrderUtil = () => {
 
           const existWorkOrder = await workOrderDao.selectInfoByCode({ code: params.CALL_ID });
           if (existWorkOrder) {
-            continue;
+            continue;;
           }
           await workOrderService.regWorkOrder(messageJson);
+
           const trackingLogSubject = 'WORK_ORDER_CREATED';
           const trackingLogDetail = 'WORK_ORDER_CREATED';
           const trackingLogState = 'PROCESSING';
@@ -121,18 +122,17 @@ export const useWorkOrderUtil = () => {
             });
           }
 
+
+          // ACS 작업지시 생성 요청 유무 확인용 Redis 저장
+          // Todo[ssb] 추후 작업완료되는 시점에 삭제 필요, 혹시나 남아있을지 모르니까 하루 지나면 초기화 시키는 로직 추가
+          redisUtil.hset(RedisKeys.InfoWorkOrderCreatedByCallId, params.CALL_ID, message);
+
           redisUtil.hdel(RedisKeys.InfoPendingWorkOrderByCallId, params.CALL_ID);
           redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, params.EQP_ID);
           // todo: 250708 멀티콜 작업지시에서도 숫자 -1 해주기
           // redisUtil.hset(RedisKeys.MultiWorkOrderCountBySerial, params.CALL_ID);
         }
       }
-    } catch (error) {
-      throw error;
-    }
-  };
-  const createMultiWorkOrder = async () => {
-    try {
     } catch (error) {
       throw error;
     }
@@ -282,5 +282,5 @@ export const useWorkOrderUtil = () => {
     sendMqtt(MqttTopics.WorkOrderStats, JSON.stringify(getStats()));
   };
 
-  return { createWorkOrder, createMultiWorkOrder, getStats, setStats, setInitStats, initStats, sendStats };
+  return { createWorkOrder, getStats, setStats, setInitStats, initStats, sendStats };
 };

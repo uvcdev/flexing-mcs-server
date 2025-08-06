@@ -139,6 +139,27 @@ const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) ||
 
 export const useKepServerUtil = () => {
   const redisUtil = useRedisUtil();
+
+  // 필요한 태그 값들 읽어서 tagMap 업데이트 함수
+  const updateTagMapValues = async (targetKey: string, targetCode: string, tagNames: string[]) => {
+
+    const tagValues = tagNames.map(tagName => {
+      const tag = opcuaUtil.tagMap.get(`${targetCode}.${tagName}`);
+      return tag;
+    });
+
+    const needNodeIds = tagValues.map(tag => tag?.NODE_ID).filter((nodeId): nodeId is string => nodeId !== undefined);
+
+    const readDatas = await readTagsValue(needNodeIds);
+
+    const needKeys = tagValues.map(tag => tag?.TAG_NAME).filter((tagName): tagName is string => tagName !== undefined);
+
+    for (let i = 0; i < needKeys.length; i++) {
+      updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
+    }
+
+  }
+
   // JSON 파일 읽기
   const loadTags = async (filePath: string) => {
     const data = await fs.readFile(filePath, 'utf8');
@@ -558,5 +579,6 @@ export const useKepServerUtil = () => {
     getTagMapKey,
     getTagCode,
     findTagInfo,
+    updateTagMapValues
   };
 };

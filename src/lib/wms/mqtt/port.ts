@@ -116,7 +116,22 @@ const portPresenceStatus = async (
 
     console.log('infoPendingWorkOrder', infoPendingWorkOrder);
 
+    const reinboundIfPortAssignedForFacilityCancelByCallId = await redisUtil.hget(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId)
+    if (reinboundIfPortAssignedForFacilityCancelByCallId) {
+      infoPendingWorkOrder.callId = callId + '_canceled';
+      infoPendingWorkOrder.fromFacilityName = portId;
+      infoPendingWorkOrder.toFacilityName = null;
+      infoPendingWorkOrder.type = 'MISSION';
+      infoPendingWorkOrder.isMissionOrder = true;
+      infoPendingWorkOrder.callPriority = infoAckInCallByCallId.Call_Priority;
+      infoPendingWorkOrder.callType = infoAckInCallByCallId.Call_Type;
+      infoPendingWorkOrder.portName = null;
+      infoPendingWorkOrder.eqpName = portId;
+      redisUtil.hdel(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId)
+    }
+
     redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder));
+
     // infoAckInCallByCallId 정보 삭제
     // redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
     deleteInfoAckInCallByCallId(callId);

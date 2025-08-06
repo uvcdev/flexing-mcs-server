@@ -21,6 +21,7 @@ import WorkOrder, {
   // WorkOrderUpdateRunningStateParams,
   WorkOrderDeleteParams,
   WorkOrderSelectInfoByCodeParams,
+  WorkOrderSelectInfoByFacilityIdParams,
 } from '../../models/operation/workOrder';
 import CommonCode, { CommonCodeAttributesInclude } from '../../models/common/commonCode';
 import User, { UserAttributesInclude } from '../../models/common/user';
@@ -311,6 +312,62 @@ const dao = {
     return new Promise((resolve, reject) => {
       WorkOrder.findOne({
         where: { code: params.code },
+        include: [
+          {
+            model: Facility,
+            as: 'FromFacility',
+            attributes: FacilityAttributesInclude,
+          },
+          {
+            model: Facility,
+            as: 'ToFacility',
+            attributes: FacilityAttributesInclude,
+          },
+          {
+            model: Item,
+            as: 'Item',
+            attributes: ItemAttributesInclude,
+          },
+          {
+            model: Amr,
+            as: 'Amr',
+            attributes: AmrAttributesInclude,
+          },
+        ],
+      })
+        .then((selectedInfo) => {
+          resolve(selectedInfo);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+  selectInfoByFacilityId(params: WorkOrderSelectInfoByFacilityIdParams): Promise<WorkOrderAttributes | null> {
+    return new Promise((resolve, reject) => {
+      WorkOrder.findOne({
+        where: {
+          fromFacilityId: params.fromFacilityId,
+          toFacilityId: params.toFacilityId,
+          state: {
+            [Op.in]: [
+              'pending1',
+              'pending2',
+              'pending3',
+              'assigned1',
+              'assigned2',
+              'assigned3',
+              'working1',
+              'docking1',
+              'lift1',
+              'completed1',
+              'registered',
+              'preReregistered',
+              'reregistered',
+            ],
+          },
+        },
+        order: [['updatedAt', 'DESC']],
         include: [
           {
             model: Facility,

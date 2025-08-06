@@ -27,83 +27,43 @@ export const useCallResponseUtil = () => {
       const targetCode = targetTagInfo.EQ_CODE;
       if (!targetCode) return; // 코드 없으면 처리 불가
 
+      // todo 250805 : 아래 로직을 mqttUtil 에서 처리하고 있다면 이동시킬 필요는 있어보임
       const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityById, targetCode);
       const callRequestValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Request`)?.value;
       // 콜 주체가 아닌 콜이 항상 켜져 있는 설비에 Call_Response 가 꺼진 경우
-      if (facilityInfo && callRequestValue === true && !facilityInfo?.linkedEqpIds) {
-        // targetCode 해당 설비가 in 타입이면 to 설비니까 from 설비로 작업 생성
-        if (facilityInfo.type.toUpperCase() === 'IN') {
-          // 작업지시로 to_facility_id 조회해서 created_at 제일 느린거
-          const result = await workOrderService.selectRecentList(
-            { toFacilityId: facilityInfo.id },
-            makeLogFormat({} as RequestLog)
-          );
-          const fromFacilityId = result.rows[0].fromFacilityId;
-          await useRedisUtil().hset(
-            RedisKeys.InfoCallRequestOnBySerial,
-            String(fromFacilityId),
-            JSON.stringify(targetTagInfo)
-          );
-        } else if (facilityInfo.type.toUpperCase() === 'OUT') {
-          const result = await workOrderService.selectRecentList(
-            { fromFacilityId: facilityInfo.id },
-            makeLogFormat({} as RequestLog)
-          );
-          const toFacilityId = result.rows[0].toFacilityId;
-          await useRedisUtil().hset(
-            RedisKeys.InfoCallRequestOnBySerial,
-            String(toFacilityId),
-            JSON.stringify(targetTagInfo)
-          );
-        }
-        return;
-      }
+      // if (facilityInfo && callRequestValue === true && !facilityInfo?.linkedEqpIds) {
+      //   // targetCode 해당 설비가 in 타입이면 to 설비니까 from 설비로 작업 생성
+      //   if (facilityInfo.type.toUpperCase() === 'IN') {
+      //     // 작업지시로 to_facility_id 조회해서 created_at 제일 느린거
+      //     const result = await workOrderService.selectRecentList(
+      //       { toFacilityId: facilityInfo.id },
+      //       makeLogFormat({} as RequestLog)
+      //     );
+      //     const fromFacilityId = result.rows[0].fromFacilityId;
+      //     await useRedisUtil().hset(
+      //       RedisKeys.InfoCallRequestOnBySerial,
+      //       String(fromFacilityId),
+      //       JSON.stringify(targetTagInfo)
+      //     );
+      //   } else if (facilityInfo.type.toUpperCase() === 'OUT') {
+      //     const result = await workOrderService.selectRecentList(
+      //       { fromFacilityId: facilityInfo.id },
+      //       makeLogFormat({} as RequestLog)
+      //     );
+      //     const toFacilityId = result.rows[0].toFacilityId;
+      //     await useRedisUtil().hset(
+      //       RedisKeys.InfoCallRequestOnBySerial,
+      //       String(toFacilityId),
+      //       JSON.stringify(targetTagInfo)
+      //     );
+      //   }
+      //   return;
+      // }
     } catch (error) {
       throw error;
     }
   };
 
-  // // 멀티콜 켜져있는 설비값 보고 작업지시 생성 여부 판단
-  // const decisionWorkOrder = async (targetTagInfo: TagValue) => {
-  //   try {
-  //     const targetCode = targetTagInfo.EQ_CODE;
-  //     if (!targetCode) return;
-
-  //     const multiCallFirstValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Request_Multi_1`)?.value;
-  //     const multiCallSecondValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Request_Multi_2`)?.value;
-
-  //     const workOrderCount = await redisUtil.hget(RedisKeys.InfoWorkOrderCountBySerial, targetCode);
-  //     if (!workOrderCount) return;
-  //     const workOrderCountNum = Number(workOrderCount);
-
-  //     // 멀티콜 2개 켜져 있는 경우
-  //     if (workOrderCountNum && multiCallFirstValue === true && multiCallSecondValue === true) {
-  //       // 현재 진행중인 작업지시 갯수 판단해서 작업지시 만들기
-  //       if (workOrderCountNum <= 2) {
-  //         await useRedisUtil().hset(
-  //           RedisKeys.InfoMultiCallRequestOnBySerial,
-  //           `${targetTagInfo.EQ_CODE}_2`,
-  //           JSON.stringify(targetTagInfo)
-  //         );
-  //       }
-  //     }
-  //     // 멀티콜 1개 켜져 있는 경우
-  //     if (workOrderCountNum && multiCallFirstValue === true) {
-  //       // 현재 진행중인 작업지시 갯수 판단해서 작업지시 만들기
-  //       console.log('여기때문인가');
-  //       if (workOrderCountNum <= 1) {
-  //         await useRedisUtil().hset(
-  //           RedisKeys.InfoMultiCallRequestOnBySerial,
-  //           `${targetTagInfo.EQ_CODE}_1`,
-  //           JSON.stringify(targetTagInfo)
-  //         );
-  //         return;
-  //       }
-  //     }
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // };
   // 멀티콜 켜져있는 설비값 보고 작업지시 생성 여부 판단
   const decisionWorkOrder = async () => {
     try {
@@ -130,15 +90,36 @@ export const useCallResponseUtil = () => {
           const workOrderCountNum = Number(workOrderCount);
 
           const multiCallStatus = [
-            { value: multiCallFirstValue, limit: 1, tagName: 'Call_Request_Multi_1' },
-            { value: multiCallSecondValue, limit: 2, tagName: 'Call_Request_Multi_2' },
+            { value: multiCallFirstValue, tagName: 'Call_Request_Multi_1' },
+            { value: multiCallSecondValue, tagName: 'Call_Request_Multi_2' },
           ];
-          // 2 → 1 순서대로 확인 (둘 다 true면 2부터 처리)
-          for (let i = multiCallStatus.length - 1; i >= 0; i--) {
-            const { value, limit, tagName } = multiCallStatus[i];
 
-            // 조건 만족하는 경우만 실행
-            if (workOrderCountNum && value === true && workOrderCountNum <= limit) {
+          let maxAllowed = 0;
+
+          // true	  true	3	2개 저장 (Multi_2, Multi_1)
+          // true	  true	2	저장 안 함
+          // true	  false	2	1개 저장 (Multi_1)
+          // true	  false	3	저장 안 함
+          // false	false	  아무 값	저장 안 함
+          if (multiCallFirstValue && multiCallSecondValue) {
+            if (workOrderCountNum <= 3) {
+              maxAllowed = 2;
+            }
+          } else if (multiCallFirstValue && !multiCallSecondValue) {
+            if (workOrderCountNum <= 2) {
+              maxAllowed = 1;
+            }
+          }
+          if (maxAllowed === 0) return;
+
+          // 역순 처리: Multi_2 → Multi_1
+          let savedCount = 0;
+          for (let i = multiCallStatus.length - 1; i >= 0; i--) {
+            if (savedCount >= maxAllowed) break;
+
+            const { value, tagName } = multiCallStatus[i];
+
+            if (value === true) {
               const tagInfo = useKepServerUtil().findTagInfo(facilityCode, tagName);
 
               const targetTagInfo: TagValue = {
@@ -153,70 +134,17 @@ export const useCallResponseUtil = () => {
                 INPUT_TYPE: 'Bool',
                 NODE_ID: tagInfo?.NODE_ID || '',
                 EQ_CODE: facilityCode,
-                reRegister: '',
+                reRegister: 'multi',
               };
-
               await useRedisUtil().hset(
                 RedisKeys.InfoMultiCallRequestOnBySerial,
                 `${facilityCode}_${i + 1}`,
                 JSON.stringify(targetTagInfo)
               );
+
+              savedCount++;
             }
           }
-
-          // // 멀티콜 2개 켜져 있는 경우
-          // if (workOrderCountNum && multiCallFirstValue === true && multiCallSecondValue === true) {
-          //   // 현재 진행중인 작업지시 갯수 판단해서 작업지시 만들기
-          //   if (workOrderCountNum <= 2) {
-          //     const tagInfo = useKepServerUtil().findTagInfo(facilityCode, 'Call_Request_Multi_2');
-          //     const targetTagInfo: TagValue = {
-          //       value: true,
-          //       prevValue: '',
-          //       timestamp: Date.now(),
-          //       CHANNEL: tagInfo?.CHANNEL || '',
-          //       DEVICE: '',
-          //       TAGGROUP: '', // 태그 그룹 없음
-          //       TAG_NAME: 'Call_Request_Multi_2',
-          //       DATA_TYPE: 'Boolean',
-          //       INPUT_TYPE: 'Bool',
-          //       NODE_ID: tagInfo?.NODE_ID || '',
-          //       EQ_CODE: '',
-          //       reRegister: '',
-          //     };
-          //     await useRedisUtil().hset(
-          //       RedisKeys.InfoMultiCallRequestOnBySerial,
-          //       `${facilityCode}_2`,
-          //       JSON.stringify(targetTagInfo)
-          //     );
-          //   }
-          // }
-          // // 멀티콜 1개 켜져 있는 경우
-          // if (workOrderCountNum && multiCallFirstValue === true) {
-          //   // 현재 진행중인 작업지시 갯수 판단해서 작업지시 만들기
-          //   if (workOrderCountNum <= 1) {
-          //     const tagInfo = useKepServerUtil().findTagInfo(facilityCode, 'Call_Request_Multi_1');
-          //     const targetTagInfo: TagValue = {
-          //       value: true,
-          //       prevValue: '',
-          //       timestamp: Date.now(),
-          //       CHANNEL: tagInfo?.CHANNEL || '',
-          //       DEVICE: '',
-          //       TAGGROUP: '', // 태그 그룹 없음
-          //       TAG_NAME: 'Call_Request_Multi_1',
-          //       DATA_TYPE: 'Boolean',
-          //       INPUT_TYPE: 'Bool',
-          //       NODE_ID: tagInfo?.NODE_ID || '',
-          //       EQ_CODE: '',
-          //       reRegister: '',
-          //     };
-          //     await useRedisUtil().hset(
-          //       RedisKeys.InfoMultiCallRequestOnBySerial,
-          //       `${facilityCode}_1`,
-          //       JSON.stringify(targetTagInfo)
-          //     );
-          //     return;
-          //   }
-          // }
         }
       }
     } catch (error) {

@@ -18,6 +18,7 @@ import { DryrunSetting } from '../../models/common/setting';
 import { useMultiCallRegisterUtil } from '../multiCallRegisterUtil';
 import { useCallResponseUtil } from '../callResponseUtil';
 import { sendCallInfoList, sendReqPortStateList } from './wmsSyncronization';
+import { checkMissionOrder } from '../missionOrderUtil';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5;
 const heapUse = () => {
@@ -34,22 +35,21 @@ export const processMcs = async () => {
 
     if (counter % 2 === 0) heapUse();
     // setting 에서 설비기준 dryrun 인 경우
-    const dryrunSetting = await useRedisUtil().hgetObject<DryrunSetting>(
-      RedisKeys.Setting,
-      RedisSettingKeys.DryrunSetting
-    );
-    if (!dryrunSetting) {
-      logging.ACTION_DEBUG({
-        filename: 'index.ts',
-        error: 'redis에 dryrunSetting 데이터가 없습니다.',
-        params: null,
-        result: false,
-      });
-      return;
-    }
-    const dryrunMode = dryrunSetting.data.mode || 'normal';
-    // 정상 시나리오(창고 IF / PIO 포함 로직)
-    // if (dryrunMode === 'normal') {
+    // const dryrunSetting = await useRedisUtil().hgetObject<DryrunSetting>(
+    //   RedisKeys.Setting,
+    //   RedisSettingKeys.DryrunSetting
+    // );
+    // if (!dryrunSetting) {
+    //   logging.ACTION_DEBUG({
+    //     filename: 'index.ts',
+    //     error: 'redis에 dryrunSetting 데이터가 없습니다.',
+    //     params: null,
+    //     result: false,
+    //   });
+    //   return;
+    // }
+    // const dryrunMode = dryrunSetting.data.mode || 'normal';
+
     // WMS 관련 프로세스
     if (counter % 5 === 0) {
       sendAllHeartbeat(); // wms heartbeat 전송 ( n초마다 실행 )
@@ -60,8 +60,9 @@ export const processMcs = async () => {
     // 수집한 ack 데이터 처리 ( ACK )
     await checkReceivedAckCommand();
 
+    // todo 250805 : 로직 수정 필요 / 아래 프로세스 제대로 타지 못함 (너무 느려짐)
     // ACK 응답 여부 확인 ( ACK )
-    await checkRemainingAckCommand();
+    // await checkRemainingAckCommand();
 
     // Aborted 된 작업 재전송 여부 확인
     await checkAbortedCommandForRetry();
@@ -86,59 +87,17 @@ export const processMcs = async () => {
     // 설비-설비 간에 작업 미생성된 콜에 대해 재판단(Call_Response) 처리
     await useCallRegisterUtil().checkRemainEqpCall();
 
-    // Call_Response 가 꺼졌을 때 Call_Request 가 켜져 있는 경우
-    // ACS에서 작업 취소했을 때 그 설비에 해당하는 Call_Response 다시 켜주기
-    // await useCallRegisterUtil().createAfterResponseWorkOrder()
-
     // 설비 수동모드인 경우 등록해놓은 redis 조회해서 작업지시 생성
-    await useCallRegisterUtil().createFacilityModeWorkOrder();
+    // await useCallRegisterUtil().createFacilityModeWorkOrder();
 
-    // pending 된 멀티콜 작업 지시 생성
-    await useMultiCallRegisterUtil().multiCallRegister();
-
-    // 멀티콜 커져있는 설비들 조회해서 pending (InfoMultiCallRequestOnBySerial)
+    // 멀티콜 판단로직
     await useCallResponseUtil().decisionWorkOrder();
 
-    // 멀티콜 로직을 계속 판단해서 작업을 만들도록 pending 쪽에 추가하는건?
-    // await useWorkOrderUtil().createMultiWorkOrder();
+    // 멀티콜 작업을 pending 처리
+    await useMultiCallRegisterUtil().multiCallRegister();
 
-    // }
-    // else if (dryrunMode === 'facility') {
-    //   // 설비 기준 드라이런 시나리오(창고 IF / PIO 삭제 로직)
-    //   // WMS 관련 프로세스
-    //   if (counter % 5 === 0) {
-    //     sendAllHeartbeat();                 // wms heartbeat 전송 ( n초마다 실행 )
-    //   }
-    //   // 현재 진행 중인 물류 로그 전송
-    //   await sendTrackingLogs()
-
-    //   // 수집한 ack 데이터 처리 ( ACK )
-    //   await checkReceivedAckCommand()
-
-    //   // ACK 응답 여부 확인 ( ACK )
-    //   await checkRemainingAckCommand()
-
-    //   // Aborted 된 작업 재전송 여부 확인
-    //   await checkAbortedCommandForRetry()
-
-    //   // 콜 취소 요청 들어 왔을 때 처리 로직
-    //   await checkCancelCall()
-
-    //   // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
-    //   // 1. 창고(반출) -> 설비(입고) - CALLINFO는 창고 기준 반출만 사용한다.
-    //   // await checkCallInfoForWms()
-    //   // 2. 창고(반입) -> 설비(반출) - BRANCH_INFO_REQ 는 창고 기준 반입만 사용한다. ( 창고 반입은 모두 미션 결정지 ) - 미션결정지 이동
-    //   // await checkMissionBranchInfoReqForWms()
-    //   // 3. 창고(반입) -> 설비(반출) - 설비에서 창고로 바로 이동할 작업 지시 생성
-    //   // await checkOutBranchInfoReqForWms()
-
-    //   // pending 된 작업 지시 생성
-    //   await useWorkOrderUtil().createWorkOrder()
-
-    //   // 설비-설비 간에 작업 미생성된 콜에 대해 재판단(Call_Response) 처리
-    //   await useCallRegisterUtil().checkRemainEqpCall()
-
-    // }
+    // 미션 결정지에 있는 AMR 이동
+    await checkMissionOrder()
   } catch (error) {
     console.error('Error in processMcs:', error);
     // 에러 로깅 또는 알림 처리
@@ -148,17 +107,16 @@ export const processMcs = async () => {
       processMcs();
     }, 1000);
   }
-}
-
+};
 
 // 동기화 함수
 export const syncWithWms = () => {
   try {
-    sendReqPortStateList()
+    sendReqPortStateList();
 
-    sendCallInfoList()
+    sendCallInfoList();
   } catch (error) {
-    console.error("Error in syncWithWms:", error);
+    console.error('Error in syncWithWms:', error);
     // 에러 로깅 또는 알림 처리
   }
-}
+};

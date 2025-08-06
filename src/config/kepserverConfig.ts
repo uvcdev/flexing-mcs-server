@@ -24,14 +24,14 @@ export const kepserverConfig = {
     // applicationName: "MyOPCUAClient",
     // applicationUri: "",
     // // KEPServerEx 보안이 'None' 일때
-    // securityMode: MessageSecurityMode.None,
-    // securityPolicy: SecurityPolicy.None,
+    securityMode: MessageSecurityMode.None,
+    securityPolicy: SecurityPolicy.None,
 
     // KEPServerEx 보안이 'Basic256Sha256' 일때
-    securityMode: MessageSecurityMode.SignAndEncrypt,
-    securityPolicy: SecurityPolicy.Basic256Sha256,
-    certificateFile: certificateFile,
-    privateKeyFile: privateKeyFile,
+    // securityMode: MessageSecurityMode.SignAndEncrypt,
+    // securityPolicy: SecurityPolicy.Basic256Sha256,
+    // certificateFile: certificateFile,
+    // privateKeyFile: privateKeyFile,
 
     endpointMustExist: false,
     connectionStrategy: {

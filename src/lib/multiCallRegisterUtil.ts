@@ -357,9 +357,9 @@ export const useMultiCallRegisterUtil = () => {
       // callTimeMonthDay 값을 4자릿수로 변환
       const callTimeMonthDayStr = formatToDateCode(Number(callTimeMonthDayValue)).toString();
       const facilityYearMonthDayValue = targetCode + callTimeYearValue + callTimeMonthDayStr;
-      const callCountValueStr = await makeCallCount(facilityInfo, facilityYearMonthDayValue);
+      const callCountValueStr = await makeCallCount(facilityInfo);
 
-      const result = targetCode + callTimeYearValue + callTimeMonthDayStr + callCountValueStr;
+      const result = facilityYearMonthDayValue + callCountValueStr;
       // let result = `_M${callCountValueStr}`;
 
       // if (reRegister === '_R') {
