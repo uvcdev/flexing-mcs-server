@@ -22,7 +22,9 @@ export interface FacilityAttributes {
   linkedEqpIds: Array<number> | null;
   linkedWmsIds: Array<number> | null;
   cancelType: CancelType | null;
-  mode: 'auto' | 'manual',
+  mode: 'auto' | 'manual';
+  generatedCallCount: number | null;
+  isActiveCallTrigger: boolean | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -33,11 +35,24 @@ export interface FacilityAttributesDeep extends FacilityAttributes {
 }
 
 export type CancelType =
-  'NON_CANCELLABLE' |           // 취소 로직을 실행하지 않는 설비 
-  'CANCEL_STOP_ONLY' |          // ACS에서 바로 멈춤 실행
-  'AUTO_RETURN_CANCEL' |        // 자동 재반입 로직 실행
-  'WMS_DEPENDENT_CANCEL' |      // WMS 응답 별 취소 로직 실행 ( CANCEL_STOP_ONLY | AUTO_RETURN_CANCEL )
-  'CANCEL_WITH_DOCKING';        // 취소가 오더라도 도킹까지는 진행하고 도킹 불가 처리를 받고 취소 되는 경우 ( 사용 안 할 가능성 95% )
+  // 'NON_CANCELLABLE' |           // 취소 로직을 실행하지 않는 설비 
+  // 'STOP_ONLY_CANCEL' |          // ACS에서 바로 멈춤 실행
+  // 'AUTO_RETURN_CANCEL' |        // 자동 재반입 로직 실행
+  // 'WMS_DEPENDENT_CANCEL' |      // WMS 응답 별 취소 로직 실행 ( STOP_ONLY_CANCEL | AUTO_RETURN_CANCEL )
+  // 'CANCEL_WITH_DOCKING';        // 취소가 오더라도 도킹까지는 진행하고 도킹 불가 처리를 받고 취소 되는 경우 ( 사용 안 할 가능성 95% )
+
+  // 취소로직 비활성화 설비
+  'NON_CANCELLABLE' |
+
+  // 설비 to 설비 미션O
+  'EQP_TO_EQP_MISSION' |
+
+  // 설비 to 설비 미션X
+  'EQP_TO_EQP_NO_MISSION' |
+
+  // 설비 to 창고
+  'EQP_TO_WMS';
+
 
 class Facility extends Model implements FacilityAttributes {
   public readonly id!: FacilityAttributes['id'];
@@ -59,6 +74,8 @@ class Facility extends Model implements FacilityAttributes {
   public linkedWmsIds!: FacilityAttributes['linkedWmsIds'];
   public cancelType!: FacilityAttributes['cancelType'];
   public mode!: FacilityAttributes['mode'];
+  public generatedCallCount!: FacilityAttributes['generatedCallCount'];
+  public isActiveCallTrigger!: FacilityAttributes['isActiveCallTrigger'];
   public readonly createdAt!: FacilityAttributes['createdAt'];
   public readonly updatedAt!: FacilityAttributes['updatedAt'];
   public readonly deletedAt!: FacilityAttributes['deletedAt'];
@@ -66,7 +83,7 @@ class Facility extends Model implements FacilityAttributes {
 export const FacilityDefaultValue = {
   linkedEqpIds: [],
   linkedWmsIds: [],
-  cancelType: 'CANCEL_STOP_ONLY',
+  cancelType: 'NON_CANCELLABLE',
   mode: 'auto',
 };
 
@@ -141,6 +158,13 @@ Facility.init(
       type: DataTypes.STRING(20),
       defaultValue: FacilityDefaultValue.mode,
     },
+    generatedCallCount: {
+      type: DataTypes.INTEGER,
+    },
+    isActiveCallTrigger: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     sequelize,
@@ -172,6 +196,8 @@ export interface FacilityInsertParams {
   cancelType: FacilityAttributes['cancelType'] | null;
   mode: 'auto' | 'manual' | null;
   description: string | null;
+  generatedCallCount: number | null;
+  isActiveCallTrigger: boolean;
 }
 
 // selectList
@@ -242,6 +268,8 @@ export interface FacilityUpdateParams {
   linkedWmsIds?: Array<number>;
   cancelType?: FacilityAttributes['cancelType'] | null;
   mode?: 'auto' | 'manual';
+  generatedCallCount?: number;
+  isActiveCallTrigger?: boolean;
 }
 
 // update state
@@ -276,6 +304,8 @@ export const FacilityAttributesInclude = [
   'linkedWmsIds',
   'cancelType',
   'mode',
+  'generatedCallCount',
+  'isActiveCallTrigger',
   'createdAt',
 ];
 

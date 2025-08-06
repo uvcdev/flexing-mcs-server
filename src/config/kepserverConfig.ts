@@ -22,7 +22,7 @@ export const kepserverConfig = {
 
   clientOptions: {
     // applicationName: "MyOPCUAClient",
-    applicationUri: "",
+    // applicationUri: "",
     // // KEPServerEx 보안이 'None' 일때
     securityMode: MessageSecurityMode.None,
     securityPolicy: SecurityPolicy.None,

@@ -1,6 +1,9 @@
-import { LogFormat, logging } from './logging';
+import { LogFormat, logging, makeLogFormat, RequestLog } from './logging';
 import dayjs from 'dayjs';
 import { makeResponseError as resError, SelectedListResult } from './resUtil';
+import { RedisKeys, useRedisUtil } from './redisUtil';
+import { FacilityAttributesDeep } from '../models/operation/facility';
+import { service as facilityService } from '../service/operation/facilityService';
 
 // 랜덤한 코드를 생성 for 출고(itemOutflow)
 export const makeCode = (pre: string): string => {
@@ -120,22 +123,23 @@ export const pushArrayWithPromise = (array: Array<any>, item: any) => {
 };
 
 export const formatDetailedDateTime = (date: Date) => {
-  return dayjs(date).format('YYYY.MM.DD HH:mm:ss') + '.' +
-    String(date.getMilliseconds()).padStart(3, '0').substring(0, 2);
+  return (
+    dayjs(date).format('YYYY.MM.DD HH:mm:ss') + '.' + String(date.getMilliseconds()).padStart(3, '0').substring(0, 2)
+  );
 };
 
 export const isCurrentTimeFasterThanAnySeconds = (referenceTime: Date, anySeconds: number) => {
   const currentTime = new Date();
   const timeDifference = currentTime.getTime() - referenceTime.getTime();
 
-  return timeDifference >= (1000 * anySeconds)
-}
+  return timeDifference >= 1000 * anySeconds;
+};
 
 export const isCurrentTimeFasterThanAnyMinutes = (referenceTime: Date, anyMinutes: number) => {
   const currentTime = new Date();
   const timeDifference = currentTime.getTime() - referenceTime.getTime();
 
-  return timeDifference >= (1000 * 60 * anyMinutes);
+  return timeDifference >= 1000 * 60 * anyMinutes;
 };
 
 export const removeAckPrefix = (input: string): string => {
@@ -161,4 +165,27 @@ export const formatToDateCode = (input: number): string => {
   const dayStr = day.toString().padStart(2, '0');
 
   return `${monthStr}${dayStr}`;
-}
+};
+
+export const makeCallCount = async (facilityInfo: FacilityAttributesDeep): Promise<string> => {
+  // Redis에서 기존 객체 가져오기
+  const facilityCode = facilityInfo.serial || '';
+  const currentValue = facilityInfo.generatedCallCount || 0;
+  let nextValue = currentValue + 1;
+
+  // 9999 넘어가면 다시 1로
+  if (nextValue > 9999) {
+    nextValue = 1;
+  }
+
+  const newData = { ...facilityInfo, generatedCallCount: nextValue };
+  const facilityInfoRedisString = JSON.stringify(newData);
+
+  await useRedisUtil().hset(RedisKeys.InfoFacilityBySerial, facilityCode, facilityInfoRedisString);
+  await useRedisUtil().hset(RedisKeys.InfoFacilityById, facilityInfo.id.toString(), facilityInfoRedisString);
+  void facilityService.edit({ id: facilityInfo.id, generatedCallCount: nextValue }, makeLogFormat({} as RequestLog));
+
+  // 4자리 패딩된 값 리턴
+  const paddedSeq = nextValue.toString().padStart(4, '0');
+  return paddedSeq;
+};

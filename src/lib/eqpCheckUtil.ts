@@ -7,6 +7,9 @@ import { useCallRemoveUtil } from './callRemoveUtil';
 import { useDockingUtil } from './process/dockingUtil';
 import { useCallCancelUtil } from './callCancelUtil';
 import { useCallTypeUtil } from './callTypeUtil';
+import { useMultiCallRegisterUtil } from './multiCallRegisterUtil';
+import { useCallResponseUtil } from './callResponseUtil';
+import { RedisKeys, useRedisUtil } from './redisUtil';
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -20,12 +23,35 @@ export const useEqpCheckUtil = () => {
     try {
       // TAG_NAME에 따라 다른 함수 실행
       switch (targetTagInfo.TAG_NAME) {
+        // case 'Call_Request':
+        //   console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+        //   if (targetTagInfo.value === true) {
+        //     await useCallRegisterUtil().callRegister(targetTagInfo)
+        //   } else {
+        //     await useCallRemoveUtil().callRemove(targetTagInfo)
+        //   }
+        //   break;
         case 'Call_Request':
           console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          if (targetTagInfo.value == true) {
-            await useCallRegisterUtil().callRegister(targetTagInfo);
+          if (targetTagInfo.value === true) {
+            await useRedisUtil().hset(
+              RedisKeys.InfoCallRequestOnBySerial,
+              targetTagInfo.EQ_CODE,
+              JSON.stringify(targetTagInfo)
+            );
           } else {
             await useCallRemoveUtil().callRemove(targetTagInfo);
+          }
+          break;
+
+        case 'Call_Response':
+          console.log(`Changed Call_Response`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          if (targetTagInfo.value === false) {
+            await useMultiCallRegisterUtil().hsetWithDecrementCount(
+              RedisKeys.InfoWorkOrderCountBySerial,
+              targetTagInfo.EQ_CODE
+            );
+            // await useCallResponseUtil().callReRegister(targetTagInfo);
           }
           break;
 
@@ -54,7 +80,6 @@ export const useEqpCheckUtil = () => {
           if (targetTagInfo.value === true) {
             await useDockingUtil().dockingOutStart(targetTagInfo);
           }
-
           break;
 
         case 'Call_Type_01':
@@ -89,7 +114,40 @@ export const useEqpCheckUtil = () => {
           //     value: false,
           //   });
           // }, 1000);
+          break;
 
+        case 'Call_Request_Multi_1':
+          console.log(`Changed Call_Request_Multi_1`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          if (targetTagInfo.value === true) {
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_1',
+              value: true,
+            });
+          } else if (targetTagInfo.value === false) {
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_1',
+              value: false,
+            });
+          }
+          break;
+
+        case 'Call_Request_Multi_2':
+          console.log(`Changed Call_Request_Multi_2`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          if (targetTagInfo.value === true) {
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_2',
+              value: true,
+            });
+          } else if (targetTagInfo.value === false) {
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagName: 'Call_Response_Multi_2',
+              value: false,
+            });
+          }
           break;
       }
     } catch (error) {

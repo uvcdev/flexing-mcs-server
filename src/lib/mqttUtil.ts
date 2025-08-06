@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { RequestLog, logging, makeLogFormat } from '../lib/logging';
 import mqtt, { IClientOptions } from 'mqtt';
 import * as dotenv from 'dotenv';
@@ -30,11 +29,14 @@ import { wmsOnline } from './wms/mqtt/online';
 import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/wmsBranch';
 import { useDockingUtil } from './process/dockingUtil';
 import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
-import { useKepServerUtil } from './kepServerUtil';
+import { TagValue, useKepServerUtil } from './kepServerUtil';
 import { routeMissionOrderMqttMessage } from './process/commonUtils';
 import { FacilityAttributes } from '../models/operation/facility';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { service as facilityService } from '../service/operation/facilityService';
+import { opcuaUtil } from './opcuaUtil';
+import { useMultiCallRegisterUtil } from './multiCallRegisterUtil';
+import { useCallCancelUtil } from './callCancelUtil';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -142,7 +144,6 @@ export interface MbsMqttMesaage {
   body: MbsMqttBody;
 }
 
-
 // broker에 접속될 클라이언트 아이디(unique필요)
 const clientId = 'mcs_' + Math.random().toString(16).substr(2, 8);
 
@@ -154,11 +155,11 @@ const options: IClientOptions = {
 
 const client = mqtt.connect(options);
 const topic = mqttConfig.topic;
-const wmsMqttTopic = process.env.MQTT_WMS_TOPIC || 'MCS'
-const mqttSubscribeWmsTopicList: string[] = mqttSubscribeWmsTopics || []
-const mqttSubscribeAcsTopicList: string[] = mqttSubscribeAcsTopics || []
-const wmsList: string[] = process.env.WMS_LIST?.split(',') || []
-const acsList: string[] = process.env.ACS_LIST?.split(',') || []
+const wmsMqttTopic = process.env.MQTT_WMS_TOPIC || 'MCS';
+const mqttSubscribeWmsTopicList: string[] = mqttSubscribeWmsTopics || [];
+const mqttSubscribeAcsTopicList: string[] = mqttSubscribeAcsTopics || [];
+const wmsList: string[] = process.env.WMS_LIST?.split(',') || [];
+const acsList: string[] = process.env.ACS_LIST?.split(',') || [];
 
 // 10초마다 서버 상태 acs로 보내기
 if (mqttConfig.host !== '') {
@@ -166,14 +167,14 @@ if (mqttConfig.host !== '') {
     try {
       sendMqtt(`${MqttTopics.IsAlive}`, JSON.stringify(true));
     } catch (error) {
-      console.log("🚀 ~ setInterval ~ error:", error)
+      console.log('🚀 ~ setInterval ~ error:', error);
     }
   }, 1000);
 }
 
 // mqtt 연결, 구독, 메세지 수신
 export const receiveMqtt = (): void => {
-  const kepServerUtil = useKepServerUtil()
+  const kepServerUtil = useKepServerUtil();
   if (mqttConfig.host !== '') {
     // mqtt host가 등록된 경우에만 구독한다.
     client.on('connect', () => {
@@ -239,7 +240,7 @@ export const receiveMqtt = (): void => {
 
       // MBS WMS 구독
       for (let i = 0; i < wmsList.length; i++) {
-        const wmsName = wmsList[i]
+        const wmsName = wmsList[i];
         for (let j = 0; j < mqttSubscribeWmsTopicList.length; j++) {
           const subscribeTopicName = mqttSubscribeWmsTopicList[j];
           client.subscribe(`${wmsName}${subscribeTopicName}`, (err) => {
@@ -263,7 +264,7 @@ export const receiveMqtt = (): void => {
 
       // MBS ACS 구독
       for (let i = 0; i < acsList.length; i++) {
-        const acsName = acsList[i]
+        const acsName = acsList[i];
         for (let j = 0; j < mqttSubscribeAcsTopicList.length; j++) {
           const subscribeTopicName = mqttSubscribeAcsTopicList[j];
           client.subscribe(`${acsName}${subscribeTopicName}`, (err) => {
@@ -434,14 +435,109 @@ export const receiveMqtt = (): void => {
             if (topicSplit.length === 3 && topicSplit[1] === 'item-logging') {
               // const itemCode = topicSplit[2];
               const messageJson = JSON.parse(message);
-              // 로봇할당 값 write
-              if (messageJson.body.state === 'AMR_ARRIVED') {
+              const state = messageJson.body.state;
+              const workOrderMode = messageJson.mode;
+              const targetFacility = messageJson.facilityName.substring(0, 4);
+
+              if (state === 'AMR_ARRIVED') {
                 await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: messageJson.serial,
+                  targetFacility: messageJson.fromSerial,
                   tagName: 'Call_Robot_Assigned',
-                  value: true
+                  value: true,
                 });
               }
+
+              // 작업 완료
+              if (state === 'MISSION_COMPLETED') {
+                // todo 250723: workOrder mode 보고 수동이면 패스
+                if (workOrderMode === 'manual') return;
+                await useMultiCallRegisterUtil().hsetWithDecrementCount(
+                  RedisKeys.InfoWorkOrderCountBySerial,
+                  targetFacility
+                );
+              }
+
+              // 작업 취소, 작업 실패
+              if (state === 'MISSION_CANCELED' || state === 'MISSION_FAILED') {
+                await useMultiCallRegisterUtil().hsetWithDecrementCount(
+                  RedisKeys.InfoWorkOrderCountBySerial,
+                  targetFacility
+                );
+                // todo 250723: workOrder mode 보고 수동이면 패스
+                if (workOrderMode === 'manual') return;
+                const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+                  RedisKeys.InfoFacilityById,
+                  messageJson.fromSerial
+                );
+                let alwaysOnFacility = messageJson.fromSerial;
+                let triggerFacility = messageJson.toSerial;
+
+                if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
+                  alwaysOnFacility = messageJson.toSerial;
+                  triggerFacility = messageJson.fromSerial;
+                }
+
+                await kepServerUtil.writeSimpleTagValue({
+                  targetFacility: alwaysOnFacility,
+                  tagName: 'Call_Response',
+                  value: false,
+                });
+                await kepServerUtil.writeSimpleTagValue({
+                  targetFacility: alwaysOnFacility,
+                  tagName: 'Call_Robot_Assigned',
+                  value: false,
+                });
+                await kepServerUtil.writeSimpleTagValue({
+                  targetFacility: alwaysOnFacility,
+                  tagName: 'Call_Response_Count',
+                  value: '0',
+                });
+
+                await kepServerUtil.writeSimpleTagValue({
+                  targetFacility: triggerFacility,
+                  tagName: 'Call_Response',
+                  value: false,
+                });
+                await kepServerUtil.writeSimpleTagValue({
+                  targetFacility: triggerFacility,
+                  tagName: 'Call_Robot_Assigned',
+                  value: false,
+                });
+                await kepServerUtil.writeSimpleTagValue({
+                  targetFacility: triggerFacility,
+                  tagName: 'Call_Response_Count',
+                  value: '0',
+                });
+
+                // todo 250805 : ACS에서 취소된 작업 다시 만들 때 멀티콜 판단해서 작업지시 만들어야 하나?
+                // 멀티콜일 때 acs 작업 취소하면 어떻게 되야 하는지 문의 필요
+                // const triggerCallRequestValue = opcuaUtil.tagMap.get(`${triggerFacility}.Call_Request`)?.value;
+                // const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysOnFacility}.Call_Request`)?.value;
+                // if (triggerCallRequestValue === false || alwaysCallRequestValue === false) return;
+
+                const tagInfo = useKepServerUtil().findTagInfo(triggerFacility, 'Call_Request');
+                const targetTagInfo: TagValue = {
+                  value: true,
+                  prevValue: '',
+                  timestamp: Date.now(),
+                  CHANNEL: tagInfo?.CHANNEL || '',
+                  DEVICE: triggerFacility,
+                  TAGGROUP: '',
+                  TAG_NAME: 'Call_Request',
+                  DATA_TYPE: 'Boolean',
+                  INPUT_TYPE: 'Bool',
+                  NODE_ID: tagInfo?.NODE_ID || '',
+                  EQ_CODE: triggerFacility,
+                  reRegister: 'cancel',
+                };
+
+                await useRedisUtil().hset(
+                  RedisKeys.InfoCallRequestOnBySerial,
+                  triggerFacility,
+                  JSON.stringify(targetTagInfo)
+                );
+              }
+              // }
 
               logging.MQTT_DEBUG({
                 title: 'imcs message',
@@ -507,7 +603,7 @@ export const receiveMqtt = (): void => {
                 useDockingUtil().sendAcsDockingComplete(JSON.parse(message));
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
-                throw error
+                throw error;
               }
             }
             if (topicSplit.length === 4 && topicSplit[1] === 'docking' && topicSplit[3] === 'detach') {
@@ -624,10 +720,10 @@ export const receiveMqtt = (): void => {
               }
             }
             // acs heartbeat 수집
-            if (topicSplit.length === 3 && topicSplit[1] === 'server' && topicSplit[2] === 'status') {
-              const messageJson = JSON.parse(message);
+            if (topicSplit.length === 2 && topicSplit[1] === 'is_alive') {
+              const isAlive = message === 'true';
               const receiveAt = formatDetailedDateTime(new Date());
-              sendAcsHeartbeat(messageJson, receiveAt)
+              sendAcsHeartbeat(isAlive, receiveAt)
             }
             // in/out 포트 동일시 회수 작업 생성시 공급 데이터 내리고 회수 데이터 올리기기
             if (topicSplit[1] === 'same_pio') {
@@ -647,7 +743,7 @@ export const receiveMqtt = (): void => {
                 await kepServerUtil.writeSimpleTagValue({
                   targetFacility: messageJson.IN_SERIAL,
                   tagName: 'Dock_AMR_Status',
-                  value: false
+                  value: false,
                 });
                 await useKepServerUtil().writeSimpleTagValue({
                   targetFacility: messageJson.IN_SERIAL,
@@ -660,7 +756,7 @@ export const receiveMqtt = (): void => {
                     tagName: 'Dock_Signal_Reset',
                     value: false,
                   });
-                }, 500)
+                }, 500);
                 await useKepServerUtil().writeSimpleTagValue({
                   targetFacility: messageJson.IN_SERIAL,
                   tagName: 'Dock_Out_Request',
@@ -671,7 +767,7 @@ export const receiveMqtt = (): void => {
                 await kepServerUtil.writeSimpleTagValue({
                   targetFacility: messageJson.OUT_SERIAL,
                   tagName: 'Dock_AMR_Status',
-                  value: true
+                  value: true,
                 });
                 logging.MQTT_LOG({
                   title: 'acs same_pio request',
@@ -681,11 +777,11 @@ export const receiveMqtt = (): void => {
                 void itemLogDao.insert(messageJson);
               } catch (error) {
                 console.log('same_pio request', error);
-                throw error
+                throw error;
               }
             }
             if (topicSplit.length === 3 && topicSplit[1] === 'edit-facility') {
-              const facilitySerial = topicSplit[2]
+              const facilitySerial = topicSplit[2];
               const messageJson = JSON.parse(message);
 
               const mode = messageJson.mode;
@@ -697,10 +793,26 @@ export const receiveMqtt = (): void => {
                   topic: messageTopic,
                   message: messageJson,
                 });
-                return
+                return;
               }
 
-              await facilityService.editFacilityMode({ serial: facilitySerial, mode: mode })
+              await facilityService.editFacilityMode({ serial: facilitySerial, mode: mode });
+            }
+            if (topicSplit.length === 3 && topicSplit[1] === 'res-cancel-work-order') {
+              const callId = topicSplit[2]
+              const messageJson = JSON.parse(message);
+              logging.MQTT_LOG({
+                title: `mcs res-cancel-work-order ${callId}`,
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                // Todo[ssb] acs로부터 온 취소 응답 처리 로직 추가
+                useCallCancelUtil().processCancelResponseFromAcs(messageJson)
+              } catch (error) {
+                console.log('logging.res-cancel-work-order', error);
+              }
             }
           }
 
@@ -710,7 +822,7 @@ export const receiveMqtt = (): void => {
               // item-logging 메세지 처리
               if (topicSplit.length === 2 && topicSplit[1] === 'workorder') {
                 const messageJson = JSON.parse(message);
-                console.log("🚀 ~ client.on ~ messageJson:", messageJson)
+                console.log('🚀 ~ client.on ~ messageJson:', messageJson);
                 logging.MQTT_LOG({
                   title: 'mcs workorder',
                   topic: messageTopic,
@@ -721,7 +833,7 @@ export const receiveMqtt = (): void => {
                 sendMqtt('acs/workorder', message);
               }
             } catch (error) {
-              console.log('왜 안되는지 알려줘야지')
+              console.log('왜 안되는지 알려줘야지');
               logging.MQTT_ERROR({
                 title: 'mqtt message error from mcs/workorder',
                 topic: messageTopic,
@@ -732,7 +844,7 @@ export const receiveMqtt = (): void => {
           }
         }
         // MBS
-        const mbsTopicSplit = messageTopic.split('-')
+        const mbsTopicSplit = messageTopic.split('-');
         if (mbsTopicSplit) {
           const systemTopic = mbsTopicSplit[0];
           const subTopic = mbsTopicSplit[1];
@@ -741,7 +853,7 @@ export const receiveMqtt = (): void => {
           if (mbsTopicSplit.length === 2) {
             // WMS HEARTBEAT 수집
             if (wmsList.includes(systemTopic) && subTopic === 'HEARTBEAT') {
-              checkConnectionWmsHeartbeat(systemTopic, messageJson)
+              checkConnectionWmsHeartbeat(systemTopic, messageJson);
 
               logging.MQTT_LOG({
                 title: 'wms heartbeat',
@@ -759,38 +871,37 @@ export const receiveMqtt = (): void => {
             // WMS에서 오는 메세지 처리
             if (wmsList.includes(systemTopic)) {
               if (logicTopic === 'CALL') {
-                await wmsCall(systemTopic, messageJson)
+                await wmsCall(systemTopic, messageJson);
               } else if (logicTopic === 'TRANSFER') {
-                await wmsTransfer(systemTopic, messageJson)
+                await wmsTransfer(systemTopic, messageJson);
               } else if (logicTopic === 'CARRIER') {
-                await wmsCarrier(systemTopic, messageJson)
+                await wmsCarrier(systemTopic, messageJson);
               } else if (logicTopic === 'PORT') {
-                await wmsPort(systemTopic, messageJson)
+                await wmsPort(systemTopic, messageJson);
               } else if (logicTopic === 'CRANE') {
-                await wmsCrane(systemTopic, messageJson)
+                await wmsCrane(systemTopic, messageJson);
               } else if (logicTopic === 'BRANCH') {
-                await wmsBranch(systemTopic, messageJson)
+                await wmsBranch(systemTopic, messageJson);
               } else if (logicTopic === 'ALARM') {
-                await wmsAlarm(systemTopic, messageJson)
+                await wmsAlarm(systemTopic, messageJson);
               } else if (logicTopic === 'ONLINE') {
-                await wmsOnline(systemTopic, messageJson)
+                await wmsOnline(systemTopic, messageJson);
               }
             }
             // ACS에서 오는 메세지 처리
             else if (acsList.includes(systemTopic)) {
               if (logicTopic === 'PAYLOAD_STATE') {
-                acsPayloadState(systemTopic, messageJson)
+                acsPayloadState(systemTopic, messageJson);
               } else if (logicTopic === 'MISSION_STATE') {
-                acsMissionState(systemTopic, messageJson)
+                acsMissionState(systemTopic, messageJson);
               } else if (logicTopic === 'ALARM_STATE') {
-                acsAlarmState(systemTopic, messageJson)
+                acsAlarmState(systemTopic, messageJson);
               } else if (logicTopic === 'ACK_MISSION_COMMAND') {
-                acsAckMissionCommand(systemTopic, messageJson)
+                acsAckMissionCommand(systemTopic, messageJson);
               }
             }
           }
         }
-
       } catch (err) {
         logging.MQTT_ERROR({
           title: 'mqtt message error',
@@ -834,20 +945,25 @@ export const sendMqtt = (subTopic: string, message: string): void => {
 };
 
 // wms mqtt 메세지 발송
-export const sendMbsMqtt = (systemTopic: string, header: MbsMqttHeader, body: MbsMqttBody, systemName?: string | null): void => {
+export const sendMbsMqtt = (
+  systemTopic: string,
+  header: MbsMqttHeader,
+  body: MbsMqttBody,
+  systemName?: string | null
+): void => {
   if (mqttConfig.host !== '') {
     // mqtt host가 등록된 경우에만 발송한다.
     let sendTopic = wmsMqttTopic;
     if (systemName) {
-      sendTopic = sendTopic + '-' + systemName
+      sendTopic = sendTopic + '-' + systemName;
     }
-    sendTopic = sendTopic + '-' + systemTopic
+    sendTopic = sendTopic + '-' + systemTopic;
 
     const sendMessageObj: MbsMqttMesaage = {
       header: header,
-      body: body
-    }
-    const sendMessage = JSON.stringify(sendMessageObj)
+      body: body,
+    };
+    const sendMessage = JSON.stringify(sendMessageObj);
 
     try {
       client.publish(sendTopic, sendMessage);
@@ -869,9 +985,9 @@ export const makeMbsMqttHeader = (subject: string): MbsMqttHeader => {
   return {
     id: id,
     time: time,
-    subject: subject
-  }
-}
+    subject: subject,
+  };
+};
 
 export const separateMqttMessage = (messageJson: MbsMqttMesaage) => {
   const messageId = messageJson.header.id;
@@ -882,8 +998,8 @@ export const separateMqttMessage = (messageJson: MbsMqttMesaage) => {
     messageId,
     subject,
     messageBody,
-  }
-}
+  };
+};
 
 // 도킹 관련 mqtt 메세지 발송
 export const sendDockingMqtt = (topic: string, message: string): void => {
