@@ -52,6 +52,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, FacilityInser
       mode: req.body.mode || 'auto',
       generatedCallCount: req.body.generatedCallCount,
       isActiveCallTrigger: req.body.isActiveCallTrigger,
+      priority: req.body.priority,
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -217,6 +218,7 @@ router.put(
         mode: req.body.mode,
         generatedCallCount: req.body.generatedCallCount,
         isActiveCallTrigger: req.body.isActiveCallTrigger,
+        priority: req.body.priority,
       };
       logging.REQUEST_PARAM(logFormat);
 

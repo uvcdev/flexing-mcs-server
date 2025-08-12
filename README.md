@@ -276,3 +276,11 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - kepware 동기화 시 구독할 태그 기본값 추가
 - callRegisterUtil함수 내 로직 isActiveCallTrigger 조건 추가
 - 태그 데이터 불러올 때 데이터 최신화 함수 추가
+
+## v1.0.1-ljk
+- 설비 관리 
+  - 미션 결정지 -> To 설비 이동 시, Priority가 높은 설비 우선 판단
+  - 컬럼 추가 priority
+  ```sql
+  ALTER TABLE public.facilities ADD priority int4 DEFAULT 50 NULL;
+  ```
