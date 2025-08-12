@@ -58,11 +58,7 @@ export const useCallRegisterUtil = () => {
           : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
         // 필요한 태그 값들 업데이트
-        await kepServerUtil.updateTagMapValues(
-          targetKey,
-          targetCode,
-          ['Call_Count', 'Call_Priority']
-        );
+        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority']);
 
         // 필요한 태그 값들 가져오기
         const callCountValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`)?.value as number;
@@ -160,11 +156,11 @@ export const useCallRegisterUtil = () => {
 
                   const linkedTargetKey = kepServerUtil.getTargetKey(linkedFacilityInfo.serial || '');
 
-                  await kepServerUtil.updateTagMapValues(
-                    linkedTargetKey,
-                    linkedFacilityInfo.serial || '',
-                    ['Call_Request', 'Call_Response', 'Call_Count']
-                  );
+                  await kepServerUtil.updateTagMapValues(linkedTargetKey, linkedFacilityInfo.serial || '', [
+                    'Call_Request',
+                    'Call_Response',
+                    'Call_Count',
+                  ]);
 
                   const linkedFacilityCallRequestValue = opcuaUtil.tagMap.get(
                     `${linkedFacilityInfo?.serial}.Call_Request`
@@ -172,9 +168,8 @@ export const useCallRegisterUtil = () => {
                   const linkedFacilityCallResponseValue = opcuaUtil.tagMap.get(
                     `${linkedFacilityInfo?.serial}.Call_Response`
                   )?.value as boolean;
-                  const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(
-                    `${linkedFacilityInfo?.serial}.Call_Count`
-                  )?.value as number;
+                  const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(`${linkedFacilityInfo?.serial}.Call_Count`)
+                    ?.value as number;
 
                   const eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
                   const infoPendingWorkOrder: PendingWorkOrderAttributes = {
@@ -185,7 +180,8 @@ export const useCallRegisterUtil = () => {
                     isMissionOrder: false,
                     callPriority: callInfo.Call_Priority,
                     callType: callInfo.Call_Type || 'NC11',
-                    fromFacilityName: (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
+                    fromFacilityName:
+                      (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
                     toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,
                     alwaysCallCount: Number(linkedFacilityCallCountValue),
                     triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
@@ -291,9 +287,10 @@ export const useCallRegisterUtil = () => {
                 // 설비 - 창고 로직
                 // 설비 테이블에 어떤 창고와 통신을 해야한다는 창고를 등록하고
                 const eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
-                if (facilityInfo?.type === 'in') {
+                // SP11, SP21, SP31, SP41 만 facility.system === 'WMS' 로 설정해도 되지만, 편의상 WMS와 상호작용 하는 설비들은 WMS를 붙임 ( 창고 쪽 설비 )
+                if (facilityInfo?.type === 'in' && facilityInfo.system === 'WMS') {
                   await redisUtil.hset(RedisKeys.InfoInCallByCallId, String(eqpCallId), callInfoString);
-                } else {
+                } else if (facilityInfo?.type === 'out' && facilityInfo.system === 'WMS') {
                   await redisUtil.hset(RedisKeys.InfoOutCallByCallId, String(eqpCallId), callInfoString);
                 }
               }
@@ -327,11 +324,7 @@ export const useCallRegisterUtil = () => {
 
         const targetKey = kepServerUtil.getTargetKey(eqCode);
 
-        await kepServerUtil.updateTagMapValues(
-          targetKey,
-          eqCode,
-          ['Call_Request']
-        );
+        await kepServerUtil.updateTagMapValues(targetKey, eqCode, ['Call_Request']);
 
         const callRequestValue = opcuaUtil.tagMap.get(`${eqCode}.Call_Request`)?.value as boolean;
 
@@ -357,11 +350,7 @@ export const useCallRegisterUtil = () => {
     try {
       const targetCode = kepServerUtil.getTagCode(targetKey);
 
-      await kepServerUtil.updateTagMapValues(
-        targetKey,
-        targetCode,
-        ['Call_Time_Year', 'Call_Time_MonthDay']
-      );
+      await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Time_Year', 'Call_Time_MonthDay']);
 
       const callTimeYearValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_Year`)?.value.toString() || '0';
       const callTimeMonthDayValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_MonthDay`)?.value.toString() || '0';
@@ -417,16 +406,16 @@ export const useCallRegisterUtil = () => {
         const alwaysCallCountTargetKey = kepServerUtil.getTargetKey(alwaysCallCountFacilityName || '');
         const triggerCallCountTargetKey = kepServerUtil.getTargetKey(triggerCallCountFacilityName || '');
 
-        await kepServerUtil.updateTagMapValues(
-          alwaysCallCountTargetKey,
-          alwaysCallCountFacilityName || '',
-          ['Call_Request', 'Call_Response', 'Call_Response_Count']
-        );
-        await kepServerUtil.updateTagMapValues(
-          triggerCallCountTargetKey,
-          triggerCallCountFacilityName || '',
-          ['Call_Request', 'Call_Response', 'Call_Response_Count']
-        );
+        await kepServerUtil.updateTagMapValues(alwaysCallCountTargetKey, alwaysCallCountFacilityName || '', [
+          'Call_Request',
+          'Call_Response',
+          'Call_Response_Count',
+        ]);
+        await kepServerUtil.updateTagMapValues(triggerCallCountTargetKey, triggerCallCountFacilityName || '', [
+          'Call_Request',
+          'Call_Response',
+          'Call_Response_Count',
+        ]);
 
         const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Request`)?.value;
         const alwaysCallResponseValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Response`)?.value;
