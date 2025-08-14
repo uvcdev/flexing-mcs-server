@@ -1,14 +1,21 @@
 import { TrackingLogRedisUpdateParams } from '../../models/common/trackingLog';
+import { WmsCommandSetting } from '../../models/common/setting';
 import { EqpCallStats } from '../callRegisterUtil';
 import { generateUUIDNode } from '../hashUtil';
 import { logging } from '../logging';
 import { makeMbsMqttHeader, MbsMqttBody, sendMbsMqtt } from '../mqttUtil';
-import { RedisKeys, useRedisUtil } from '../redisUtil';
+import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
 import { editTrackingLogRedis } from './trackingLog';
 import { setRemainingAckCommand } from './wmsAck';
 import { RecentCallInfo, setRecentCallInfoTaskByCmdId } from './wmsCommon';
+import { InfoAckInCallByCallIdBody } from '../wms/mqtt/call';
+import { isCurrentTimeFasterThanAnyMinutes } from '../usefullToolUtil';
 
 const redisUtil = useRedisUtil();
+
+const WmsCommandSettingDefaultValue = {
+  portRetryTimeoutMinutes: 10, // Timeout 기준 시간 ( 분 )
+};
 
 export interface CallMessageAttributes {
   id: number;
@@ -144,4 +151,52 @@ export const deleteInfoAckInCallByCallId = (callId: string) => {
   // logging 처리는 이 함수를 사용하는 쪽에서 사용
   // TODO-ljk) ack 유효성 검사는 로직이 잡히면 추가될 예정
   redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId);
+};
+
+// 동기화 로직 - ACK_CALL_INFO 응답 받은 후, N 분동안 포트 배정이 없을 때, 처리 로직
+export const checkCallInfoOnPortTimeout = async () => {
+  const infoAckInCallByCallIdList =
+    (await redisUtil.hgetAllObject<InfoAckInCallByCallIdBody>(RedisKeys.InfoAckInCallByCallId)) || [];
+
+  if (infoAckInCallByCallIdList && infoAckInCallByCallIdList.length > 0) {
+    const wmsCommandSetting = await redisUtil.hgetObject<WmsCommandSetting>(
+      RedisKeys.Setting,
+      RedisSettingKeys.WmsCommandSetting
+    );
+
+    const portRetryTimeoutMinutes =
+      Number(wmsCommandSetting?.data?.portRetryTimeoutMinutes) || WmsCommandSettingDefaultValue.portRetryTimeoutMinutes;
+
+    const filteredInfoAckInCallByCallIdList = infoAckInCallByCallIdList.filter((data) => {
+      if (isCurrentTimeFasterThanAnyMinutes(new Date(data.updatedTime), portRetryTimeoutMinutes)) {
+        return true;
+      }
+    });
+    for (let i = 0, length = filteredInfoAckInCallByCallIdList.length; i < length; i++) {
+      const infoAckInCallByCallIdInfo = filteredInfoAckInCallByCallIdList[0];
+
+      // CALL INFO 재요청
+      const systemName = 'WMS';
+
+      const wmsCallInfo: CallInfoForWms = {
+        Call_ID: infoAckInCallByCallIdInfo.CALL_ID,
+        Call_Priority: infoAckInCallByCallIdInfo.Call_Priority,
+        Call_Quantity: infoAckInCallByCallIdInfo.Call_Quantity.toString(),
+        Call_Type: infoAckInCallByCallIdInfo.Call_Type,
+        Caller: infoAckInCallByCallIdInfo.Caller,
+        Cmd_ID: infoAckInCallByCallIdInfo.Cmd_ID,
+      };
+
+      sendCallInfoToWms(wmsCallInfo, systemName);
+
+      // infoAckInCallByCallId updateTime 갱신
+      infoAckInCallByCallIdInfo.updatedTime = new Date();
+
+      redisUtil.hset(
+        RedisKeys.InfoAckInCallByCallId,
+        infoAckInCallByCallIdInfo.CALL_ID,
+        JSON.stringify(infoAckInCallByCallIdInfo)
+      );
+    }
+  }
 };

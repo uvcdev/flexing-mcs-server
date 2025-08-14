@@ -6,7 +6,7 @@ import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { sendAllHeartbeat } from '../heartbeat/sendHeartbeat';
 import { checkSystemConnectionStatus } from '../heartbeat/checkHeartbeat';
 import { checkReceivedAckCommand, checkRemainingAckCommand } from './wmsAck';
-import { checkCallInfoForWms } from './wmsCallInfo';
+import { checkCallInfoForWms, checkCallInfoOnPortTimeout } from './wmsCallInfo';
 import { checkAbortedCommandForRetry, checkCancelCall } from './wmsCommon';
 import { useCallRegisterUtil } from '../callRegisterUtil';
 import { useEqpCheckUtil } from '../eqpCheckUtil';
@@ -62,10 +62,13 @@ export const processMcs = async () => {
 
     // todo 250805 : 로직 수정 필요 / 아래 프로세스 제대로 타지 못함 (너무 느려짐)
     // ACK 응답 여부 확인 ( ACK )
-    // await checkRemainingAckCommand();
+    await checkRemainingAckCommand();
 
     // Aborted 된 작업 재전송 여부 확인
     await checkAbortedCommandForRetry();
+
+    // checkCallInfoOnPortTimeout : ACK_CALL_INFO를 받았지만, PORT 배정이 오래동안 안되면 재요청
+    await checkCallInfoOnPortTimeout();
 
     // 콜 취소 요청 들어 왔을 때 처리 로직
     await checkCancelCall();
@@ -77,6 +80,7 @@ export const processMcs = async () => {
     await checkMissionBranchInfoReqForWms();
     // 3. 창고(반입) -> 설비(반출) - 설비에서 창고로 바로 이동할 작업 지시 생성
     await checkOutBranchInfoReqForWms();
+    // WMS 관련 프로세스 끝
 
     // Call_Request ON 인 경우 실시간 조회해서 작업 생성
     await useCallRegisterUtil().callRegister();
@@ -97,7 +101,7 @@ export const processMcs = async () => {
     await useMultiCallRegisterUtil().multiCallRegister();
 
     // 미션 결정지에 있는 AMR 이동
-    await checkMissionOrder()
+    await checkMissionOrder();
   } catch (error) {
     console.error('Error in processMcs:', error);
     // 에러 로깅 또는 알림 처리

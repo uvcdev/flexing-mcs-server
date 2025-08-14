@@ -53,7 +53,9 @@ const portPresenceStatus = async (
       type: 'OUT',
       isMissionOrder: false,
       callPriority: '99',
-      callType: '',
+      // ToDO - CALL TYPE 이 없는데 ...
+      // 해당 영역 어떻게 처리 할 지 고민 필요
+      callType: 'NG11',
       eqpName: fromFacilityName,
       portName: toFacilityName,
     };
@@ -116,7 +118,10 @@ const portPresenceStatus = async (
 
     console.log('infoPendingWorkOrder', infoPendingWorkOrder);
 
-    const reinboundIfPortAssignedForFacilityCancelByCallId = await redisUtil.hget(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId)
+    const reinboundIfPortAssignedForFacilityCancelByCallId = await redisUtil.hget(
+      RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId,
+      callId
+    );
     if (reinboundIfPortAssignedForFacilityCancelByCallId) {
       infoPendingWorkOrder.callId = callId + '_canceled';
       infoPendingWorkOrder.fromFacilityName = portId;
@@ -127,7 +132,7 @@ const portPresenceStatus = async (
       infoPendingWorkOrder.callType = infoAckInCallByCallId.Call_Type;
       infoPendingWorkOrder.portName = null;
       infoPendingWorkOrder.eqpName = portId;
-      redisUtil.hdel(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId)
+      redisUtil.hdel(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId);
     }
 
     redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder));

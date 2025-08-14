@@ -284,3 +284,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   ```sql
   ALTER TABLE public.facilities ADD priority int4 DEFAULT 50 NULL;
   ```
+- 세팅
+  - portRetryTimeoutMinutes 추가 : Ack Call Info 할당 받았지만, 포트 배정을 받지 않아 재요청하는 시간
+- 창고 로직
+  - portRetryTimeoutMinutes 로직 추가

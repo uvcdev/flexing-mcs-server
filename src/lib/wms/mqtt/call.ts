@@ -48,6 +48,10 @@ interface AckReqCallInfoListBody extends MbsMqttBody {
   Call_InfoList: Array<CallInfoData>;
 }
 
+export interface InfoAckInCallByCallIdBody extends EqpCallStatsForAck {
+  updatedTime: Date;
+}
+
 const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsCallRequest');
   // set Data
@@ -59,7 +63,10 @@ const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
 
   // 1안
   // 1. 콜 아이디에 해당하는 정보 다시 쓰기
-  const infoAckInCallByCallId = await redisUtil.hgetObject<EqpCallStatsForAck>(RedisKeys.InfoAckInCallByCallId, callId);
+  const infoAckInCallByCallId = await redisUtil.hgetObject<InfoAckInCallByCallIdBody>(
+    RedisKeys.InfoAckInCallByCallId,
+    callId
+  );
 
   if (!infoAckInCallByCallId) {
     // TODO - ljk ) 이때 해당 CALL ID 가 없어서 HCACK = 6 으로 회신해야 하는지 질문해야함
@@ -94,7 +101,7 @@ const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
   setRemainingAckCommand(callInfoTopic, wmsName, { header: mqttHeader, body: mqttBody });
 
   // 진행 중인 infoAckInCallByCallId의 Cmd_ID 변경해주기
-  const infoAckInCallByCallIdData: EqpCallStatsForAck = {
+  const infoAckInCallByCallIdData: InfoAckInCallByCallIdBody = {
     Cmd_ID: newCmdId,
     CALL_ID: infoAckInCallByCallId.CALL_ID,
     EQP_CALL_ID: infoAckInCallByCallId.EQP_CALL_ID,
@@ -102,6 +109,7 @@ const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
     Caller: infoAckInCallByCallId.Caller,
     Call_Priority: infoAckInCallByCallId.Call_Priority,
     Call_Quantity: Number(infoAckInCallByCallId.Call_Quantity) || 1,
+    updatedTime: new Date(),
   };
   redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
 
@@ -134,8 +142,6 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
   const hcack = messageBody.HCACK;
   const ackComment = messageBody.Comment;
 
-  console.log('hcack', hcack, '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-
   if (!cmdId || cmdId === '') {
     logging.ACTION_ERROR({
       filename: `call.ts - ackCallInfo`,
@@ -148,7 +154,6 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
 
   const remainingAckCommandSubjectCmdId = `${prefixSubject}-${cmdId}`;
 
-  console.log('come on !!!!', remainingAckCommandSubjectCmdId)
   const remainingCommandInfo =
     (await redisUtil.hgetObject<RemainingAckCommand>(
       RedisKeys.RemainingAckCommandBySubjectCmdId,
@@ -177,7 +182,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
     case '4':
       // 물류 로그 기록
       // InfoAckInCallByCallId 레디스 기록
-      const infoAckInCallByCallIdData: EqpCallStatsForAck = {
+      const infoAckInCallByCallIdData: InfoAckInCallByCallIdBody = {
         Cmd_ID: callInfoData.Cmd_ID,
         CALL_ID: callInfoData.Call_ID,
         EQP_CALL_ID: callId.slice(-4),
@@ -185,6 +190,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
+        updatedTime: new Date(),
       };
       redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
 
@@ -251,10 +257,11 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
 
       // 콜 진행 정보를 삭제
       // 동일 Call 정보를 수신 했다면 해당 정보 있어야 하기 때문에 Call Id 쪽 삭제는 보류
+      // 정보가 남아 있다면 recent_Call_info_task_by_cmd_id 정보도 남아 있어야 할 것 같아서 남겨둠
       // infoAckInCallByCallId 정보 삭제
       // deleteInfoAckInCallByCallId(callId)
       // RecentCallInfoTaskByCmdId 정보 삭제
-      deleteRecentCallInfoTaskByCmdId(cmdId);
+      // deleteRecentCallInfoTaskByCmdId(cmdId);
 
       break;
 
@@ -267,7 +274,6 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         params: null,
         result: false,
       });
-
       break;
 
     // hcack = 2 : 현재 실행 가능하지 않음
@@ -733,7 +739,6 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
 // WMS에서 전달해주는 CALL 정보 중 겹치는 내용은 등록 안함 / WMS 리스트에만 있으면 신규 등록 / MCS에만 있으면 삭제
 // 트래킹 로그 추가하면 해당 내용도 같이 추가해야함
 const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody: AckReqCallInfoListBody) => {
-
   const kepServerUtil = useKepServerUtil();
   // set Data
   const ackReqCallInfoListBody: AckReqCallInfoListBody = messageBody;
@@ -759,11 +764,7 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
     const caller = callInfoData.Caller;
 
     const targetKey = kepServerUtil.getTargetKey(caller);
-    await kepServerUtil.updateTagMapValues(
-      targetKey,
-      caller,
-      ['Call_Request']
-    );
+    await kepServerUtil.updateTagMapValues(targetKey, caller, ['Call_Request']);
 
     const callRequestValue = opcuaUtil.tagMap.get(`${caller}.Call_Request`)?.value;
     if (callRequestValue === true) {
@@ -792,7 +793,7 @@ export const wmsCall = async (wmsName: string, messageJson: MbsMqttMesaage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
-  console.log('wmsName 콜 들어올 때', wmsName)
+  console.log('wmsName 콜 들어올 때', wmsName);
   if (subject === 'CALL_REQUEST') {
     await callRequest(wmsName, messageJson);
   } else if (subject === 'ACK_CALL_INFO') {
