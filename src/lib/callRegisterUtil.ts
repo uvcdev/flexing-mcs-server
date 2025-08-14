@@ -286,13 +286,29 @@ export const useCallRegisterUtil = () => {
               } else {
                 // 설비 - 창고 로직
                 // 설비 테이블에 어떤 창고와 통신을 해야한다는 창고를 등록하고
-                const eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
+                const createdCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
                 // SP11, SP21, SP31, SP41 만 facility.system === 'WMS' 로 설정해도 되지만, 편의상 WMS와 상호작용 하는 설비들은 WMS를 붙임 ( 창고 쪽 설비 )
-                if (facilityInfo?.type === 'in' && facilityInfo.system === 'WMS') {
-                  await redisUtil.hset(RedisKeys.InfoInCallByCallId, String(eqpCallId), callInfoString);
-                } else if (facilityInfo?.type === 'out' && facilityInfo.system === 'WMS') {
-                  await redisUtil.hset(RedisKeys.InfoOutCallByCallId, String(eqpCallId), callInfoString);
+                if ((facilityInfo?.type).toUpperCase() === 'IN' && facilityInfo.system === 'WMS') {
+                  callInfo.CALL_ID = String(createdCallId);
+                  const wmsCallInfoString = JSON.stringify(callInfo);
+
+                  await redisUtil.hset(RedisKeys.InfoInCallByCallId, String(createdCallId), wmsCallInfoString);
+                  // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
+                  await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
+                  await useMultiCallRegisterUtil().hsetWithIncrementCount(
+                    RedisKeys.InfoWorkOrderCountBySerial,
+                    callInfo.Caller
+                  );
                 }
+                // else if ((facilityInfo?.type).toUpperCase() === 'OUT' && facilityInfo.system === 'WMS') {
+                //   await redisUtil.hset(RedisKeys.InfoOutCallByCallId, String(createdCallId), callInfoString);
+                //   // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
+                //   await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
+                //   await useMultiCallRegisterUtil().hsetWithIncrementCount(
+                //     RedisKeys.InfoWorkOrderCountBySerial,
+                //     callInfo.Caller
+                //   );
+                // }
               }
               // else {
               //   // todo: 도착지와 통신 없이 바로 작업 생성
