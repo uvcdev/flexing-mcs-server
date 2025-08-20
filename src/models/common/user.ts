@@ -6,6 +6,7 @@ export interface UserAttributes {
   id: number;
   userid: string;
   password: string;
+  auth: 'viewer' | 'staff' | 'admin' | 'system';
   name: string;
   email: string | null;
   mobile: string | null;
@@ -23,6 +24,7 @@ class User extends Model implements UserAttributes {
   public readonly id!: UserAttributes['id'];
   public userid!: UserAttributes['userid'];
   public password!: UserAttributes['password'];
+  public auth!: UserAttributes['auth'];
   public name!: UserAttributes['name'];
   public email!: UserAttributes['email'];
   public mobile!: UserAttributes['mobile'];
@@ -57,6 +59,11 @@ User.init(
     password: {
       type: DataTypes.STRING(255),
       allowNull: false,
+    },
+    auth: {
+      type: DataTypes.STRING(8),
+      allowNull: false,
+      defaultValue: 'staff',
     },
     name: {
       type: DataTypes.STRING(50),
@@ -104,6 +111,7 @@ User.init(
 export interface UserInsertParams {
   userid: string;
   password: string;
+  auth: UserAttributes['auth'];
   name: string;
   email: string | null;
   mobile: string | null;
@@ -140,6 +148,7 @@ export interface UserSelectOneParams {
 // update
 export interface UserUpdateParams {
   id?: number;
+  auth?: UserAttributes['auth'];
   name?: string;
   email?: string | null;
   mobile?: string | null;
@@ -177,6 +186,6 @@ export interface UserLogoutParams {
 }
 
 // include attributes
-export const UserAttributesInclude = ['id', 'userid', 'name', 'createdAt', 'active'];
+export const UserAttributesInclude = ['id', 'userid', 'name', 'auth', 'createdAt', 'active'];
 
 export default User;

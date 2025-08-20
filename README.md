@@ -276,3 +276,30 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - kepware 동기화 시 구독할 태그 기본값 추가
 - callRegisterUtil함수 내 로직 isActiveCallTrigger 조건 추가
 - 태그 데이터 불러올 때 데이터 최신화 함수 추가
+
+## v1.0.0-lsk
+- 사용자 관리
+  - auth 컬럼 추가
+  ```sql
+  ALTER TABLE public.users ADD auth varchar(8) NOT NULL DEFAULT 'staff';
+  ```
+- FAQ
+  - mqttUtil에 acs FAQ 데이터 수신 로직 추가
+  - FAQ 추가
+  ```sql
+  CREATE TABLE public.faqs (
+    id serial4 NOT NULL,
+    category varchar(50) NULL,
+    question jsonb NOT NULL,
+    answer jsonb NOT NULL,
+    user_id int4 NULL,
+    orderby int4 DEFAULT 0 NOT NULL,
+    sync_id uuid NULL,
+    created_at timestamptz NOT NULL,
+    updated_at timestamptz NOT NULL,
+    deleted_at timestamptz NULL,
+    CONSTRAINT faqs_pkey PRIMARY KEY (id),
+    CONSTRAINT faqs_sync_id_key UNIQUE (sync_id),
+    CONSTRAINT faqs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL ON UPDATE CASCADE
+  );
+  ```

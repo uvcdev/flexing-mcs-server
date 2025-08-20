@@ -33,6 +33,8 @@ import { router as workOrderRouter } from './operation/workOrder';
 import { router as logRouter } from './timescale/log';
 import { router as systemLogRouter } from './timescale/systemLog';
 import { router as itemLogRouter } from './timescale/itemLog';
+// support
+import { router as faqRouter } from './support/faq';
 
 // MBS
 import { router as trackingLogRouter } from './common/trackingLog';
@@ -217,4 +219,7 @@ router.use('/item-logs', itemLogRouter);
 router.use('/tracking-logs', trackingLogRouter);
 // kepware
 router.use('/kepware', kepwareRouter);
+// support
+router.use('/faqs', faqRouter);
+
 export { router };

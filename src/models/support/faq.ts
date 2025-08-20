@@ -1,0 +1,146 @@
+import { Model, DataTypes, WhereOptions, Order } from 'sequelize';
+import { sequelize } from '../sequelize';
+
+// 기본 interface
+
+export interface FaqMultiLanguageText {
+  ko?: string;
+  en?: string;
+  es?: string;
+  [key: string]: string | undefined;
+}
+
+export interface FaqAttributes {
+  id: number;
+  category: string;
+  question: FaqMultiLanguageText;
+  answer: FaqMultiLanguageText;
+  userId: number | null;
+  orderby: number;
+  syncId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+}
+
+class Faq extends Model implements FaqAttributes {
+  public readonly id!: FaqAttributes['id'];
+  public category!: FaqAttributes['category'];
+  public question!: FaqAttributes['question'];
+  public answer!: FaqAttributes['answer'];
+  public userId!: FaqAttributes['userId'];
+  public orderby!: FaqAttributes['orderby'];
+  public syncId!: FaqAttributes['syncId'];
+  public readonly createdAt!: FaqAttributes['createdAt'];
+  public readonly updatedAt!: FaqAttributes['updatedAt'];
+  public readonly deletedAt!: FaqAttributes['deletedAt'];
+}
+
+export const FaqDefaults = {
+  orderby: 0,
+};
+
+Faq.init(
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    category: {
+      type: DataTypes.STRING(50),
+    },
+    question: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+    },
+    answer: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+    },
+    orderby: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: FaqDefaults.orderby,
+    },
+    syncId: {
+      type: DataTypes.UUID,
+      unique: true,
+    },
+  },
+  {
+    sequelize,
+    // tableName: 'tableName', // table명을 수동으로 생성 함
+    // freezeTableName: true, // true: table명의 복수형 변환을 막음
+    underscored: true, // true: underscored, false: camelCase
+    timestamps: true, // createAt, updatedAt
+    paranoid: true, // deletedAt
+  }
+);
+
+// insert
+export interface FaqInsertParams {
+  category: string | null;
+  question: FaqMultiLanguageText;
+  answer: FaqMultiLanguageText;
+  userId: number | null;
+  orderby: number;
+  syncId: string | null;
+}
+
+// selectList
+export interface FaqSelectListParams {
+  categories?: string[] | null;
+  userIds?: number[] | null;
+  limit?: number;
+  offset?: number;
+}
+export interface FaqSelectListQuery {
+  where?: WhereOptions<FaqAttributes>;
+  limit?: number;
+  offset?: number;
+  order?: Order;
+}
+
+// selectInfo
+export interface FaqSelectInfoParams {
+  id?: number;
+}
+
+// selectOne
+export interface FaqSelectOneParams {
+  syncId?: string;
+}
+
+// update
+export interface FaqUpdateParams {
+  id?: number;
+  category?: string | null;
+  question?: FaqMultiLanguageText;
+  answer?: FaqMultiLanguageText;
+  userId?: number | null;
+  orderby?: number;
+  syncId?: string | null;
+}
+
+// delete
+export interface FaqDeleteParams {
+  id?: number;
+}
+
+// include attributes
+export const FaqAttributesInclude = [
+  'id',
+  'category',
+  'question',
+  'answer',
+  'userId',
+  'orderby',
+  'syncId',
+  'createdAt',
+];
+
+export default Faq;

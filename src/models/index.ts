@@ -9,7 +9,7 @@ import Setting from './common/setting';
 import AlarmEmail from './common/alarmEmail';
 import McsAlarm from './common/mcsAlarm';
 import Amr from './common/amr';
-import ErrorCode from './common/errorCode'
+import ErrorCode from './common/errorCode';
 
 // dashboard
 import DailyStatistic from './dashboard/dailyStatistic';
@@ -27,6 +27,9 @@ import Log from './timescale/log';
 import SystemLog from './timescale/systemLog';
 import CallReserve from './common/callReserve';
 import CallSpec from './common/callSpec';
+
+// support
+import Faq from './support/faq';
 
 export * from './sequelize';
 
@@ -56,6 +59,8 @@ const db = {
   SystemLog,
   CallReserve,
   CallSpec,
+  /* support */
+  Faq,
 };
 
 export type dbType = typeof db;
@@ -82,3 +87,7 @@ WorkOrder.belongsTo(Facility, { foreignKey: { name: 'fromFacilityId' }, onDelete
 WorkOrder.belongsTo(Facility, { foreignKey: { name: 'toFacilityId' }, onDelete: 'SET NULL', as: 'ToFacility' });
 WorkOrder.belongsTo(Item, { foreignKey: { name: 'itemId' }, onDelete: 'SET NULL', as: 'Item' });
 WorkOrder.belongsTo(Amr, { foreignKey: { name: 'fromAmrId' }, onDelete: 'SET NULL', as: 'Amr' });
+
+/* support */
+// Faq
+Faq.belongsTo(User, { foreignKey: { name: 'userId' }, onDelete: 'SET NULL', as: 'User' });

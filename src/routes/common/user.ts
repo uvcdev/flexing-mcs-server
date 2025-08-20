@@ -37,6 +37,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, UserInsertPar
     const params: UserInsertParams = {
       userid: req.body.userid,
       password: req.body.password,
+      auth: req.body.auth || 'staff',
       name: req.body.name,
       email: req.body.email,
       mobile: req.body.mobile,
@@ -218,6 +219,7 @@ router.put(
       // 요청 파라미터
       const params: UserUpdateParams = {
         id: Number(req.params.id),
+        auth: req.body.auth,
         name: req.body.name,
         email: req.body.email,
         mobile: req.body.mobile,

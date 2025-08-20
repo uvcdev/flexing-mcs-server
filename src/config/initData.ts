@@ -7,6 +7,7 @@ import { CommonCodeInsertParams } from '../models/common/commonCode';
 export const initUser: UserInsertParams = {
   userid: 'system',
   password: '@dbqlTl1',
+  auth: 'system',
   name: '시스템관리자',
   email: null,
   mobile: null,
