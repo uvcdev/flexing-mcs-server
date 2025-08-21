@@ -21,6 +21,7 @@ export const checkMissionOrder = async () => {
     if (missionOrderType) {
       const missionFromfacilityInfo = missionOrderType.facilityInfo;
 
+      // 콜 취소 시나리오
       if (missionFromfacilityInfo?.type === 'in') {
         if (missionFromfacilityInfo?.cancelLinkedEqpIds && missionFromfacilityInfo?.cancelLinkedEqpIds.length > 0) {
           const newCancelLinkedEqpFacilityList: Array<FacilityAttributes> = [];
@@ -97,12 +98,12 @@ export const checkMissionOrder = async () => {
                 // 링크된 설비 콜이 떠 있는 경우 작업 생성
                 sendMqtt('acs/missionorder', JSON.stringify(missionOrderMqttMessage));
 
-                // 콜 기준 설비 call_response 작성
-                await useKepServerUtil().writeSimpleTagValue({
-                  targetFacility: missionFromfacilityInfo.serial || '',
-                  tagName: 'Call_Response',
-                  value: true,
-                });
+                // // 콜 기준 설비 call_response 작성
+                // await useKepServerUtil().writeSimpleTagValue({
+                //   targetFacility: missionFromfacilityInfo.serial || '',
+                //   tagName: 'Call_Response',
+                //   value: true,
+                // });
                 // call_response 작성
                 await useKepServerUtil().writeSimpleTagValue({
                   targetFacility: linkedFacilityInfo.serial || '',
@@ -125,7 +126,9 @@ export const checkMissionOrder = async () => {
             // }
           }
         }
-      } else {
+      }
+      // 정상 시나리오
+      else {
         if (missionFromfacilityInfo?.linkedEqpIds && missionFromfacilityInfo?.linkedEqpIds.length > 0) {
           const newCancelLinkedEqpFacilityList: Array<FacilityAttributes> = [];
           for (let i = 0; i < missionFromfacilityInfo.linkedEqpIds.length; i++) {
@@ -201,12 +204,12 @@ export const checkMissionOrder = async () => {
                 // 링크된 설비 콜이 떠 있는 경우 작업 생성
                 sendMqtt('acs/missionorder', JSON.stringify(missionOrderMqttMessage));
 
-                // 콜 기준 설비 call_response 작성
-                await useKepServerUtil().writeSimpleTagValue({
-                  targetFacility: missionFromfacilityInfo.serial || '',
-                  tagName: 'Call_Response',
-                  value: true,
-                });
+                // // 콜 기준 설비 call_response 작성
+                // await useKepServerUtil().writeSimpleTagValue({
+                //   targetFacility: missionFromfacilityInfo.serial || '',
+                //   tagName: 'Call_Response',
+                //   value: true,
+                // });
                 // call_response 작성
                 await useKepServerUtil().writeSimpleTagValue({
                   targetFacility: linkedFacilityInfo.serial || '',
