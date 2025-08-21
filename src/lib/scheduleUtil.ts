@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import * as schedule from 'node-schedule';
 import { Request } from 'express';
 import { RequestLog, logging, makeLogFormat } from './logging';
@@ -28,9 +25,13 @@ export const makeSendServerStatusInterval = (params: { second: number }): void =
   }, params.second * 1000);
 };
 
-export const makeinitDailyWorkOrderstatsScheduleSet = (params: { hour: number; minute: number; second: number }): void => {
+export const makeinitDailyWorkOrderstatsScheduleSet = (params: {
+  hour: number;
+  minute: number;
+  second: number;
+}): void => {
   const rule = new schedule.RecurrenceRule();
-  rule.tz = 'Asia/Seoul';
+  rule.tz = 'Europe/Madrid';
   rule.hour = params.hour;
   rule.minute = params.minute;
   rule.second = params.second;
@@ -38,11 +39,11 @@ export const makeinitDailyWorkOrderstatsScheduleSet = (params: { hour: number; m
 
   // 스케줄  설정
   console.log('금일 작업지시 상태 스케줄러 생성한다!');
-  workOrderService.initDailyWorkOrderstats()
+  workOrderService.initDailyWorkOrderstats();
   schedule.scheduleJob(rule, async function () {
     try {
       console.log('금일 작업지시 상태 스케줄러 시작한다!');
-      workOrderService.initDailyWorkOrderstats()
+      workOrderService.initDailyWorkOrderstats();
     } catch (error) {
       logging.ACTION_ERROR({
         filename: 'scheduleUtil.ts',

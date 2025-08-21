@@ -96,7 +96,7 @@ export const useWorkOrderUtil = () => {
 
           const existWorkOrder = await workOrderDao.selectInfoByCode({ code: params.CALL_ID });
           if (existWorkOrder) {
-            continue;;
+            continue;
           }
           await workOrderService.regWorkOrder(messageJson);
 
@@ -127,7 +127,6 @@ export const useWorkOrderUtil = () => {
               error: err,
             });
           }
-
 
           // ACS 작업지시 생성 요청 유무 확인용 Redis 저장
           // Todo[ssb] 추후 작업완료되는 시점에 삭제 필요, 혹시나 남아있을지 모르니까 하루 지나면 초기화 시키는 로직 추가

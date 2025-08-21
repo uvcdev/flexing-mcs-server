@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import * as express from 'express';
 import { Request, Response } from 'express';
 import { isLoggedIn } from '../../lib/middleware';
@@ -25,14 +23,14 @@ const makeSelectListLogQuery = (params: ItemLogSelectListParams): string => {
   let offsetQuery = '';
   if (params.createdAtFrom || params.createdAtTo) {
     if (params.createdAtFrom && params.createdAtTo) {
-      whereQuery += ` "ItemLog"."created_at" BETWEEN '${(params.createdAtFrom as unknown) as string}' AND '${(params.createdAtTo as unknown) as string
+      whereQuery += ` "ItemLog"."created_at" BETWEEN '${params.createdAtFrom as unknown as string}' AND '${params.createdAtTo as unknown as string
         }'`;
     } else {
       if (params.createdAtFrom) {
-        whereQuery += ` "ItemLog"."created_at" >= '${(params.createdAtFrom as unknown) as string}'`;
+        whereQuery += ` "ItemLog"."created_at" >= '${params.createdAtFrom as unknown as string}'`;
       }
       if (params.createdAtTo) {
-        whereQuery += ` "ItemLog"."created_at" <= '${(params.createdAtTo as unknown) as string}'`;
+        whereQuery += ` "ItemLog"."created_at" <= '${params.createdAtTo as unknown as string}'`;
       }
     }
   }
@@ -70,7 +68,7 @@ const makeSelectListLogQuery = (params: ItemLogSelectListParams): string => {
 
   const query =
     `SELECT "id", 
-    "created_at" AT TIME ZONE 'Asia/Seoul' AS "createdAt", "item_code" AS "itemCode", "facility_code" AS "facilityCode", 
+    "created_at" AT TIME ZONE 'Europe/Madrid' AS "createdAt", "item_code" AS "itemCode", "facility_code" AS "facilityCode", 
     "facility_name" AS "facilityName", "amr_code" AS "amrCode", 
     "amr_name" AS "amrName", "floor", "topic", "subject",
     "body" FROM "item_logs" AS "ItemLog" ` +

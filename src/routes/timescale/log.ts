@@ -82,7 +82,7 @@ const makeSelectListLogQuery = (params: LogSelectListParams): string => {
 
   const query =
     `SELECT "id", 
-    "created_at" AT TIME ZONE 'Asia/Seoul' AS "createdAt", "facility_code" AS "facilityCode", 
+    "created_at" AT TIME ZONE 'Europe/Madrid' AS "createdAt", "facility_code" AS "facilityCode", 
     "facility_name" AS "facilityName", "amr_code" AS "amrCode", 
     "amr_name" AS "amrName", "log_level" AS "logLevel", 
     "function", "data" FROM "logs" AS "Log" ` +

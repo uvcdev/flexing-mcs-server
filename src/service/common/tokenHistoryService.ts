@@ -63,7 +63,7 @@ const service = {
       if (pmsUrl && pmsKey) {
         const pmsLogParams = {
           crtfcKey: pmsKey, // 인증키
-          logDt: moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'), // 로그일시(한국시간)
+          logDt: moment().tz('Europe/Madrid').format('YYYY-MM-DD HH:mm:ss.SSS'), // 로그일시(한국시간)
           useSe: 'Login', // 사용 구분
           sysUser: params.userId?.toString(), // 사용자 식별값
           conectIp: params.clientIp, // 접속IP
@@ -111,7 +111,7 @@ const service = {
       if (pmsUrl && pmsKey) {
         const pmsLogParams = {
           crtfcKey: pmsKey, // 인증키
-          logDt: moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'), // 로그일시(한국시간)
+          logDt: moment().tz('Europe/Madrid').format('YYYY-MM-DD HH:mm:ss.SSS'), // 로그일시(한국시간)
           useSe: 'Logout', // 사용 구분
           sysUser: params.userId?.toString(), // 사용자 식별값
           conectIp: params.clientIp, // 접속IP

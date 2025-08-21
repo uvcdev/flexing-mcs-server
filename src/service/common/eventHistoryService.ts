@@ -148,7 +148,7 @@ const service = {
       if (pmsUrl && pmsKey) {
         const pmsLogParams = {
           crtfcKey: pmsKey, // 인증키
-          logDt: moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'), // 로그일시(한국시간)
+          logDt: moment().tz('Europe/Madrid').format('YYYY-MM-DD HH:mm:ss.SSS'), // 로그일시(한국시간)
           useSe: eventHistoryParams.action, // 사용 구분
           sysUser: eventHistoryParams.userId.toString(), // 사용자 식별값
           conectIp: eventHistoryParams.clientIp, // 접속IP
