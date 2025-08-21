@@ -56,11 +56,7 @@ export const useMultiCallRegisterUtil = () => {
           : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
         // 필요한 태그 값들 가져오기
 
-        await kepServerUtil.updateTagMapValues(
-          targetKey,
-          targetCode,
-          ['Call_Count', 'Call_Priority']
-        );
+        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority']);
 
         const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
         const callPriority = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`);
@@ -184,11 +180,9 @@ export const useMultiCallRegisterUtil = () => {
                     );
 
                     const linkedTargetKey = kepServerUtil.getTargetKey(linkedFacilityInfo?.serial || '');
-                    await kepServerUtil.updateTagMapValues(
-                      linkedTargetKey,
-                      linkedFacilityInfo?.serial || '',
-                      ['Call_Request']
-                    );
+                    await kepServerUtil.updateTagMapValues(linkedTargetKey, linkedFacilityInfo?.serial || '', [
+                      'Call_Request',
+                    ]);
 
                     const linkedFacilityCallRequestValue = opcuaUtil.tagMap.get(
                       `${linkedFacilityInfo?.serial}.Call_Request`
@@ -296,10 +290,10 @@ export const useMultiCallRegisterUtil = () => {
                 } else {
                   // 설비 - 창고 로직
                   // 설비 테이블에 어떤 창고와 통신을 해야한다는 창고를 등록하고
-                  if (facilityInfo?.type === 'in') {
-                    await redisUtil.hset(RedisKeys.InfoInCallByCallId, callInfo.CALL_ID, callInfoString);
-                  } else {
-                    await redisUtil.hset(RedisKeys.InfoOutCallByCallId, callInfo.CALL_ID, callInfoString);
+                  if ((facilityInfo?.type).toUpperCase() === 'IN' && facilityInfo.system === 'WMS') {
+                    await redisUtil.hset(RedisKeys.InfoInCallByCallId, String(eqpCallId), callInfoString);
+                  } else if ((facilityInfo?.type).toUpperCase() === 'OUT' && facilityInfo.system === 'WMS') {
+                    await redisUtil.hset(RedisKeys.InfoOutCallByCallId, String(eqpCallId), callInfoString);
                   }
                 }
                 // else {
@@ -335,11 +329,7 @@ export const useMultiCallRegisterUtil = () => {
   ): Promise<string | null> => {
     try {
       const targetCode = kepServerUtil.getTagCode(targetKey);
-      await kepServerUtil.updateTagMapValues(
-        targetKey,
-        targetCode,
-        ['Call_Time_Year', 'Call_Time_MonthDay']
-      );
+      await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Time_Year', 'Call_Time_MonthDay']);
 
       const callTimeYear = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_Year`);
       const callTimeMonthDay = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_MonthDay`);

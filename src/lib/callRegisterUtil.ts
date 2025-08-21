@@ -82,10 +82,11 @@ export const useCallRegisterUtil = () => {
           // 작업 생성 트리거 판단
           if (facilityInfo?.isActiveCallTrigger === true) {
             const callInfoString = JSON.stringify(callInfo);
-            await initTrackingLogRedis(callInfo);
             if (facilityInfo?.isMissionOrderCapable) {
               // ======= 미션결정 작업지시 (설비기준 회수) =======
-              const eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
+              const eqpCallId = (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
+              callInfo.CALL_ID = eqpCallId;
+              await initTrackingLogRedis(callInfo);
               const infoPendingMissionWorkOrder: PendingWorkOrderAttributes = {
                 callId: String(eqpCallId),
                 fromFacilityName: callInfo.Caller,
@@ -171,7 +172,10 @@ export const useCallRegisterUtil = () => {
                   const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(`${linkedFacilityInfo?.serial}.Call_Count`)
                     ?.value as number;
 
-                  const eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
+                  const eqpCallId =
+                    (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
+                  callInfo.CALL_ID = eqpCallId;
+                  await initTrackingLogRedis(callInfo);
                   const infoPendingWorkOrder: PendingWorkOrderAttributes = {
                     callId: String(eqpCallId),
                     eqpName: callInfo.Caller,
@@ -290,6 +294,7 @@ export const useCallRegisterUtil = () => {
                 // SP11, SP21, SP31, SP41 만 facility.system === 'WMS' 로 설정해도 되지만, 편의상 WMS와 상호작용 하는 설비들은 WMS를 붙임 ( 창고 쪽 설비 )
                 if ((facilityInfo?.type).toUpperCase() === 'IN' && facilityInfo.system === 'WMS') {
                   callInfo.CALL_ID = String(createdCallId);
+                  await initTrackingLogRedis(callInfo);
                   const wmsCallInfoString = JSON.stringify(callInfo);
 
                   await redisUtil.hset(RedisKeys.InfoInCallByCallId, String(createdCallId), wmsCallInfoString);
@@ -444,14 +449,18 @@ export const useCallRegisterUtil = () => {
           `${triggerCallCountFacilityName}.Call_Response_Count`
         )?.value;
 
-        const infoTrackingLogByFromFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
-          RedisKeys.InfoTrackingLogByFacilityCode,
-          remainCall.fromFacilityName || ''
+        const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
+          RedisKeys.InfoTrackingLogByCallId,
+          remainCall.callId || ''
         );
-        const infoTrackingLogByToFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
-          RedisKeys.InfoTrackingLogByFacilityCode,
-          remainCall.toFacilityName || ''
-        );
+        // const infoTrackingLogByFromFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
+        //   RedisKeys.InfoTrackingLogByFacilityCode,
+        //   remainCall.fromFacilityName || ''
+        // );
+        // const infoTrackingLogByToFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
+        //   RedisKeys.InfoTrackingLogByFacilityCode,
+        //   remainCall.toFacilityName || ''
+        // );
         // 양쪽 설비에 콜 요청은 떠 있고 콜 응답 내려가 있는 경우 작업 생성
         if (
           alwaysCallCountFacilityName &&
@@ -476,16 +485,16 @@ export const useCallRegisterUtil = () => {
           const trackingLogDetail = 'CALL_RESPONSE';
           const trackingLogState = 'PROCESSING';
           const trackingLogUpdateReqData: TrackingLogRedisUpdateParams = {
-            callId: infoTrackingLogByFromFacilityCode?.callId,
+            callId: infoTrackingLogByCallId?.callId,
             subject: trackingLogSubject,
             detail: trackingLogDetail,
             state: trackingLogState,
             startFacility: null,
             transferId: null,
-            destFacility: infoTrackingLogByFromFacilityCode?.destFacility,
+            destFacility: infoTrackingLogByCallId?.destFacility,
             assignedRobot: null,
-            value: infoTrackingLogByFromFacilityCode?.destFacility,
-            description: `Call ID ${infoTrackingLogByFromFacilityCode?.callId} responsed`,
+            value: infoTrackingLogByCallId?.destFacility,
+            description: `Call ID ${infoTrackingLogByCallId?.callId} responsed`,
           };
           await editTrackingLogRedis(trackingLogUpdateReqData, undefined, 'SUCCESS', remainCall.fromFacilityName);
 
@@ -501,16 +510,16 @@ export const useCallRegisterUtil = () => {
             value: String(triggerCallResponseCountValue),
           });
           const trackingLogUpdateResData: TrackingLogRedisUpdateParams = {
-            callId: infoTrackingLogByToFacilityCode?.callId,
+            callId: infoTrackingLogByCallId?.callId,
             subject: trackingLogSubject,
             detail: trackingLogDetail,
             state: trackingLogState,
             startFacility: null,
             transferId: null,
-            destFacility: infoTrackingLogByToFacilityCode?.destFacility,
+            destFacility: infoTrackingLogByCallId?.destFacility,
             assignedRobot: null,
-            value: infoTrackingLogByToFacilityCode?.destFacility,
-            description: `Call ID ${infoTrackingLogByToFacilityCode?.callId} responsed`,
+            value: infoTrackingLogByCallId?.destFacility,
+            description: `Call ID ${infoTrackingLogByCallId?.callId} responsed`,
           };
           await editTrackingLogRedis(
             trackingLogUpdateResData,
