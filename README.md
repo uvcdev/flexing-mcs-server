@@ -283,3 +283,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 콜 우선순위값 변경 시 처리로직 추가
 - PLC 아스키코드 변환 방식 수정(10진수 -> 16진수)
 - checkMissionOrder() 리팩토링
+```sql
+  ALTER TABLE public.facilities ADD cancel_linked_eqp_ids _int4 NULL;
+```
