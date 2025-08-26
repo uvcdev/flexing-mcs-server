@@ -90,8 +90,8 @@ export interface WriteDataParams {
   value: boolean | string;
 }
 
-// ASCII 타입 태그에서 WORD 값을 추출하는 함수
-export const parseAsciiToWord = (value: string): number => {
+// ASCII → 10진수 Word
+export const parseAsciiToDecWord = (value: string): number => {
   if (typeof value !== 'string' || value.length !== 2) {
     return 0;
   }
@@ -102,8 +102,23 @@ export const parseAsciiToWord = (value: string): number => {
   return (char1 << 8) | char2; // 상위 바이트를 왼쪽으로 8비트 이동 후 OR 연산
 };
 
-// WORD 타입 태그에서 ASCII 값을 추출하는 함수
-export const parseWordToAscii = (value: number): string => {
+// ASCII → 16진수 Word
+export const parseAsciiToHexWord = (value: string): number => {
+  if (typeof value !== 'string' || value.length !== 2) {
+    return 0;
+  }
+
+  const char1 = value.charCodeAt(0); // 첫 번째 문자 (상위 바이트)
+  const char2 = value.charCodeAt(1); // 두 번째 문자 (하위 바이트)
+
+  const word = (char1 << 8) | char2;
+
+
+  return parseInt(word.toString(16), 10);
+};
+
+// 10진수 Word → ASCII
+export const parseDecWordToAscii = (value: number): string => {
   if (typeof value !== 'number' || value < 0 || value > 0xffff) {
     // throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
     return '';
@@ -116,6 +131,29 @@ export const parseWordToAscii = (value: number): string => {
 
   const char1 = String.fromCharCode(lowByte);
   const char2 = String.fromCharCode(highByte);
+  return char1 + char2;
+};
+
+
+// 16진수 Word → ASCII
+export const parseHexWordToAscii = (value: number): string => {
+  if (typeof value !== 'number' || value < 0 || value > 0xffff) {
+    // throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
+    return '';
+  }
+
+  if (value === 0) return '';
+
+  // 10진수 숫자를 4자리 문자열로 변환
+  const str = value.toString().padStart(4, '0'); // 예: 4350 → "4350"
+
+  // 앞 2자리와 뒤 2자리 추출
+  const highHex = str.slice(0, 2); // "43"
+  const lowHex = str.slice(2, 4); // "50"
+
+  // 16진수로 해석 후 ASCII 문자 변환
+  const char1 = String.fromCharCode(parseInt(highHex, 16)); // 0x43 → 'C'
+  const char2 = String.fromCharCode(parseInt(lowHex, 16));  // 0x50 → 'P'
   return char1 + char2;
 };
 
@@ -347,7 +385,7 @@ export const useKepServerUtil = () => {
           dataValues.forEach((dataValue, index) => {
             const inputType = tagValue[index].inputType;
             if (inputType === 'ASCII') {
-              tagValue[index].value = parseWordToAscii(dataValue.value.value);
+              tagValue[index].value = parseDecWordToAscii(dataValue.value.value);
               // tagValue[index].value = 12532
             } else {
               tagValue[index].value = dataValue.value.value;
@@ -490,7 +528,7 @@ export const useKepServerUtil = () => {
     switch (targetTagInfo.INPUT_TYPE) {
       case 'ASCII':
         targetTagInfo.prevValue = targetTagInfo.value;
-        targetTagInfo.value = parseWordToAscii(value.value.value);
+        targetTagInfo.value = parseDecWordToAscii(value.value.value);
         targetTagInfo.timestamp = value.sourceTimestamp ? value.sourceTimestamp.getTime() : Date.now();
         targetTagInfo.quality = value.statusCode.toString();
         break;
