@@ -290,11 +290,13 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   CREATE TABLE public.faqs (
     id serial4 NOT NULL,
     category varchar(50) NULL,
+    sub_category varchar(50) NULL,
     question jsonb NOT NULL,
     answer jsonb NOT NULL,
     user_id int4 NULL,
     orderby int4 DEFAULT 0 NOT NULL,
     sync_id uuid NULL,
+    visible_auth varchar(8) DEFAULT 'viewer'::character varying NOT NULL,
     created_at timestamptz NOT NULL,
     updated_at timestamptz NOT NULL,
     deleted_at timestamptz NULL,

@@ -32,6 +32,15 @@ const dao = {
     });
   },
   selectList(params: FaqSelectListParams): Promise<SelectedListResult<FaqAttributes>> {
+    // 공개 범위에 따라 검색할 권한 배열 리턴
+    const getVisibleAuthArray = (target: FaqAttributes['visibleAuth']): FaqAttributes['visibleAuth'][] => {
+      const authArray = ['viewer', 'staff', 'admin', 'system'] as const;
+      const index = authArray.indexOf(target);
+      if (index === -1) return [];
+
+      return authArray.slice(0, index + 1);
+    };
+
     // DB에 넘길 최종 쿼리 세팅
     const setQuery: FaqSelectListQuery = {};
     // 1. where 조건 세팅
@@ -41,10 +50,22 @@ const dao = {
         category: params.categories, // 'in'검색
       };
     }
+    if (params.subCategories) {
+      setQuery.where = {
+        ...setQuery.where,
+        subCategory: params.subCategories, // 'in'검색
+      };
+    }
     if (params.userIds) {
       setQuery.where = {
         ...setQuery.where,
         userId: params.userIds, // 'in'검색
+      };
+    }
+    if (params.visibleAuth) {
+      setQuery.where = {
+        ...setQuery.where,
+        visibleAuth: getVisibleAuthArray(params.visibleAuth), // 'in'검색
       };
     }
     // 2. limit, offset 세팅

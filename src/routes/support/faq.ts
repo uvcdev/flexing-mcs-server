@@ -18,6 +18,7 @@ import Faq, {
   FaqSelectInfoParams,
   FaqUpdateParams,
   FaqDeleteParams,
+  FaqAttributes,
 } from '../../models/support/faq';
 
 const router = express.Router();
@@ -33,11 +34,13 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, FaqInsertPara
     // 요청 파라미터
     const params: FaqInsertParams = {
       category: req.body.category,
+      subCategory: req.body.subCategory,
       question: req.body.question,
       answer: req.body.answer,
       userId: req.body.userId ?? tokenUser?.id ?? null,
       orderby: typeof req.body.orderby === 'number' ? req.body.orderby : FaqDefaults.orderby,
       syncId: req.body.syncId,
+      visibleAuth: req.body.visibleAuth,
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -79,7 +82,11 @@ router.get('/', isLoggedIn, async (req: Request<unknown, unknown, unknown, FaqSe
     // 요청 파라미터
     const params: FaqSelectListParams = {
       categories: req.query.categories ? (req.query.categories as unknown as string).split(',').map((i) => i) : null,
+      subCategories: req.query.subCategories
+        ? (req.query.subCategories as unknown as string).split(',').map((i) => i)
+        : null,
       userIds: req.query.userIds ? (req.query.userIds as unknown as string).split(',').map((i) => Number(i)) : null,
+      visibleAuth: req.query.visibleAuth ?? (tokenUser?.auth as FaqAttributes['visibleAuth']) ?? null,
       limit: Number(req.query.limit || 'NaN'),
       offset: Number(req.query.offset || 'NaN'),
     };
@@ -162,11 +169,13 @@ router.put(
       const params: FaqUpdateParams = {
         id: Number(req.params.id),
         category: req.body.category,
+        subCategory: req.body.subCategory,
         question: req.body.question,
         answer: req.body.answer,
         userId: req.body.userId ?? tokenUser?.id ?? null,
         orderby: Number(req.body.orderby),
         syncId: req.body.syncId,
+        visibleAuth: req.body.visibleAuth,
       };
       logging.REQUEST_PARAM(logFormat);
 

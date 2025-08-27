@@ -12,12 +12,14 @@ export interface FaqMultiLanguageText {
 
 export interface FaqAttributes {
   id: number;
-  category: string;
+  category: string | null;
+  subCategory: string | null;
   question: FaqMultiLanguageText;
   answer: FaqMultiLanguageText;
   userId: number | null;
   orderby: number;
   syncId: string | null;
+  visibleAuth: 'viewer' | 'staff' | 'admin' | 'system';
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -26,11 +28,13 @@ export interface FaqAttributes {
 class Faq extends Model implements FaqAttributes {
   public readonly id!: FaqAttributes['id'];
   public category!: FaqAttributes['category'];
+  public subCategory!: FaqAttributes['subCategory'];
   public question!: FaqAttributes['question'];
   public answer!: FaqAttributes['answer'];
   public userId!: FaqAttributes['userId'];
   public orderby!: FaqAttributes['orderby'];
   public syncId!: FaqAttributes['syncId'];
+  public visibleAuth!: FaqAttributes['visibleAuth'];
   public readonly createdAt!: FaqAttributes['createdAt'];
   public readonly updatedAt!: FaqAttributes['updatedAt'];
   public readonly deletedAt!: FaqAttributes['deletedAt'];
@@ -38,6 +42,7 @@ class Faq extends Model implements FaqAttributes {
 
 export const FaqDefaults = {
   orderby: 0,
+  visibleAuth: 'viewer',
 };
 
 Faq.init(
@@ -48,6 +53,9 @@ Faq.init(
       primaryKey: true,
     },
     category: {
+      type: DataTypes.STRING(50),
+    },
+    subCategory: {
       type: DataTypes.STRING(50),
     },
     question: {
@@ -70,6 +78,11 @@ Faq.init(
       type: DataTypes.UUID,
       unique: true,
     },
+    visibleAuth: {
+      type: DataTypes.STRING(8),
+      allowNull: false,
+      defaultValue: FaqDefaults.visibleAuth,
+    },
   },
   {
     sequelize,
@@ -84,17 +97,21 @@ Faq.init(
 // insert
 export interface FaqInsertParams {
   category: string | null;
+  subCategory: string | null;
   question: FaqMultiLanguageText;
   answer: FaqMultiLanguageText;
   userId: number | null;
   orderby: number;
   syncId: string | null;
+  visibleAuth: FaqAttributes['visibleAuth'];
 }
 
 // selectList
 export interface FaqSelectListParams {
   categories?: string[] | null;
+  subCategories?: string[] | null;
   userIds?: number[] | null;
+  visibleAuth?: FaqAttributes['visibleAuth'];
   limit?: number;
   offset?: number;
 }
@@ -119,11 +136,13 @@ export interface FaqSelectOneParams {
 export interface FaqUpdateParams {
   id?: number;
   category?: string | null;
+  subCategory?: string | null;
   question?: FaqMultiLanguageText;
   answer?: FaqMultiLanguageText;
   userId?: number | null;
   orderby?: number;
   syncId?: string | null;
+  visibleAuth?: FaqAttributes['visibleAuth'];
 }
 
 // delete
@@ -135,11 +154,13 @@ export interface FaqDeleteParams {
 export const FaqAttributesInclude = [
   'id',
   'category',
+  'subCategory',
   'question',
   'answer',
   'userId',
   'orderby',
   'syncId',
+  'visibleAuth',
   'createdAt',
 ];
 
