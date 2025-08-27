@@ -275,7 +275,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v1.0.0-ssb
 - kepware 동기화 시 구독할 태그 기본값 추가
 - callRegisterUtil함수 내 로직 isActiveCallTrigger 조건 추가
-- 태그 데이터 불러올 때 데이터 최신화 함수 추가
 - 태그데이터(tagMap) 불러올 때 데이터 최신화하는 함수 추가
 - 콜 우선순위 컬럼 추가 
 ```sql
