@@ -53,6 +53,7 @@ export interface WorkOrderAttributes {
   isMissionOrder: boolean;
   alwaysCallCount: number | null; // 항상 켜져있는 설비에 대한 Call_Count
   triggerCallCount: number | null; // 작업 생성 주체가 되는 설비에 대한 Call_Count
+  callPriority: boolean; // 우선순위 여부
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -86,6 +87,7 @@ class WorkOrder extends Model implements WorkOrderAttributes {
   public isMissionOrder!: WorkOrderAttributes['isMissionOrder'];
   public alwaysCallCount!: WorkOrderAttributes['alwaysCallCount'];
   public triggerCallCount!: WorkOrderAttributes['triggerCallCount'];
+  public callPriority!: WorkOrderAttributes['callPriority'];
   public readonly createdAt!: WorkOrderAttributes['createdAt'];
   public readonly updatedAt!: WorkOrderAttributes['updatedAt'];
   public readonly deletedAt!: WorkOrderAttributes['deletedAt'];
@@ -166,6 +168,10 @@ WorkOrder.init(
     triggerCallCount: {
       type: DataTypes.INTEGER,
     },
+    callPriority: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     sequelize,
@@ -196,6 +202,7 @@ export interface WorkOrderInsertParams {
   isMissionOrder?: boolean;
   alwaysCallCount?: number | null;
   triggerCallCount: number | null;
+  callPriority?: boolean;
 }
 export interface ImcsWorkOrderInsertParams {
   newItemId?: number | null;
@@ -238,6 +245,7 @@ export interface WorkOrderSelectListParams {
   cancelDate?: Date | null;
   type?: string | null;
   isMissionOrder?: boolean | string | null;
+  callPriority?: boolean | string | null;
   createdAtFrom?: Date | null;
   createdAtTo?: Date | null;
   limit?: number;
@@ -264,11 +272,15 @@ export interface WorkOrderSelectOneParams {
 
 // selectInfoByAlwaysCallCount
 export interface WorkOrderSelectInfoByAlwaysCallCountParams {
+  fromFacilityId?: number;
+  toFacilityId?: number;
   alwaysCallCount: number;
 }
 
 // selectInfoByTriggerCallCount
 export interface WorkOrderSelectInfoByTriggerCallCountParams {
+  fromFacilityId?: number;
+  toFacilityId?: number;
   triggerCallCount: number;
 }
 // selectOneWorkOrder
@@ -300,6 +312,7 @@ export interface WorkOrderUpdateParams {
   type?: string | null;
   alwaysCallCount?: number | null;
   triggerCallCount?: number | null;
+  callPriority?: boolean | null;
 }
 
 export interface WorkOrderUpdateByCodeParams {
@@ -324,6 +337,7 @@ export interface WorkOrderUpdateByCodeParams {
   type?: string | null;
   alwaysCallCount?: number | null;
   triggerCallCount?: number | null;
+  callPriority?: boolean | null;
 }
 
 // delete
@@ -370,6 +384,7 @@ export const WorkOrderAttributesInclude = [
   'isMissionOrder',
   'alwaysCallCount',
   'triggerCallCount',
+  'callPriority',
   'createdAt',
 ];
 

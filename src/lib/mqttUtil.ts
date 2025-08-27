@@ -127,6 +127,7 @@ export enum MqttTopics {
   ImcsEqpDockingOutRequest = 'imcs/docking/eqp/out_request',
   ImcsWcsDockingRequest = 'imcs/docking/wcs/request',
   EditFacility = 'edit-facility',
+  OnCallPriority = 'acs/on_call_priority',
 }
 
 export interface MbsMqttHeader {
@@ -510,11 +511,24 @@ export const receiveMqtt = (): void => {
                   value: '0',
                 });
 
+                const triggerFacilityTargetKey = kepServerUtil.getTargetKey(triggerFacility);
+                const alwaysOnFacilityTargetKey = kepServerUtil.getTargetKey(alwaysOnFacility);
+                await kepServerUtil.updateTagMapValues(
+                  triggerFacilityTargetKey,
+                  triggerFacility,
+                  ['Call_Request']
+                );
+                await kepServerUtil.updateTagMapValues(
+                  alwaysOnFacilityTargetKey,
+                  alwaysOnFacility,
+                  ['Call_Request']
+                );
+
                 // todo 250805 : ACS에서 취소된 작업 다시 만들 때 멀티콜 판단해서 작업지시 만들어야 하나?
                 // 멀티콜일 때 acs 작업 취소하면 어떻게 되야 하는지 문의 필요
-                // const triggerCallRequestValue = opcuaUtil.tagMap.get(`${triggerFacility}.Call_Request`)?.value;
-                // const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysOnFacility}.Call_Request`)?.value;
-                // if (triggerCallRequestValue === false || alwaysCallRequestValue === false) return;
+                const triggerCallRequestValue = opcuaUtil.tagMap.get(`${triggerFacility}.Call_Request`)?.value;
+                const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysOnFacility}.Call_Request`)?.value;
+                if (triggerCallRequestValue === false || alwaysCallRequestValue === false) return;
 
                 const tagInfo = useKepServerUtil().findTagInfo(triggerFacility, 'Call_Request');
                 const targetTagInfo: TagValue = {
