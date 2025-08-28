@@ -14,7 +14,7 @@ import {
 import { logging, logToConsoleAndFile } from './logging';
 import { registerClientEvents } from '../events/kepserverClientEvents';
 import { registerSubscriptionEvents } from '../events/kepserverSubscriptionEvents';
-import { MonitorTag, Tag, TagValue, useKepServerUtil } from './kepServerUtil';
+import { MonitorTag, parseAsciiToDecWord, parseDecWordToAscii, Tag, TagValue, useKepServerUtil } from './kepServerUtil';
 import { useEqpCheckUtil } from './eqpCheckUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 
@@ -196,6 +196,57 @@ export const opcuaUtil = {
       }
     });
   },
+
+  async populatePlcInit(): Promise<void> {
+    // this.tagMap의 key값은 'EQ_CODE.TAG_NAME' 형식이다.
+    // this.tagMap을 순회하며 TAG_NAME이 'EQ_Auto'인 태그를 찾는다.
+    // 찾은 태그의 값(tagMapValue) 중 EQ_CODE를 추출하고 EQ_CODE는 4글자니 앞뒤 2글자씩 잘라서 문자열로 변환한다.(ex: 'WS11' -> EQ_Code_01: 'WS', EQ_Code_02: '11')
+    // EQ_Code_01과 EQ_Code_02를 각각 parseAsciiToDecWord 함수에 전달하여 10진수로 변환한다.
+    // this.tagMap에서 'EQ_CODE.EQ_Code_01', 'EQ_CODE.EQ_Code_02' 형식의 키값을 찾는다.
+    // 해당 태그에 변환한 10진수를 각각 write한다.
+    // 오늘 년,월,일을 체크 (ex. 20250813)
+    // Call_Time_Year, Call_Time_MonthDay에 각각 '2025', '0813' 문자열을 write한다.
+    this.tagMap.forEach((tagMapValue, key) => {
+      if (tagMapValue.TAG_NAME === 'EQ_Auto') {
+        const eqCode = tagMapValue.EQ_CODE;
+        const eqCode01 = eqCode.slice(0, 2);
+        const eqCode02 = eqCode.slice(2, 4);
+
+        const eqCode01Value = parseAsciiToDecWord(eqCode01);
+        const eqCode02Value = parseAsciiToDecWord(eqCode02);
+
+        useKepServerUtil().writeSimpleTagValue({
+          targetFacility: eqCode,
+          tagName: 'EQ_Code_01',
+          value: eqCode01Value.toString(),
+        });
+
+        useKepServerUtil().writeSimpleTagValue({
+          targetFacility: eqCode,
+          tagName: 'EQ_Code_02',
+          value: eqCode02Value.toString(),
+        });
+
+        const today = new Date();
+        const year = today.getFullYear().toString();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const day = today.getDate().toString().padStart(2, '0');
+
+        useKepServerUtil().writeSimpleTagValue({
+          targetFacility: eqCode,
+          tagName: 'Call_Time_Year',
+          value: year,
+        });
+
+        useKepServerUtil().writeSimpleTagValue({
+          targetFacility: eqCode,
+          tagName: 'Call_Time_MonthDay',
+          value: `${month}${day}`,
+        });
+      }
+    });
+  },
+
   async initKepserverex(): Promise<void> {
     try {
       // KEPServerEx에 연결 (최대 10회, 5초마다 연결시도)
@@ -212,6 +263,10 @@ export const opcuaUtil = {
 
       // 모니터링 할 노드 등록하고 'on.change' 이벤트 등록하기
       await this.monitorSubscriptionNodes(subscriptionNodes);
+
+      if (process.env.POPULATE_PLC_INIT === 'true') {
+        await this.populatePlcInit();
+      }
     } catch (error) {
       logToConsoleAndFile(`Error during initKepserverex: ${error}`, 'red');
       throw error;

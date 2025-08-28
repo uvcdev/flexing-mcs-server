@@ -275,4 +275,14 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v1.0.0-ssb
 - kepware 동기화 시 구독할 태그 기본값 추가
 - callRegisterUtil함수 내 로직 isActiveCallTrigger 조건 추가
-- 태그 데이터 불러올 때 데이터 최신화 함수 추가
+- 태그데이터(tagMap) 불러올 때 데이터 최신화하는 함수 추가
+- 콜 우선순위 컬럼 추가 
+```sql
+   ALTER TABLE public.work_orders ADD call_priority bool NULL DEFAULT false;
+  ```
+- 콜 우선순위값 변경 시 처리로직 추가
+- PLC 아스키코드 변환 방식 수정(10진수 -> 16진수)
+- checkMissionOrder() 리팩토링
+```sql
+  ALTER TABLE public.facilities ADD cancel_linked_eqp_ids _int4 NULL;
+```

@@ -2,7 +2,7 @@
 import { AttributeIds } from "node-opcua-client";
 import { PendingWorkOrderAttributes } from '../models/operation/workOrder';
 import { FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
-import { makeCallType, parseAsciiToWord, TagValue, useKepServerUtil } from "./kepServerUtil";
+import { makeCallType, parseAsciiToDecWord, TagValue, useKepServerUtil } from "./kepServerUtil";
 import { logging } from './logging';
 import opcuaUtil from "./opcuaUtil";
 import { EQP_WCS } from "./eqpCheckUtil";
@@ -50,7 +50,7 @@ export const useCallTypeUtil = () => {
         if (typeof callTypeValue?.value === 'string') {
           const setCallType = callTypeValue.value.replace(/[\s]/g, '');
 
-          const callType = parseAsciiToWord(setCallType);
+          const callType = parseAsciiToDecWord(setCallType);
           // 값 쓰기
           await useKepServerUtil().writeSimpleTagValue({
             targetFacility: targetCode || '',

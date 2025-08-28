@@ -10,6 +10,8 @@ import { useCallTypeUtil } from './callTypeUtil';
 import { useMultiCallRegisterUtil } from './multiCallRegisterUtil';
 import { useCallResponseUtil } from './callResponseUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
+import { useCallPriorityUtil } from './callPriorityUtil';
+import { sendMqtt } from './mqttUtil';
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -149,6 +151,32 @@ export const useEqpCheckUtil = () => {
             });
           }
           break;
+
+        case 'Call_Priority':
+          console.log(`Changed Call_Priority`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          await useCallPriorityUtil().onCallPriority(targetTagInfo);
+          break;
+
+        // case 'EQ_Auto':
+        //   console.log(`Changed EQ_Auto`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+        //   if (targetTagInfo.value === true && targetTagInfo.prevValue === false) {
+        //     const eqpModeInfo = {
+        //       EQP_ID: targetTagInfo.EQ_CODE,
+        //       EQP_MODE: 'AUTO',
+        //     }
+        //     sendMqtt('acs/eqp_mode', JSON.stringify(eqpModeInfo));
+        //   }
+        //   break;
+        // case 'EQ_Manual':
+        //   console.log(`Changed EQ_Manual`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+        //   if (targetTagInfo.value === true && targetTagInfo.prevValue === false) {
+        //     const eqpModeInfo = {
+        //       EQP_ID: targetTagInfo.EQ_CODE,
+        //       EQP_MODE: 'MANUAL',
+        //     }
+        //     sendMqtt('acs/eqp_mode', JSON.stringify(eqpModeInfo));
+        //   }
+        //   break;
       }
     } catch (error) {
       console.error('DoCheck error:', error);

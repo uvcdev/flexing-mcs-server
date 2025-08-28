@@ -426,13 +426,29 @@ export const useCallCancelUtil = () => {
 
       let workOrderInfo = null;
       if (facilityInfo.isActiveCallTrigger === true) {
-        workOrderInfo = await workOrderDao.selectInfoByTriggerCallCount({
-          triggerCallCount: callCount,
-        });
+        if (facilityInfo.type === 'in') {
+          workOrderInfo = await workOrderDao.selectInfoByTriggerCallCount({
+            triggerCallCount: callCount,
+            toFacilityId: facilityInfo.id,
+          });
+        } else if (facilityInfo.type === 'out') {
+          workOrderInfo = await workOrderDao.selectInfoByTriggerCallCount({
+            triggerCallCount: callCount,
+            fromFacilityId: facilityInfo.id,
+          });
+        }
       } else if (facilityInfo.isActiveCallTrigger === false) {
-        workOrderInfo = await workOrderDao.selectInfoByAlwaysCallCount({
-          alwaysCallCount: callCount,
-        });
+        if (facilityInfo.type === 'in') {
+          workOrderInfo = await workOrderDao.selectInfoByAlwaysCallCount({
+            alwaysCallCount: callCount,
+            toFacilityId: facilityInfo.id,
+          });
+        } else if (facilityInfo.type === 'out') {
+          workOrderInfo = await workOrderDao.selectInfoByAlwaysCallCount({
+            alwaysCallCount: callCount,
+            fromFacilityId: facilityInfo.id,
+          });
+        }
       } else {
         logToConsoleAndFile(`[cancelType = ${cancelType}] 포트 타입 없음`, "red");
         logging.ACTION_ERROR({
@@ -460,22 +476,39 @@ export const useCallCancelUtil = () => {
         if (infoRemainCalls) {
           for (const infoRemainCall of infoRemainCalls) {
             if (facilityInfo.serial === infoRemainCall.fromFacilityName || facilityInfo.serial === infoRemainCall.toFacilityName) {
-              logToConsoleAndFile(`[cancelType = ${cancelType}] 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`, "green");
+              logToConsoleAndFile(`[cancelType = ${cancelType}] infoRemainCall.callId = ${infoRemainCall.callId} 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`, "green");
               logging.ACTION_INFO({
                 filename: `callCancelUtil.ts - callCancel`,
-                error: `[cancelType = ${cancelType}] 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`,
+                error: `[cancelType = ${cancelType}] infoRemainCall.callId = ${infoRemainCall.callId} 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`,
                 params: null,
                 result: true,
               });
+              await writeCallCancelResponse(targetCode);
+              redisUtil.hdel(RedisKeys.InfoRemainCallById, infoRemainCall.callId || '');
             }
-
-            await writeCallCancelResponse(targetCode);
-            redisUtil.hdel(RedisKeys.InfoRemainCallById, infoRemainCall.callId || '');
           }
         }
 
-        // Todo[ssb] 창고 취소 로직 추가해야함.
         // 만약 취소 타입이 설비-창고라면 포트배정기다리는 레디스에서 찾아서 취소응답써주고 창고콜취소 요청 전달
+        // if (cancelType === 'EQP_TO_WMS') {
+        //   const infoRemainCalls = await redisUtil.hgetAllObject<PendingWorkOrderAttributes>(RedisKeys.InfoRemainCallById);
+        //   if (infoRemainCalls) {
+        //     for (const infoRemainCall of infoRemainCalls) {
+        //       if (facilityInfo.serial === infoRemainCall.fromFacilityName || facilityInfo.serial === infoRemainCall.toFacilityName) {
+        //         logToConsoleAndFile(`[cancelType = ${cancelType}] infoRemainCall.callId = ${infoRemainCall.callId} 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`, "green");
+        //         logging.ACTION_INFO({
+        //           filename: `callCancelUtil.ts - callCancel`,
+        //           error: `[cancelType = ${cancelType}] infoRemainCall.callId = ${infoRemainCall.callId} 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`,
+        //           params: null,
+        //           result: true,
+        //         });
+        //         await writeCallCancelResponse(targetCode);
+        //         redisUtil.hdel(RedisKeys.InfoRemainCallById, infoRemainCall.callId || '');
+        //       }
+        //     }
+        //   }
+        // }
+
         return;
       }
 
