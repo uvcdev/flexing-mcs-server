@@ -137,23 +137,23 @@ export const receiveMqtt = (): void => {
         message: null,
       });
 
-      // mqtt 구독      
-      client.subscribe(`${topic}/#`, (err) => {
-        logging.MQTT_LOG({
-          title: 'mqtt subscribe',
-          topic,
-          message: null,
-        });
+      // // mqtt 구독      
+      // client.subscribe(`${topic}/#`, (err) => {
+      //   logging.MQTT_LOG({
+      //     title: 'mqtt subscribe',
+      //     topic,
+      //     message: null,
+      //   });
 
-        if (err) {
-          logging.MQTT_ERROR({
-            title: 'mqtt subscribe error',
-            topic,
-            message: null,
-            error: err,
-          });
-        }
-      });
+      //   if (err) {
+      //     logging.MQTT_ERROR({
+      //       title: 'mqtt subscribe error',
+      //       topic,
+      //       message: null,
+      //       error: err,
+      //     });
+      //   }
+      // });
 
       // acs mqtt 구독
       client.subscribe(`acs/#`, (err) => {

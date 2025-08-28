@@ -120,9 +120,13 @@ export const regDetailLog = async (params: RegDetailLogInsertParams) => {
       state: trackingLogState ? trackingLogState : trackingLogInfo.state,
       fromFacility: fromFacility ? fromFacility : trackingLogInfo.fromFacility,
       toFacility: toFacility ? toFacility : trackingLogInfo.toFacility,
-      assignedRobot: assignedRobot ? assignedRobot : trackingLogInfo.assignedRobot,
+      // assignedRobot: assignedRobot ? assignedRobot : trackingLogInfo.assignedRobot,
       value: value ? value : trackingLogInfo.value,
       description: description ? description : trackingLogInfo.description,
+    }
+
+    if (newDetailLogInsertParams.topic === 'AMR_ASSIGNED') {
+      trackingLogUpdateParams.assignedRobot = assignedRobot
     }
 
     try {
@@ -174,7 +178,7 @@ export const regDetailLog = async (params: RegDetailLogInsertParams) => {
         state: trackingLogUpdateParams.state ?? null,
         fromFacility: trackingLogUpdateParams.fromFacility ?? null,
         toFacility: trackingLogUpdateParams.toFacility ?? null,
-        assignedRobot: trackingLogUpdateParams.assignedRobot ?? null,
+        assignedRobot: trackingLogInfo.assignedRobot,
         value: trackingLogUpdateParams.value ?? null,
         description: trackingLogUpdateParams.description ?? null,
         detailLogList: newDetails,
@@ -513,32 +517,38 @@ export const fixTrackingLogList = async () => {
     for (let i = 0; i < filteredTrackingLogList.length; i++) {
       const trackingLog = filteredTrackingLogList[i];
 
-      const isExistCallCreate = trackingLog.detailLogList.find(detailLog => detailLog.subject === 'CALL_CREATE')
-      const isExistCallRequest = trackingLog.detailLogList.find(detailLog => detailLog.subject === 'CALL_REQUEST')
-      const isExistCallCheck = trackingLog.detailLogList.find(detailLog => detailLog.subject === 'CALL_CHECK')
+      const trackingLogDb = await trackingLogDao.selectInfo({ id: trackingLog.id })
 
-      if (!isExistCallCreate || (!isExistCallRequest && isExistCallCheck)) {
-        // DB에서 CALL_CREATE를 찾아서 넣어줌
-        const detailLogList = await detailLogDao.selectList({ trackingLogId: trackingLog.id })
-        const newDetailLogList = detailLogList.rows.map(detailLog => {
-          return {
-            topic: detailLog.topic,
-            subject: detailLog.subject,
-            trackingLogId: detailLog.trackingLogId,
-            callId: detailLog.callId,
-            state: detailLog.state,
-            eqpCallId: detailLog.eqpCallId,
-            location: detailLog.location,
-            message: detailLog.message,
-            resultStatus: detailLog.resultStatus,
-            value: detailLog.value,
-            // createdDateTime: (detailLog.createdAt).toISOString()
-            createdDateTime: detailLog.createdAt instanceof Date
-              ? detailLog.createdAt.toISOString()
-              : detailLog.createdAt
-          }
-        })
-        trackingLog.detailLogList = newDetailLogList
+      trackingLog.assignedRobot = trackingLogDb?.assignedRobot || ''
+      // const isExistCallCreate = trackingLog.detailLogList.find(detailLog => detailLog.subject === 'CALL_CREATE')
+      // const isExistCallRequest = trackingLog.detailLogList.find(detailLog => detailLog.subject === 'CALL_REQUEST')
+      // const isExistCallCheck = trackingLog.detailLogList.find(detailLog => detailLog.subject === 'CALL_CHECK')
+
+      // if (!isExistCallCreate || (!isExistCallRequest && isExistCallCheck)) {
+      // DB에서 CALL_CREATE를 찾아서 넣어줌
+      const detailLogList = await detailLogDao.selectList({ trackingLogId: trackingLog.id })
+      const newDetailLogList = detailLogList.rows.map(detailLog => {
+        return {
+          topic: detailLog.topic,
+          subject: detailLog.subject,
+          trackingLogId: detailLog.trackingLogId,
+          callId: detailLog.callId,
+          state: detailLog.state,
+          eqpCallId: detailLog.eqpCallId,
+          location: detailLog.location,
+          message: detailLog.message,
+          resultStatus: detailLog.resultStatus,
+          value: detailLog.value,
+          // createdDateTime: (detailLog.createdAt).toISOString()
+          createdDateTime: detailLog.createdAt instanceof Date
+            ? detailLog.createdAt.toISOString()
+            : detailLog.createdAt
+        }
+      })
+      trackingLog.detailLogList = newDetailLogList
+
+      if (trackingLog.detailLogList.find((detailLog) => detailLog.subject === 'TO_COMPLETED')) {
+        trackingLog.state = 'COMPLETED'
       }
     }
 
