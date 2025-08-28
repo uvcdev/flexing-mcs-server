@@ -58,11 +58,7 @@ export const useCallRegisterUtil = () => {
           : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
         // 필요한 태그 값들 업데이트
-        await kepServerUtil.updateTagMapValues(
-          targetKey,
-          targetCode,
-          ['Call_Count', 'Call_Priority']
-        );
+        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority']);
 
         // 필요한 태그 값들 가져오기
         const callCountValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`)?.value as number;
@@ -159,22 +155,19 @@ export const useCallRegisterUtil = () => {
                   }
 
                   const linkedTargetKey = kepServerUtil.getTargetKey(linkedFacilityInfo.serial || '');
-
-                  await kepServerUtil.updateTagMapValues(
-                    linkedTargetKey,
-                    linkedFacilityInfo.serial || '',
-                    ['Call_Request', 'Call_Response', 'Call_Count']
-                  );
-
+                  await kepServerUtil.updateTagMapValues(linkedTargetKey, linkedFacilityInfo.serial || '', [
+                    'Call_Request',
+                    'Call_Response',
+                    'Call_Count',
+                  ]);
                   const linkedFacilityCallRequestValue = opcuaUtil.tagMap.get(
                     `${linkedFacilityInfo?.serial}.Call_Request`
                   )?.value as boolean;
                   const linkedFacilityCallResponseValue = opcuaUtil.tagMap.get(
                     `${linkedFacilityInfo?.serial}.Call_Response`
                   )?.value as boolean;
-                  const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(
-                    `${linkedFacilityInfo?.serial}.Call_Count`
-                  )?.value as number;
+                  const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(`${linkedFacilityInfo?.serial}.Call_Count`)
+                    ?.value as number;
 
                   const eqpCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
                   const infoPendingWorkOrder: PendingWorkOrderAttributes = {
@@ -185,7 +178,8 @@ export const useCallRegisterUtil = () => {
                     isMissionOrder: false,
                     callPriority: callInfo.Call_Priority,
                     callType: callInfo.Call_Type || 'NC11',
-                    fromFacilityName: (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
+                    fromFacilityName:
+                      (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
                     toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,
                     alwaysCallCount: Number(linkedFacilityCallCountValue),
                     triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
@@ -269,6 +263,9 @@ export const useCallRegisterUtil = () => {
                       linkedFacilityInfo?.serial?.toString()
                     );
                     break;
+                  } else if () {
+                    // todo 250827 : linkedFacilityCallResponseValue 에서 두번째 콜에 대한 response 보고 remain 등록해주기
+
                   } else if (linkedFacilityInfo && linkedFacilityCallRequestValue === false) {
                     // 반대쪽에 콜이 떠 있지 않은 경우 반복해서 판단하는 redis에 저장
                     redisUtil.hset(
@@ -327,11 +324,7 @@ export const useCallRegisterUtil = () => {
 
         const targetKey = kepServerUtil.getTargetKey(eqCode);
 
-        await kepServerUtil.updateTagMapValues(
-          targetKey,
-          eqCode,
-          ['Call_Request']
-        );
+        await kepServerUtil.updateTagMapValues(targetKey, eqCode, ['Call_Request']);
 
         const callRequestValue = opcuaUtil.tagMap.get(`${eqCode}.Call_Request`)?.value as boolean;
 
@@ -356,12 +349,7 @@ export const useCallRegisterUtil = () => {
   ): Promise<string | null> => {
     try {
       const targetCode = kepServerUtil.getTagCode(targetKey);
-
-      await kepServerUtil.updateTagMapValues(
-        targetKey,
-        targetCode,
-        ['Call_Time_Year', 'Call_Time_MonthDay']
-      );
+      await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Time_Year', 'Call_Time_MonthDay']);
 
       const callTimeYearValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_Year`)?.value.toString() || '0';
       const callTimeMonthDayValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_MonthDay`)?.value.toString() || '0';
@@ -417,16 +405,16 @@ export const useCallRegisterUtil = () => {
         const alwaysCallCountTargetKey = kepServerUtil.getTargetKey(alwaysCallCountFacilityName || '');
         const triggerCallCountTargetKey = kepServerUtil.getTargetKey(triggerCallCountFacilityName || '');
 
-        await kepServerUtil.updateTagMapValues(
-          alwaysCallCountTargetKey,
-          alwaysCallCountFacilityName || '',
-          ['Call_Request', 'Call_Response', 'Call_Response_Count']
-        );
-        await kepServerUtil.updateTagMapValues(
-          triggerCallCountTargetKey,
-          triggerCallCountFacilityName || '',
-          ['Call_Request', 'Call_Response', 'Call_Response_Count']
-        );
+        await kepServerUtil.updateTagMapValues(alwaysCallCountTargetKey, alwaysCallCountFacilityName || '', [
+          'Call_Request',
+          'Call_Response',
+          'Call_Response_Count',
+        ]);
+        await kepServerUtil.updateTagMapValues(triggerCallCountTargetKey, triggerCallCountFacilityName || '', [
+          'Call_Request',
+          'Call_Response',
+          'Call_Response_Count',
+        ]);
 
         const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Request`)?.value;
         const alwaysCallResponseValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Response`)?.value;
@@ -546,5 +534,5 @@ export const useCallRegisterUtil = () => {
       }
     }
   };
-  return { callRegister, createFacilityModeWorkOrder, checkRemainEqpCall };
+  return { callRegister, createFacilityModeWorkOrder, checkRemainEqpCall, createWorkOrderCode };
 };
