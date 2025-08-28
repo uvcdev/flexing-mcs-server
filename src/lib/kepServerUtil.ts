@@ -368,6 +368,7 @@ export const useKepServerUtil = () => {
   // 전체 노드 읽는 함수
   const monitorTagData = async () => {
     while (true) {
+      const startTime = Date.now();
       let session = opcuaUtil.session;
       try {
         if (!session) {
@@ -412,7 +413,11 @@ export const useKepServerUtil = () => {
         session = null; // 세션 초기화 (다음 루프에서 재연결 시도)
       }
 
-      await new Promise((resolve) => setTimeout(resolve, kepwareStatusIntervalTime * 1000)); // n초 후 반복
+      // await new Promise((resolve) => setTimeout(resolve, kepwareStatusIntervalTime * 1000)); // n초 후 반복
+
+      const elapsed = Date.now() - startTime;
+      const delay = Math.max(0, kepwareStatusIntervalTime * 1000 - elapsed);
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   };
 
