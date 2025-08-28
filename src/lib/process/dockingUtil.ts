@@ -767,7 +767,8 @@ export const useDockingUtil = () => {
               targetFacility: paramsSerial,
               tagInfo: [
                 {
-                  tagName: 'Dock_Request_Charge',
+                  // tagName: 'Dock_Request_Charge',
+                  tagName: 'Dock_Request',
                   value: true
                 }
               ]
@@ -1043,6 +1044,11 @@ export const useDockingUtil = () => {
       await useKepServerUtil().writeSimpleTagValue({
         targetFacility: params.SERIAL_ID || '',
         tagName: 'Dock_Request',
+        value: false,
+      });
+      await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: params.SERIAL_ID || '',
+        tagName: 'Dock_Out_Request',
         value: false,
       });
       // 도킹 아웃 요청 켜 있으면 꺼주고 레디스 삭제
