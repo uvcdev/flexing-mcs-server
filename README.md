@@ -298,3 +298,5 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ```sql
   ALTER TABLE public.facilities ADD cancel_linked_eqp_ids _int4 NULL;
 ```
+## v1.0.3
+- 현장 코드 병합 ( cyk , ljk, ssb )

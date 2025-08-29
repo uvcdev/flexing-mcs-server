@@ -267,9 +267,9 @@ export const useCallRegisterUtil = () => {
                       linkedFacilityInfo?.serial?.toString()
                     );
                     break;
-                  } else if () {
+                    // }
+                    // else if () {
                     // todo 250827 : linkedFacilityCallResponseValue 에서 두번째 콜에 대한 response 보고 remain 등록해주기
-
                   } else if (linkedFacilityInfo && linkedFacilityCallRequestValue === false) {
                     // 반대쪽에 콜이 떠 있지 않은 경우 반복해서 판단하는 redis에 저장
                     redisUtil.hset(
