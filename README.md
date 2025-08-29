@@ -300,3 +300,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ```
 ## v1.0.3
 - 현장 코드 병합 ( cyk , ljk, ssb )
+
+## v1.0.3-cyk
+- linkedFacility 에 Call_Response 켜져 있는 경우에도 remain 에 등록해주기

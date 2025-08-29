@@ -81,7 +81,6 @@ export const useCallRegisterUtil = () => {
 
           // 작업 생성 트리거 판단
           if (facilityInfo?.isActiveCallTrigger === true) {
-            const callInfoString = JSON.stringify(callInfo);
             if (facilityInfo?.isMissionOrderCapable) {
               // ======= 미션결정 작업지시 (설비기준 회수) =======
               const eqpCallId = (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
@@ -170,6 +169,7 @@ export const useCallRegisterUtil = () => {
                   const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(`${linkedFacilityInfo?.serial}.Call_Count`)
                     ?.value as number;
 
+                  // todo : 0827 콜타입 별로  라인 추가 됐을 때
                   const eqpCallId =
                     (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
                   callInfo.CALL_ID = eqpCallId;
@@ -270,8 +270,15 @@ export const useCallRegisterUtil = () => {
                     // }
                     // else if () {
                     // todo 250827 : linkedFacilityCallResponseValue 에서 두번째 콜에 대한 response 보고 remain 등록해주기
-                  } else if (linkedFacilityInfo && linkedFacilityCallRequestValue === false) {
-                    // 반대쪽에 콜이 떠 있지 않은 경우 반복해서 판단하는 redis에 저장
+                  } else if (
+                    (linkedFacilityInfo && linkedFacilityCallRequestValue === false) ||
+                    (linkedFacilityInfo &&
+                      linkedFacilityCallRequestValue === true &&
+                      linkedFacilityCallResponseValue === true)
+                  ) {
+                    // 반대쪽에 콜이 떠 있지 않은 경우와
+                    // 반대쪽에 작업중인 경우 (Call_Request, Call_Response 켜져 있는 경우)
+                    // 반복해서 판단하는 redis에 저장
                     redisUtil.hset(
                       RedisKeys.InfoRemainCallById,
                       String(eqpCallId),
