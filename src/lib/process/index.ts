@@ -85,6 +85,8 @@ export const processMcs = async () => {
     // Call_Request ON 인 경우 실시간 조회해서 작업 생성
     await useCallRegisterUtil().callRegister();
 
+    // 모든 설비에서 조회해서 Call_Request 켜져있으면 RedisKeys.InfoCallRequestOnBySerial 에 등록
+
     // pending 된 작업 지시 생성
     await useWorkOrderUtil().createWorkOrder();
 

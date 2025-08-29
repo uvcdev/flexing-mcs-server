@@ -33,11 +33,7 @@ export const useCallResponseUtil = () => {
 
       const targetKey = kepServerUtil.getTargetKey(targetCode);
 
-      await kepServerUtil.updateTagMapValues(
-        targetKey,
-        targetCode,
-        ['Call_Request']
-      );
+      await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Request']);
       const callRequestValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Request`)?.value;
       // 콜 주체가 아닌 콜이 항상 켜져 있는 설비에 Call_Response 가 꺼진 경우
       // if (facilityInfo && callRequestValue === true && !facilityInfo?.linkedEqpIds) {
@@ -91,18 +87,20 @@ export const useCallResponseUtil = () => {
         const facilityCode = facilityInfo.serial;
         if (facilityCode) {
           const targetKey = kepServerUtil.getTargetKey(facilityCode);
-          await kepServerUtil.updateTagMapValues(
-            targetKey,
-            facilityCode,
-            ['Call_Request_Multi_1', 'Call_Request_Multi_2']
-          );
+          await kepServerUtil.updateTagMapValues(targetKey, facilityCode, [
+            'Call_Request',
+            'Call_Request_Multi_1',
+            'Call_Request_Multi_2',
+          ]);
 
+          const callRequestValue = opcuaUtil.tagMap.get(`${facilityCode}.Call_Request`)?.value;
           const multiCallFirstValue = opcuaUtil.tagMap.get(`${facilityCode}.Call_Request_Multi_1`)?.value;
           const multiCallSecondValue = opcuaUtil.tagMap.get(`${facilityCode}.Call_Request_Multi_2`)?.value;
-          if (!multiCallFirstValue) continue;
+          if (!multiCallFirstValue || !callRequestValue) continue;
 
           const workOrderCount = await redisUtil.hget(RedisKeys.InfoWorkOrderCountBySerial, facilityCode || '');
           if (!workOrderCount) return;
+          // 생성되어야 하고 작업중인 작업지시 개수
           const workOrderCountNum = Number(workOrderCount);
 
           const multiCallStatus = [
@@ -110,19 +108,20 @@ export const useCallResponseUtil = () => {
             { value: multiCallSecondValue, tagName: 'Call_Request_Multi_2' },
           ];
 
+          // 저장 허용 개수 결정
           let maxAllowed = 0;
 
-          // true	  true	3	2개 저장 (Multi_2, Multi_1)
-          // true	  true	2	저장 안 함
-          // true	  false	2	1개 저장 (Multi_1)
-          // true	  false	3	저장 안 함
-          // false	false	  아무 값	저장 안 함
+          // true/true 작업 건수가 3개 이하면 2개 저장 가능 (그 외 불가)
+          // true/false	작업 건수가 2개 이하면 1개 저장 가능 (그 외 불가)
+          // false/false 아무 값 저장 안 함
           if (multiCallFirstValue && multiCallSecondValue) {
-            if (workOrderCountNum <= 3) {
+            if (workOrderCountNum === 3) {
               maxAllowed = 2;
+            } else if (workOrderCountNum === 2) {
+              maxAllowed = 1;
             }
           } else if (multiCallFirstValue && !multiCallSecondValue) {
-            if (workOrderCountNum <= 2) {
+            if (workOrderCountNum === 2) {
               maxAllowed = 1;
             }
           }
