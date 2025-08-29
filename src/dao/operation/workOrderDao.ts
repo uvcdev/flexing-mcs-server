@@ -414,8 +414,30 @@ const dao = {
   },
   selectInfoByAlwaysCallCount(params: WorkOrderSelectInfoByAlwaysCallCountParams): Promise<WorkOrderAttributes | null> {
     return new Promise((resolve, reject) => {
+      const setQuery: WorkOrderSelectListQuery = {};
+
+      if (params.fromFacilityId) {
+        setQuery.where = {
+          ...setQuery.where,
+          fromFacilityId: params.fromFacilityId,
+        };
+      }
+      if (params.toFacilityId) {
+        setQuery.where = {
+          ...setQuery.where,
+          toFacilityId: params.toFacilityId,
+        };
+      }
+      if (params.alwaysCallCount) {
+        setQuery.where = {
+          ...setQuery.where,
+          alwaysCallCount: params.alwaysCallCount,
+        };
+      }
+
       WorkOrder.findOne({
-        where: { alwaysCallCount: params.alwaysCallCount },
+        ...setQuery,
+        order: [['updatedAt', 'DESC']],
       })
         .then((selectedOne) => {
           resolve(selectedOne);
@@ -427,8 +449,30 @@ const dao = {
   },
   selectInfoByTriggerCallCount(params: WorkOrderSelectInfoByTriggerCallCountParams): Promise<WorkOrderAttributes | null> {
     return new Promise((resolve, reject) => {
+      const setQuery: WorkOrderSelectListQuery = {};
+
+      if (params.fromFacilityId) {
+        setQuery.where = {
+          ...setQuery.where,
+          fromFacilityId: params.fromFacilityId,
+        };
+      }
+      if (params.toFacilityId) {
+        setQuery.where = {
+          ...setQuery.where,
+          toFacilityId: params.toFacilityId,
+        };
+      }
+      if (params.triggerCallCount) {
+        setQuery.where = {
+          ...setQuery.where,
+          triggerCallCount: params.triggerCallCount,
+        };
+      }
+
       WorkOrder.findOne({
-        where: { triggerCallCount: params.triggerCallCount },
+        ...setQuery,
+        order: [['updatedAt', 'DESC']],
       })
         .then((selectedOne) => {
           resolve(selectedOne);

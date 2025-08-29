@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { OPCUAClient, ClientSession, ClientSubscription, ReferenceDescription, UserIdentityInfoUserName, BrowseResult, UserTokenType, DataType, AttributeIds } from "node-opcua";
 import colors from "ansi-colors";
-import { parseWordToAscii } from "../lib/kepServerUtil";
+import { parseDecWordToAscii } from "../lib/kepServerUtil";
 
 interface TagDeviceInfo {
   KEY: string;
@@ -76,15 +76,17 @@ const opcuaClient = {
 
   needToSubscribe(tagName: string): boolean {
     return tagName === 'Call_Request' ||
+      tagName === 'Call_Response' ||
       tagName === 'Call_Cancel_Request' ||
       tagName === 'Dock_Permit' ||
       tagName === 'Dock_Not_Permit' ||
       tagName === 'Dock_EQ_Status' ||
       tagName === 'Dock_Out_Permit' ||
-      tagName === 'Call_Priority' ||
+      tagName === 'Call_Type_01' ||
+      tagName === 'Complete' ||
       tagName === 'Call_Request_Multi_1' ||
       tagName === 'Call_Request_Multi_2' ||
-      tagName === 'Complete' ||
+      tagName === 'Call_Priority' ||
       tagName === 'EQ_Auto' ||
       tagName === 'EQ_Manual'
   },
@@ -187,7 +189,7 @@ const opcuaClient = {
           const results = await this.session.read(attributesToRead);
           // const eqCode01 = results[0].value.value;
           // const eqCode02 = results[1].value.value;
-          // const eqCode = parseWordToAscii(eqCode01) + parseWordToAscii(eqCode02);
+          // const eqCode = parseDecWordToAscii(eqCode01) + parseDecWordToAscii(eqCode02);
 
           // nodeId 형식: STACK01.SC11.Call_Request 일때
           const eqCode = device.name;
@@ -225,7 +227,7 @@ const opcuaClient = {
             const results = await this.session.read(attributesToRead);
             // const eqCode01 = results[0].value.value;
             // const eqCode02 = results[1].value.value;
-            // const eqCode = parseWordToAscii(eqCode01) + parseWordToAscii(eqCode02);
+            // const eqCode = parseDecWordToAscii(eqCode01) + parseDecWordToAscii(eqCode02);
             // nodeId 형식: STACK01.SC11.Call_Request 일때
             const eqCode = tagGroup.name;
             // nodeId 형식: SC.11.Call_Request 일때

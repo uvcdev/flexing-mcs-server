@@ -37,23 +37,19 @@ export interface FacilityAttributesDeep extends FacilityAttributes {
 }
 
 export type CancelType =
-  // 'NON_CANCELLABLE' |           // 취소 로직을 실행하지 않는 설비
-  // 'STOP_ONLY_CANCEL' |          // ACS에서 바로 멈춤 실행
-  // 'AUTO_RETURN_CANCEL' |        // 자동 재반입 로직 실행
-  // 'WMS_DEPENDENT_CANCEL' |      // WMS 응답 별 취소 로직 실행 ( STOP_ONLY_CANCEL | AUTO_RETURN_CANCEL )
-  // 'CANCEL_WITH_DOCKING';        // 취소가 오더라도 도킹까지는 진행하고 도킹 불가 처리를 받고 취소 되는 경우 ( 사용 안 할 가능성 95% )
 
   // 취소로직 비활성화 설비
-  | 'NON_CANCELLABLE'
+  'NON_CANCELLABLE' |  // (불가)
 
-  // 설비 to 설비 미션O
-  | 'EQP_TO_EQP_MISSION'
+  // 설비 to 설비 미션O 
+  'EQP_TO_EQP_MISSION' | // (후속작업)
 
   // 설비 to 설비 미션X
-  | 'EQP_TO_EQP_NO_MISSION'
+  'EQP_TO_EQP_NO_MISSION' | // (일반) 
 
   // 설비 to 창고
-  | 'EQP_TO_WMS';
+  'EQP_TO_WMS'; // (창고)
+
 
 class Facility extends Model implements FacilityAttributes {
   public readonly id!: FacilityAttributes['id'];

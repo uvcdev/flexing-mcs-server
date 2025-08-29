@@ -2,7 +2,7 @@ import { AttributeIds, WriteValueOptions } from "node-opcua-client";
 import { RedisKeys, useRedisUtil } from "../redisUtil";
 import opcuaUtil from "../opcuaUtil";
 import { KepwareWriteParams } from "../../models/kepware/kepware";
-import { parseAsciiToWord, TagValue, useKepServerUtil } from "../kepServerUtil";
+import { parseAsciiToDecWord, TagValue, useKepServerUtil } from "../kepServerUtil";
 import { logging, logToConsoleAndFile } from "../logging";
 import { MqttTopics } from "../mqttUtil";
 import { sendDockingMqtt } from "../mqttUtil";
@@ -665,7 +665,7 @@ export const useDockingUtil = () => {
         // todo: 0604 도킹 요청시 콜타입은 설비에서 판단해주기 때문에 아래 판단 내용 삭제 (Call_Type 써줄 때 Response 써줌)
         // 콜타입 입력
         /*
-        const callType = parseAsciiToWord(params.CALL_TYPE);
+        const callType = parseAsciiToDecWord(params.CALL_TYPE);
         console.log("🚀 ~ sendAcsDockingRequest ~ callType:", callType)
         if (callType) {
           const callTypeString = callType.toString();
@@ -767,7 +767,8 @@ export const useDockingUtil = () => {
               targetFacility: paramsSerial,
               tagInfo: [
                 {
-                  tagName: 'Dock_Request_Charge',
+                  // tagName: 'Dock_Request_Charge',
+                  tagName: 'Dock_Request',
                   value: true
                 }
               ]
@@ -914,7 +915,7 @@ export const useDockingUtil = () => {
           });
         }
         // 콜타입 입력
-        const callType = parseAsciiToWord(params.CALL_TYPE);
+        const callType = parseAsciiToDecWord(params.CALL_TYPE);
         console.log("🚀 ~ sendAcsDockingRequest ~ callType:", callType)
         if (!callType) {
           const callTypeString = callType.toString();
@@ -1043,6 +1044,11 @@ export const useDockingUtil = () => {
       await useKepServerUtil().writeSimpleTagValue({
         targetFacility: params.SERIAL_ID || '',
         tagName: 'Dock_Request',
+        value: false,
+      });
+      await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: params.SERIAL_ID || '',
+        tagName: 'Dock_Out_Request',
         value: false,
       });
       // 도킹 아웃 요청 켜 있으면 꺼주고 레디스 삭제
