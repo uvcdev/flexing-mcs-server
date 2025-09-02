@@ -438,23 +438,23 @@ export const useCallRegisterUtil = () => {
         await kepServerUtil.updateTagMapValues(alwaysCallCountTargetKey, alwaysCallCountFacilityName || '', [
           'Call_Request',
           'Call_Response',
-          'Call_Response_Count',
+          'Call_Count',
         ]);
         await kepServerUtil.updateTagMapValues(triggerCallCountTargetKey, triggerCallCountFacilityName || '', [
           'Call_Request',
           'Call_Response',
-          'Call_Response_Count',
+          'Call_Count',
         ]);
 
         const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Request`)?.value;
         const alwaysCallResponseValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Response`)?.value;
-        const alwaysCallResponseCountValue = opcuaUtil.tagMap.get(
-          `${alwaysCallCountFacilityName}.Call_Response_Count`
+        const alwaysCallCountValue = opcuaUtil.tagMap.get(
+          `${alwaysCallCountFacilityName}.Call_Count`
         )?.value;
         const triggerCallRequestValue = opcuaUtil.tagMap.get(`${triggerCallCountFacilityName}.Call_Request`)?.value;
         const triggerCallResponseValue = opcuaUtil.tagMap.get(`${triggerCallCountFacilityName}.Call_Response`)?.value;
-        const triggerCallResponseCountValue = opcuaUtil.tagMap.get(
-          `${triggerCallCountFacilityName}.Call_Response_Count`
+        const triggerCallCountValue = opcuaUtil.tagMap.get(
+          `${triggerCallCountFacilityName}.Call_Count`
         )?.value;
 
         const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
@@ -487,7 +487,7 @@ export const useCallRegisterUtil = () => {
           await useKepServerUtil().writeSimpleTagValue({
             targetFacility: alwaysCallCountFacilityName,
             tagName: 'Call_Response_Count',
-            value: String(alwaysCallResponseCountValue),
+            value: String(alwaysCallCountValue),
           });
           const trackingLogSubject = 'CALL_RESPONSE';
           const trackingLogDetail = 'CALL_RESPONSE';
@@ -515,7 +515,7 @@ export const useCallRegisterUtil = () => {
           await useKepServerUtil().writeSimpleTagValue({
             targetFacility: triggerCallCountFacilityName,
             tagName: 'Call_Response_Count',
-            value: String(triggerCallResponseCountValue),
+            value: String(triggerCallCountValue),
           });
           const trackingLogUpdateResData: TrackingLogRedisUpdateParams = {
             callId: infoTrackingLogByCallId?.callId,
