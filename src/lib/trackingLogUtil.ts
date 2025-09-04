@@ -118,8 +118,8 @@ export const regDetailLog = async (params: RegDetailLogInsertParams) => {
       subject: newDetailLogInsertParams.topic,
       detail: newDetailLogInsertParams.subject ? newDetailLogInsertParams.subject : trackingLogInfo.subject,
       state: trackingLogState ? trackingLogState : trackingLogInfo.state,
-      fromFacility: fromFacility ? fromFacility : trackingLogInfo.fromFacility,
-      toFacility: toFacility ? toFacility : trackingLogInfo.toFacility,
+      // fromFacility: fromFacility ? fromFacility : trackingLogInfo.fromFacility,
+      // toFacility: toFacility ? toFacility : trackingLogInfo.toFacility,
       // assignedRobot: assignedRobot ? assignedRobot : trackingLogInfo.assignedRobot,
       value: value ? value : trackingLogInfo.value,
       description: description ? description : trackingLogInfo.description,
@@ -127,6 +127,10 @@ export const regDetailLog = async (params: RegDetailLogInsertParams) => {
 
     if (newDetailLogInsertParams.topic === 'AMR_ASSIGNED') {
       trackingLogUpdateParams.assignedRobot = assignedRobot
+    }
+    if (newDetailLogInsertParams.topic === 'WORK_CREATE') {
+      trackingLogUpdateParams.fromFacility = fromFacility;
+      trackingLogUpdateParams.toFacility = toFacility;
     }
 
     try {
