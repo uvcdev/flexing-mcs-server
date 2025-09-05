@@ -58,7 +58,7 @@ export const useCallRegisterUtil = () => {
           : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
         // 필요한 태그 값들 업데이트
-        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority', 'Call_Type']);
+        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority']);
 
         // 필요한 태그 값들 가져오기
         const callCountValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`)?.value as number;
@@ -158,7 +158,7 @@ export const useCallRegisterUtil = () => {
                     linkedEqpId.toString() || ''
                   );
 
-                  if (!linkedFacilityInfo) {
+                  if (!linkedFacilityInfo?.serial) {
                     continue;
                   }
 
@@ -176,8 +176,9 @@ export const useCallRegisterUtil = () => {
                   )?.value as boolean;
                   const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(`${linkedFacilityInfo?.serial}.Call_Count`)
                     ?.value as number;
+                  const linkedFacilityCallTypeValue = await makeCallType(linkedFacilityInfo?.serial?.toString());
 
-                  // todo : 0827 콜타입 별로  라인 추가 됐을 때
+                  // linkedFacilityCallTypeValue
                   const eqpCallId =
                     (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
                   callInfo.CALL_ID = eqpCallId;
@@ -200,7 +201,8 @@ export const useCallRegisterUtil = () => {
                   if (
                     linkedFacilityInfo &&
                     linkedFacilityCallRequestValue === true &&
-                    linkedFacilityCallResponseValue === false
+                    linkedFacilityCallResponseValue === false &&
+                    linkedFacilityCallTypeValue === callType
                   ) {
                     // 작업지시 예정 레디스 저장
                     redisUtil.hset(
@@ -275,14 +277,12 @@ export const useCallRegisterUtil = () => {
                       linkedFacilityInfo?.serial?.toString()
                     );
                     break;
-                    // }
-                    // else if () {
-                    // todo 250827 : linkedFacilityCallResponseValue 에서 두번째 콜에 대한 response 보고 remain 등록해주기
                   } else if (
-                    (linkedFacilityInfo && linkedFacilityCallRequestValue === false) ||
-                    (linkedFacilityInfo &&
-                      linkedFacilityCallRequestValue === true &&
-                      linkedFacilityCallResponseValue === true)
+                    ((linkedFacilityInfo && linkedFacilityCallRequestValue === false) ||
+                      (linkedFacilityInfo &&
+                        linkedFacilityCallRequestValue === true &&
+                        linkedFacilityCallResponseValue === true)) &&
+                    linkedFacilityCallTypeValue === callType
                   ) {
                     // 반대쪽에 콜이 떠 있지 않은 경우와
                     // 반대쪽에 작업중인 경우 (Call_Request, Call_Response 켜져 있는 경우)
