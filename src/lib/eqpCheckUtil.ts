@@ -21,7 +21,7 @@ export interface EQP_WCS {
 }
 
 export const useEqpCheckUtil = () => {
-  const eqpTaskStatus = async (targetTagInfo: TagValue) => {
+  const eqpTaskStatus = async (targetTagInfo: TagValue, newValue: boolean) => {
     try {
       // TAG_NAME에 따라 다른 함수 실행
       switch (targetTagInfo.TAG_NAME) {
@@ -36,11 +36,29 @@ export const useEqpCheckUtil = () => {
         case 'Call_Request':
           console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
-            await useRedisUtil().hset(
-              RedisKeys.InfoCallRequestOnBySerial,
-              targetTagInfo.EQ_CODE,
-              JSON.stringify(targetTagInfo)
-            );
+            // 서버 연동을 위한 Call_Request 판단
+            const facilitySerial = targetTagInfo.EQ_CODE;
+            if (!newValue) {
+              // OFF → Redis에서 제거
+              await useRedisUtil().hdel(RedisKeys.InfoCallKey, facilitySerial);
+              return;
+            }
+
+            // ON일 때
+            const exists = await useRedisUtil().hgetObject(RedisKeys.InfoCallKey, facilitySerial);
+            if (!exists) {
+              // 최초 등록 (중복 방지)
+              await useRedisUtil().hset(RedisKeys.InfoCallKey, facilitySerial, 'ON');
+              console.log(`[INFO] Call_Request ON 등록: ${facilitySerial}`);
+
+              await useRedisUtil().hset(
+                RedisKeys.InfoCallRequestOnBySerial,
+                facilitySerial,
+                JSON.stringify(targetTagInfo)
+              );
+            } else {
+              console.log(`[SKIP] 이미 등록된 Call_Request: ${facilitySerial}`);
+            }
           } else {
             await useCallRemoveUtil().callRemove(targetTagInfo);
           }

@@ -58,7 +58,7 @@ export const useCallRegisterUtil = () => {
           : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
         // 필요한 태그 값들 업데이트
-        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority']);
+        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority', 'Call_Type']);
 
         // 필요한 태그 값들 가져오기
         const callCountValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`)?.value as number;
@@ -141,10 +141,18 @@ export const useCallRegisterUtil = () => {
               // ======= to 작업지시 =======
               if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 0) {
                 // 설비 - 설비로직
-                // todo 250801: linkedEqp 우선순위에 따라 정렬 필요할 수 있음
-                // todo 250805: 아예 link 하나 걸려 있는 거랑 두개 이상 걸려 있는 설비랑 분기해서 처리하는게 어떨지
-                for (let i = 0; i < facilityInfo.linkedEqpIds.length; i++) {
-                  const linkedEqpId = facilityInfo.linkedEqpIds[i];
+                const linkedEqpList = await Promise.all(
+                  facilityInfo.linkedEqpIds.map((id) =>
+                    redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityById, id.toString())
+                  )
+                );
+                // null 제거 + priority 정렬 (내림차순)
+                const sortedLinkedEqpList = linkedEqpList
+                  .filter((x): x is FacilityAttributes => x != null)
+                  .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+
+                for (let i = 0; i < sortedLinkedEqpList.length; i++) {
+                  const linkedEqpId = sortedLinkedEqpList[i].id;
                   const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
                     RedisKeys.InfoFacilityById,
                     linkedEqpId.toString() || ''
@@ -448,14 +456,10 @@ export const useCallRegisterUtil = () => {
 
         const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Request`)?.value;
         const alwaysCallResponseValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Response`)?.value;
-        const alwaysCallCountValue = opcuaUtil.tagMap.get(
-          `${alwaysCallCountFacilityName}.Call_Count`
-        )?.value;
+        const alwaysCallCountValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Count`)?.value;
         const triggerCallRequestValue = opcuaUtil.tagMap.get(`${triggerCallCountFacilityName}.Call_Request`)?.value;
         const triggerCallResponseValue = opcuaUtil.tagMap.get(`${triggerCallCountFacilityName}.Call_Response`)?.value;
-        const triggerCallCountValue = opcuaUtil.tagMap.get(
-          `${triggerCallCountFacilityName}.Call_Count`
-        )?.value;
+        const triggerCallCountValue = opcuaUtil.tagMap.get(`${triggerCallCountFacilityName}.Call_Count`)?.value;
 
         const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
           RedisKeys.InfoTrackingLogByCallId,

@@ -189,7 +189,7 @@ export const opcuaUtil = {
 
         if (targetTagInfo) {
           // 변경된 데이터 값을 기준으로 판단하는 함수
-          this.eqpCheckUtil.eqpTaskStatus(targetTagInfo);
+          this.eqpCheckUtil.eqpTaskStatus(targetTagInfo, value.value.value);
         }
       } catch (error) {
         logToConsoleAndFile(`Error handling changed event: ${error}`, 'red');

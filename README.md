@@ -216,14 +216,11 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 - 시스템관리 : 다국어처리 설정 타입 추가
 - PLC 값 변경 API 추가
 
-## v0.2.1-cyk
-- call_type01 값 써질 때 call_type_response01~10 쓰기
-
 ## 0.2.1-ljk
 - Add Dock_Signal_Reset function
 
 ## v0.2.1-cyk
-- call_type01 값 써질 때 call_type_response01~10 쓰기기
+- call_type01 값 써질 때 call_type_response01~10 쓰기
 - in/out 같은 포트일 때 in 작업에 도킹 관련 작업은 out 포트에도 데이터 써주기
 - Update multi language setting from settingDao ( worker-ksm )
 - Move Dock_Signal_Reset function
@@ -304,3 +301,5 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v1.0.3-cyk
 - linkedFacility 에 Call_Response 켜져 있는 경우에도 InfoRemainCallById 에 등록해주기
 - checkRemainEqpCall 에 Call_Response_Count 써줄 때 Call_Count 로 써주기
+- callRegister linkedEqpId 판단할 때 설비 우선순위에 따라 판단하는 기능 추가
+- 서버가 꺼졌다 켜졌을 때 Call_Request 판단하는 기능 추가
