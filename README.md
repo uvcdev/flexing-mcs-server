@@ -345,4 +345,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - checkRemainEqpCall 에 Call_Response_Count 써줄 때 Call_Count 로 써주기
 - callRegister linkedEqpId 판단할 때 설비 우선순위에 따라 판단하는 기능 추가
 - 서버가 꺼졌다 켜졌을 때 Call_Request 판단하는 기능 추가
+- test completed 09/05 from here
+
 - trigger 설비와 always 설비의 call_type 이 같은 경우에만 작업 생성하는 기능 추가
