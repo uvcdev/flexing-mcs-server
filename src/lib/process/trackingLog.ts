@@ -60,6 +60,8 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     assignedRobot: null,
     value: null,
     description: null,
+    missionDestination: null,
+    processState: 'NORMAL',
   };
 
   const trackingLogInsertedResult = await trackingLogDao.insert(trackingLogInsertParams);
@@ -140,6 +142,8 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     assignedRobot: trackingLogInsertParams.assignedRobot,
     value: trackingLogInsertParams.value,
     description: trackingLogInsertParams.description,
+    missionDestination: trackingLogInsertParams.missionDestination,
+    processState: trackingLogInsertParams.processState,
     createdDateTime: dateNow,
     updatedDateTime: dateNow,
     itemLogList: itemLogList,
@@ -233,6 +237,35 @@ export const editTrackingLogRedis = async (
   //   });
   //   return
   // }
+
+  // message 내용 추가
+  const FromMissionStates = [
+    'AMR_ACQUIRE_STARTED',
+    'AMR_ACQUIRE_COMPLETED',
+    'FROM_DOCKING_REQ',
+    'FROM_DOCKING_PERMIT',
+    'FROM_DOCKING_COMPLETED',
+  ];
+  const ToMissionStates = [
+    'TO_DOCKING_REQ',
+    'TO_DOCKING_PERMIT',
+    'TO_DOCKING_COMPLETED',
+    'AMR_DEPOSIT_STARTED',
+    'AMR_DEPOSIT_COMPLETED',
+  ];
+
+  if (trackingLogUpdateData.detail) {
+    if (FromMissionStates.includes(trackingLogUpdateData.detail)) {
+      if (infoTrackingLogByCallId.startFacility) {
+        trackingLogUpdateData.description = `FAC(${infoTrackingLogByCallId.startFacility}) : AMR(${trackingLogUpdateData.assignedRobot}) Mission State : ${trackingLogUpdateData.detail}`;
+      }
+    }
+    if (ToMissionStates.includes(trackingLogUpdateData.detail)) {
+      if (infoTrackingLogByCallId.destFacility) {
+        trackingLogUpdateData.description = `FAC(${infoTrackingLogByCallId.destFacility}) : AMR(${trackingLogUpdateData.assignedRobot}) Mission State : ${trackingLogUpdateData.detail}`;
+      }
+    }
+  }
 
   // 기존 tracking Log 업데이트
   const trackingLogUpdateParams: TrackingLogUpdateParams = {

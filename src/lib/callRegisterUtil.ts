@@ -135,6 +135,9 @@ export const useCallRegisterUtil = () => {
                 assignedRobot: null,
                 value: null,
                 description: `Call ID ${infoPendingMissionWorkOrder?.callId} responsed`,
+                processState: 'NORMAL',
+                // ACS에서 작업 할당 후 해당 정보 알 수 있음
+                missionDestination: null,
               };
               await editTrackingLogRedis(trackingLogUpdateMissionData, undefined, 'SUCCESS', callInfo.Caller);
             } else {

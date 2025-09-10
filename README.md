@@ -303,3 +303,10 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - checkRemainEqpCall 에 Call_Response_Count 써줄 때 Call_Count 로 써주기
 - callRegister linkedEqpId 판단할 때 설비 우선순위에 따라 판단하는 기능 추가
 - 서버가 꺼졌다 켜졌을 때 Call_Request 판단하는 기능 추가
+
+## v1.0.3-ljk
+- Tracking Log 메세지 정보 추가
+
+- Tracking Log 컬럼 추가
+  - missionDestination 컬럼, processState 컬럼
+  
