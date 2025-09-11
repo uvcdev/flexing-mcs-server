@@ -197,6 +197,18 @@ export const useRedisUtil = () => {
     for (const field of fields) {
       const value = await asyncHget(makeKey(key), field);
       results.push(JSON.parse(value));
+
+      // Parse when received as a string
+      // try {
+      //   const parsed = (typeof value === 'string') ? JSON.parse(value) : value
+      //   if (parsed === null) {
+      //     return results
+      //   }
+      //   results.push(parsed);
+      // } catch (e) {
+      //   console.error("JSON ERROR ", value)
+      //   results.push(JSON.parse(value));
+      // }
     }
 
     return results;

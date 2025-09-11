@@ -37,20 +37,20 @@ export const useEqpCheckUtil = () => {
           // 서버 연동을 위한 Call_Request 판단
           const facilitySerial = targetTagInfo.EQ_CODE;
           if (targetTagInfo.value === true) {
-            const exists = await useRedisUtil().hgetObject(RedisKeys.InfoCallKey, facilitySerial);
-            if (!exists) {
-              // 최초 등록 (중복 방지)
-              await useRedisUtil().hset(RedisKeys.InfoCallKey, facilitySerial, 'ON');
+            // const exists = await useRedisUtil().hgetObject(RedisKeys.InfoCallKey, facilitySerial);
+            // if (!exists) {
+            // 최초 등록 (중복 방지)
+            // await useRedisUtil().hset(RedisKeys.InfoCallKey, facilitySerial, JSON.stringify('ON'));
 
-              await useRedisUtil().hset(
-                RedisKeys.InfoCallRequestOnBySerial,
-                facilitySerial,
-                JSON.stringify(targetTagInfo)
-              );
-            }
+            await useRedisUtil().hset(
+              RedisKeys.InfoCallRequestOnBySerial,
+              facilitySerial,
+              JSON.stringify(targetTagInfo)
+            );
+            // }
           } else {
             await useCallRemoveUtil().callRemove(targetTagInfo);
-            await useRedisUtil().hdel(RedisKeys.InfoCallKey, facilitySerial);
+            // await useRedisUtil().hdel(RedisKeys.InfoCallKey, facilitySerial);
           }
           break;
 

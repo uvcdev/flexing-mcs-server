@@ -43,10 +43,10 @@ export const kepserverConfig = {
   },
 
   subscribeOptions: {
-    requestedPublishingInterval: 1000,      // 1초 간격으로 데이터 전송
-    requestedLifetimeCount: 300,			// 300초 유효 시간 1000ms * 300
+    requestedPublishingInterval: 1000,      // 1초 간격으로 데이터 전송 => 2000
+    requestedLifetimeCount: 300,			// 300초 유효 시간 1000ms * 300  => 500
     requestedMaxKeepAliveCount: 20,			// 20초 간격으로 KeepAlive 메세지 1000ms * 20
-    maxNotificationsPerPublish: 1000,		// 한 번에 최대 1000개의 알림
+    maxNotificationsPerPublish: 1000,		// 한 번에 최대 1000개의 알림  => 500
     publishingEnabled: true,
     priority: 10,
   }

@@ -346,5 +346,8 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - callRegister linkedEqpId 판단할 때 설비 우선순위에 따라 판단하는 기능 추가
 - 서버가 꺼졌다 켜졌을 때 Call_Request 판단하는 기능 추가
 - test completed 09/05 from here
+- 작지가 없음에도 작업자가 Call_Cancel_Request 를 올린 경우에도 다음 콜이 생성되도록 해주도록 수정(callCancelUtil.callCancel)
+- 링크드 설비인 경우 조회 조건 수정(callCancelUtil.callCancel)
+- test completed 09/11
 
 - trigger 설비와 always 설비의 call_type 이 같은 경우에만 작업 생성하는 기능 추가
