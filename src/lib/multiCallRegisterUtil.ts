@@ -57,11 +57,32 @@ export const useMultiCallRegisterUtil = () => {
           : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
         // 필요한 태그 값들 가져오기
 
-        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority']);
+        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority', 'Call_Request_Multi_1', 'Call_Request_Multi_2']);
 
         const callCountValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`)?.value as number;
         const callPriorityValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`)?.value as string;
+        const multiCallFirstValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Request_Multi_1`)?.value as boolean;
+        const multiCallSecondValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Request_Multi_2`)?.value as boolean;
         const callType = await makeCallType(targetCode);
+
+        // // remainCall doesn't need multiCallRegister again
+        // let nextCallInfo = false;
+        // let sameCount = 0
+        // const remainCallList = await redisUtil.hgetAllObject<PendingWorkOrderAttributes>(RedisKeys.InfoRemainCallById);
+        // if (remainCallList) {
+        //   for (let i = 0; i < remainCallList.length; i++) {
+        //     const remainCallInfo = remainCallList[i].callId
+        //     const remainCallIdSub = remainCallInfo?.substring(0, 4)
+        //     nextCallInfo = true;
+        //     if (targetCode === remainCallIdSub) {
+        //       sameCount++
+        //     }
+        //   }
+        //   if ((multiCallFirstValue === true && multiCallSecondValue === false && sameCount > 3) ||
+        //     (multiCallFirstValue === true && multiCallSecondValue === true && sameCount > 4)) {
+        //     continue;
+        //   }
+        // }
 
         if (facilityInfo?.generatedCallCount) {
           let multiCallEqCode = '';

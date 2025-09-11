@@ -24,7 +24,7 @@ export function registerSubscriptionEvents(subscription: ClientSubscription): vo
   });
 
   subscription.on("keepalive", () => {
-    logToConsoleAndFile("Subscription keepalive!");
+    // logToConsoleAndFile("Subscription keepalive!");
   });
 
   subscription.on("internal_error", (err: Error) => {
@@ -32,12 +32,12 @@ export function registerSubscriptionEvents(subscription: ClientSubscription): vo
   });
 
   subscription.on("raw_notification", (notificationMessage: NotificationMessage) => {
-    logToConsoleAndFile(`Subscription raw_notification!`);
+    // logToConsoleAndFile(`Subscription raw_notification!`);
     // notificationMessage 처리 필요 시 추가
   });
 
   subscription.on("received_notifications", (notificationMessage: NotificationMessage) => {
-    logToConsoleAndFile(`Subscription received_notifications!`);
+    // logToConsoleAndFile(`Subscription received_notifications!`);
     // notificationMessage 처리 필요 시 추가
   });
 

@@ -44,6 +44,21 @@ export const useCallRegisterUtil = () => {
         const targetCode = targetTagInfo.EQ_CODE;
         if (!targetCode) continue; // 코드 없으면 처리 불가
 
+        // remainCall doesn't need callRegister again
+        let nextCallInfo = false;
+        const remainCallList = await redisUtil.hgetAllObject<PendingWorkOrderAttributes>(RedisKeys.InfoRemainCallById);
+        if (remainCallList) {
+          for (let i = 0; i < remainCallList.length; i++) {
+            const remainCallInfo = remainCallList[i].callId
+            const remainCallIdSub = remainCallInfo?.substring(0, 4)
+            if (targetCode === remainCallIdSub) {
+              nextCallInfo = true;
+              break;
+            }
+          }
+        }
+        if (nextCallInfo === true) continue;
+
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
           targetCode
