@@ -483,11 +483,13 @@ export const useCallCancelUtil = () => {
                 params: null,
                 result: true,
               });
-              await writeCallCancelResponse(targetCode);
               redisUtil.hdel(RedisKeys.InfoRemainCallById, infoRemainCall.callId || '');
             }
           }
         }
+        // 작지가 없음에도 작업자가 Call_Cancel_Request 를 올린 경우
+        // Call_Cancel_Response 를 켜서 다음 콜이 생성되도록 해줘야 함
+        await writeCallCancelResponse(targetCode);
 
         // 만약 취소 타입이 설비-창고라면 포트배정기다리는 레디스에서 찾아서 취소응답써주고 창고콜취소 요청 전달
         // if (cancelType === 'EQP_TO_WMS') {
@@ -521,10 +523,10 @@ export const useCallCancelUtil = () => {
         const linkedfacilityId = facilityInfo.type === 'in' ? workOrderInfo.fromFacilityId : workOrderInfo.toFacilityId || null;
         linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityById, linkedfacilityId?.toString() || '')
         if (!linkedFacilityInfo) {
-          logToConsoleAndFile(`[cancelType = ${cancelType}] EQP_TO_EQP_MISSION - 설비to설비 미션O - 링크드 설비 정보 없음`, "red");
+          logToConsoleAndFile(`[linkedFacilityId = ${linkedfacilityId}]  링크드 설비 정보 없음`, "red");
           logging.ACTION_ERROR({
             filename: `callCancelUtil.ts - callCancel`,
-            error: `[cancelType = ${cancelType}] EQP_TO_EQP_MISSION - 설비to설비 미션O - 링크드 설비 정보 없음`,
+            error: `[linkedFacilityId = ${linkedfacilityId}]  링크드 설비 정보 없음`,
             params: null,
             result: false,
           });
@@ -532,13 +534,13 @@ export const useCallCancelUtil = () => {
       } else {
         // 링크드일 경우
         // 링크드 설비 정보 조회
-        const linkedfacilityId = facilityInfo.type === 'in' ? workOrderInfo.fromFacilityId : workOrderInfo.toFacilityId || null;
+        const linkedfacilityId = facilityInfo.type === 'in' ? workOrderInfo.toFacilityId : workOrderInfo.fromFacilityId || null;
         linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityById, linkedfacilityId?.toString() || '')
         if (!linkedFacilityInfo) {
-          logToConsoleAndFile(`[cancelType = ${cancelType}] EQP_TO_EQP_MISSION - 설비to설비 미션O - 링크드 설비 정보 없음`, "red");
+          logToConsoleAndFile(`[linkedFacilityId = ${linkedfacilityId}]  링크드 설비 정보 없음`, "red");
           logging.ACTION_ERROR({
             filename: `callCancelUtil.ts - callCancel`,
-            error: `[cancelType = ${cancelType}] EQP_TO_EQP_MISSION - 설비to설비 미션O - 링크드 설비 정보 없음`,
+            error: `[linkedFacilityId = ${linkedfacilityId}]  링크드 설비 정보 없음`,
             params: null,
             result: false,
           });

@@ -60,7 +60,6 @@ export const processMcs = async () => {
     // 수집한 ack 데이터 처리 ( ACK )
     await checkReceivedAckCommand();
 
-    // todo 250805 : 로직 수정 필요 / 아래 프로세스 제대로 타지 못함 (너무 느려짐)
     // ACK 응답 여부 확인 ( ACK )
     await checkRemainingAckCommand();
 
