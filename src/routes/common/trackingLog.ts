@@ -49,6 +49,8 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, TrackingLogIn
       assignedRobot: req.body.assignedRobot,
       value: req.body.value,
       description: req.body.description,
+      missionDestination: null,
+      processState: null
     };
     logging.REQUEST_PARAM(logFormat);
 

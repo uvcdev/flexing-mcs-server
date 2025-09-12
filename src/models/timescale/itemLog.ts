@@ -28,7 +28,7 @@ export interface ItemLogAttributes {
   createdAt: Date;
 }
 
-type ItemLogSubjectType =
+export type ItemLogSubjectType =
   | 'TRANSPORT_COMMAND'
   | 'LOAD_COMMAND'
   | 'UNLOAD_COMMAND'

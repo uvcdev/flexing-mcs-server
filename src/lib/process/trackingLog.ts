@@ -13,7 +13,7 @@ import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { dao as trackingLogDao } from '../../dao/common/trackingLogDao';
 import { itemLogDao } from '../../dao/timescale/itemLogDao';
 import { logging } from '../logging';
-import { ItemLogInsertParams } from '../../models/timescale/itemLog';
+import { ItemLogInsertParams, ItemLogSubjectType } from '../../models/timescale/itemLog';
 import { formatDetailedDateTime } from '../usefullToolUtil';
 import { sendMqtt } from '../mqttUtil';
 
@@ -306,7 +306,7 @@ export const editTrackingLogRedis = async (
     amrName: null,
     floor: null,
     topic: null,
-    subject: trackingLogUpdateData.subject ? trackingLogUpdateData.subject : null,
+    subject: trackingLogUpdateData.subject ? trackingLogUpdateData.subject as ItemLogSubjectType : null,
     body: null,
     trackingLogId: infoTrackingLogByCallId.id,
     state: trackingLogUpdateData.detail ? trackingLogUpdateData.detail : null,
@@ -344,6 +344,8 @@ export const editTrackingLogRedis = async (
     createdDateTime: infoTrackingLogByCallId.createdDateTime,
     updatedDateTime: dateNow,
     itemLogList: itemLogList,
+    processState: null,
+    missionDestination: null
   };
 
   // redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, plcName, JSON.stringify(trackingLogRedisBody));
