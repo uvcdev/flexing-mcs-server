@@ -257,12 +257,12 @@ export const editTrackingLogRedis = async (
   if (trackingLogUpdateData.detail) {
     if (FromMissionStates.includes(trackingLogUpdateData.detail)) {
       if (infoTrackingLogByCallId.startFacility) {
-        trackingLogUpdateData.description = `FAC(${infoTrackingLogByCallId.startFacility}) : AMR(${trackingLogUpdateData.assignedRobot}) Mission State : ${trackingLogUpdateData.detail}`;
+        trackingLogUpdateData.description = `FAC(${infoTrackingLogByCallId.startFacility}) : AMR(${infoTrackingLogByCallId.assignedRobot}) Mission State : ${trackingLogUpdateData.detail}`;
       }
     }
     if (ToMissionStates.includes(trackingLogUpdateData.detail)) {
       if (infoTrackingLogByCallId.destFacility) {
-        trackingLogUpdateData.description = `FAC(${infoTrackingLogByCallId.destFacility}) : AMR(${trackingLogUpdateData.assignedRobot}) Mission State : ${trackingLogUpdateData.detail}`;
+        trackingLogUpdateData.description = `FAC(${infoTrackingLogByCallId.destFacility}) : AMR(${infoTrackingLogByCallId.assignedRobot}) Mission State : ${trackingLogUpdateData.detail}`;
       }
     }
   }

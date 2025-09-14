@@ -980,11 +980,11 @@ export const useDockingUtil = () => {
             }
 
             const trackingLogSubject =
-              infoTrackingLogByCallId.startFacility === dockingParams.SERIAL_ID
+              infoTrackingLogByCallId.startFacility === dockingParams.PORT_ID
                 ? 'FROM_DOCKING_COMPLETED'
                 : 'TO_DOCKING_COMPLETED';
             const trackingLogDetail =
-              infoTrackingLogByCallId.startFacility === dockingParams.SERIAL_ID
+              infoTrackingLogByCallId.startFacility === dockingParams.PORT_ID
                 ? 'FROM_DOCKING_COMPLETED'
                 : 'TO_DOCKING_COMPLETED';
             const trackingLogState = 'PROCESSING';
@@ -998,11 +998,11 @@ export const useDockingUtil = () => {
               startFacility: null,
               destFacility: null,
               assignedRobot: null,
-              value: dockingParams.SERIAL_ID,
-              description: `Call ID ${dockingParams.CALL_ID} received ${trackingLogSubject} from ACS(${dockingParams.SERIAL_ID})`,
+              value: dockingParams.PORT_ID,
+              description: `Call ID ${dockingParams.CALL_ID} received ${trackingLogSubject} from ACS(${dockingParams.PORT_ID})`,
               processState: trackingLogProcessState,
             };
-            await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', dockingParams.SERIAL_ID);
+            await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', dockingParams.PORT_ID);
           }
         }
       }
