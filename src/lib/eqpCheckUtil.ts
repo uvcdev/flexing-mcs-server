@@ -35,6 +35,7 @@ export const useEqpCheckUtil = () => {
         //   break;
         case 'Call_Request':
           // 서버 연동을 위한 Call_Request 판단
+          console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           const facilitySerial = targetTagInfo.EQ_CODE;
           if (targetTagInfo.value === true) {
             // const exists = await useRedisUtil().hgetObject(RedisKeys.InfoCallKey, facilitySerial);

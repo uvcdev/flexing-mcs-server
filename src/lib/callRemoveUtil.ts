@@ -85,7 +85,10 @@ export const useCallRemoveUtil = () => {
       // }
       await useMultiCallRegisterUtil().hsetWithDecrementCount(RedisKeys.InfoWorkOrderCountBySerial, targetCode);
       // 반대편 Call_Reqeust 가 켜져있지 않은 상태에서 Call_Requst 꺼지면 삭제
-      redisUtil.hdel(RedisKeys.InfoRemainCallById, targetCode);
+      // 250916 remove remain
+      // redisUtil.hdel(RedisKeys.InfoRemainCallById, targetCode);
+      redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
+
       // 로봇 할당 되어 있는 경우 콜 취소 응답이 켜져 있는 상태에서
       // 콜이 내려간다면 콜 취소 응답 내리기
       // if (callCancelResponseValue === true) {

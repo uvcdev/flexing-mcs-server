@@ -352,6 +352,8 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - test completed 09/11
 
 - trigger 설비와 always 설비의 call_type 이 같은 경우에만 작업 생성하는 기능 추가
+- 250916 CallRegister 에서 매칭 안된 경우 remain redis 에 저장하던 기능 제거 => 매칭 안될 경우 CallRegister 에서 반복 통해 판단
+
 
 ## v1.0.3-ljk
 - Tracking Log 메세지 정보 추가

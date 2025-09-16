@@ -298,28 +298,31 @@ export const useMultiCallRegisterUtil = () => {
                       linkedFacilityInfo?.serial?.toString()
                     );
                     break;
-                  } else if (
-                    ((linkedFacilityInfo && linkedFacilityCallRequestValue === false) ||
-                      (linkedFacilityInfo &&
-                        linkedFacilityCallRequestValue === true &&
-                        linkedFacilityCallResponseValue === true)) &&
-                    linkedFacilityCallTypeValue === callType
-                  ) {
-                    // 반대쪽에 콜이 떠 있지 않은 경우와
-                    // 반대쪽에 작업중인 경우 (Call_Request, Call_Response 켜져 있는 경우)
-                    // 반복해서 판단하는 redis에 저장
-                    redisUtil.hset(
-                      RedisKeys.InfoRemainCallById,
-                      String(eqpCallId),
-                      JSON.stringify({
-                        ...infoPendingWorkOrder,
-                        // fromFacilityName: facilityInfo.serial,
-                        // toFacilityName: linkedFacilityInfo.serial,
-                      })
-                    );
-                    // 반대 콜에 대한 판단을 지속적으로 하기 때문에 더이상 callRegister 판단 필요 없음
-                    await redisUtil.hdel(RedisKeys.InfoMultiCallRequestOnBySerial, multiCallEqCode);
                   }
+                  // 250916 remove remain
+                  // else if (
+                  //   ((linkedFacilityInfo && linkedFacilityCallRequestValue === false) ||
+                  //     (linkedFacilityInfo &&
+                  //       linkedFacilityCallRequestValue === true &&
+                  //       linkedFacilityCallResponseValue === true)) &&
+                  //   linkedFacilityCallTypeValue === callType
+                  // ) {
+                  //   // 반대쪽에 콜이 떠 있지 않은 경우와
+                  //   // 반대쪽에 작업중인 경우 (Call_Request, Call_Response 켜져 있는 경우)
+                  //   // 반복해서 판단하는 redis에 저장
+                  //   redisUtil.hset(
+                  //     RedisKeys.InfoRemainCallById,
+                  //     String(eqpCallId),
+                  //     JSON.stringify({
+                  //       ...infoPendingWorkOrder,
+                  //       // fromFacilityName: facilityInfo.serial,
+                  //       // toFacilityName: linkedFacilityInfo.serial,
+                  //     })
+                  //   );
+                  //   // 반대 콜에 대한 판단을 지속적으로 하기 때문에 더이상 callRegister 판단 필요 없음
+                  //   await redisUtil.hdel(RedisKeys.InfoMultiCallRequestOnBySerial, multiCallEqCode);
+                  // }
+                  /////////// 250916
                 }
 
                 console.log(`Call request sent to EQP from EQP. TYPE: ${callType}, CallID: ${callCountValue}`);
