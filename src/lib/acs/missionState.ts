@@ -82,23 +82,23 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
 
     if (state === 'MISSION_CANCELED') {
-      // 물류 로그 저장
-      const trackingLogSubject = 'MISSION_STATE';
-      const trackingLogDetail = state;
-      const trackingLogState = assignState;
-      const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-        callId: callId,
-        subject: trackingLogSubject,
-        detail: trackingLogDetail,
-        state: trackingLogState,
-        transferId: null,
-        startFacility: null,
-        destFacility: null,
-        assignedRobot: assignAmrName,
-        value: assignAmrName,
-        description: `AMR(${assignAmrName}) Mission State : ${state}`,
-      };
-      await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
+      // // 물류 로그 저장
+      // const trackingLogSubject = 'MISSION_STATE';
+      // const trackingLogDetail = state;
+      // const trackingLogState = assignState;
+      // const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+      //   callId: callId,
+      //   subject: trackingLogSubject,
+      //   detail: trackingLogDetail,
+      //   state: trackingLogState,
+      //   transferId: null,
+      //   startFacility: null,
+      //   destFacility: null,
+      //   assignedRobot: assignAmrName,
+      //   value: assignAmrName,
+      //   description: `AMR(${assignAmrName}) Mission State : ${state}`,
+      // };
+      // await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
     } else if (state === 'MISSION_FAILED') {
     } else if (state === 'MISSION_COMPLETED') {
     }
