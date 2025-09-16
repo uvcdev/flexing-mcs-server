@@ -90,7 +90,8 @@ export const processMcs = async () => {
     await useWorkOrderUtil().createWorkOrder();
 
     // 설비-설비 간에 작업 미생성된 콜에 대해 재판단(Call_Response) 처리
-    await useCallRegisterUtil().checkRemainEqpCall();
+    // 250916 remove remain
+    // await useCallRegisterUtil().checkRemainEqpCall();
 
     // 설비 수동모드인 경우 등록해놓은 redis 조회해서 작업지시 생성
     // await useCallRegisterUtil().createFacilityModeWorkOrder();

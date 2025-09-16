@@ -71,7 +71,7 @@ export enum RedisKeys {
   DockingCompleteBySerialId = 'docking_complete_by_serial_id', // acs로부터 온 도킹완료정보와 imcs가 acs로 보내는 도킹완료응답정보
   DockingDetachBySerialId = 'docking_detach_by_serial_id', // acs로부터 온 도킹해제정보와 imcs가 acs로 보내는 도킹해제응답정보
   InfoPlcBySerial = 'info_plc_by_serial',
-  InfoRemainCallById = 'info_remain_call_by_id',
+  // InfoRemainCallById = 'info_remain_call_by_id',   // 250916 remove remain
   InfoWorkOrderCountBySerial = 'info_work_order_count_by_serial', // 멀티콜을 위한 현재 작업 중인 작업 개수
   InfoFacilityModeBySerial = 'info_facility_mode_by_searial', // 설비 시리얼로 설비 모드 조회
   InfoCallRequestOnBySerial = 'info_call_request_on_by_serial', // Call_Request ON 인 작업 데이터

@@ -378,58 +378,58 @@ export const useKepServerUtil = () => {
         if (!session) continue; // 세션이 없으면 다시 루프
         const safeSession = session; // 별도 변수에 할당
 
-        await Promise.all(
-          Array.from(opcuaUtil.allTagNodeIds.entries()).map(async ([key, value]) => {
-            const result: Record<string, any> = {};
-            const dataValues = await safeSession.read(value.readValueIdOptions);
+        // await Promise.all(
+        //   Array.from(opcuaUtil.allTagNodeIds.entries()).map(async ([key, value]) => {
+        //     const result: Record<string, any> = {};
+        //     const dataValues = await safeSession.read(value.readValueIdOptions);
 
-            dataValues.forEach((dataValue, index) => {
-              const inputType = value.tagValue[index].inputType;
-              value.tagValue[index].value =
-                inputType === "ASCII"
-                  ? parseDecWordToAscii(dataValue.value.value)
-                  : dataValue.value.value;
+        //     dataValues.forEach((dataValue, index) => {
+        //       const inputType = value.tagValue[index].inputType;
+        //       value.tagValue[index].value =
+        //         inputType === "ASCII"
+        //           ? parseDecWordToAscii(dataValue.value.value)
+        //           : dataValue.value.value;
 
-              result[value.tagValue[index].key] = value.tagValue[index].value;
-            });
+        //       result[value.tagValue[index].key] = value.tagValue[index].value;
+        //     });
 
-            await redisUtil.hset(
-              RedisKeys.InfoPlcBySerial,
-              key.split('.').pop()?.toString() || '',
-              JSON.stringify(result)
-            );
-            sendMqtt(`${MqttTopics.KepwareStatus}/${key}`, JSON.stringify(result));
-          })
-        );
-        // for (const [key, value] of opcuaUtil.allTagNodeIds.entries()) {
-        //   const result: Record<string, any> = {};
-        //   const readValueIdOptions = value.readValueIdOptions;
-        //   const tagValue = value.tagValue;
+        //     await redisUtil.hset(
+        //       RedisKeys.InfoPlcBySerial,
+        //       key.split('.').pop()?.toString() || '',
+        //       JSON.stringify(result)
+        //     );
+        //     sendMqtt(`${MqttTopics.KepwareStatus}/${key}`, JSON.stringify(result));
+        //   })
+        // );
+        for (const [key, value] of opcuaUtil.allTagNodeIds.entries()) {
+          const result: Record<string, any> = {};
+          const readValueIdOptions = value.readValueIdOptions;
+          const tagValue = value.tagValue;
 
-        //   const dataValues = await session.read(readValueIdOptions);
+          const dataValues = await session.read(readValueIdOptions);
 
-        //   dataValues.forEach((dataValue, index) => {
-        //     const inputType = tagValue[index].inputType;
-        //     if (inputType === 'ASCII') {
-        //       tagValue[index].value = parseDecWordToAscii(dataValue.value.value);
-        //       // tagValue[index].value = 12532
-        //     } else {
-        //       tagValue[index].value = dataValue.value.value;
-        //       // if (tagValue[index].value === null) {
-        //       //   return;
-        //       // }
-        //     }
-        //     result[tagValue[index].key] = tagValue[index].value;
-        //   });
+          dataValues.forEach((dataValue, index) => {
+            const inputType = tagValue[index].inputType;
+            if (inputType === 'ASCII') {
+              tagValue[index].value = parseDecWordToAscii(dataValue.value.value);
+              // tagValue[index].value = 12532
+            } else {
+              tagValue[index].value = dataValue.value.value;
+              // if (tagValue[index].value === null) {
+              //   return;
+              // }
+            }
+            result[tagValue[index].key] = tagValue[index].value;
+          });
 
-        //   // MQTT로 결과 전송
-        //   await redisUtil.hset(
-        //     RedisKeys.InfoPlcBySerial,
-        //     key.split('.').pop()?.toString() || '',
-        //     JSON.stringify(result)
-        //   );
-        //   sendMqtt(`${MqttTopics.KepwareStatus}/${key}`, JSON.stringify(result));
-        // }
+          // MQTT로 결과 전송
+          await redisUtil.hset(
+            RedisKeys.InfoPlcBySerial,
+            key.split('.').pop()?.toString() || '',
+            JSON.stringify(result)
+          );
+          sendMqtt(`${MqttTopics.KepwareStatus}/${key}`, JSON.stringify(result));
+        }
       } catch (error) {
         logging.MQTT_ERROR({
           title: 'Error reading value from kepServerUtil.monitorTagData',

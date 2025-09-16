@@ -472,6 +472,8 @@ export const useCallCancelUtil = () => {
           result: true,
         });
 
+        // 250916 remove remain 
+        /*
         const infoRemainCalls = await redisUtil.hgetAllObject<PendingWorkOrderAttributes>(RedisKeys.InfoRemainCallById);
         if (infoRemainCalls) {
           for (const infoRemainCall of infoRemainCalls) {
@@ -487,9 +489,30 @@ export const useCallCancelUtil = () => {
             }
           }
         }
+          */
+        const infoRemainCalls = await redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoCallRequestOnBySerial);
+        if (infoRemainCalls) {
+          for (const infoRemainCall of infoRemainCalls) {
+            if (facilityInfo.serial === infoRemainCall.DEVICE) {
+              logToConsoleAndFile(
+                `[cancelType = ${cancelType}] 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`,
+                'green'
+              );
+              logging.ACTION_INFO({
+                filename: `callCancelUtil.ts - callCancel`,
+                error: `[cancelType = ${cancelType}] 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`,
+                params: null,
+                result: true,
+              });
+              redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, infoRemainCall.DEVICE || '');
+            }
+          }
+        }
+
         // 작지가 없음에도 작업자가 Call_Cancel_Request 를 올린 경우
         // Call_Cancel_Response 를 켜서 다음 콜이 생성되도록 해줘야 함
         await writeCallCancelResponse(targetCode);
+        await initResponsePlc(targetCode);
 
         // 만약 취소 타입이 설비-창고라면 포트배정기다리는 레디스에서 찾아서 취소응답써주고 창고콜취소 요청 전달
         // if (cancelType === 'EQP_TO_WMS') {

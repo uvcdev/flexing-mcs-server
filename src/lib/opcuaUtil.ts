@@ -154,7 +154,7 @@ export const opcuaUtil = {
       const monitoredItems = await this.subscription.monitorItems(
         subscriptionNodes,
         // 0.5초마다 샘플링, 10개까지 보관하고 오래된 값이 자동으로 삭제
-        { samplingInterval: 500, discardOldest: true, queueSize: 10 },
+        { samplingInterval: 100, discardOldest: true, queueSize: 10 },
         TimestampsToReturn.Both
       );
 
@@ -168,6 +168,7 @@ export const opcuaUtil = {
 
   // 'on.changed' 이벤트 등록 함수
   registerChangeEvent(monitoredItems: ClientMonitoredItemGroup): void {
+    /*
     monitoredItems.on('changed', (monitoredItem: ClientMonitoredItemBase, dataValue: DataValue) => {
       setImmediate(async () => {
         try {
@@ -197,36 +198,34 @@ export const opcuaUtil = {
         }
       });
     });
+*/
+    monitoredItems.on('changed', (monitoredItem: ClientMonitoredItemBase, dataValue: DataValue) => {
+      try {
+        // const eqpCheckUtil = useEqpCheckUtil();
+        const redisUtil = useRedisUtil();
+        const nodeId = monitoredItem.itemToMonitor.nodeId.value.toString();
+        const value = dataValue;
+        const targetTagInfo = useKepServerUtil().updateTagValue(nodeId, value);
 
-    /*
-        monitoredItems.on('changed', (monitoredItem: ClientMonitoredItemBase, dataValue: DataValue) => {
-          try {
-            // const eqpCheckUtil = useEqpCheckUtil();
-            const redisUtil = useRedisUtil();
-            const nodeId = monitoredItem.itemToMonitor.nodeId.value.toString();
-            const value = dataValue;
-            const targetTagInfo = useKepServerUtil().updateTagValue(nodeId, value);
-    
-            // logToConsoleAndFile(`Changed Tag Data NodeId: ${nodeId} ${value.value.value}`);
-            logging.KEPWARE_LOG({
-              action: 'TAG_WRITE',
-              tag: nodeId,
-              value: value.value.value,
-              message: `changing value from opcuaUtil.registerChangeEvent`,
-            });
-    
-            // 변경되는 값 저장
-            redisUtil.hset(RedisKeys.InfoChangedTagById, nodeId, JSON.stringify(targetTagInfo));
-    
-            if (targetTagInfo) {
-              // 변경된 데이터 값을 기준으로 판단하는 함수
-              this.eqpCheckUtil.eqpTaskStatus(targetTagInfo, value.value.value);
-            }
-          } catch (error) {
-            logToConsoleAndFile(`Error handling changed event: ${error}`, 'red');
-          }
+        // logToConsoleAndFile(`Changed Tag Data NodeId: ${nodeId} ${value.value.value}`);
+        logging.KEPWARE_LOG({
+          action: 'TAG_WRITE',
+          tag: nodeId,
+          value: value.value.value,
+          message: `changing value from opcuaUtil.registerChangeEvent`,
         });
-        */
+
+        // 변경되는 값 저장
+        redisUtil.hset(RedisKeys.InfoChangedTagById, nodeId, JSON.stringify(targetTagInfo));
+
+        if (targetTagInfo) {
+          // 변경된 데이터 값을 기준으로 판단하는 함수
+          this.eqpCheckUtil.eqpTaskStatus(targetTagInfo, value.value.value);
+        }
+      } catch (error) {
+        logToConsoleAndFile(`Error handling changed event: ${error}`, 'red');
+      }
+    });
   },
 
   async populatePlcInit(): Promise<void> {
