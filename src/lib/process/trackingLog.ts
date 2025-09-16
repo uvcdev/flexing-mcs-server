@@ -306,7 +306,7 @@ export const editTrackingLogRedis = async (
     amrName: null,
     floor: null,
     topic: null,
-    subject: trackingLogUpdateData.subject ? trackingLogUpdateData.subject as ItemLogSubjectType : null,
+    subject: trackingLogUpdateData.subject ? (trackingLogUpdateData.subject as ItemLogSubjectType) : null,
     body: null,
     trackingLogId: infoTrackingLogByCallId.id,
     state: trackingLogUpdateData.detail ? trackingLogUpdateData.detail : null,
@@ -345,7 +345,7 @@ export const editTrackingLogRedis = async (
     updatedDateTime: dateNow,
     itemLogList: itemLogList,
     processState: null,
-    missionDestination: null
+    missionDestination: null,
   };
 
   // redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, plcName, JSON.stringify(trackingLogRedisBody));
@@ -359,7 +359,7 @@ export const sendTrackingLogs = async () => {
   for (let i = 0, length = trackingLogByCallIdList?.length; i < length; i++) {
     const trackingLogByCallIdInfo = trackingLogByCallIdList[i];
 
-    const trackingLogCallId = trackingLogByCallIdInfo.callId;
+    const trackingLogCallId = trackingLogByCallIdInfo.callId || '';
     const facilityCode = trackingLogByCallIdInfo.startFacility;
     const trackingLogState = trackingLogByCallIdInfo.state || '';
 
@@ -371,7 +371,9 @@ export const sendTrackingLogs = async () => {
     const MQTT_SENDABLE_STATES = ['PUBLISHED', 'PROCESSING', 'ABORTED', 'PAUSED'];
     if (!MQTT_SENDABLE_STATES.includes(trackingLogState)) {
       // sendMqtt(`tracking_log/${trackingLogCallId}`, JSON.stringify(trackingLogByCallIdInfo));
-      redisUtil.hdel(RedisKeys.InfoTrackingLogByCallId, JSON.stringify(trackingLogCallId));
+      if (trackingLogCallId !== '') {
+        redisUtil.hdel(RedisKeys.InfoTrackingLogByCallId, trackingLogCallId);
+      }
     }
   }
 };

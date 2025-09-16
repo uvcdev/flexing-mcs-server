@@ -366,3 +366,5 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - Tracking Log 도킹 관련 내용 수정
   - 도킹 관련 Tracking Log 누락 내용들 수정 완료 ( 도킹 요청 , 허가, 완료 )
   - 도킹 관련 Tracking Log 재수정
+  - ACS 작업 취소에 대한 처리 로직 추가
+  - 완료 상태 로그 삭제 처리 기능 추가
