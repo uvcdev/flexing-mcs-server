@@ -154,7 +154,7 @@ export const opcuaUtil = {
       const monitoredItems = await this.subscription.monitorItems(
         subscriptionNodes,
         // 0.5초마다 샘플링, 10개까지 보관하고 오래된 값이 자동으로 삭제
-        { samplingInterval: 100, discardOldest: true, queueSize: 10 },
+        { samplingInterval: 500, discardOldest: true, queueSize: 10 },
         TimestampsToReturn.Both
       );
 

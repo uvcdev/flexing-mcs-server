@@ -458,102 +458,110 @@ export const receiveMqtt = (): void => {
                 );
               }
 
-              // 작업 취소, 작업 실패
-              if (state === 'MISSION_CANCELED' || state === 'MISSION_FAILED') {
-                const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
-                  RedisKeys.InfoFacilityById,
-                  messageJson.fromSerial
-                );
-                let alwaysOnFacility = messageJson.fromSerial;
-                let triggerFacility = messageJson.toSerial;
+              // 작업 취소, 작업 실패 => move to work-order-cancel 
+              // if (state === 'MISSION_CANCELED' || state === 'MISSION_FAILED') {
+              //   const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+              //     RedisKeys.InfoFacilityById,
+              //     messageJson.fromSerial
+              //   );
+              //   let alwaysOnFacility = messageJson.fromSerial;
+              //   let triggerFacility = messageJson.toSerial;
 
-                if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
-                  alwaysOnFacility = messageJson.toSerial;
-                  triggerFacility = messageJson.fromSerial;
-                }
+              //   if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
+              //     alwaysOnFacility = messageJson.toSerial;
+              //     triggerFacility = messageJson.fromSerial;
+              //   }
 
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: alwaysOnFacility,
-                  tagName: 'Call_Response',
-                  value: false,
-                });
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: alwaysOnFacility,
-                  tagName: 'Call_Robot_Assigned',
-                  value: false,
-                });
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: alwaysOnFacility,
-                  tagName: 'Call_Response_Count',
-                  value: '0',
-                });
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: alwaysOnFacility,
-                  tagName: 'Dock_Request',
-                  value: false,
-                });
+              //   await kepServerUtil.writeSimpleTagValue({
+              //     targetFacility: alwaysOnFacility,
+              //     tagName: 'Call_Response',
+              //     value: false,
+              //   });
+              //   await kepServerUtil.writeSimpleTagValue({
+              //     targetFacility: alwaysOnFacility,
+              //     tagName: 'Call_Robot_Assigned',
+              //     value: false,
+              //   });
+              //   await kepServerUtil.writeSimpleTagValue({
+              //     targetFacility: alwaysOnFacility,
+              //     tagName: 'Call_Response_Count',
+              //     value: '0',
+              //   });
+              //   await kepServerUtil.writeSimpleTagValue({
+              //     targetFacility: alwaysOnFacility,
+              //     tagName: 'Dock_Request',
+              //     value: false,
+              //   });
 
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: triggerFacility,
-                  tagName: 'Call_Response',
-                  value: false,
-                });
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: triggerFacility,
-                  tagName: 'Call_Robot_Assigned',
-                  value: false,
-                });
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: triggerFacility,
-                  tagName: 'Call_Response_Count',
-                  value: '0',
-                });
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: triggerFacility,
-                  tagName: 'Dock_Request',
-                  value: false,
-                });
+              //   await kepServerUtil.writeSimpleTagValue({
+              //     targetFacility: triggerFacility,
+              //     tagName: 'Call_Response',
+              //     value: false,
+              //   });
+              //   await kepServerUtil.writeSimpleTagValue({
+              //     targetFacility: triggerFacility,
+              //     tagName: 'Call_Robot_Assigned',
+              //     value: false,
+              //   });
+              //   await kepServerUtil.writeSimpleTagValue({
+              //     targetFacility: triggerFacility,
+              //     tagName: 'Call_Response_Count',
+              //     value: '0',
+              //   });
+              //   await kepServerUtil.writeSimpleTagValue({
+              //     targetFacility: triggerFacility,
+              //     tagName: 'Dock_Request',
+              //     value: false,
+              //   });
 
-                if (workOrderMode !== 'manual') {
-                  await useMultiCallRegisterUtil().hsetWithDecrementCount(
-                    RedisKeys.InfoWorkOrderCountBySerial,
-                    targetFacility
-                  );
+              //   if (workOrderMode !== 'manual') {
+              //     await useMultiCallRegisterUtil().hsetWithDecrementCount(
+              //       RedisKeys.InfoWorkOrderCountBySerial,
+              //       targetFacility
+              //     );
 
-                  const triggerFacilityTargetKey = kepServerUtil.getTargetKey(triggerFacility);
-                  const alwaysOnFacilityTargetKey = kepServerUtil.getTargetKey(alwaysOnFacility);
-                  await kepServerUtil.updateTagMapValues(triggerFacilityTargetKey, triggerFacility, ['Call_Request']);
-                  await kepServerUtil.updateTagMapValues(alwaysOnFacilityTargetKey, alwaysOnFacility, ['Call_Request']);
+              //     const triggerFacilityTargetKey = kepServerUtil.getTargetKey(triggerFacility);
+              //     const alwaysOnFacilityTargetKey = kepServerUtil.getTargetKey(alwaysOnFacility);
+              //     await kepServerUtil.updateTagMapValues(
+              //       triggerFacilityTargetKey,
+              //       triggerFacility,
+              //       ['Call_Request']
+              //     );
+              //     await kepServerUtil.updateTagMapValues(
+              //       alwaysOnFacilityTargetKey,
+              //       alwaysOnFacility,
+              //       ['Call_Request']
+              //     );
 
-                  // todo 250805 : ACS에서 취소된 작업 다시 만들 때 멀티콜 판단해서 작업지시 만들어야 하나?
-                  // 멀티콜일 때 acs 작업 취소하면 어떻게 되야 하는지 문의 필요
-                  const triggerCallRequestValue = opcuaUtil.tagMap.get(`${triggerFacility}.Call_Request`)?.value;
-                  const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysOnFacility}.Call_Request`)?.value;
-                  if (triggerCallRequestValue === false || alwaysCallRequestValue === false) return;
+              //     // todo 250805 : ACS에서 취소된 작업 다시 만들 때 멀티콜 판단해서 작업지시 만들어야 하나?
+              //     // 멀티콜일 때 acs 작업 취소하면 어떻게 되야 하는지 문의 필요
+              //     const triggerCallRequestValue = opcuaUtil.tagMap.get(`${triggerFacility}.Call_Request`)?.value;
+              //     const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysOnFacility}.Call_Request`)?.value;
+              //     if (triggerCallRequestValue === false || alwaysCallRequestValue === false) return;
 
-                  const tagInfo = useKepServerUtil().findTagInfo(triggerFacility, 'Call_Request');
-                  const targetTagInfo: TagValue = {
-                    value: true,
-                    prevValue: '',
-                    timestamp: Date.now(),
-                    CHANNEL: tagInfo?.CHANNEL || '',
-                    DEVICE: triggerFacility,
-                    TAGGROUP: '',
-                    TAG_NAME: 'Call_Request',
-                    DATA_TYPE: 'Boolean',
-                    INPUT_TYPE: 'Bool',
-                    NODE_ID: tagInfo?.NODE_ID || '',
-                    EQ_CODE: triggerFacility,
-                    reRegister: 'cancel',
-                  };
+              //     const tagInfo = useKepServerUtil().findTagInfo(triggerFacility, 'Call_Request');
+              //     const targetTagInfo: TagValue = {
+              //       value: true,
+              //       prevValue: '',
+              //       timestamp: Date.now(),
+              //       CHANNEL: tagInfo?.CHANNEL || '',
+              //       DEVICE: triggerFacility,
+              //       TAGGROUP: '',
+              //       TAG_NAME: 'Call_Request',
+              //       DATA_TYPE: 'Boolean',
+              //       INPUT_TYPE: 'Bool',
+              //       NODE_ID: tagInfo?.NODE_ID || '',
+              //       EQ_CODE: triggerFacility,
+              //       reRegister: 'cancel',
+              //     };
 
-                  await useRedisUtil().hset(
-                    RedisKeys.InfoCallRequestOnBySerial,
-                    triggerFacility,
-                    JSON.stringify(targetTagInfo)
-                  );
-                }
-              }
+              //     await useRedisUtil().hset(
+              //       RedisKeys.InfoCallRequestOnBySerial,
+              //       triggerFacility,
+              //       JSON.stringify(targetTagInfo)
+              //     );
+              //   }
+              // }
 
               logging.MQTT_DEBUG({
                 title: 'imcs message',
