@@ -25,30 +25,21 @@ export const useEqpCheckUtil = () => {
     try {
       // TAG_NAME에 따라 다른 함수 실행
       switch (targetTagInfo.TAG_NAME) {
-        // case 'Call_Request':
-        //   console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-        //   if (targetTagInfo.value === true) {
-        //     await useCallRegisterUtil().callRegister(targetTagInfo)
-        //   } else {
-        //     await useCallRemoveUtil().callRemove(targetTagInfo)
-        //   }
-        //   break;
         case 'Call_Request':
           // 서버 연동을 위한 Call_Request 판단
           console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          const facilitySerial = targetTagInfo.EQ_CODE;
           if (targetTagInfo.value === true) {
-            // const exists = await useRedisUtil().hgetObject(RedisKeys.InfoCallKey, facilitySerial);
-            // if (!exists) {
-            // 최초 등록 (중복 방지)
-            // await useRedisUtil().hset(RedisKeys.InfoCallKey, facilitySerial, JSON.stringify('ON'));
-
-            await useRedisUtil().hset(
-              RedisKeys.InfoCallRequestOnBySerial,
-              facilitySerial,
-              JSON.stringify(targetTagInfo)
-            );
-            // }
+            const facilitySerial = targetTagInfo.EQ_CODE;
+            // InfoCallRequestOnBySerial 중복 등록 방지
+            const callRegisterList = await useRedisUtil().hgetAllObject<TagValue>(RedisKeys.InfoCallRequestOnBySerial);
+            const findExistCall = callRegisterList?.find((call) => call.DEVICE === facilitySerial);
+            if (!findExistCall) {
+              await useRedisUtil().hset(
+                RedisKeys.InfoCallRequestOnBySerial,
+                facilitySerial,
+                JSON.stringify(targetTagInfo)
+              );
+            }
           } else {
             await useCallRemoveUtil().callRemove(targetTagInfo);
             // await useRedisUtil().hdel(RedisKeys.InfoCallKey, facilitySerial);

@@ -177,7 +177,7 @@ export const useCallRegisterUtil = () => {
                     linkedEqpId.toString() || ''
                   );
 
-                  if (!linkedFacilityInfo?.serial) {
+                  if (!linkedFacilityInfo?.serial || linkedFacilityInfo?.mode === 'manual') {
                     continue;
                   }
 
@@ -200,13 +200,10 @@ export const useCallRegisterUtil = () => {
                   // 반대쪽에 콜 요청 떠 있고 콜 응답 내려가 있는 경우 작업 생성
                   if (
                     linkedFacilityInfo &&
-                    linkedFacilityCallRequestValue === true
+                    linkedFacilityCallRequestValue === true &&
                     // todo: 20250908 for dryrun test (SC <-> CS/CR)
-                    /* linkedFacilityInfo &&
-                     linkedFacilityCallRequestValue === true &&
-                     linkedFacilityCallResponseValue === false &&
-                     linkedFacilityCallTypeValue === callType
-                     */
+                    linkedFacilityCallResponseValue === false
+                    //  linkedFacilityCallTypeValue === callType                     
                   ) {
                     const eqpCallId =
                       (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
