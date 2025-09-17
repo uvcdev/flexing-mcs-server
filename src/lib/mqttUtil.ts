@@ -442,7 +442,7 @@ export const receiveMqtt = (): void => {
 
               if (state === 'AMR_ARRIVED') {
                 await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: messageJson.fromSerial,
+                  targetFacility: messageJson.facilitySerial,
                   tagName: 'Call_Robot_Assigned',
                   value: true,
                 });
@@ -522,16 +522,8 @@ export const receiveMqtt = (): void => {
 
                   const triggerFacilityTargetKey = kepServerUtil.getTargetKey(triggerFacility);
                   const alwaysOnFacilityTargetKey = kepServerUtil.getTargetKey(alwaysOnFacility);
-                  await kepServerUtil.updateTagMapValues(
-                    triggerFacilityTargetKey,
-                    triggerFacility,
-                    ['Call_Request']
-                  );
-                  await kepServerUtil.updateTagMapValues(
-                    alwaysOnFacilityTargetKey,
-                    alwaysOnFacility,
-                    ['Call_Request']
-                  );
+                  await kepServerUtil.updateTagMapValues(triggerFacilityTargetKey, triggerFacility, ['Call_Request']);
+                  await kepServerUtil.updateTagMapValues(alwaysOnFacilityTargetKey, alwaysOnFacility, ['Call_Request']);
 
                   // todo 250805 : ACS에서 취소된 작업 다시 만들 때 멀티콜 판단해서 작업지시 만들어야 하나?
                   // 멀티콜일 때 acs 작업 취소하면 어떻게 되야 하는지 문의 필요
@@ -670,14 +662,17 @@ export const receiveMqtt = (): void => {
               try {
                 // void itemLogDao.insert(messageJson);
                 // mission order 수집 구역
-                const workOrderCode = messageJson.workOrderCode
+                const workOrderCode = messageJson.workOrderCode;
                 const redisUtil = useRedisUtil();
-                redisUtil.hset(RedisKeys.InfoMissionOrderByWorkOrderCode, workOrderCode.toString(), JSON.stringify(messageJson))
-
+                redisUtil.hset(
+                  RedisKeys.InfoMissionOrderByWorkOrderCode,
+                  workOrderCode.toString(),
+                  JSON.stringify(messageJson)
+                );
 
                 // const missionOrderType = await routeMissionOrderMqttMessage(messageJson as MqttBranchInfoDataFromAcs)
                 // if (missionOrderType?.state === 'EQP') {
-                //   // 링크 된 설비에 콜 살아있는지 판별해서 들어가는 로직 
+                //   // 링크 된 설비에 콜 살아있는지 판별해서 들어가는 로직
                 //   const missionFromfacilityInfo = missionOrderType.facilityInfo
                 //   if (missionFromfacilityInfo?.linkedEqpIds && missionFromfacilityInfo?.linkedEqpIds.length > 0) {
                 //     const redisUtil = useRedisUtil();
@@ -709,7 +704,7 @@ export const receiveMqtt = (): void => {
                 //       }
 
                 //       if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
-                //         // 링크된 설비 콜이 떠 있는 경우 작업 생성 
+                //         // 링크된 설비 콜이 떠 있는 경우 작업 생성
                 //         sendMqtt('acs/missionorder', JSON.stringify(missionOrderMqttMessage));
 
                 //         // 콜 기준 설비 call_response 작성
@@ -747,7 +742,7 @@ export const receiveMqtt = (): void => {
             if (topicSplit.length === 2 && topicSplit[1] === 'is_alive') {
               const isAlive = message === 'true';
               const receiveAt = formatDetailedDateTime(new Date());
-              sendAcsHeartbeat(isAlive, receiveAt)
+              sendAcsHeartbeat(isAlive, receiveAt);
             }
             // in/out 포트 동일시 회수 작업 생성시 공급 데이터 내리고 회수 데이터 올리기기
             if (topicSplit[1] === 'same_pio') {
@@ -823,7 +818,7 @@ export const receiveMqtt = (): void => {
               await facilityService.editFacilityMode({ serial: facilitySerial, mode: mode });
             }
             if (topicSplit.length === 3 && topicSplit[1] === 'res-cancel-work-order') {
-              const callId = topicSplit[2]
+              const callId = topicSplit[2];
               const messageJson = JSON.parse(message);
               logging.MQTT_LOG({
                 title: `mcs res-cancel-work-order ${callId}`,
@@ -833,7 +828,7 @@ export const receiveMqtt = (): void => {
 
               try {
                 // Todo[ssb] acs로부터 온 취소 응답 처리 로직 추가
-                useCallCancelUtil().processCancelResponseFromAcs(messageJson)
+                useCallCancelUtil().processCancelResponseFromAcs(messageJson);
               } catch (error) {
                 console.log('logging.res-cancel-work-order', error);
               }

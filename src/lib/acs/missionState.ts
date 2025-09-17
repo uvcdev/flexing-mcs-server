@@ -55,7 +55,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     const state = missionStateBody.state;
     const callId = missionStateBody.mission.split('$')[0];
     const assignAmrName = missionStateBody.assign.robot || '';
-    // let assignState = missionStateBody.assign.task as TrackingLogState || ''
+    let assignTask = (missionStateBody.assign.task as TrackingLogState) || '';
     let assignState = 'PROCESSING' as TrackingLogState;
 
     if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED' || state === 'MISSION_COMPLETED') {
@@ -79,6 +79,11 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
       value: assignAmrName,
       description: `AMR(${assignAmrName}) Mission State : ${state}`,
     };
+    if (assignTask === 'FMS-CANCELED') {
+      trackingLogUpdateData.description += `(Task Canceled - FMS)`;
+    } else if (assignTask === 'WORK-ORDER-CANCELED') {
+      trackingLogUpdateData.description += `(MISSION Canceled - ACS)`;
+    }
     await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
 
     if (state === 'MISSION_CANCELED') {

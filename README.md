@@ -370,3 +370,8 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - 도킹 관련 Tracking Log 재수정
   - ACS 작업 취소에 대한 처리 로직 추가
   - 완료 상태 로그 삭제 처리 기능 추가
+  - 트래킹 로그 del 상태 변경
+  - AMR Alive 상태 1개 더 추가
+  - ACS 작업 취소 트래킹 로그 추가
+
+- To 설비에 Robot_Assigned 추가
