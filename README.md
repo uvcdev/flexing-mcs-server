@@ -375,3 +375,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - ACS 작업 취소 트래킹 로그 추가
 
 - To 설비에 Robot_Assigned 추가
+
+## v1.0.4
+- 현장 코드 병합 ( cyk , ljk )
