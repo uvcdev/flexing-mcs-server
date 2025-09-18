@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import logger from './logger';
 import { v4 as uuidv4 } from 'uuid';
 import { ResponseJson, responseCode, SelectedInfoResult } from './resUtil';
@@ -7,9 +6,9 @@ import { logDao } from '../dao/timescale/logDao';
 import { itemLogDao } from '../dao/timescale/itemLogDao';
 import { MqttTopics, sendMqtt } from './mqttUtil';
 import { ItemLogInsertParams } from '../models/timescale/itemLog';
-import fs from "fs";
-import path from "path";
-import colors from "ansi-colors";
+import fs from 'fs';
+import path from 'path';
+import colors from 'ansi-colors';
 
 export interface LogHeader {
   traceId: string | null; // 외부에서 API를 호출했을때 사용 할 "외부용 추적 키 값" (보통 Front-end에서 생성함)
@@ -78,9 +77,9 @@ type CacheLogFormat = {
 
 // kepware 전용 로그
 type KepwareLogFormat = {
-  action: 'TAG_READ' | 'TAG_WRITE' | 'TAG_SUBSCRIBE' | 'ERROR'
-  tag: string | null,        // 태그명
-  value: string | null,      // 태그 값
+  action: 'TAG_READ' | 'TAG_WRITE' | 'TAG_SUBSCRIBE' | 'ERROR';
+  tag: string | null; // 태그명
+  value: string | null; // 태그 값
   // quality: string,    // 데이터 품질 (예: 'Good', 'Bad')
   // timestamp: string,  // 발생 시간
   message: string;
@@ -123,7 +122,6 @@ type RobotTransport = {
   detail: PartDetail;
   acsDetail: AcsDetail;
 };
-
 
 type PayloadDetail = {
   partid: string;
@@ -192,65 +190,65 @@ type WorkStatus = {
 
 const workStatusObject = {
   CALL_REQUEST: {
-    description: "EQP(설비) 콜 발생",
-    missing_value: "EQP(설비) 콜 미수신"
+    description: 'EQP(설비) 콜 발생',
+    missing_value: 'EQP(설비) 콜 미수신',
   },
   CALL_CHECK: {
-    description: "WCS(창고)에서 해당 콜 인지",
-    missing_value: "MCS, WCS(창고) 통신 불량"
+    description: 'WCS(창고)에서 해당 콜 인지',
+    missing_value: 'MCS, WCS(창고) 통신 불량',
   },
   CALL_RESPONSE: {
-    description: "EQP(설비)에 콜 응답 작성",
-    missing_value: "MCS, PLC 통신 불량"
+    description: 'EQP(설비)에 콜 응답 작성',
+    missing_value: 'MCS, PLC 통신 불량',
   },
   WORK_CREATE: {
-    description: "콜이 작업으로 생성됨",
-    missing_value: "WCS(창고) 포트 미배정 or WCS(창고) 통신 불량"
+    description: '콜이 작업으로 생성됨',
+    missing_value: 'WCS(창고) 포트 미배정 or WCS(창고) 통신 불량',
   },
   WORK_ASSIGNED: {
-    description: "작업이 로봇에 할당됨",
-    missing_value: "로봇 미할당 or MCS, ACS 통신 불량"
+    description: '작업이 로봇에 할당됨',
+    missing_value: '로봇 미할당 or MCS, ACS 통신 불량',
   },
   CALL_ROBOT: {
-    description: "콜에 로봇 할당 값 Write",
-    missing_value: "MCS, PLC 통신 불량"
+    description: '콜에 로봇 할당 값 Write',
+    missing_value: 'MCS, PLC 통신 불량',
   },
   WCS_DOCKING_REQUEST: {
-    description: "WCS(창고)에 도킹 요청",
-    missing_value: "ACS에서 도킹 요청 신호 미수신 or MQTT 통신 불량"
+    description: 'WCS(창고)에 도킹 요청',
+    missing_value: 'ACS에서 도킹 요청 신호 미수신 or MQTT 통신 불량',
   },
   WCS_DOCKING_RESPONSE: {
-    description: "WCS(창고) 도킹 허가 확인",
-    missing_value: "WCS(창고)에서 도킹 불가 처리"
+    description: 'WCS(창고) 도킹 허가 확인',
+    missing_value: 'WCS(창고)에서 도킹 불가 처리',
   },
   WCS_DOCKING_COMPLETE: {
-    description: "WCS(창고) 도킹 완료",
-    missing_value: "ACS에서 도킹 완료 신호 미수신 or MQTT 통신 불량"
+    description: 'WCS(창고) 도킹 완료',
+    missing_value: 'ACS에서 도킹 완료 신호 미수신 or MQTT 통신 불량',
   },
   WCS_DOCKING_DETACH: {
-    description: "WCS(창고) 도킹 해제",
-    missing_value: "ACS에서 도킹 해제 신호 미수신 or MQTT 통신 불량"
+    description: 'WCS(창고) 도킹 해제',
+    missing_value: 'ACS에서 도킹 해제 신호 미수신 or MQTT 통신 불량',
   },
   EQP_DOCKING_REQUEST: {
-    description: "EQP(설비) 도킹 요청",
-    missing_value: "ACS에서 도킹 요청 신호 미수신 or MQTT 통신 불량"
+    description: 'EQP(설비) 도킹 요청',
+    missing_value: 'ACS에서 도킹 요청 신호 미수신 or MQTT 통신 불량',
   },
   EQP_DOCKING_RESPONSE: {
-    description: "EQP(설비)에 도킹 허가 확인",
-    missing_value: "EQP(설비)에서 도킹 허가 미수신 (설비 수동 or 도킹 불가 등..)"
+    description: 'EQP(설비)에 도킹 허가 확인',
+    missing_value: 'EQP(설비)에서 도킹 허가 미수신 (설비 수동 or 도킹 불가 등..)',
   },
   EQP_DOCKING_FAILED: {
-    description: "EQP(설비)에서 도킹 불가 처리",
-    missing_value: "정상 도킹 or MQTT 통신 불량"
+    description: 'EQP(설비)에서 도킹 불가 처리',
+    missing_value: '정상 도킹 or MQTT 통신 불량',
   },
   EQP_DOCKING_COMPLETE: {
-    description: "EQP(설비) 도킹 완료",
-    missing_value: "ACS에서 도킹 완료 신호 미수신 or MQTT 통신 불량 or EQP 통신 불량"
+    description: 'EQP(설비) 도킹 완료',
+    missing_value: 'ACS에서 도킹 완료 신호 미수신 or MQTT 통신 불량 or EQP 통신 불량',
   },
   EQP_DOCKING_DETACH: {
-    description: "EQP(설비) 도킹 해제",
-    missing_value: "ACS에서 도킹 해제 신호 미수신 or MQTT 통신 불량"
-  }
+    description: 'EQP(설비) 도킹 해제',
+    missing_value: 'ACS에서 도킹 해제 신호 미수신 or MQTT 통신 불량',
+  },
 };
 
 // 기본 로그 포맷 만들어 주기
@@ -829,12 +827,11 @@ export const logging = {
   },
   WORK_STATUS(data: WorkStatus): void {
     try {
-      const { EQP_ID, AMR_CODE, DATE_TIME, STATUS, ...newData } = data
-      const workStatusInfo = workStatusObject[STATUS]
-      if (!workStatusInfo)
-        return
+      const { EQP_ID, AMR_CODE, DATE_TIME, STATUS, ...newData } = data;
+      const workStatusInfo = workStatusObject[STATUS];
+      if (!workStatusInfo) return;
 
-      const logData = { info: workStatusInfo.description, ...newData }
+      const logData = { info: workStatusInfo.description, ...newData };
 
       const logLevel = 'info';
       void logDao.insert({
@@ -861,7 +858,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `MCS-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
+          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
           subject: 'TRANSPORT_COMMAND',
           body: body,
         };
@@ -880,7 +877,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `MCS-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
+          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
           subject: 'LOAD_COMMAND',
           body: body,
         };
@@ -899,7 +896,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `MCS-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
+          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
           subject: 'UNLOAD_COMMAND',
           body: body,
         };
@@ -918,7 +915,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `MCS-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
+          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
           subject: 'CANCEL_MISSION_COMMAND',
           body: body,
         };
@@ -937,7 +934,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `MCS-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
+          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
           subject: 'ACK_MISSION_COMPLETED',
           body: body,
         };
@@ -956,7 +953,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `MCS-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
+          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
           subject: 'ACK_MISSION_FAILED',
           body: body,
         };
@@ -975,7 +972,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `MCS-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
+          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
           subject: 'ACK_MISSION_STATE',
           body: body,
         };
@@ -994,7 +991,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-MCS-PAYLOAD_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-PAYLOAD_STATE`,
           subject: 'PAYLOAD_STATE',
           body: body,
         };
@@ -1013,7 +1010,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-MCS-MISSION_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-MISSION_STATE`,
           subject: 'MISSION_STATE',
           body: body,
         };
@@ -1032,7 +1029,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-MCS-MISSION_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-MISSION_STATE`,
           subject: 'MISSION_COMPLETED',
           body: { mission: data.mission, robot: acsDetail.amrCode },
         };
@@ -1051,7 +1048,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-MCS-MISSION_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-MISSION_STATE`,
           subject: 'MISSION_FAILED',
           body: { mission: data.mission },
         };
@@ -1070,7 +1067,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-MCS-ALARM_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-ALARM_STATE`,
           subject: 'ALARM_REPORT',
           body: body,
         };
@@ -1089,7 +1086,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-MCS-ALARM_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-ALARM_STATE`,
           subject: 'ALARM_CLEAR',
           body: body,
         };
@@ -1202,7 +1199,7 @@ export const logging = {
 // KEPWARE 로깅
 
 // 로그 파일 경로 설정
-const logFilePath = path.resolve(__dirname, "../logs/output.txt");
+const logFilePath = path.resolve(__dirname, '../logs/output.txt');
 
 // 로그 디렉토리 경로 추출
 const logDirPath = path.dirname(logFilePath);
@@ -1234,14 +1231,12 @@ try {
   }
 
   // 여기에 로그 파일을 사용하는 나머지 코드 작성...
-
 } catch (err: any) {
   console.error(`로그 파일 생성 중 오류 발생: ${err.message}`);
 }
 
 // 콘솔 및 파일 출력 함수
 export function logToConsoleAndFile(data: string, color?: 'important' | 'green' | 'blue' | 'red' | 'yellow') {
-
   if (color === 'green') {
     console.log(colors.green(data), formatWithMilliseconds(new Date()));
   } else if (color === 'blue') {
@@ -1257,9 +1252,8 @@ export function logToConsoleAndFile(data: string, color?: 'important' | 'green' 
   }
 
   // 로그 파일에 데이터 쓰기
-  fs.appendFileSync(logFilePath, data + formatWithMilliseconds(new Date()) + "\n", { encoding: "utf8" });
+  fs.appendFileSync(logFilePath, data + formatWithMilliseconds(new Date()) + '\n', { encoding: 'utf8' });
 }
-
 
 // 시간 포맷 함수
 export const formatWithMilliseconds = (date: Date) => {

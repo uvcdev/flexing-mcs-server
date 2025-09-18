@@ -384,3 +384,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 ## v1.0.4
 - 현장 코드 병합 ( cyk , ljk )
+
+## v1.0.4-ljk 
+- WMS 쪽 토픽 변경 ( MCS -> MS01)

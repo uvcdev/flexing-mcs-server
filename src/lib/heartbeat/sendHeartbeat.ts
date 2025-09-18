@@ -1,12 +1,12 @@
-import { makeMbsMqttHeader, sendMqtt, sendMbsMqtt, MbsMqttBody, MbsMqttHeader } from "../mqttUtil";
-import { generateUUIDNode } from "../hashUtil"
-import { formatDetailedDateTime } from "../usefullToolUtil";
+import { makeMbsMqttHeader, sendMqtt, sendMbsMqtt, MbsMqttBody, MbsMqttHeader } from '../mqttUtil';
+import { generateUUIDNode } from '../hashUtil';
+import { formatDetailedDateTime } from '../usefullToolUtil';
 import { RedisKeys, useRedisUtil } from '../redisUtil';
-import { HeartbeatInfo, heartbeatSystemList, KepwareHeartbeatInfo } from "../redis/init";
-import { logging } from "../logging";
-import { useKepServerUtil } from "../kepServerUtil";
-import { ServerState } from "node-opcua-client";
-import { ServerStatusDataType } from "node-opcua";
+import { HeartbeatInfo, heartbeatSystemList, KepwareHeartbeatInfo } from '../redis/init';
+import { logging } from '../logging';
+import { useKepServerUtil } from '../kepServerUtil';
+import { ServerState } from 'node-opcua-client';
+import { ServerStatusDataType } from 'node-opcua';
 // import { ServerState, ServerStatusDataType } from "node-opcua-types";
 // enum ServerState {
 //   Running = 0,
@@ -24,24 +24,24 @@ const redisUtil = useRedisUtil();
 
 // MBS 형식의 Heartbeat
 const sendMcsHeartbeat = () => {
-  const topic = 'HEARTBEAT'
+  const topic = 'HEARTBEAT';
 
-  const mqttHeader = makeMbsMqttHeader(topic)
+  const mqttHeader = makeMbsMqttHeader(topic);
   // mqtt Body의 Cmd_Id는 변경 가능성 높음
   const mqttBody: MbsMqttBody = {
-    Cmd_ID: mqttHeader.id
-  }
+    Cmd_ID: mqttHeader.id,
+  };
 
   // mcs heartbeat 업데이트
   const heartbeatData: HeartbeatInfo = {
-    systemName: 'MCS',
+    systemName: process.env.MQTT_WMS_TOPIC || 'MS01',
     state: 'connection',
     time: mqttHeader.time,
-  }
-  redisUtil.hset(RedisKeys.Heartbeat, 'MCS', JSON.stringify(heartbeatData))
+  };
+  redisUtil.hset(RedisKeys.Heartbeat, 'MCS', JSON.stringify(heartbeatData));
 
-  sendMbsMqtt(topic, mqttHeader, mqttBody)
-}
+  sendMbsMqtt(topic, mqttHeader, mqttBody);
+};
 
 // kepware heartbeat 업데이트
 const sendKepwareHeartbeat = async () => {
@@ -61,46 +61,39 @@ const sendKepwareHeartbeat = async () => {
         serverState: kepwareHeartbeatState,
         startTime: kepwareHeartbeatValue.startTime?.toString() || '',
         shutdownReason: kepwareHeartbeatValue.shutdownReason?.toString() || '',
-      }
+      };
 
-      redisUtil.hset(RedisKeys.Heartbeat, 'KEPWARE', JSON.stringify(heartbeatData))
-
+      redisUtil.hset(RedisKeys.Heartbeat, 'KEPWARE', JSON.stringify(heartbeatData));
     }
   }
-}
+};
 
 // acs heartbeat 업데이트
 export const sendAcsHeartbeat = (isAlive: boolean, receiveAt: string) => {
-
   const acsHeartbeatData: HeartbeatInfo = {
     systemName: 'ACS',
     state: isAlive ? 'connection' : 'disconnection',
     time: receiveAt,
-  }
-  redisUtil.hset(RedisKeys.Heartbeat, 'ACS', JSON.stringify(acsHeartbeatData))
-
-}
-
+  };
+  redisUtil.hset(RedisKeys.Heartbeat, 'ACS', JSON.stringify(acsHeartbeatData));
+};
 
 // 통합 Heartbeat ( mcs, kepware , wms )
 const sendSystemHeartbeat = async () => {
   try {
     for (let i = 0; i < heartbeatSystemList.length; i++) {
       const systemName = heartbeatSystemList[i];
-      const systemHeartbeatInfo = await redisUtil.hgetObject<HeartbeatInfo>(
-        RedisKeys.Heartbeat,
-        `${systemName}`
-      ) || {};
-      sendMqtt(`heartbeat/${systemName}`, JSON.stringify(systemHeartbeatInfo))
+      const systemHeartbeatInfo =
+        (await redisUtil.hgetObject<HeartbeatInfo>(RedisKeys.Heartbeat, `${systemName}`)) || {};
+      sendMqtt(`heartbeat/${systemName}`, JSON.stringify(systemHeartbeatInfo));
     }
-
   } catch (error) {
-    logging.ACTION_INFO
+    logging.ACTION_INFO;
   }
-}
+};
 
 export const sendAllHeartbeat = async () => {
-  sendMcsHeartbeat()
-  await sendKepwareHeartbeat()
-  await sendSystemHeartbeat()
-}
+  sendMcsHeartbeat();
+  await sendKepwareHeartbeat();
+  await sendSystemHeartbeat();
+};
