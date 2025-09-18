@@ -189,3 +189,31 @@ export const makeCallCount = async (facilityInfo: FacilityAttributesDeep): Promi
   const paddedSeq = nextValue.toString().padStart(4, '0');
   return paddedSeq;
 };
+
+// timestamp 현지시간으로 변경
+export const timestampToDate = (timeZone: string): string => {
+  const now = new Date();
+
+  const formatter = new Intl.DateTimeFormat('sv-SE', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(now);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? '';
+
+  const year = get('year');
+  const month = get('month');
+  const day = get('day');
+  const hour = get('hour');
+  const minute = get('minute');
+  const second = get('second');
+
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+};

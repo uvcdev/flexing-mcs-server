@@ -16,7 +16,9 @@ import path from 'path';
 import { KepwareWriteParams } from '../models/kepware/kepware';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { FacilityAttributes } from '../models/operation/facility';
+import { timestampToDate } from '../lib/usefullToolUtil';
 
+const timezoneValue = process.env.TIME_ZONE || ''
 
 export interface MonitorTagValue {
   key: string;
@@ -36,6 +38,7 @@ export interface TagValue {
   value: boolean | number | string;
   prevValue: boolean | number | string;
   timestamp: number;
+  createTime?: string;
   quality?: string;
   reRegister: string;
   CHANNEL: string;
@@ -563,18 +566,21 @@ export const useKepServerUtil = () => {
         targetTagInfo.prevValue = targetTagInfo.value;
         targetTagInfo.value = parseDecWordToAscii(value.value.value);
         targetTagInfo.timestamp = value.sourceTimestamp ? value.sourceTimestamp.getTime() : Date.now();
+        targetTagInfo.createTime = timestampToDate(timezoneValue);
         targetTagInfo.quality = value.statusCode.toString();
         break;
       case 'DEC':
         targetTagInfo.prevValue = targetTagInfo.value;
         targetTagInfo.value = value.value.value;
         targetTagInfo.timestamp = value.sourceTimestamp ? value.sourceTimestamp.getTime() : Date.now();
+        targetTagInfo.createTime = timestampToDate(timezoneValue);
         targetTagInfo.quality = value.statusCode.toString();
         break;
       case 'Bool':
         targetTagInfo.prevValue = targetTagInfo.value;
         targetTagInfo.value = value.value.value;
         targetTagInfo.timestamp = value.sourceTimestamp ? value.sourceTimestamp.getTime() : Date.now();
+        targetTagInfo.createTime = timestampToDate(timezoneValue);
         targetTagInfo.quality = value.statusCode.toString();
         break;
       default:
@@ -670,6 +676,7 @@ export const useKepServerUtil = () => {
       value: true,
       prevValue: '',
       timestamp: Date.now(),
+      createTime: timestampToDate(timezoneValue),
       CHANNEL: tag?.CHANNEL || '',
       DEVICE: tag?.DEVICE || '',
       TAGGROUP: tag?.TAGGROUP || '',

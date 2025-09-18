@@ -115,7 +115,7 @@ export const setReceivedAckCommand = (
   const cmdId = mqttMessage.body.Cmd_ID || null;
   const subject = mqttMessage.header.subject || '';
 
-  console.log('cmdId', cmdId, 'subject', subject);
+  // console.log('cmdId', cmdId, 'subject', subject);
   if (!cmdId) {
     logging.ACTION_ERROR({
       filename: 'wmsAck.ts',

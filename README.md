@@ -353,7 +353,13 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 - trigger 설비와 always 설비의 call_type 이 같은 경우에만 작업 생성하는 기능 추가
 - 250916 CallRegister 에서 매칭 안된 경우 remain redis 에 저장하던 기능 제거 => 매칭 안될 경우 CallRegister 에서 반복 통해 판단
-- linked manual
+- 250918 CallRegister 설비 자동인경우에만 생성되도록 수정
+- usefullToolUtil.timestampToDate 통해 timestamp 값 날짜형식으로 변경
+- mqttUtil에서 work-order-cancel 토픽으로 ACS 에서 취소된 작업 재생성
+	- todo: ACS 설비 수동상태인경우는 빠져버림
+- opcuaUtil에서 samplingInterval 수치 500 => 300 수정
+- workOrderService 에서 이미 작업지시가 facailityCanceled 인 상태여도 Call_Cancel_Response에 True 값 작성
+
 
 ## v1.0.3-ljk
 - Tracking Log 메세지 정보 추가

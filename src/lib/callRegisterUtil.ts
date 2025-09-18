@@ -60,26 +60,27 @@ export const useCallRegisterUtil = () => {
         // }
         // if (nextCallInfo === true) continue;
 
-        const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
-          RedisKeys.InfoFacilityBySerial,
-          targetCode
-        );
-
-        if (facilityInfo?.mode === 'manual') {
-          continue;
-        }
-
         const targetKey = targetTagInfo.TAGGROUP
           ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
           : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
         // 필요한 태그 값들 업데이트
-        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority']);
+        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority', 'EQ_Auto']);
 
         // 필요한 태그 값들 가져오기
         const callCountValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`)?.value as number;
         const callPriorityValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`)?.value as string;
+        const eqAutoValue = opcuaUtil.tagMap.get(`${targetCode}.EQ_Auto`)?.value as boolean;
         const callType = await makeCallType(targetCode);
+
+        const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
+          RedisKeys.InfoFacilityBySerial,
+          targetCode
+        );
+
+        if (facilityInfo?.mode === 'manual' || !eqAutoValue) {
+          continue;
+        }
 
         // 유효성 검사 필요할 수도
         if (facilityInfo?.generatedCallCount) {
@@ -186,6 +187,7 @@ export const useCallRegisterUtil = () => {
                     'Call_Request',
                     'Call_Response',
                     'Call_Count',
+                    'EQ_Auto'
                   ]);
                   const linkedFacilityCallRequestValue = opcuaUtil.tagMap.get(
                     `${linkedFacilityInfo?.serial}.Call_Request`
@@ -193,9 +195,14 @@ export const useCallRegisterUtil = () => {
                   const linkedFacilityCallResponseValue = opcuaUtil.tagMap.get(
                     `${linkedFacilityInfo?.serial}.Call_Response`
                   )?.value as boolean;
+                  const linkedFacilityEQAutoValue = opcuaUtil.tagMap.get(
+                    `${linkedFacilityInfo?.serial}.EQ_Auto`
+                  )?.value as boolean;
                   const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(`${linkedFacilityInfo?.serial}.Call_Count`)
                     ?.value as number;
                   const linkedFacilityCallTypeValue = await makeCallType(linkedFacilityInfo?.serial?.toString());
+
+                  if (!linkedFacilityEQAutoValue) continue;
 
                   // 반대쪽에 콜 요청 떠 있고 콜 응답 내려가 있는 경우 작업 생성
                   if (

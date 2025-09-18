@@ -5,6 +5,8 @@ import { TagValue, useKepServerUtil } from './kepServerUtil';
 import { logging, makeLogFormat, RequestLog } from './logging';
 import opcuaUtil from './opcuaUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
+import { timestampToDate } from '../lib/usefullToolUtil';
+
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -136,11 +138,13 @@ export const useCallResponseUtil = () => {
 
             if (value === true) {
               const tagInfo = useKepServerUtil().findTagInfo(facilityCode, tagName);
+              const timezoneValue = process.env.TIME_ZONE || ''
 
               const targetTagInfo: TagValue = {
                 value: true,
                 prevValue: '',
                 timestamp: Date.now(),
+                createTime: timestampToDate(timezoneValue),
                 CHANNEL: tagInfo?.CHANNEL || '',
                 DEVICE: facilityCode,
                 TAGGROUP: '',

@@ -19,7 +19,7 @@ export interface AlarmMessageBody {
 // AlarmID : AlarmID List 는 다솜 시스템에서 공유할 예정 - 우선 string
 
 const alarmReport = async (wmsName: string, suject: string, messageMessage: MbsMqttMesaage) => {
-  console.log('catch wms AlarmReport');
+  // console.log('catch wms AlarmReport');
 
   const alarmMessageBody = messageMessage.body as AlarmMessageBody;
   const alarmId = alarmMessageBody.AlarmID;
@@ -49,7 +49,7 @@ const alarmReport = async (wmsName: string, suject: string, messageMessage: MbsM
 };
 
 const alarmClear = (wmsName: string, suject: string, messageMessage: MbsMqttMesaage) => {
-  console.log('catch wms AlarmClear');
+  // console.log('catch wms AlarmClear');
 
   const alarmMessageBody = messageMessage.body as AlarmMessageBody;
   const alarmId = alarmMessageBody.AlarmID;

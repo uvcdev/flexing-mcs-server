@@ -37,6 +37,7 @@ import { service as facilityService } from '../service/operation/facilityService
 import { opcuaUtil } from './opcuaUtil';
 import { useMultiCallRegisterUtil } from './multiCallRegisterUtil';
 import { useCallCancelUtil } from './callCancelUtil';
+import { timestampToDate } from '../lib/usefullToolUtil';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -656,6 +657,128 @@ export const receiveMqtt = (): void => {
               } else {
                 const params = messageJson as WorkOrderAttributesDeep;
                 await workOrderService.stateCheckAndEdit(params, makeLogFormat({} as RequestLog));
+              }
+            }
+            //작업지시 cancel 상황
+            if (topicSplit[1] === 'work-order-cancel') {
+              const messageJson = JSON.parse(message);
+              const workOrderMode = messageJson.mode;
+              const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+                RedisKeys.InfoFacilityById,
+                messageJson.FromFacility.serial
+              );
+              let alwaysOnFacility = messageJson.FromFacility.serial;
+              let triggerFacility = messageJson.ToFacility.serial;
+
+              if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
+                alwaysOnFacility = messageJson.ToFacility.serial;
+                triggerFacility = messageJson.FromFacility.serial;
+              }
+
+              await kepServerUtil.writeSimpleTagValue({
+                targetFacility: alwaysOnFacility,
+                tagName: 'Call_Response',
+                value: false,
+              });
+              await kepServerUtil.writeSimpleTagValue({
+                targetFacility: alwaysOnFacility,
+                tagName: 'Call_Robot_Assigned',
+                value: false,
+              });
+              await kepServerUtil.writeSimpleTagValue({
+                targetFacility: alwaysOnFacility,
+                tagName: 'Call_Response_Count',
+                value: '0',
+              });
+              await kepServerUtil.writeSimpleTagValue({
+                targetFacility: alwaysOnFacility,
+                tagName: 'Dock_Request',
+                value: false,
+              });
+
+              await kepServerUtil.writeSimpleTagValue({
+                targetFacility: triggerFacility,
+                tagName: 'Call_Response',
+                value: false,
+              });
+              await kepServerUtil.writeSimpleTagValue({
+                targetFacility: triggerFacility,
+                tagName: 'Call_Robot_Assigned',
+                value: false,
+              });
+              await kepServerUtil.writeSimpleTagValue({
+                targetFacility: triggerFacility,
+                tagName: 'Call_Response_Count',
+                value: '0',
+              });
+              await kepServerUtil.writeSimpleTagValue({
+                targetFacility: triggerFacility,
+                tagName: 'Dock_Request',
+                value: false,
+              });
+
+              if (workOrderMode !== 'manual') {
+                await useMultiCallRegisterUtil().hsetWithDecrementCount(
+                  RedisKeys.InfoWorkOrderCountBySerial,
+                  triggerFacility
+                );
+
+                const triggerFacilityTargetKey = kepServerUtil.getTargetKey(triggerFacility);
+                const alwaysOnFacilityTargetKey = kepServerUtil.getTargetKey(alwaysOnFacility);
+                await kepServerUtil.updateTagMapValues(
+                  triggerFacilityTargetKey,
+                  triggerFacility,
+                  ['Call_Request', 'EQ_Auto']
+                );
+                await kepServerUtil.updateTagMapValues(
+                  alwaysOnFacilityTargetKey,
+                  alwaysOnFacility,
+                  ['Call_Request', 'EQ_Auto']
+                );
+
+                // todo 250805 : ACS에서 취소된 작업 다시 만들 때 멀티콜 판단해서 작업지시 만들어야 하나?
+                // 멀티콜일 때 acs 작업 취소하면 어떻게 되야 하는지 문의 필요
+                const triggerCallRequestValue = opcuaUtil.tagMap.get(`${triggerFacility}.Call_Request`)?.value;
+                const triggerEQAutoValue = opcuaUtil.tagMap.get(`${triggerFacility}.EQ_Auto`)?.value;
+                const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysOnFacility}.Call_Request`)?.value;
+                const alwaysEQAutoValue = opcuaUtil.tagMap.get(`${alwaysOnFacility}.EQ_Auto`)?.value;
+                if (triggerCallRequestValue === true && alwaysCallRequestValue === true && triggerEQAutoValue === true && alwaysEQAutoValue === true) {
+                  const tagInfo = useKepServerUtil().findTagInfo(triggerFacility, 'Call_Request');
+                  const timezoneValue = process.env.TIME_ZONE || ''
+                  const targetTagInfo: TagValue = {
+                    value: true,
+                    prevValue: '',
+                    timestamp: Date.now(),
+                    createTime: timestampToDate(timezoneValue),
+                    CHANNEL: tagInfo?.CHANNEL || '',
+                    DEVICE: triggerFacility,
+                    TAGGROUP: '',
+                    TAG_NAME: 'Call_Request',
+                    DATA_TYPE: 'Boolean',
+                    INPUT_TYPE: 'Bool',
+                    NODE_ID: tagInfo?.NODE_ID || '',
+                    EQ_CODE: triggerFacility,
+                    reRegister: 'cancel',
+                  };
+
+                  await useRedisUtil().hset(
+                    RedisKeys.InfoCallRequestOnBySerial,
+                    triggerFacility,
+                    JSON.stringify(targetTagInfo)
+                  );
+                }
+              }
+
+              logging.MQTT_DEBUG({
+                title: 'imcs message',
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                void itemLogDao.insert(messageJson);
+              } catch (error) {
+                console.log('logging.ITEM_LOG', error);
               }
             }
             // AMR 미션 결정지 도착

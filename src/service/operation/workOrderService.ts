@@ -37,6 +37,7 @@ import { RequestParams } from 'nodemailer/lib/xoauth2';
 import dayjs from 'dayjs';
 import { DailyWorkOrderStats, WorkOrderStats, useWorkOrderUtil } from '../../lib/workOrderUtil';
 import { calculateDurationInSeconds } from '../../lib/dateUtil';
+import { useKepServerUtil } from '../../lib/kepServerUtil';
 
 let accessToken = '';
 const workOrderStatsUtil = useWorkOrderUtil();
@@ -257,6 +258,11 @@ const service = {
       }
       if (workOrder.state === 'facilityCanceled') {
         await transaction.rollback();
+        await useKepServerUtil().writeSimpleTagValue({
+          targetFacility: params.code.slice(0, 4),
+          tagName: 'Call_Cancel_Response',
+          value: true,
+        });
         const errorMessage = `이미 설비취소된 작업지시입니다.`;
         logging.ACTION_DEBUG({
           filename: 'workOrderService.ts.forceCancel',

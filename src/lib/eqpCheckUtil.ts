@@ -12,6 +12,7 @@ import { useCallResponseUtil } from './callResponseUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { useCallPriorityUtil } from './callPriorityUtil';
 import { sendMqtt } from './mqttUtil';
+import { timestampToDate } from '../lib/usefullToolUtil';
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -30,10 +31,13 @@ export const useEqpCheckUtil = () => {
           console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
             const facilitySerial = targetTagInfo.EQ_CODE;
+            const timezoneValue = process.env.TIME_ZONE || ''
+
             // InfoCallRequestOnBySerial 중복 등록 방지
             const callRegisterList = await useRedisUtil().hgetAllObject<TagValue>(RedisKeys.InfoCallRequestOnBySerial);
             const findExistCall = callRegisterList?.find((call) => call.DEVICE === facilitySerial);
             if (!findExistCall) {
+              targetTagInfo.createTime = timestampToDate(timezoneValue)
               await useRedisUtil().hset(
                 RedisKeys.InfoCallRequestOnBySerial,
                 facilitySerial,
