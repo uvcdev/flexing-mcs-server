@@ -1,15 +1,16 @@
-const MCS_TOPIC = process.env.MQTT_WMS_TOPIC || 'MS01';
+const WMS_TOPIC = process.env.MQTT_WMS_TOPIC || 'MW01';
+const MCS_TOPIC = process.env.MQTT_MCS_TOPIC || 'MCS'
 
 export const mqttSubscribeWmsTopics = [
   // WMS
-  `${MCS_TOPIC}-CALL`,
-  `${MCS_TOPIC}-TRANSFER`,
-  `${MCS_TOPIC}-CARRIER`,
-  `${MCS_TOPIC}-PORT`,
-  `${MCS_TOPIC}-CRANE`,
-  `${MCS_TOPIC}-BRANCH`,
-  `${MCS_TOPIC}-ALARM`,
-  `${MCS_TOPIC}-ONLINE`,
+  `-${MCS_TOPIC}-CALL`,
+  `-${MCS_TOPIC}-TRANSFER`,
+  `-${MCS_TOPIC}-CARRIER`,
+  `-${MCS_TOPIC}-PORT`,
+  `-${MCS_TOPIC}-CRANE`,
+  `-${MCS_TOPIC}-BRANCH`,
+  `-${MCS_TOPIC}-ALARM`,
+  `-${MCS_TOPIC}-ONLINE`,
   '-HEARTBEAT',
 ];
 

@@ -44,7 +44,7 @@ export const checkCallInfoForWms = async () => {
   for (let i = 0, length = callInfoList.length; i < length; i++) {
     const callInfo = { ...callInfoList[i] };
     // const systemName = callInfo.SYSTEM_NAME || 'WMS';
-    const systemName = 'WMS';
+    const systemName = `${process.env.MQTT_WMS_TOPIC || 'MW01'}`;
 
     const wmsCallInfo: CallInfoForWms = {
       Call_ID: callInfo.CALL_ID,
@@ -176,7 +176,7 @@ export const checkCallInfoOnPortTimeout = async () => {
       const infoAckInCallByCallIdInfo = filteredInfoAckInCallByCallIdList[0];
 
       // CALL INFO 재요청
-      const systemName = 'WMS';
+      const systemName = `${process.env.MQTT_WMS_TOPIC || 'MW01'}`;
 
       const wmsCallInfo: CallInfoForWms = {
         Call_ID: infoAckInCallByCallIdInfo.CALL_ID,

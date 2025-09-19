@@ -157,7 +157,7 @@ const options: IClientOptions = {
 
 const client = mqtt.connect(options);
 const topic = mqttConfig.topic;
-const wmsMqttTopic = process.env.MQTT_WMS_TOPIC || 'MCS';
+const wmsMqttTopic = process.env.MQTT_MCS_TOPIC || 'MCS';
 const mqttSubscribeWmsTopicList: string[] = mqttSubscribeWmsTopics || [];
 const mqttSubscribeAcsTopicList: string[] = mqttSubscribeAcsTopics || [];
 const wmsList: string[] = process.env.WMS_LIST?.split(',') || [];

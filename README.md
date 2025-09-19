@@ -387,3 +387,4 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 ## v1.0.4-ljk 
 - WMS 쪽 토픽 변경 ( MCS -> MS01)
+- rollback MCS Topci ( MS01 -> MCS )
