@@ -396,3 +396,4 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v1.0.4-cyk
 
 - callRegister 에서 작업지시코드 만들던 방식에서 eqpCheckUtil 에서 Call_Request 인지될 때 생성으로 변경
+- Add createTime from kepServerUtil TagValue interface

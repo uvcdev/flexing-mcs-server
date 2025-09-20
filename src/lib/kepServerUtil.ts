@@ -38,6 +38,7 @@ export interface TagValue {
   value: boolean | number | string;
   prevValue: boolean | number | string;
   timestamp: number;
+  createTime?: string;
   eqpCallId?: string;
   quality?: string;
   reRegister: string;
