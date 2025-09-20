@@ -393,3 +393,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - hcack = 51 도 재고 없음 실행 불가지만, 해당 응답이 온 경우에는 로깅 후, 몇 분 뒤에 해당 정보 그대로 (cmdId 만 변경) 재 요청한다.
 
 - PORT_PRESENSE 시, 창고 수동작업지시 (재고순환) 로직 수정
+
+## v1.0.5
+- 현장 코드 반영 ( cyk ) : linked 작업 취소 관련, WMS connection
+- 코드 반영 ( ljk )
