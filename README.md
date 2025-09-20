@@ -407,3 +407,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v1.0.5
 - 현장 코드 반영 ( cyk ) : linked 작업 취소 관련, WMS connection
 - 코드 반영 ( ljk )
+
+## v1.0.6
+
+- 버전승인: `v0.0.4-cyk`
