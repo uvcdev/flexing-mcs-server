@@ -259,7 +259,7 @@ const service = {
       if (workOrder.state === 'facilityCanceled') {
         await transaction.rollback();
         await useKepServerUtil().writeSimpleTagValue({
-          targetFacility: params.code.slice(0, 4),
+          targetFacility: params.linkedEqpId,
           tagName: 'Call_Cancel_Response',
           value: true,
         });

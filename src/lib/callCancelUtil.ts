@@ -72,7 +72,7 @@ export const useCallCancelUtil = () => {
     }
 
     const result = await workOrderService.facilityCancel(
-      { code: params.CALL_ID },
+      { code: params.CALL_ID, linkedEqpId: params.LINKED_EQP_ID || '' },
       makeLogFormat({} as RequestLog)
     );
 
@@ -462,7 +462,7 @@ export const useCallCancelUtil = () => {
 
 
       // 작업지시가 생겨서 ACS에 전달되기 전에 취소요청이 들어온 경우
-      // ACS에 전달 되기 전이라면 취소요청을 보낼 필요가 없음
+      // ACS에 전달 되기 전이라면 취소요청을 보낼 필요가 없음 
       if (!workOrderInfo) {
         logToConsoleAndFile(`[cancelType = ${cancelType}] 작업지시가 생겨서 ACS에 전달되기 전에 취소요청이 들어온 경우`, "green");
         logging.ACTION_INFO({
