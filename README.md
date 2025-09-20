@@ -356,22 +356,25 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 250918 CallRegister 설비 자동인경우에만 생성되도록 수정
 - usefullToolUtil.timestampToDate 통해 timestamp 값 날짜형식으로 변경
 - mqttUtil에서 work-order-cancel 토픽으로 ACS 에서 취소된 작업 재생성
-	- todo: ACS 설비 수동상태인경우는 빠져버림
+  - todo: ACS 설비 수동상태인경우는 빠져버림
 - opcuaUtil에서 samplingInterval 수치 500 => 300 수정
 - workOrderService 에서 이미 작업지시가 facailityCanceled 인 상태여도 Call_Cancel_Response에 True 값 작성
 
-
 ## v1.0.3-ljk
+
 - Tracking Log 메세지 정보 추가
 
 - Tracking Log 컬럼 추가
+
   - missionDestination 컬럼, processState 컬럼
+
   ```sql
   ALTER TABLE public.tracking_logs ADD mission_destination varchar(50) NULL;
   ALTER TABLE public.tracking_logs ADD process_state varchar(20) DEFAULT 'NORMAL' NULL;
   ```
 
 - Tracking Log 도킹 관련 내용 수정
+
   - 도킹 관련 Tracking Log 누락 내용들 수정 완료 ( 도킹 요청 , 허가, 완료 )
   - 도킹 관련 Tracking Log 재수정
   - ACS 작업 취소에 대한 처리 로직 추가
@@ -383,7 +386,13 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - To 설비에 Robot_Assigned 추가
 
 ## v1.0.4
+
 - 현장 코드 병합 ( cyk , ljk )
 
-## v1.0.4-ljk 
+## v1.0.4-ljk
+
 - WMS 쪽 토픽 변경 ( MCS -> MS01)
+
+## v1.0.4-cyk
+
+- callRegister 에서 작업지시코드 만들던 방식에서 eqpCheckUtil 에서 Call_Request 인지될 때 생성으로 변경

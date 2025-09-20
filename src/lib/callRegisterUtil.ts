@@ -24,6 +24,7 @@ export interface EqpCallStats {
   DATA_TYPE?: string;
   ALWAYS_CALL_COUNT?: number;
   TRIGGER_CALL_COUNT?: number;
+  CREATE_TIME?: string;
   // NODE_ID: string;
 }
 
@@ -42,6 +43,7 @@ export const useCallRegisterUtil = () => {
       for (let i = 0, length = callRegisterList.length; i < length; i++) {
         const targetTagInfo = callRegisterList[i];
         const targetCode = targetTagInfo.EQ_CODE;
+        const eqpCallId = targetTagInfo.eqpCallId || '';
         if (!targetCode) continue; // 코드 없으면 처리 불가
 
         // remainCall doesn't need callRegister again
@@ -100,7 +102,7 @@ export const useCallRegisterUtil = () => {
           if (facilityInfo?.isActiveCallTrigger === true) {
             if (facilityInfo?.isMissionOrderCapable) {
               // ======= 미션결정 작업지시 (설비기준 회수) =======
-              const eqpCallId = (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
+              // const eqpCallId = (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
               callInfo.CALL_ID = eqpCallId;
               await initTrackingLogRedis(callInfo);
               const infoPendingMissionWorkOrder: PendingWorkOrderAttributes = {
@@ -187,7 +189,7 @@ export const useCallRegisterUtil = () => {
                     'Call_Request',
                     'Call_Response',
                     'Call_Count',
-                    'EQ_Auto'
+                    'EQ_Auto',
                   ]);
                   const linkedFacilityCallRequestValue = opcuaUtil.tagMap.get(
                     `${linkedFacilityInfo?.serial}.Call_Request`
@@ -195,9 +197,8 @@ export const useCallRegisterUtil = () => {
                   const linkedFacilityCallResponseValue = opcuaUtil.tagMap.get(
                     `${linkedFacilityInfo?.serial}.Call_Response`
                   )?.value as boolean;
-                  const linkedFacilityEQAutoValue = opcuaUtil.tagMap.get(
-                    `${linkedFacilityInfo?.serial}.EQ_Auto`
-                  )?.value as boolean;
+                  const linkedFacilityEQAutoValue = opcuaUtil.tagMap.get(`${linkedFacilityInfo?.serial}.EQ_Auto`)
+                    ?.value as boolean;
                   const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(`${linkedFacilityInfo?.serial}.Call_Count`)
                     ?.value as number;
                   const linkedFacilityCallTypeValue = await makeCallType(linkedFacilityInfo?.serial?.toString());
@@ -210,10 +211,10 @@ export const useCallRegisterUtil = () => {
                     linkedFacilityCallRequestValue === true &&
                     // todo: 20250908 for dryrun test (SC <-> CS/CR)
                     linkedFacilityCallResponseValue === false
-                    //  linkedFacilityCallTypeValue === callType                     
+                    //  linkedFacilityCallTypeValue === callType
                   ) {
-                    const eqpCallId =
-                      (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
+                    // const eqpCallId =
+                    //   (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
                     callInfo.CALL_ID = eqpCallId;
                     await initTrackingLogRedis(callInfo);
                     const infoPendingWorkOrder: PendingWorkOrderAttributes = {
@@ -319,7 +320,7 @@ export const useCallRegisterUtil = () => {
                   //       linkedFacilityCallTypeValue === callType
                   //   */
                   // ) {
-                  //   // 반대쪽에 콜이 떠 있지 않은 경우와 
+                  //   // 반대쪽에 콜이 떠 있지 않은 경우와
                   //   // 반대쪽에 작업중인 경우 (Call_Request, Call_Response 켜져 있는 경우)
                   //   // 반복해서 판단하는 redis에 저장
                   //   const eqpCallId =
@@ -492,11 +493,9 @@ export const useCallRegisterUtil = () => {
     //     // portName => 항상 켜있는 설비
     //     const alwaysCallCountFacilityName = remainCall?.portName;
     //     const triggerCallCountFacilityName = remainCall?.eqpName;
-
     //     if (alwaysCallCountFacilityName && triggerCallCountFacilityName) {
     //       const alwaysCallCountTargetKey = kepServerUtil.getTargetKey(alwaysCallCountFacilityName || '');
     //       const triggerCallCountTargetKey = kepServerUtil.getTargetKey(triggerCallCountFacilityName || '');
-
     //       await kepServerUtil.updateTagMapValues(alwaysCallCountTargetKey, alwaysCallCountFacilityName || '', [
     //         'Call_Request',
     //         'Call_Response',
@@ -507,17 +506,14 @@ export const useCallRegisterUtil = () => {
     //         'Call_Response',
     //         'Call_Count',
     //       ]);
-
     //       const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Request`)?.value;
     //       const alwaysCallResponseValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Response`)?.value;
     //       const alwaysCallCountValue = opcuaUtil.tagMap.get(`${alwaysCallCountFacilityName}.Call_Count`)?.value;
     //       const alwaysCallTypeValue = await makeCallType(alwaysCallCountFacilityName);
-
     //       const triggerCallRequestValue = opcuaUtil.tagMap.get(`${triggerCallCountFacilityName}.Call_Request`)?.value;
     //       const triggerCallResponseValue = opcuaUtil.tagMap.get(`${triggerCallCountFacilityName}.Call_Response`)?.value;
     //       const triggerCallCountValue = opcuaUtil.tagMap.get(`${triggerCallCountFacilityName}.Call_Count`)?.value;
     //       const triggerCallTypeValue = await makeCallType(triggerCallCountFacilityName);
-
     //       const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
     //         RedisKeys.InfoTrackingLogByCallId,
     //         remainCall.callId || ''
@@ -560,7 +556,6 @@ export const useCallRegisterUtil = () => {
     //           description: `Call ID ${infoTrackingLogByCallId?.callId} responsed`,
     //         };
     //         await editTrackingLogRedis(trackingLogUpdateReqData, undefined, 'SUCCESS', remainCall.fromFacilityName);
-
     //         // 콜 응답 관련 데이터 쓰기
     //         await useKepServerUtil().writeSimpleTagValue({
     //           targetFacility: triggerCallCountFacilityName,

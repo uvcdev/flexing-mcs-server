@@ -18,7 +18,7 @@ import { RedisKeys, useRedisUtil } from './redisUtil';
 import { FacilityAttributes } from '../models/operation/facility';
 import { timestampToDate } from '../lib/usefullToolUtil';
 
-const timezoneValue = process.env.TIME_ZONE || ''
+const timezoneValue = process.env.TIME_ZONE || '';
 
 export interface MonitorTagValue {
   key: string;
@@ -38,7 +38,7 @@ export interface TagValue {
   value: boolean | number | string;
   prevValue: boolean | number | string;
   timestamp: number;
-  createTime?: string;
+  eqpCallId?: string;
   quality?: string;
   reRegister: string;
   CHANNEL: string;
@@ -116,7 +116,6 @@ export const parseAsciiToHexWord = (value: string): number => {
 
   const word = (char1 << 8) | char2;
 
-
   return parseInt(word.toString(16), 10);
 };
 
@@ -137,7 +136,6 @@ export const parseDecWordToAscii = (value: number): string => {
   return char1 + char2;
 };
 
-
 // 16진수 Word → ASCII
 export const parseHexWordToAscii = (value: number): string => {
   if (typeof value !== 'number' || value < 0 || value > 0xffff) {
@@ -156,7 +154,7 @@ export const parseHexWordToAscii = (value: number): string => {
 
   // 16진수로 해석 후 ASCII 문자 변환
   const char1 = String.fromCharCode(parseInt(highHex, 16)); // 0x43 → 'C'
-  const char2 = String.fromCharCode(parseInt(lowHex, 16));  // 0x50 → 'P'
+  const char2 = String.fromCharCode(parseInt(lowHex, 16)); // 0x50 → 'P'
   return char1 + char2;
 };
 
@@ -172,7 +170,18 @@ export const makeCallType = async (value: string): Promise<string> => {
   const targetKey = kepServerUtil.getTargetKey(value);
   const targetCode = value;
 
-  await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Type_01', 'Call_Type_02', 'Call_Type_03', 'Call_Type_04', 'Call_Type_05', 'Call_Type_06', 'Call_Type_07', 'Call_Type_08', 'Call_Type_09', 'Call_Type_10']);
+  await kepServerUtil.updateTagMapValues(targetKey, targetCode, [
+    'Call_Type_01',
+    'Call_Type_02',
+    'Call_Type_03',
+    'Call_Type_04',
+    'Call_Type_05',
+    'Call_Type_06',
+    'Call_Type_07',
+    'Call_Type_08',
+    'Call_Type_09',
+    'Call_Type_10',
+  ]);
 
   for (let i = 1; i <= 10; i++) {
     const suffix = i < 10 ? `0${i}` : `${i}`;
@@ -196,22 +205,23 @@ export const useKepServerUtil = () => {
     if (!targetKey || !targetCode) {
       return;
     }
-    const tagValues = tagNames.map(tagName => {
+    const tagValues = tagNames.map((tagName) => {
       const tag = opcuaUtil.tagMap.get(`${targetCode}.${tagName}`);
       return tag;
     });
 
-    const needNodeIds = tagValues.map(tag => tag?.NODE_ID).filter((nodeId): nodeId is string => nodeId !== undefined);
+    const needNodeIds = tagValues.map((tag) => tag?.NODE_ID).filter((nodeId): nodeId is string => nodeId !== undefined);
 
     const readDatas = await readTagsValue(needNodeIds);
 
-    const needKeys = tagValues.map(tag => tag?.TAG_NAME).filter((tagName): tagName is string => tagName !== undefined);
+    const needKeys = tagValues
+      .map((tag) => tag?.TAG_NAME)
+      .filter((tagName): tagName is string => tagName !== undefined);
 
     for (let i = 0; i < needKeys.length; i++) {
       updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
     }
-
-  }
+  };
 
   // JSON 파일 읽기
   const loadTags = async (filePath: string) => {
@@ -693,8 +703,7 @@ export const useKepServerUtil = () => {
       : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
     return targetKey;
-  }
-
+  };
 
   return {
     writeSimpleTagValue,
@@ -709,6 +718,6 @@ export const useKepServerUtil = () => {
     getTagCode,
     findTagInfo,
     getTargetKey,
-    updateTagMapValues
+    updateTagMapValues,
   };
 };

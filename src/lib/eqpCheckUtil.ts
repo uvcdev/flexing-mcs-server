@@ -1,8 +1,8 @@
 import { AttributeIds } from 'node-opcua-client';
-import { TagValue, useKepServerUtil } from './kepServerUtil';
+import { makeCallType, TagValue, useKepServerUtil } from './kepServerUtil';
 import { logging } from './logging';
 import opcuaUtil from './opcuaUtil';
-import { useCallRegisterUtil } from './callRegisterUtil';
+import { EqpCallStats, useCallRegisterUtil } from './callRegisterUtil';
 import { useCallRemoveUtil } from './callRemoveUtil';
 import { useDockingUtil } from './process/dockingUtil';
 import { useCallCancelUtil } from './callCancelUtil';
@@ -13,6 +13,7 @@ import { RedisKeys, useRedisUtil } from './redisUtil';
 import { useCallPriorityUtil } from './callPriorityUtil';
 import { sendMqtt } from './mqttUtil';
 import { timestampToDate } from '../lib/usefullToolUtil';
+import { FacilityAttributesDeep } from '../models/operation/facility';
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -31,18 +32,47 @@ export const useEqpCheckUtil = () => {
           console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
             const facilitySerial = targetTagInfo.EQ_CODE;
-            const timezoneValue = process.env.TIME_ZONE || ''
-
-            // InfoCallRequestOnBySerial 중복 등록 방지
-            const callRegisterList = await useRedisUtil().hgetAllObject<TagValue>(RedisKeys.InfoCallRequestOnBySerial);
-            const findExistCall = callRegisterList?.find((call) => call.DEVICE === facilitySerial);
-            if (!findExistCall) {
-              targetTagInfo.createTime = timestampToDate(timezoneValue)
-              await useRedisUtil().hset(
-                RedisKeys.InfoCallRequestOnBySerial,
-                facilitySerial,
-                JSON.stringify(targetTagInfo)
+            const timezoneValue = process.env.TIME_ZONE || '';
+            const targetKey = targetTagInfo.TAGGROUP
+              ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
+              : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+            const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributesDeep>(
+              RedisKeys.InfoFacilityBySerial,
+              facilitySerial
+            );
+            if (facilityInfo) {
+              const eqpCallId = await useCallRegisterUtil().createWorkOrderCode(
+                targetKey,
+                facilityInfo,
+                targetTagInfo.reRegister
               );
+              if (!eqpCallId) return;
+
+              // InfoCallRequestOnBySerial 중복 등록 방지
+              const callRegisterList = await useRedisUtil().hgetAllObject<TagValue>(
+                RedisKeys.InfoCallRequestOnBySerial
+              );
+              const findExistCall = callRegisterList?.find((call) => call.DEVICE === facilitySerial);
+              if (!findExistCall) {
+                const callType = await makeCallType(facilitySerial);
+                const createDateTime = timestampToDate(timezoneValue);
+
+                const targetEqpCallInfo: EqpCallStats = {
+                  ...targetTagInfo,
+                  EQP_CALL_ID: '',
+                  CALL_ID: eqpCallId,
+                  Call_Type: callType || 'NC11',
+                  Caller: facilitySerial,
+                  Call_Quantity: 1,
+                  Call_Priority: '1',
+                  CREATE_TIME: createDateTime,
+                };
+                await useRedisUtil().hset(
+                  RedisKeys.InfoCallRequestOnBySerial,
+                  facilitySerial,
+                  JSON.stringify(targetEqpCallInfo)
+                );
+              }
             }
           } else {
             await useCallRemoveUtil().callRemove(targetTagInfo);
