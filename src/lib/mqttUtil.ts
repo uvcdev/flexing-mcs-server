@@ -354,7 +354,7 @@ export const receiveMqtt = (): void => {
                 message: messageJson,
               });
               const result = await workOrderService.facilityCancel(
-                { code: messageJson.EQP_CALL_ID },
+                { code: messageJson.EQP_CALL_ID, linkedEqpId: '' },
                 makeLogFormat({} as RequestLog)
               );
               console.log('###6');
