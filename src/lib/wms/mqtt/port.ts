@@ -39,32 +39,40 @@ const portPresenceStatus = async (
   // HCACK = 4 수신
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 
-  // 창고에서 만든 수동 작업 ( 재반입 )
-  if (separateCallId.length === 3) {
-    const fromFacilityName = separateCallId[0];
-    const toFacilityName = separateCallId[1];
+  // 창고에서 만든 수동 작업 ( 재반입, 재고 순환 )
+  // 창고 수동 작업 지시는 무조건 창고 배출 포트에서 창고 투입 포트로만 가능하며, 라인으로 보내고 싶을 시, ACS를 이용해야한다.
+  // 예시 : MW01_출발지(WS14)_도착지(WS11)_202509191101290004
+  // [창고명]_[출발지]_[도착지]_번호
+  if (separateCallId.length === 4) {
+    const fromFacilityName = separateCallId[1];
+    const toFacilityName = separateCallId[2];
 
-    const newCallId = fromFacilityName + separateCallId[2];
+    if (toFacilityName !== '') {
+      const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+        callId: callId,
+        fromFacilityName: fromFacilityName,
+        toFacilityName: toFacilityName,
+        type: 'OUT',
+        isMissionOrder: false,
+        callPriority: '99',
+        // ToDO - CALL TYPE 이 없는데 ...
+        // 해당 영역 어떻게 처리 할 지 고민 필요
+        callType: 'NG11',
+        eqpName: fromFacilityName,
+        portName: toFacilityName,
+      };
 
-    const infoPendingWorkOrder: PendingWorkOrderAttributes = {
-      callId: callId,
-      fromFacilityName: fromFacilityName,
-      toFacilityName: toFacilityName,
-      type: 'OUT',
-      isMissionOrder: false,
-      callPriority: '99',
-      // ToDO - CALL TYPE 이 없는데 ...
-      // 해당 영역 어떻게 처리 할 지 고민 필요
-      callType: 'NG11',
-      eqpName: fromFacilityName,
-      portName: toFacilityName,
-    };
+      // pending workOrder 레디스 정보 저장
 
-    // pending workOrder 레디스 정보 저장
+      console.log('infoPendingWorkOrder', infoPendingWorkOrder);
 
-    console.log('infoPendingWorkOrder', infoPendingWorkOrder);
-
-    redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder));
+      redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder));
+    }
+    // [창고명]_[출발지]__번호
+    // 도착지가 없이 Port 배정이 나오는 경우 MCS 알람 발생
+    // MCS -> ACS로 알람 전달 예정 이후 사용자 수동 작업 예정 ( 협의 필요 )
+    else if (toFacilityName !== '') {
+    }
   }
   // CALL INFO 받아서 생성된 port presence status
   else {

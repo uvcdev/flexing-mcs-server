@@ -388,3 +388,8 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v1.0.4-ljk 
 - WMS 쪽 토픽 변경 ( MCS -> MS01)
 - rollback MCS Topci ( MS01 -> MCS )
+- ACK_CALL_INFO - hcack = 51 / 52 응답 내용 수정
+  - hcack = 52 재고 없음 실행 예정은 사용하지 않고 hcack=51 : 재고 없음 실행 불가만 사용한다. 이유: 재고가 언제 들어오는 지는 창고도 알 수 없음
+  - hcack = 51 도 재고 없음 실행 불가지만, 해당 응답이 온 경우에는 로깅 후, 몇 분 뒤에 해당 정보 그대로 (cmdId 만 변경) 재 요청한다.
+
+- PORT_PRESENSE 시, 창고 수동작업지시 (재고순환) 로직 수정
