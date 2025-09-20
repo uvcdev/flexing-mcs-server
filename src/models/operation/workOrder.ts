@@ -221,6 +221,7 @@ export interface ImcsWorkOrderInsertParams {
 
 export interface WorkOrderCancelByCodeParams {
   code: string;
+  linkedEqpId: string;
 }
 export interface WorkOrderSelectInfoByCodeParams {
   code: string;

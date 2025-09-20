@@ -1,4 +1,4 @@
-import { TrackingLogRedisUpdateParams } from '../../../models/common/trackingLog';
+import { TrackingLogRedisUpdateParams, TrackingLogState } from '../../../models/common/trackingLog';
 import { EqpCallStatsForAck } from '../../callRegisterUtil';
 import { useKepServerUtil } from '../../kepServerUtil';
 import { generateUUIDNode } from '../../hashUtil';
@@ -201,10 +201,10 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: true,
       });
 
-      const trackingLogSubject = 'ACK_CALL_INFO';
-      const trackingLogDetail = 'ACK_CALL_INFO';
-      const trackingLogState = 'PROCESSING';
-      const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+      let trackingLogSubject = 'ACK_CALL_INFO';
+      let trackingLogDetail = 'ACK_CALL_INFO';
+      let trackingLogState = 'PROCESSING' as TrackingLogState;
+      let trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,
         subject: trackingLogSubject,
         detail: trackingLogDetail,
@@ -338,6 +338,11 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
 
       break;
 
+    /* 250918 논의 결과
+    hcack = 52 재고 없음 실행 예정은 사용하지 않고 hcack=51 : 재고 없음 실행 불가만 사용한다. 이유: 재고가 언제 들어오는 지는 창고도 알 수 없음
+    hcack = 51 도 재고 없음 실행 불가지만, 해당 응답이 온 경우에는 로깅 후, 몇 분 뒤에 해당 정보 그대로 (cmdId 만 변경) 재 요청한다.
+    */
+
     // hcack = 51 : 재고 없음 실행 불가
     // 실행 불가 로깅 처리 후
     // 설비에 관련 정보 삭제 할 수 있는 판단 레디스 값 추가
@@ -348,10 +353,29 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       // infoAckInCallByCallId 정보 삭제
       deleteInfoAckInCallByCallId(callId);
 
-      // RecentCallInfoTaskByCmdId 정보 삭제
-      deleteRecentCallInfoTaskByCmdId(cmdId);
+      // 20250919 - 해당 내용 변경 ( Call Info 정보를 무조건 지우는 것이 아니라 해당 정보로 재요청 하는 것으로 변경 )
+      // // RecentCallInfoTaskByCmdId 정보 삭제
+      // deleteRecentCallInfoTaskByCmdId(cmdId);
+      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
-      logging.ACTION_ERROR({
+      trackingLogSubject = 'ACK_CALL_INFO';
+      trackingLogDetail = 'ACK_CALL_INFO';
+      trackingLogState = 'ABORTED' as TrackingLogState;
+      trackingLogUpdateData = {
+        callId: callId,
+        subject: trackingLogSubject,
+        detail: trackingLogDetail,
+        state: trackingLogState,
+        startFacility: callInfoData.Caller,
+        transferId: null,
+        destFacility: null,
+        assignedRobot: null,
+        value: null,
+        description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, undefined, 'ABORTED', wmsName);
+
+      logging.ACTION_DEBUG({
         filename: `call.ts - ackCallInfo`,
         error: `[HCACK = ${hcack}] CallId (${callId}) execution unavailable due to insufficient inventory - comment : ${ackComment}`,
         params: null,

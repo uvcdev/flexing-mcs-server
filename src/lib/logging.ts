@@ -858,7 +858,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
+          topic: `${process.env.MQTT_MCS_TOPIC || 'MCS'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
           subject: 'TRANSPORT_COMMAND',
           body: body,
         };
@@ -877,7 +877,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
+          topic: `${process.env.MQTT_MCS_TOPIC || 'MCS'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
           subject: 'LOAD_COMMAND',
           body: body,
         };
@@ -896,7 +896,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
+          topic: `${process.env.MQTT_MCS_TOPIC || 'MCS'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
           subject: 'UNLOAD_COMMAND',
           body: body,
         };
@@ -915,7 +915,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
+          topic: `${process.env.MQTT_MCS_TOPIC || 'MCS'}-${acsDetail.amrCode || ''}-MISSION_COMMAND`,
           subject: 'CANCEL_MISSION_COMMAND',
           body: body,
         };
@@ -934,7 +934,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
+          topic: `${process.env.MQTT_MCS_TOPIC || 'MCS'}-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
           subject: 'ACK_MISSION_COMPLETED',
           body: body,
         };
@@ -953,7 +953,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
+          topic: `${process.env.MQTT_MCS_TOPIC || 'MCS'}-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
           subject: 'ACK_MISSION_FAILED',
           body: body,
         };
@@ -972,7 +972,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${process.env.MQTT_WMS_TOPIC || 'MS01'}-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
+          topic: `${process.env.MQTT_MCS_TOPIC || 'MCS'}-${acsDetail.amrCode || ''}-ACK_MISSION_STATE`,
           subject: 'ACK_MISSION_STATE',
           body: body,
         };
@@ -991,7 +991,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-PAYLOAD_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_MCS_TOPIC || 'MCS'}-PAYLOAD_STATE`,
           subject: 'PAYLOAD_STATE',
           body: body,
         };
@@ -1010,7 +1010,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-MISSION_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_MCS_TOPIC || 'MCS'}-MISSION_STATE`,
           subject: 'MISSION_STATE',
           body: body,
         };
@@ -1029,7 +1029,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-MISSION_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_MCS_TOPIC || 'MCS'}-MISSION_STATE`,
           subject: 'MISSION_COMPLETED',
           body: { mission: data.mission, robot: acsDetail.amrCode },
         };
@@ -1048,7 +1048,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-MISSION_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_MCS_TOPIC || 'MCS'}-MISSION_STATE`,
           subject: 'MISSION_FAILED',
           body: { mission: data.mission },
         };
@@ -1067,7 +1067,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-ALARM_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_MCS_TOPIC || 'MCS'}-ALARM_STATE`,
           subject: 'ALARM_REPORT',
           body: body,
         };
@@ -1086,7 +1086,7 @@ export const logging = {
           facilityName: acsDetail.facilityName,
           amrCode: acsDetail.amrCode,
           amrName: acsDetail.amrName,
-          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_WMS_TOPIC || 'MS01'}-ALARM_STATE`,
+          topic: `${acsDetail.amrCode || ''}-${process.env.MQTT_MCS_TOPIC || 'MCS'}-ALARM_STATE`,
           subject: 'ALARM_CLEAR',
           body: body,
         };

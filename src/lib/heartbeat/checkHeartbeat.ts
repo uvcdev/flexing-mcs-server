@@ -7,9 +7,10 @@ const heartBeatCheckTime = Number(process.env.HEARTBEAT_CHECK_TIME) || 10
 
 export const checkConnectionWmsHeartbeat = (wmsName: string, message: string) => {
   const checkTime = formatDetailedDateTime(new Date());
-  const redisKey = wmsName;
+  // const redisKey = wmsName;
+  const redisKey = 'WMS';
   const heartbeatData: HeartbeatInfo = {
-    systemName: wmsName,
+    systemName: redisKey,
     state: 'connection',
     time: checkTime,
   }

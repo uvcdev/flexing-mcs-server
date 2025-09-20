@@ -34,7 +34,7 @@ const sendMcsHeartbeat = () => {
 
   // mcs heartbeat 업데이트
   const heartbeatData: HeartbeatInfo = {
-    systemName: process.env.MQTT_WMS_TOPIC || 'MS01',
+    systemName: process.env.MQTT_MCS_TOPIC || 'MCS',
     state: 'connection',
     time: mqttHeader.time,
   };
