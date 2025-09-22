@@ -12,7 +12,12 @@ import {
   setRemainingAckCommand,
 } from '../../process/wmsAck';
 import { CallInfoBody, deleteInfoAckInCallByCallId } from '../../process/wmsCallInfo';
-import { deleteRecentCallInfoTaskByCmdId, setAbortedCommandForRetry } from '../../process/wmsCommon';
+import {
+  deleteRecentCallInfoTaskByCmdId,
+  RecentCallInfo,
+  setAbortedCommandForRetry,
+  setRecentCallInfoTaskByCmdId,
+} from '../../process/wmsCommon';
 import { RedisKeys, useRedisUtil } from '../../redisUtil';
 import { removeAckPrefix } from '../../usefullToolUtil';
 import opcuaUtil from '../../opcuaUtil';
@@ -100,18 +105,35 @@ const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
   // CALLINFO에 대한 ack 초기값 설정
   setRemainingAckCommand(callInfoTopic, wmsName, { header: mqttHeader, body: mqttBody });
 
+  // 09-23 변경
   // 진행 중인 infoAckInCallByCallId의 Cmd_ID 변경해주기
-  const infoAckInCallByCallIdData: InfoAckInCallByCallIdBody = {
-    Cmd_ID: newCmdId,
-    CALL_ID: infoAckInCallByCallId.CALL_ID,
-    EQP_CALL_ID: infoAckInCallByCallId.EQP_CALL_ID,
-    Call_Type: infoAckInCallByCallId.Call_Type,
-    Caller: infoAckInCallByCallId.Caller,
-    Call_Priority: infoAckInCallByCallId.Call_Priority,
-    Call_Quantity: Number(infoAckInCallByCallId.Call_Quantity) || 1,
-    updatedTime: new Date(),
+  // const infoAckInCallByCallIdData: InfoAckInCallByCallIdBody = {
+  //   Cmd_ID: newCmdId,
+  //   CALL_ID: infoAckInCallByCallId.CALL_ID,
+  //   EQP_CALL_ID: infoAckInCallByCallId.EQP_CALL_ID,
+  //   Call_Type: infoAckInCallByCallId.Call_Type,
+  //   Caller: infoAckInCallByCallId.Caller,
+  //   Call_Priority: infoAckInCallByCallId.Call_Priority,
+  //   Call_Quantity: Number(infoAckInCallByCallId.Call_Quantity) || 1,
+  //   updatedTime: new Date(),
+  // };
+  // redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
+  // 수정후
+  // 새로운 내용으로 ACK를 받을 예정이기 때문에 infoAckInCallByCallId 를 삭제 해주어야한다.
+  deleteInfoAckInCallByCallId(callId);
+
+  // Recent call info task 기록
+  const recentCallInfoTaskParams: RecentCallInfo = {
+    cmdId: mqttBody.Cmd_ID || '',
+    callId: mqttBody.Call_ID,
+    transferId: null,
+    callType: mqttBody.Call_Type,
+    callQuantity: mqttBody.Call_Quantity,
+    callPriority: mqttBody.Call_Priority,
+    caller: mqttBody.Caller,
+    port: null,
   };
-  redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
+  setRecentCallInfoTaskByCmdId(recentCallInfoTaskParams);
 
   // CALL INFO 추가 로깅
   const trackingLogSubject = 'CALL_INFO';

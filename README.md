@@ -411,3 +411,9 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v1.0.6
 
 - 버전승인: `v0.0.4-cyk`
+
+## v1.0.6-ljk
+- WMS
+  - CALL_REQUEST 콜 응답 부분 내용 수정 ( 로직 점검 필요 )
+  - transfer_abort_completed , transfer_cancel_completed 로직 수정
+    - 바로 기존 CALL_ID로 재요청
