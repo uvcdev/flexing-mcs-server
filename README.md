@@ -419,3 +419,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
     - 바로 기존 CALL_ID로 재요청
 - 트래킹 로그
   - 트래킹 로그 init 시점 변경
+
+## v1.0.7
+
+- 버전승인: `v1.0.6-ljk`
