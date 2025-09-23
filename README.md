@@ -434,3 +434,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - Call_Response 할 때 callTypeResponse() 호출해서 call_type 써주기
 - pio complete 났을 때 Dock_AMR_Status 꺼주는 로직에서 dockingUtil.dockingComplete() 에서 Dock_EQ_Status 꺼질 때로 이동
 - BS12 작업할 때 Dock_Request ON 해서 pio 진행하도록 수정
+
+## v1.0.8
+
+- 버전승인: `v1.0.7-cyk`
