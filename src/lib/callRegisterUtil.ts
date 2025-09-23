@@ -104,7 +104,7 @@ export const useCallRegisterUtil = () => {
               // ======= 미션결정 작업지시 (설비기준 회수) =======
               // const eqpCallId = (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
               callInfo.CALL_ID = eqpCallId;
-              await initTrackingLogRedis(callInfo);
+              // await initTrackingLogRedis(callInfo);
               const infoPendingMissionWorkOrder: PendingWorkOrderAttributes = {
                 callId: String(eqpCallId),
                 fromFacilityName: callInfo.Caller,
@@ -216,7 +216,7 @@ export const useCallRegisterUtil = () => {
                     // const eqpCallId =
                     //   (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
                     callInfo.CALL_ID = eqpCallId;
-                    await initTrackingLogRedis(callInfo);
+                    // await initTrackingLogRedis(callInfo);
                     const infoPendingWorkOrder: PendingWorkOrderAttributes = {
                       callId: String(eqpCallId),
                       eqpName: callInfo.Caller,
@@ -363,7 +363,7 @@ export const useCallRegisterUtil = () => {
                 if ((facilityInfo?.type).toUpperCase() === 'IN' && facilityInfo.system === 'WMS') {
                   const createdCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
                   callInfo.CALL_ID = String(createdCallId);
-                  await initTrackingLogRedis(callInfo);
+                  // await initTrackingLogRedis(callInfo);
                   const wmsCallInfoString = JSON.stringify(callInfo);
 
                   await redisUtil.hset(RedisKeys.InfoInCallByCallId, String(createdCallId), wmsCallInfoString);

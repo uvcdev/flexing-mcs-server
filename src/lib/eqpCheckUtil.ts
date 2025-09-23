@@ -14,6 +14,7 @@ import { useCallPriorityUtil } from './callPriorityUtil';
 import { sendMqtt } from './mqttUtil';
 import { timestampToDate } from '../lib/usefullToolUtil';
 import { FacilityAttributesDeep } from '../models/operation/facility';
+import { initTrackingLogRedis } from './process/trackingLog';
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -72,6 +73,19 @@ export const useEqpCheckUtil = () => {
                   facilitySerial,
                   JSON.stringify(targetEqpCallInfo)
                 );
+
+                const callInfo: EqpCallStats = {
+                  EQP_CALL_ID: eqpCallId.slice(-4), // 뒤의 4자리
+                  CALL_ID: eqpCallId,
+                  Call_Type: callType || 'NC11',
+                  Caller: facilitySerial, // 앞의 4자리
+                  Call_Quantity: 1,
+                  Call_Priority: '1',
+                  DATA_TYPE: targetTagInfo.DATA_TYPE,
+                  TRIGGER_CALL_COUNT: 0,
+                  ALWAYS_CALL_COUNT: -1,
+                };
+                await initTrackingLogRedis(callInfo);
               }
             }
           } else {
