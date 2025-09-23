@@ -417,3 +417,5 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - CALL_REQUEST 콜 응답 부분 내용 수정 ( 로직 점검 필요 )
   - transfer_abort_completed , transfer_cancel_completed 로직 수정
     - 바로 기존 CALL_ID로 재요청
+- 트래킹 로그
+  - 트래킹 로그 init 시점 변경
