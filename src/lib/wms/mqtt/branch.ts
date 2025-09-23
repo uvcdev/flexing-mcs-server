@@ -1,16 +1,22 @@
-import { TrackingLogRedisUpdateParams } from "../../../models/common/trackingLog";
-import { PendingWorkOrderAttributes } from "../../../models/operation/workOrder";
-import { useKepServerUtil } from "../../kepServerUtil";
-import { logging } from "../../logging";
-import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, sendMqtt } from "../../mqttUtil"
-import { editTrackingLogRedis } from "../../process/trackingLog";
-import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand } from "../../process/wmsAck"
-import { BranchInfoReqBody, DeletedBranchInfoReq, deleteInfoAckMissionCallByCallId, deleteInfoAckOutCallByCallId } from "../../process/wmsBranch";
-import { setAbortedCommandForRetry } from "../../process/wmsCommon";
-import { RedisKeys, useRedisUtil } from "../../redisUtil";
-import { removeAckPrefix } from "../../usefullToolUtil";
+import { TrackingLogRedisUpdateParams } from '../../../models/common/trackingLog';
+import { PendingWorkOrderAttributes } from '../../../models/operation/workOrder';
+import { useCallTypeUtil } from '../../callTypeUtil';
+import { useKepServerUtil } from '../../kepServerUtil';
+import { logging } from '../../logging';
+import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, sendMqtt } from '../../mqttUtil';
+import { editTrackingLogRedis } from '../../process/trackingLog';
+import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand } from '../../process/wmsAck';
+import {
+  BranchInfoReqBody,
+  DeletedBranchInfoReq,
+  deleteInfoAckMissionCallByCallId,
+  deleteInfoAckOutCallByCallId,
+} from '../../process/wmsBranch';
+import { setAbortedCommandForRetry } from '../../process/wmsCommon';
+import { RedisKeys, useRedisUtil } from '../../redisUtil';
+import { removeAckPrefix } from '../../usefullToolUtil';
 
-const systemTopic = 'BRANCH'
+const systemTopic = 'BRANCH';
 const redisUtil = useRedisUtil();
 interface ackBranchInfoReqBody extends MbsMqttBody {
   HCACK: string;
@@ -30,29 +36,34 @@ interface BranchInfoRepBody extends MbsMqttBody {
   CurrentLocation: string;
   AMRID: string;
   amrId: string;
-  CarrierList: Array<BranchInfoRepCarrierInfo>
+  CarrierList: Array<BranchInfoRepCarrierInfo>;
 }
 
-export interface InfoBranchCallAttributes extends BranchInfoReqBody, DeletedBranchInfoReq {
+export interface InfoBranchCallAttributes extends BranchInfoReqBody, DeletedBranchInfoReq {}
 
-}
-
-const branchInfoRep = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage, messageBody: BranchInfoRepBody) => {
+const branchInfoRep = async (
+  wmsName: string,
+  subject: string,
+  messageMessage: MbsMqttMesaage,
+  messageBody: BranchInfoRepBody
+) => {
   // 1. 필요한 데이터 세팅
-  const cmdId = messageBody.Cmd_ID
-  const callId = messageBody.Call_ID
-  const carrierInfo = messageBody.CarrierList[0] || null
-  const resultCode = carrierInfo.ResultCode
+  const cmdId = messageBody.Cmd_ID;
+  const callId = messageBody.Call_ID;
+  const carrierInfo = messageBody.CarrierList[0] || null;
+  const resultCode = carrierInfo.ResultCode;
 
   // RedisKeys.InfoAckOutCallByCallId 데이터
-  const infoAckOutCallByCallId = await redisUtil.hgetObject<InfoBranchCallAttributes>(RedisKeys.InfoAckOutCallByCallId, callId) || null
+  const infoAckOutCallByCallId =
+    (await redisUtil.hgetObject<InfoBranchCallAttributes>(RedisKeys.InfoAckOutCallByCallId, callId)) || null;
 
-  const infoAckMissionCallByCallId = await redisUtil.hgetObject<InfoBranchCallAttributes>(RedisKeys.InfoAckMissionCallByCallId, callId) || null
+  const infoAckMissionCallByCallId =
+    (await redisUtil.hgetObject<InfoBranchCallAttributes>(RedisKeys.InfoAckMissionCallByCallId, callId)) || null;
 
   const branchInfoRepData = infoAckOutCallByCallId || infoAckMissionCallByCallId;
 
   // 2. BRANCH_INFO_REP 의 ACK HCACK = 4 처리 ( ACK = 4는 특수한 경우 빼고는 전부 전송한다. MCS 서버에서만 에러날 수 있게 작업해야함 )
-  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage)
+  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 
   // 3. 에러 핸들링
   if (!cmdId || cmdId === '') {
@@ -62,7 +73,7 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
       params: null,
       result: false,
     });
-    return
+    return;
   }
 
   if (!carrierInfo) {
@@ -72,7 +83,7 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
       params: null,
       result: false,
     });
-    return
+    return;
   }
 
   if (!branchInfoRepData) {
@@ -82,14 +93,14 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
       params: null,
       result: false,
     });
-    return
+    return;
   }
 
   // 4. InfoAckOutCallByCallId 정보 삭제
   if (branchInfoRepData.isMissionOrder) {
-    deleteInfoAckMissionCallByCallId(callId)
+    deleteInfoAckMissionCallByCallId(callId);
   } else {
-    deleteInfoAckOutCallByCallId(callId)
+    deleteInfoAckOutCallByCallId(callId);
   }
 
   // 5. ResultCode 별 분기 처리
@@ -113,18 +124,17 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
           AMR_DB_ID: Number(branchInfoRepData.amrDbId) || 0,
           CALL_TYPE: carrierInfo.Call_Type,
           CALL_ID: branchInfoRepData.Call_ID,
-          IS_MISSION_ORDER: "TRUE",
-          TX_ID: "",
-          TAG_ID: "",
+          IS_MISSION_ORDER: 'TRUE',
+          TX_ID: '',
+          TAG_ID: '',
           CALL_PRIORITY: branchInfoRepData.callPriority,
-
-        }
+        };
         sendMqtt('acs/missionorder', JSON.stringify(missionOrderMqttMessage));
 
         // Item Log 생성
-        const trackingLogSubject = subject
-        const trackingLogDetail = subject
-        const trackingLogState = 'PROCESSING'
+        const trackingLogSubject = subject;
+        const trackingLogDetail = subject;
+        const trackingLogState = 'PROCESSING';
         const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
           callId: callId,
           subject: trackingLogSubject,
@@ -135,13 +145,13 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
           destFacility: carrierInfo.NewDest,
           assignedRobot: branchInfoRepData.AMRID,
           value: carrierInfo.NewDest,
-          description: `Call ID ${callId} received BRANCH_INFO_REP from WMS (${wmsName})`
-        }
-        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+          description: `Call ID ${callId} received BRANCH_INFO_REP from WMS (${wmsName})`,
+        };
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
       }
       // 설비에서 만든 out 콜인 경우 - normal order
       else {
-        const prefixFromFacilityName = callId.substring(0, 4)
+        const prefixFromFacilityName = callId.substring(0, 4);
 
         const infoPendingWorkOrder: PendingWorkOrderAttributes = {
           callId: callId,
@@ -152,15 +162,15 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
           callPriority: branchInfoRepData.callPriority || '',
           callType: carrierInfo.Call_Type,
           portName: carrierInfo.NewDest,
-          eqpName: prefixFromFacilityName
-        }
+          eqpName: prefixFromFacilityName,
+        };
 
-        redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder))
+        redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder));
 
         // Item Log 생성  -> 설비에서 직접 만든 콜은 로그 표현 형식을 위해 Detail을 강제로 ACK_CALL_INFO로 보냄
-        const trackingLogSubject = subject
-        const trackingLogDetail = 'ACK_CALL_INFO'
-        const trackingLogState = 'PROCESSING'
+        const trackingLogSubject = subject;
+        const trackingLogDetail = 'ACK_CALL_INFO';
+        const trackingLogState = 'PROCESSING';
         const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
           callId: callId,
           subject: trackingLogSubject,
@@ -171,9 +181,9 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
           destFacility: carrierInfo.NewDest,
           assignedRobot: branchInfoRepData.AMRID,
           value: carrierInfo.NewDest,
-          description: `Call ID ${callId} received BRANCH_INFO_REP from WMS (${wmsName})`
-        }
-        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+          description: `Call ID ${callId} received BRANCH_INFO_REP from WMS (${wmsName})`,
+        };
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
         // call_response 작성
         await useKepServerUtil().writeSimpleTagValue({
@@ -182,9 +192,10 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
           value: true,
         });
 
-        const callResponseTrackingLogSubject = 'CALL_RESPONSE'
-        const callResponseTrackingLogDetail = 'CALL_RESPONSE'
-        const callResponseTrackingLogState = 'PROCESSING'
+        await useCallTypeUtil().callTypeResponse(prefixFromFacilityName);
+        const callResponseTrackingLogSubject = 'CALL_RESPONSE';
+        const callResponseTrackingLogDetail = 'CALL_RESPONSE';
+        const callResponseTrackingLogState = 'PROCESSING';
         const callResponseTrackingLogUpdateData: TrackingLogRedisUpdateParams = {
           callId: callId,
           subject: callResponseTrackingLogSubject,
@@ -195,18 +206,16 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
           destFacility: null,
           assignedRobot: null,
           value: null,
-          description: `[Call ID ${callId}] Call responsed`
-        }
-        await editTrackingLogRedis(callResponseTrackingLogUpdateData, undefined, 'SUCCESS', wmsName)
-
-
+          description: `[Call ID ${callId}] Call responsed`,
+        };
+        await editTrackingLogRedis(callResponseTrackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
         // 포트 배정 로그까지 기록
-        const portTrackingLogDetail = 'PORT_ASSIGNED'
-        const portTackingLogValue = carrierInfo.NewDest
-        trackingLogUpdateData.detail = portTrackingLogDetail
-        trackingLogUpdateData.value = portTackingLogValue
-        await editTrackingLogRedis(trackingLogUpdateData, portTackingLogValue, 'SUCCESS', wmsName)
+        const portTrackingLogDetail = 'PORT_ASSIGNED';
+        const portTackingLogValue = carrierInfo.NewDest;
+        trackingLogUpdateData.detail = portTrackingLogDetail;
+        trackingLogUpdateData.value = portTackingLogValue;
+        await editTrackingLogRedis(trackingLogUpdateData, portTackingLogValue, 'SUCCESS', wmsName);
       }
 
       break;
@@ -228,7 +237,7 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
         result: false,
       });
       break;
-    // ResultCode = 21 : 목적지 만재 (Dest Full) 
+    // ResultCode = 21 : 목적지 만재 (Dest Full)
     case '21':
       logging.ACTION_ERROR({
         filename: `branch.ts - branchInfoRep`,
@@ -265,14 +274,14 @@ const branchInfoRep = async (wmsName: string, subject: string, messageMessage: M
       });
       break;
   }
-}
+};
 
 const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: ackBranchInfoReqBody) => {
   // 1. 필요한 데이터 세팅
-  const prefixSubject = removeAckPrefix(subject)
-  const cmdId = messageBody.Cmd_ID
-  const hcack = messageBody.HCACK
-  const ackComment = messageBody.Comment
+  const prefixSubject = removeAckPrefix(subject);
+  const cmdId = messageBody.Cmd_ID;
+  const hcack = messageBody.HCACK;
+  const ackComment = messageBody.Comment;
 
   if (!cmdId || cmdId === '') {
     logging.ACTION_ERROR({
@@ -281,12 +290,16 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
       params: null,
       result: false,
     });
-    return
+    return;
   }
 
-  const remainingAckCommandSubjectCmdId = `${prefixSubject}-${cmdId}`
+  const remainingAckCommandSubjectCmdId = `${prefixSubject}-${cmdId}`;
 
-  const remainingCommandInfo = await redisUtil.hgetObject<RemainingAckCommand>(RedisKeys.RemainingAckCommandBySubjectCmdId, remainingAckCommandSubjectCmdId) || null;
+  const remainingCommandInfo =
+    (await redisUtil.hgetObject<RemainingAckCommand>(
+      RedisKeys.RemainingAckCommandBySubjectCmdId,
+      remainingAckCommandSubjectCmdId
+    )) || null;
   if (!remainingCommandInfo) {
     logging.ACTION_ERROR({
       filename: `branch.ts - ackBranchInfoReq`,
@@ -294,17 +307,17 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
       params: null,
       result: false,
     });
-    return
+    return;
   }
 
-  const callId = remainingCommandInfo.message.body.Call_ID
-  const branchInfoData = remainingCommandInfo.message.body as BranchInfoReqBody
-  const branchDeletedInfoData = remainingCommandInfo.deletedData || {}
+  const callId = remainingCommandInfo.message.body.Call_ID;
+  const branchInfoData = remainingCommandInfo.message.body as BranchInfoReqBody;
+  const branchDeletedInfoData = remainingCommandInfo.deletedData || {};
 
-  const infoAckOutCallData: InfoBranchCallAttributes = { ...branchInfoData, ...branchDeletedInfoData }
+  const infoAckOutCallData: InfoBranchCallAttributes = { ...branchInfoData, ...branchDeletedInfoData };
 
   // 2. Branch_info_req 에 해당하는 RemainingAckCommandBySubjectCmdId 삭제
-  deleteRemainingAckCommand(remainingAckCommandSubjectCmdId)
+  deleteRemainingAckCommand(remainingAckCommandSubjectCmdId);
 
   switch (hcack) {
     // hcack = 4 : OK 실행 예정 - 정상
@@ -314,12 +327,12 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
       // InfoAckOutCallByCallId 레디스 기록
       // 미션 오더인 경우
       if (infoAckOutCallData.isMissionOrder) {
-        redisUtil.hset(RedisKeys.InfoAckMissionCallByCallId, callId, JSON.stringify(infoAckOutCallData))
+        redisUtil.hset(RedisKeys.InfoAckMissionCallByCallId, callId, JSON.stringify(infoAckOutCallData));
 
         // Item Log 생성
-        const trackingLogSubject = subject
-        const trackingLogDetail = subject
-        const trackingLogState = 'PROCESSING'
+        const trackingLogSubject = subject;
+        const trackingLogDetail = subject;
+        const trackingLogState = 'PROCESSING';
         const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
           callId: callId,
           subject: trackingLogSubject,
@@ -330,18 +343,18 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
           destFacility: null,
           assignedRobot: null,
           value: null,
-          description: `Call ID ${callId} received ACK_BRANCH_INFO_REQ from WMS (${wmsName})`
-        }
-        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+          description: `Call ID ${callId} received ACK_BRANCH_INFO_REQ from WMS (${wmsName})`,
+        };
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
       }
-      // 미션오더가 아닌 경우 
+      // 미션오더가 아닌 경우
       else {
-        redisUtil.hset(RedisKeys.InfoAckOutCallByCallId, callId, JSON.stringify(infoAckOutCallData))
+        redisUtil.hset(RedisKeys.InfoAckOutCallByCallId, callId, JSON.stringify(infoAckOutCallData));
 
         // Item Log 생성 - 물류 로그 순서상 강제로 CALL_INFO 정보를 Detail에 사용
-        const trackingLogSubject = subject
-        const trackingLogDetail = 'CALL_INFO'
-        const trackingLogState = 'PROCESSING'
+        const trackingLogSubject = subject;
+        const trackingLogDetail = 'CALL_INFO';
+        const trackingLogState = 'PROCESSING';
         const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
           callId: callId,
           subject: trackingLogSubject,
@@ -352,9 +365,9 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
           destFacility: null,
           assignedRobot: null,
           value: null,
-          description: `Call ID ${callId} received ACK_BRANCH_INFO_REQ from WMS (${wmsName})`
-        }
-        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName)
+          description: `Call ID ${callId} received ACK_BRANCH_INFO_REQ from WMS (${wmsName})`,
+        };
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
       }
       // 정상 처리 시, 별도의 로직 존재하지 않음 ( ACK 받은 것만 인지 할 수 있으면 됨 - remainingCommandInfo 삭제 )
       logging.ACTION_INFO({
@@ -366,7 +379,7 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
       break;
 
     // hcack = 0 : Command가 이미 실행 되었음
-    // 해당 내용 로깅 처리 후 알람 발생 
+    // 해당 내용 로깅 처리 후 알람 발생
     case '0':
       logging.ACTION_ERROR({
         filename: `branch.ts - ackBranchInfoReq`,
@@ -378,7 +391,7 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
       break;
 
     // hcack = 1 : 커맨드가 존재하지 않음
-    // 해당 내용 로깅 처리 후 알람 발생 
+    // 해당 내용 로깅 처리 후 알람 발생
     case '1':
       logging.ACTION_ERROR({
         filename: `branch.ts - ackBranchInfoReq`,
@@ -399,11 +412,11 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
         result: false,
       });
 
-      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message)
+      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 
-    // hcack = 3 : 1개 이상의 값들이 Valid 하지 않음 
+    // hcack = 3 : 1개 이상의 값들이 Valid 하지 않음
     // 해당 내용 로깅 처리 후 알람 발생
     case '3':
       logging.ACTION_ERROR({
@@ -415,7 +428,7 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
 
       break;
 
-    // hcack = 5 : 거부, 이미 요청 받은 Command 
+    // hcack = 5 : 거부, 이미 요청 받은 Command
     // 해당 내용 로깅 처리
     case '5':
       logging.ACTION_ERROR({
@@ -452,7 +465,7 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
       break;
 
     // hcack = 51 : 재고 없음 실행 불가
-    // 실행 불가 로깅 처리 후 
+    // 실행 불가 로깅 처리 후
     // 설비에 관련 정보 삭제 할 수 있는 판단 레디스 값 추가
     case '51':
       logging.ACTION_ERROR({
@@ -475,11 +488,11 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
         result: false,
       });
 
-      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message)
+      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 
-    // 정의되지 않은 hcack 수신 오류 발생 후 로깅 처리 
+    // 정의되지 않은 hcack 수신 오류 발생 후 로깅 처리
     default:
       logging.ACTION_ERROR({
         filename: `branch.ts - ackBranchInfoReq`,
@@ -489,15 +502,14 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
       });
       break;
   }
-}
-
+};
 
 export const wmsBranch = (wmsName: string, messageJson: MbsMqttMesaage) => {
-  const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
+  const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   if (subject === 'BRANCH_INFO_REP') {
-    branchInfoRep(wmsName, subject, messageJson, messageBody as BranchInfoRepBody)
+    branchInfoRep(wmsName, subject, messageJson, messageBody as BranchInfoRepBody);
   } else if (subject === 'ACK_BRANCH_INFO_REQ') {
-    ackBranchInfoReq(wmsName, subject, messageBody as ackBranchInfoReqBody)
+    ackBranchInfoReq(wmsName, subject, messageBody as ackBranchInfoReqBody);
   }
-}
+};

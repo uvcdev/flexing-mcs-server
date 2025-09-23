@@ -5,6 +5,7 @@ import { routeMissionOrderMqttMessage } from './process/commonUtils';
 import { MqttBranchInfoDataFromAcs } from './process/wmsBranch';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from './redisUtil';
 import opcuaUtil from './opcuaUtil';
+import { useCallTypeUtil } from './callTypeUtil';
 
 export const checkMissionOrder = async () => {
   const kepServerUtil = useKepServerUtil();
@@ -108,6 +109,7 @@ export const checkMissionOrder = async () => {
                   value: true,
                 });
 
+                await useCallTypeUtil().callTypeResponse(linkedFacilityInfo.serial || '');
                 redisUtil.hdel(RedisKeys.InfoMissionOrderByWorkOrderCode, mqttCallId);
                 break;
               }

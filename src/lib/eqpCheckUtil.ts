@@ -133,8 +133,8 @@ export const useEqpCheckUtil = () => {
           break;
 
         case 'Call_Type_01':
-          console.log(`Changed Call_Type_01`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          await useCallTypeUtil().callTypeResponse(targetTagInfo);
+          // console.log(`Changed Call_Type_01`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          // await useCallTypeUtil().callTypeResponse(targetTagInfo.EQ_CODE);
           break;
 
         case 'Complete':
@@ -152,11 +152,11 @@ export const useEqpCheckUtil = () => {
             value: false,
           });
 
-          await useKepServerUtil().writeSimpleTagValue({
-            targetFacility: targetTagInfo.EQ_CODE,
-            tagName: 'Dock_AMR_Status',
-            value: false,
-          });
+          // await useKepServerUtil().writeSimpleTagValue({
+          //   targetFacility: targetTagInfo.EQ_CODE,
+          //   tagName: 'Dock_AMR_Status',
+          //   value: false,
+          // });
           // setTimeout(() => {
           //   useKepServerUtil().writeSimpleTagValue({
           //     targetFacility: targetTagInfo.EQ_CODE,

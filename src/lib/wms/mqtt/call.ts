@@ -21,6 +21,7 @@ import {
 import { RedisKeys, useRedisUtil } from '../../redisUtil';
 import { removeAckPrefix } from '../../usefullToolUtil';
 import opcuaUtil from '../../opcuaUtil';
+import { useCallTypeUtil } from '../../callTypeUtil';
 
 const systemTopic = 'CALL';
 const redisUtil = useRedisUtil();
@@ -247,6 +248,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         value: true,
       });
 
+      await useCallTypeUtil().callTypeResponse(callInfoData.Caller);
       const callResponseTrackingLogSubject = 'CALL_RESPONSE';
       const callResponseTrackingLogDetail = 'CALL_RESPONSE';
       const callResponseTrackingLogState = 'PROCESSING';
@@ -819,6 +821,7 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
         tagName: 'Call_Response',
         value: true,
       });
+      await useCallTypeUtil().callTypeResponse(callInfoData.Caller);
     }
     // 2. 해당 콜에 대한 트래킹 로그 만들어줌
   }

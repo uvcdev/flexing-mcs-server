@@ -12,6 +12,7 @@ import { logging } from './logging';
 import { PendingWorkOrderAttributes } from '../models/operation/workOrder';
 import { TrackingLogRedisUpdateParams } from '../models/common/trackingLog';
 import { ErrorClass } from './resUtil';
+import { useCallTypeUtil } from './callTypeUtil';
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -57,7 +58,12 @@ export const useMultiCallRegisterUtil = () => {
           : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
         // 필요한 태그 값들 가져오기
 
-        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority', 'Call_Request_Multi_1', 'Call_Request_Multi_2']);
+        await kepServerUtil.updateTagMapValues(targetKey, targetCode, [
+          'Call_Count',
+          'Call_Priority',
+          'Call_Request_Multi_1',
+          'Call_Request_Multi_2',
+        ]);
 
         const callCountValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`)?.value as number;
         const callPriorityValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`)?.value as string;
@@ -146,6 +152,7 @@ export const useMultiCallRegisterUtil = () => {
                 tagName: 'Call_Response',
                 value: true,
               });
+              await useCallTypeUtil().callTypeResponse(callInfo.Caller);
               await kepServerUtil.writeSimpleTagValue({
                 targetFacility: callInfo.Caller,
                 tagName: 'Call_Response_Count',
@@ -244,6 +251,7 @@ export const useMultiCallRegisterUtil = () => {
                       tagName: 'Call_Response',
                       value: true,
                     });
+                    await useCallTypeUtil().callTypeResponse(facilityInfo.serial || '');
                     await useKepServerUtil().writeSimpleTagValue({
                       targetFacility: facilityInfo.serial || '',
                       tagName: 'Call_Response_Count',
@@ -273,6 +281,7 @@ export const useMultiCallRegisterUtil = () => {
                       tagName: 'Call_Response',
                       value: true,
                     });
+                    await useCallTypeUtil().callTypeResponse(linkedFacilityInfo.serial || '');
                     await useKepServerUtil().writeSimpleTagValue({
                       targetFacility: linkedFacilityInfo.serial || '',
                       tagName: 'Call_Response_Count',

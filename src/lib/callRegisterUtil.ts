@@ -12,6 +12,7 @@ import { TrackingLogRedisAttributes, TrackingLogRedisUpdateParams } from '../mod
 import { DryrunSetting } from '../models/common/setting';
 import { dao as workOrderDao } from '../dao/operation/workOrderDao';
 import { ErrorClass, responseCode } from './resUtil';
+import { useCallTypeUtil } from './callTypeUtil';
 
 export interface EqpCallStats {
   CALL_ID: string;
@@ -135,6 +136,7 @@ export const useCallRegisterUtil = () => {
                 tagName: 'Call_Response',
                 value: true,
               });
+              await useCallTypeUtil().callTypeResponse(callInfo.Caller);
               await kepServerUtil.writeSimpleTagValue({
                 targetFacility: callInfo.Caller,
                 tagName: 'Call_Response_Count',
@@ -250,6 +252,7 @@ export const useCallRegisterUtil = () => {
                       tagName: 'Call_Response',
                       value: true,
                     });
+                    await useCallTypeUtil().callTypeResponse(facilityInfo.serial || '');
                     await useKepServerUtil().writeSimpleTagValue({
                       targetFacility: facilityInfo.serial || '',
                       tagName: 'Call_Response_Count',
@@ -279,6 +282,7 @@ export const useCallRegisterUtil = () => {
                       tagName: 'Call_Response',
                       value: true,
                     });
+                    await useCallTypeUtil().callTypeResponse(linkedFacilityInfo.serial || '');
                     await useKepServerUtil().writeSimpleTagValue({
                       targetFacility: linkedFacilityInfo.serial || '',
                       tagName: 'Call_Response_Count',

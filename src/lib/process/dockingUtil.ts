@@ -10,6 +10,7 @@ import { editTrackingLogRedis } from './trackingLog';
 import { TrackingLogRedisAttributes, TrackingLogRedisUpdateParams } from '../../models/common/trackingLog';
 import { FacilityAttributes, FacilityAttributesDeep } from '../../models/operation/facility';
 import { AmrAttributes } from '../../models/common/amr';
+import { useCallTypeUtil } from '../callTypeUtil';
 
 enum EXC_CLS {
   AUTO = 'AUTO',
@@ -436,6 +437,11 @@ export const useDockingUtil = () => {
         value: JSON.parse(JSON.stringify(targetTagInfo)),
         message: `설비가 도킹완료 0으로 내림`,
       });
+      await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: targetTagInfo.EQ_CODE,
+        tagName: 'Dock_AMR_Status',
+        value: false,
+      });
       return;
     }
 
@@ -673,8 +679,10 @@ export const useDockingUtil = () => {
           });
           throw error;
         }
-        // todo: 0604 도킹 요청시 콜타입은 설비에서 판단해주기 때문에 아래 판단 내용 삭제 (Call_Type 써줄 때 Response 써줌)
         // 콜타입 입력
+        // if (facility.serial) {
+        //   await useCallTypeUtil().callTypeResponse(facility.serial);
+        // }
         /*
         const callType = parseAsciiToDecWord(params.CALL_TYPE);
         if (callType) {

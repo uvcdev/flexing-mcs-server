@@ -394,6 +394,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - WMS 쪽 토픽 변경 ( MCS -> MS01)
 - rollback MCS Topci ( MS01 -> MCS )
 - ACK_CALL_INFO - hcack = 51 / 52 응답 내용 수정
+
   - hcack = 52 재고 없음 실행 예정은 사용하지 않고 hcack=51 : 재고 없음 실행 불가만 사용한다. 이유: 재고가 언제 들어오는 지는 창고도 알 수 없음
   - hcack = 51 도 재고 없음 실행 불가지만, 해당 응답이 온 경우에는 로깅 후, 몇 분 뒤에 해당 정보 그대로 (cmdId 만 변경) 재 요청한다.
 
@@ -405,6 +406,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - Add createTime from kepServerUtil TagValue interface
 
 ## v1.0.5
+
 - 현장 코드 반영 ( cyk ) : linked 작업 취소 관련, WMS connection
 - 코드 반영 ( ljk )
 
@@ -413,6 +415,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 버전승인: `v0.0.4-cyk`
 
 ## v1.0.6-ljk
+
 - WMS
   - CALL_REQUEST 콜 응답 부분 내용 수정 ( 로직 점검 필요 )
   - transfer_abort_completed , transfer_cancel_completed 로직 수정
@@ -423,3 +426,11 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v1.0.7
 
 - 버전승인: `v1.0.6-ljk`
+
+## v1.0.7-cyk
+
+- callTypeResponse() 호출 시 파라미터 타입 Tagvalue => string 으로 변경
+- eqpCheckUtil 에서 Call_Type_01 구독할 때 저장하는 부분 주석처리
+- Call_Response 할 때 callTypeResponse() 호출해서 call_type 써주기
+- pio complete 났을 때 Dock_AMR_Status 꺼주는 로직에서 dockingUtil.dockingComplete() 에서 Dock_EQ_Status 꺼질 때로 이동
+- BS12 작업할 때 Dock_Request ON 해서 pio 진행하도록 수정
