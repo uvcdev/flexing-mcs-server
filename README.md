@@ -438,3 +438,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v1.0.8
 
 - 버전승인: `v1.0.7-cyk`
+
+## v1.0.8-ljk
+
+- ACK_REQ_PORT_STATE_LIST 기능 추가
