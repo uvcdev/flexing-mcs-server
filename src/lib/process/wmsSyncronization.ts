@@ -1,4 +1,5 @@
 import { makeMbsMqttHeader, MbsMqttBody, sendMbsMqtt } from '../mqttUtil';
+import { setRemainingAckCommand } from './wmsAck';
 
 
 const wmsName = (process.env.WMS_LIST)?.split(',')[0]
@@ -34,4 +35,8 @@ export const sendCallInfoList = () => {
   };
 
   sendMbsMqtt(topic, mqttHeader, mqttBody, wmsName);
+
+  const systemName = `${process.env.MQTT_WMS_TOPIC || 'MW01'}`;
+  // CallInfoList 에 대한 ack 초기값 설정
+  setRemainingAckCommand(topic, systemName, { header: mqttHeader, body: mqttBody });
 };

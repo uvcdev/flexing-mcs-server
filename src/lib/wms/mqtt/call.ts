@@ -1,5 +1,5 @@
 import { TrackingLogRedisUpdateParams, TrackingLogState } from '../../../models/common/trackingLog';
-import { EqpCallStatsForAck } from '../../callRegisterUtil';
+import { EqpCallStats, EqpCallStatsForAck } from '../../callRegisterUtil';
 import { useKepServerUtil } from '../../kepServerUtil';
 import { generateUUIDNode } from '../../hashUtil';
 import { logging } from '../../logging';
@@ -823,7 +823,42 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
       });
       await useCallTypeUtil().callTypeResponse(callInfoData.Caller);
     }
+    // Port 배정이 나올 레디스 값 저장
+    // MCS_recent_call_info_task_by_cmd_id
+    const recentCallInfoTaskParams: RecentCallInfo = {
+      cmdId: callInfoData.Cmd_ID || '',
+      callId: callInfoData.Call_ID,
+      transferId: null,
+      callType: callInfoData.Call_Type,
+      callQuantity: callInfoData.Call_Quantity,
+      callPriority: callInfoData.Call_Priority,
+      caller: callInfoData.Caller,
+      port: null,
+    };
+    setRecentCallInfoTaskByCmdId(recentCallInfoTaskParams);
+    // MCS_info_ack_in_call_by_call_id
+    const infoAckInCallByCallIdData: InfoAckInCallByCallIdBody = {
+      Cmd_ID: callInfoData.Cmd_ID,
+      CALL_ID: callInfoData.Call_ID,
+      EQP_CALL_ID: callInfoData.Call_ID.slice(-4),
+      Call_Type: callInfoData.Call_Type,
+      Caller: callInfoData.Caller,
+      Call_Priority: callInfoData.Call_Priority,
+      Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
+      updatedTime: new Date(),
+    };
+    redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callInfoData.Call_ID, JSON.stringify(infoAckInCallByCallIdData));
+
     // 2. 해당 콜에 대한 트래킹 로그 만들어줌
+
+    // 추가 사항 ( 250924 )
+    // WMS에는 콜이 있고 MCS입장에서는 ACK를 못 받은 정보인 경우 -> ACK를 받았다고 처리한 후, 콜 정보 저장
+
+    // WMS에는 콜이 있고 MCS에서도 ACK를 받았었던 정보라면 
+    // 반대편 설비의 응답이 켜져 있는 경우에는 키고, 켜져 있는 경우에는 유지
+    // ACK는 받은 경우
+    // 반대편 설비의 응답이 켜져 있는 경우에는 키고, 켜져 있는 경우에는 유지
+    // 현재 진행중인 정보로 트래킹 로그 추가
   }
 
   // MCS에만 있는 Call 객체들
@@ -835,6 +870,35 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
     // 2. CallInfo 정보 삭제
     const callInfoData = mcsOnlyCallInfoList[i];
     deleteInfoAckInCallByCallId(callInfoData.Call_ID);
+
+    // 2025-09-24 수정본
+    // 해당 설비에 CALL_REQUEST가 켜져있으면 같은 정보로 CALL_INFO를 재요청한다.
+    // 멀티콜 도입 시, 해당 로직 수정 필요
+    // 나중에 수정 필요 -> 작업 지시가 진행 중인 개수로 파악하면 그냥 지워주고 설비 요청 단계에서 새롭게 요청하는 방법으로 변경
+
+    // const callInfoData = mcsOnlyCallInfoList[i];
+    const caller = callInfoData.Caller;
+
+    const targetKey = kepServerUtil.getTargetKey(caller);
+    await kepServerUtil.updateTagMapValues(targetKey, caller, ['Call_Request']);
+
+    const callRequestValue = opcuaUtil.tagMap.get(`${caller}.Call_Request`)?.value;
+
+    if (callRequestValue === true) {
+      const newCallInfoData: EqpCallStats = {
+        EQP_CALL_ID: callInfoData.Call_ID.slice(-4), // 뒤의 4자리
+        CALL_ID: callInfoData.Call_ID, // 작업지시코드
+        Call_Type: callInfoData.Call_Type || 'NC11',
+        Caller: caller, // 앞의 4자리
+        Call_Quantity: 1,
+        Call_Priority: callInfoData.Call_Priority,
+      };
+
+
+      const wmsCallInfoString = JSON.stringify(newCallInfoData);
+
+      await redisUtil.hset(RedisKeys.InfoInCallByCallId, String(callInfoData.Call_ID), wmsCallInfoString);
+    }
   }
 };
 

@@ -441,4 +441,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 ## v1.0.8-ljk
 
-- ACK_REQ_PORT_STATE_LIST 기능 추가
+- MCS 동기화 로직 
+  - ACK_REQ_PORT_STATE_LIST 기능 추가
+  - ACK_REQ_CALL_INFO_LIST 기능 개선

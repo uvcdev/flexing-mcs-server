@@ -13,7 +13,7 @@ const online = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   // 의문점 1 -> 창고 쪽에 있는 데이터로만 맞추는게 맞나 ... ?
   sendReqPortStateList();
 
-  sendCallInfoList();
+  // sendCallInfoList();
 };
 
 export const wmsOnline = (wmsName: string, messageJson: MbsMqttMesaage) => {

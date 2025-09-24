@@ -8,6 +8,7 @@ import { CallInfoBody, deleteInfoAckInCallByCallId } from '../../process/wmsCall
 import { deleteRecentCallInfoTaskByCmdId } from '../../process/wmsCommon';
 import { RedisKeys, useRedisUtil } from '../../redisUtil';
 import { dao as workOrderDao } from '../../../dao/operation/workOrderDao';
+import { sendCallInfoList } from '../../process/wmsSyncronization';
 
 const systemTopic = 'PORT';
 
@@ -336,6 +337,9 @@ const ackReqPortStateList = async (
       }
     }
   }
+
+  // 0924 이후 변경점 PORT_PRESENCE_STATE_LIST 이후 CALL LIST 호출
+  sendCallInfoList();
 };
 
 export const wmsPort = (wmsName: string, messageJson: MbsMqttMesaage) => {
