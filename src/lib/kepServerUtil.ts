@@ -50,6 +50,7 @@ export interface TagValue {
   INPUT_TYPE: string;
   NODE_ID: string;
   EQ_CODE: string;
+  CALL_ID?: string;
 }
 
 interface TagValueJson {

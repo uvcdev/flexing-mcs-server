@@ -575,6 +575,10 @@ export const useDockingUtil = () => {
                 tagName: 'Dock_Request_Force',
                 value: false,
               },
+              {
+                tagName: 'Dock_Request',
+                value: false,
+              },
             ],
           });
           await useKepServerUtil().writeTagsValue(dockingRequestForceTag);

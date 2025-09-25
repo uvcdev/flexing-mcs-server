@@ -41,7 +41,7 @@ export const useEqpCheckUtil = () => {
               RedisKeys.InfoFacilityBySerial,
               facilitySerial
             );
-            if (facilityInfo) {
+            if (facilityInfo && facilityInfo.isActiveCallTrigger) {
               const eqpCallId = await useCallRegisterUtil().createWorkOrderCode(
                 targetKey,
                 facilityInfo,
