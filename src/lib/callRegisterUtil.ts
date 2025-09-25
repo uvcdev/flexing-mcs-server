@@ -365,12 +365,12 @@ export const useCallRegisterUtil = () => {
                 // 설비 테이블에 어떤 창고와 통신을 해야한다는 창고를 등록하고
                 // SP11, SP21, SP31, SP41 만 facility.system === 'WMS' 로 설정해도 되지만, 편의상 WMS와 상호작용 하는 설비들은 WMS를 붙임 ( 창고 쪽 설비 )
                 if ((facilityInfo?.type).toUpperCase() === 'IN' && facilityInfo.system === 'WMS') {
-                  const createdCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
-                  callInfo.CALL_ID = String(createdCallId);
+                  // const createdCallId = await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister);
+                  callInfo.CALL_ID = eqpCallId;
                   // await initTrackingLogRedis(callInfo);
                   const wmsCallInfoString = JSON.stringify(callInfo);
 
-                  await redisUtil.hset(RedisKeys.InfoInCallByCallId, String(createdCallId), wmsCallInfoString);
+                  await redisUtil.hset(RedisKeys.InfoInCallByCallId, eqpCallId, wmsCallInfoString);
                   // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
                   await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
                   await useMultiCallRegisterUtil().hsetWithIncrementCount(

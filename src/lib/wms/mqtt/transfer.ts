@@ -123,7 +123,9 @@ const transferCancelCompleted = async (wmsName: string, messageMessage: MbsMqttM
   deleteInfoAckInCallByCallId(callId);
 
   // RecentCallInfoTaskByCmdId 정보 삭제
-  deleteRecentCallInfoTaskByCmdId(cmdId);
+  if (infoAckInCallByCallId?.Cmd_ID) {
+    deleteRecentCallInfoTaskByCmdId(infoAckInCallByCallId.Cmd_ID);
+  }
 
   // 내용 수정 25-09-23 해당 내용 수정 설비 정보로 바로 CALL_INFO를 재요청한다.
   // 설비의 Call 정보 확인 후 재 송부가 필요한 내용을 Redis에 저장
@@ -166,18 +168,19 @@ const transferCancelCompleted = async (wmsName: string, messageMessage: MbsMqttM
   // CALLINFO에 대한 ack 초기값 설정
   setRemainingAckCommand(callInfoTopic, wmsName, { header: mqttHeader, body: mqttBody });
 
+  // 2025-09-25 진행 중인 콜은 ACK를 받으면 해당 정보는 새로 기록됨 
   // 진행 중인 infoAckInCallByCallId의 Cmd_ID 변경해주기
-  const infoAckInCallByCallIdData: InfoAckInCallByCallIdBody = {
-    Cmd_ID: newCmdId,
-    CALL_ID: infoAckInCallByCallId.CALL_ID,
-    EQP_CALL_ID: infoAckInCallByCallId.EQP_CALL_ID,
-    Call_Type: infoAckInCallByCallId.Call_Type,
-    Caller: infoAckInCallByCallId.Caller,
-    Call_Priority: infoAckInCallByCallId.Call_Priority,
-    Call_Quantity: Number(infoAckInCallByCallId.Call_Quantity) || 1,
-    updatedTime: new Date(),
-  };
-  redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
+  // const infoAckInCallByCallIdData: InfoAckInCallByCallIdBody = {
+  //   Cmd_ID: newCmdId,
+  //   CALL_ID: infoAckInCallByCallId.CALL_ID,
+  //   EQP_CALL_ID: infoAckInCallByCallId.EQP_CALL_ID,
+  //   Call_Type: infoAckInCallByCallId.Call_Type,
+  //   Caller: infoAckInCallByCallId.Caller,
+  //   Call_Priority: infoAckInCallByCallId.Call_Priority,
+  //   Call_Quantity: Number(infoAckInCallByCallId.Call_Quantity) || 1,
+  //   updatedTime: new Date(),
+  // };
+  // redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
 
   // Recent call info task 기록
   const recentCallInfoTaskParams: RecentCallInfo = {
@@ -206,7 +209,7 @@ const transferCancelCompleted = async (wmsName: string, messageMessage: MbsMqttM
     destFacility: null,
     assignedRobot: null,
     value: null,
-    description: `Requesting CALL_INFO from WMS(${wmsName}) for Call ID ${callId}`,
+    description: `Requesting CALL_INFO from WMS(${wmsName}) for Call ID ${callId} - TRANSFER_CANCELED`,
   };
   await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 };
@@ -252,7 +255,9 @@ const transferAbortCompleted = async (wmsName: string, messageMessage: MbsMqttMe
   deleteInfoAckInCallByCallId(callId);
 
   // RecentCallInfoTaskByCmdId 정보 삭제
-  deleteRecentCallInfoTaskByCmdId(cmdId);
+  if (infoAckInCallByCallId?.Cmd_ID) {
+    deleteRecentCallInfoTaskByCmdId(infoAckInCallByCallId.Cmd_ID);
+  }
 
   // 내용 수정 25-09-23 해당 내용 수정 설비 정보로 바로 CALL_INFO를 재요청한다.
   // 설비의 Call 정보 확인 후 재 송부가 필요한 내용을 Redis에 저장
@@ -294,18 +299,19 @@ const transferAbortCompleted = async (wmsName: string, messageMessage: MbsMqttMe
   // CALLINFO에 대한 ack 초기값 설정
   setRemainingAckCommand(callInfoTopic, wmsName, { header: mqttHeader, body: mqttBody });
 
+  // 2025-09-25 진행 중인 콜은 ACK를 받으면 해당 정보는 새로 기록됨 
   // 진행 중인 infoAckInCallByCallId의 Cmd_ID 변경해주기
-  const infoAckInCallByCallIdData: InfoAckInCallByCallIdBody = {
-    Cmd_ID: newCmdId,
-    CALL_ID: infoAckInCallByCallId.CALL_ID,
-    EQP_CALL_ID: infoAckInCallByCallId.EQP_CALL_ID,
-    Call_Type: infoAckInCallByCallId.Call_Type,
-    Caller: infoAckInCallByCallId.Caller,
-    Call_Priority: infoAckInCallByCallId.Call_Priority,
-    Call_Quantity: Number(infoAckInCallByCallId.Call_Quantity) || 1,
-    updatedTime: new Date(),
-  };
-  redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
+  // const infoAckInCallByCallIdData: InfoAckInCallByCallIdBody = {
+  //   Cmd_ID: newCmdId,
+  //   CALL_ID: infoAckInCallByCallId.CALL_ID,
+  //   EQP_CALL_ID: infoAckInCallByCallId.EQP_CALL_ID,
+  //   Call_Type: infoAckInCallByCallId.Call_Type,
+  //   Caller: infoAckInCallByCallId.Caller,
+  //   Call_Priority: infoAckInCallByCallId.Call_Priority,
+  //   Call_Quantity: Number(infoAckInCallByCallId.Call_Quantity) || 1,
+  //   updatedTime: new Date(),
+  // };
+  // redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
 
   // Recent call info task 기록
   const recentCallInfoTaskParams: RecentCallInfo = {
@@ -334,7 +340,7 @@ const transferAbortCompleted = async (wmsName: string, messageMessage: MbsMqttMe
     destFacility: null,
     assignedRobot: null,
     value: null,
-    description: `Requesting CALL_INFO from WMS(${wmsName}) for Call ID ${callId}`,
+    description: `Requesting CALL_INFO from WMS(${wmsName}) for Call ID ${callId} - TRANSFER_ABORT`,
   };
   await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 };

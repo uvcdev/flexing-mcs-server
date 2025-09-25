@@ -224,6 +224,12 @@ const ackReqPortStateList = async (
 
       // 해당 포트가 재고순환 작업을 들고 있는 경우
       if (separateCallId.length === 4) {
+        const workOrderInfo = await workOrderDao.selectInfoByCode({ code: portCallId });
+
+        if (workOrderInfo) {
+          continue;
+        }
+
         const fromFacilityName = separateCallId[1];
         const toFacilityName = separateCallId[2];
 
@@ -324,7 +330,7 @@ const ackReqPortStateList = async (
           // work order 가 있기 때문에 이미 처리 중인 정보라서 continue
           const portPresenceWorkOrder = await workOrderDao.selectInfoByCode({ code: portCallId });
           if (portPresenceWorkOrder) {
-            // console.log(`이미 처리된 콜 ID 입니다. ${portCallId}`)
+            console.log(`이미 처리된 콜 ID 입니다. ${portCallId}`)
             continue;
           }
           // work order도 없는 경우

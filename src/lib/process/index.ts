@@ -120,7 +120,7 @@ export const syncWithWms = () => {
   try {
     sendReqPortStateList();
 
-    sendCallInfoList();
+    // sendCallInfoList();
   } catch (error) {
     console.error('Error in syncWithWms:', error);
     // 에러 로깅 또는 알림 처리

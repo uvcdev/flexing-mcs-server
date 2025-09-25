@@ -444,3 +444,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - MCS 동기화 로직 
   - ACK_REQ_PORT_STATE_LIST 기능 추가
   - ACK_REQ_CALL_INFO_LIST 기능 개선
+  - edit syncronization Logic - PORT , CALL
+  - edit call Count in WMS
+  - edit CANCEL_CALL_INFO - HCACK = 2
+  - edit TRANSFER_CANCEL_COMPLETED, TRANSFER_ABORT_COMPLETED
