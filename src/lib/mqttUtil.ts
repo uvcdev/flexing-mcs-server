@@ -447,6 +447,11 @@ export const receiveMqtt = (): void => {
                   tagName: 'Call_Robot_Assigned',
                   value: true,
                 });
+                await kepServerUtil.writeSimpleTagValue({
+                  targetFacility: messageJson.facilitySerial,
+                  tagName: 'Call_Response',
+                  value: true,
+                });
               }
 
               // 작업 완료

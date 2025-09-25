@@ -44,7 +44,7 @@ export const useCallRegisterUtil = () => {
       for (let i = 0, length = callRegisterList.length; i < length; i++) {
         const targetTagInfo = callRegisterList[i];
         const targetCode = targetTagInfo.EQ_CODE;
-        const eqpCallId = targetTagInfo.eqpCallId || '';
+        const eqpCallId = targetTagInfo.CALL_ID || '';
         if (!targetCode) continue; // 코드 없으면 처리 불가
 
         // remainCall doesn't need callRegister again
