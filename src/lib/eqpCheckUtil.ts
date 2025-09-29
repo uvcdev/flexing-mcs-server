@@ -225,17 +225,17 @@ export const useEqpCheckUtil = () => {
         //     sendMqtt('acs/eqp_mode', JSON.stringify(eqpModeInfo));
         //   }
         //   break;
-        case 'Dock_Disable':
-          console.log(`Changed EQ_Auto`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          const changed = targetTagInfo.value !== targetTagInfo.prevValue;
-          if (changed) {
-            const eqpModeInfo = {
-              EQP_ID: targetTagInfo.EQ_CODE,
-              EQP_MODE: targetTagInfo.value ? 'AUTO' : 'MANUAL',
-            };
-            sendMqtt('acs/eqp_mode', JSON.stringify(eqpModeInfo));
-          }
-          break;
+        // case 'Dock_Disable':
+        //   console.log(`Changed EQ_Auto`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+        //   const changed = targetTagInfo.value !== targetTagInfo.prevValue;
+        //   if (changed) {
+        //     const eqpModeInfo = {
+        //       EQP_ID: targetTagInfo.EQ_CODE,
+        //       EQP_MODE: targetTagInfo.value ? 'AUTO' : 'MANUAL',
+        //     };
+        //     sendMqtt('acs/eqp_mode', JSON.stringify(eqpModeInfo));
+        //   }
+        //   break;
       }
     } catch (error) {
       console.error('DoCheck error:', error);

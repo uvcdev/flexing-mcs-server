@@ -39,13 +39,20 @@ const service = {
           const logPeriod = params.data as unknown as { mcsLog: number };
           try {
             const remove = await logSequelize.query(`SELECT remove_retention_policy('logs');`);
+            const removeItemLog = await logSequelize.query(`SELECT remove_retention_policy('item_logs');`);
           } catch (err) {
             const add = await logSequelize.query(
               `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
             );
+            const addItemLog = await logSequelize.query(
+              `SELECT add_retention_policy('item_logs', INTERVAL '${logPeriod.mcsLog} days');`
+            );
           }
           const add = await logSequelize.query(
             `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
+          );
+          const addItemLog = await logSequelize.query(
+            `SELECT add_retention_policy('item_logs', INTERVAL '${logPeriod.mcsLog} days');`
           );
         } catch (err) {
           // 에러 응답값 세팅
@@ -115,13 +122,20 @@ const service = {
           const logPeriod = params.data as unknown as { mcsLog: number };
           try {
             const remove = await logSequelize.query(`SELECT remove_retention_policy('logs');`);
+            const removeItemLog = await logSequelize.query(`SELECT remove_retention_policy('item_logs');`);
           } catch (err) {
             const add = await logSequelize.query(
               `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
             );
+            const addItemLog = await logSequelize.query(
+              `SELECT add_retention_policy('item_logs', INTERVAL '${logPeriod.mcsLog} days');`
+            );
           }
           const add = await logSequelize.query(
             `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
+          );
+          const addItemLog = await logSequelize.query(
+            `SELECT add_retention_policy('item_logs', INTERVAL '${logPeriod.mcsLog} days');`
           );
         } catch (err) {
           // 에러 응답값 세팅
@@ -170,7 +184,7 @@ const service = {
 
       logging.ACTION_DEBUG({ filename: 'settingService.ts', error: null, params: null, result: true });
 
-      return { insertedId: settingList.rows.length }
+      return { insertedId: settingList.rows.length };
     } catch (err) {
       logging.ACTION_ERROR({
         filename: 'settingService.ts',
