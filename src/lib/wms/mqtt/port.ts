@@ -9,6 +9,7 @@ import { deleteRecentCallInfoTaskByCmdId } from '../../process/wmsCommon';
 import { RedisKeys, useRedisUtil } from '../../redisUtil';
 import { dao as workOrderDao } from '../../../dao/operation/workOrderDao';
 import { sendCallInfoList } from '../../process/wmsSyncronization';
+import { InfoAckInCallByCallIdBody } from './call';
 
 const systemTopic = 'PORT';
 
@@ -94,7 +95,7 @@ const portPresenceStatus = async (
     // infoAckInfoCallByCallId 랑 매칭되는 정보 조회
     // infoAckInfoCallByCallId 말고 RecentCallInfoTaskByCmdId 로도 가능함
     const infoAckInCallByCallId =
-      (await redisUtil.hgetObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId, callId)) || null;
+      (await redisUtil.hgetObject<InfoAckInCallByCallIdBody>(RedisKeys.InfoAckInCallByCallId, callId)) || null;
 
     // info ACk Info 가 있는 경우
     // 창고 정상 입고 시나리오
@@ -256,7 +257,7 @@ const ackReqPortStateList = async (
       } else {
         // 해당 포트가 재고순환 작업을 들고 있지 않은 경우
         const infoAckInCallByCallId =
-          (await redisUtil.hgetObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId, portCallId)) || null;
+          (await redisUtil.hgetObject<InfoAckInCallByCallIdBody>(RedisKeys.InfoAckInCallByCallId, portCallId)) || null;
         // PORT_PRESENCE를 받았는지 여부 확인 ( ACK_CALL_INFO에 대한 응답이 남아 있는지 ? )
         // ACK_CALL_INFO 정보가 있는 경우
         // 해당 정보로 PORT_PRESENCE와 같은 로직으로 처리한다. ( ACK_PORT_PRESENCE 작성 및 pending work order 생성 )
@@ -330,7 +331,7 @@ const ackReqPortStateList = async (
           // work order 가 있기 때문에 이미 처리 중인 정보라서 continue
           const portPresenceWorkOrder = await workOrderDao.selectInfoByCode({ code: portCallId });
           if (portPresenceWorkOrder) {
-            console.log(`이미 처리된 콜 ID 입니다. ${portCallId}`)
+            console.log(`이미 처리된 콜 ID 입니다. ${portCallId}`);
             continue;
           }
           // work order도 없는 경우

@@ -7,17 +7,18 @@ import opcuaUtil from './opcuaUtil';
 import { EQP_WCS } from './eqpCheckUtil';
 import { formatToDateCode } from './usefullToolUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
-import { initTrackingLogRedis } from './process/trackingLog';
-import { TrackingLogRedisAttributes } from '../models/common/trackingLog';
+import { editTrackingLogRedis, initTrackingLogRedis } from './process/trackingLog';
+import { TrackingLogRedisAttributes, TrackingLogRedisUpdateParams } from '../models/common/trackingLog';
 import { sendMqtt } from './mqttUtil';
 import { service as workOrderService } from '../service/operation/workOrderService';
 import { dao as facilityDao } from '../dao/operation/facilityDao';
 import { dao as workOrderDao } from '../dao/operation/workOrderDao';
 import { v4 as uuidv4 } from 'uuid';
 import { RemainingAckCommand } from './process/wmsAck';
-import { AbortedCommandForRetryInfo, CancelCallInfo } from './process/wmsCommon';
+import { AbortedCommandForRetryInfo, CancelCallInfo, checkCancelCallInfo, RecentCallInfo } from './process/wmsCommon';
 import { CallInfoBody } from './process/wmsCallInfo';
 import { generateUUIDNode } from './hashUtil';
+import { InfoAckInCallByCallIdBody } from './wms/mqtt/call';
 
 export interface EqpCallStats {
   CALL_ID: string;
@@ -443,8 +444,36 @@ export const useCallCancelUtil = () => {
           for (let i = 0, length = samePlcRemainingCallInfoList.length; i < length; i++) {
             const samePlcRemainingCallInfo = samePlcRemainingCallInfoList[i];
             const cmdId = samePlcRemainingCallInfo?.message?.body?.Cmd_ID || '';
+            const subjectCmdId = samePlcRemainingCallInfo.subjectCmdId;
 
-            redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, cmdId);
+            // TrackingLog 취소 반영
+            const recentCallInfo = await redisUtil.hgetObject<RecentCallInfo>(
+              RedisKeys.RecentCallInfoTaskByCmdId,
+              cmdId
+            );
+
+            const recentCallInfoCallId = recentCallInfo?.callId;
+
+            if (recentCallInfoCallId) {
+              const trackingLogSubject = 'MISSION_CANCELED';
+              const trackingLogDetail = 'MISSION_CANCELED';
+              const trackingLogState = 'CANCELED';
+              const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+                callId: recentCallInfoCallId,
+                subject: trackingLogSubject,
+                detail: trackingLogDetail,
+                state: trackingLogState,
+                startFacility: null,
+                transferId: null,
+                destFacility: null,
+                assignedRobot: null,
+                value: targetCode,
+                description: `Call ID ${recentCallInfoCallId} cancellation successful on EQP ${targetCode}`,
+              };
+              await editTrackingLogRedis(trackingLogUpdateData, '', 'ABORTED', targetCode);
+            }
+
+            redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId);
             redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
           }
         }
@@ -461,15 +490,44 @@ export const useCallCancelUtil = () => {
           for (let i = 0, length = samePlcAbortCallInfoList.length; i < length; i++) {
             const samePlcAbortCallInfo = samePlcAbortCallInfoList[i];
             const cmdId = samePlcAbortCallInfo?.message?.body?.Cmd_ID || '';
+            const subjectCmdId = samePlcAbortCallInfo.subjectCmdId;
 
-            redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, cmdId);
+            // TrackingLog 취소 반영
+            const recentCallInfo = await redisUtil.hgetObject<RecentCallInfo>(
+              RedisKeys.RecentCallInfoTaskByCmdId,
+              cmdId
+            );
+            const recentCallInfoCallId = recentCallInfo?.callId;
+
+            if (recentCallInfoCallId) {
+              const trackingLogSubject = 'MISSION_CANCELED';
+              const trackingLogDetail = 'MISSION_CANCELED';
+              const trackingLogState = 'CANCELED';
+              const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+                callId: recentCallInfoCallId,
+                subject: trackingLogSubject,
+                detail: trackingLogDetail,
+                state: trackingLogState,
+                startFacility: null,
+                transferId: null,
+                destFacility: null,
+                assignedRobot: null,
+                value: targetCode,
+                description: `Call ID ${recentCallInfoCallId} cancellation successful on EQP ${targetCode}`,
+              };
+              await editTrackingLogRedis(trackingLogUpdateData, '', 'ABORTED', targetCode);
+            }
+
+            redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId);
             redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
           }
         }
 
         // 2. ACK_CALL_INFO 받고 포트 배정을 기다리고 있는 CALL_ID 확인
         // CANCEL_CALL_INFO 요청 -> 창고로부터 응답을 받지 않아도 후속 처리는 별도로 진행될 것이기 때문에 응답은 바로 씀
-        const infoAckInCallByCallIdList = await redisUtil.hgetAllObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId);
+        const infoAckInCallByCallIdList = await redisUtil.hgetAllObject<InfoAckInCallByCallIdBody>(
+          RedisKeys.InfoAckInCallByCallId
+        );
         const samePlcInfoAckInCallByCallIdList =
           infoAckInCallByCallIdList?.filter((InfoAckInCall) => InfoAckInCall?.Caller === targetCode) || [];
 
@@ -477,10 +535,10 @@ export const useCallCancelUtil = () => {
           for (let i = 0, length = samePlcInfoAckInCallByCallIdList.length; i < length; i++) {
             const samePlcInfoAckInCallByCallId = samePlcInfoAckInCallByCallIdList[i];
 
-            const selectedCallId = samePlcInfoAckInCallByCallId.Call_ID;
+            const selectedCallId = samePlcInfoAckInCallByCallId.CALL_ID;
 
             const newCancelCallInfoData: CancelCallInfo = {
-              Call_ID: samePlcInfoAckInCallByCallId.Call_ID,
+              Call_ID: selectedCallId,
               Call_Quantity: Number(samePlcInfoAckInCallByCallId.Call_Quantity) || 1,
               systemName: `${process.env.MQTT_WMS_TOPIC || 'MW01'}`,
             };
@@ -492,6 +550,25 @@ export const useCallCancelUtil = () => {
             await checkCancelCallInfo(newCancelCallInfoData);
 
             // 진행 중인 CALL 정보는 해당 단계에서 지우지 않고 ACK_CANCEL_CALL_INFO 단계에서 처리한다.
+
+            if (selectedCallId) {
+              const trackingLogSubject = 'MISSION_CANCELED';
+              const trackingLogDetail = 'MISSION_CANCELED';
+              const trackingLogState = 'CANCELED';
+              const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+                callId: selectedCallId,
+                subject: trackingLogSubject,
+                detail: trackingLogDetail,
+                state: trackingLogState,
+                startFacility: null,
+                transferId: null,
+                destFacility: null,
+                assignedRobot: null,
+                value: targetCode,
+                description: `Call ID ${selectedCallId} cancellation successful on EQP ${targetCode}`,
+              };
+              await editTrackingLogRedis(trackingLogUpdateData, '', 'ABORTED', targetCode);
+            }
           }
         }
 
@@ -776,6 +853,3 @@ export const useCallCancelUtil = () => {
   };
   return { callCancel, processCancelResponseFromAcs, handleWmsCallCancelRejection };
 };
-function checkCancelCallInfo(newCancelCallInfoData: CancelCallInfo) {
-  throw new Error('Function not implemented.');
-}

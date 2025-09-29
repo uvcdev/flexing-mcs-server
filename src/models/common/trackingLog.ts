@@ -60,6 +60,7 @@ export type TrackingLogSubjectType =
   | 'FROM_START'
   | 'FROM_COMPLETED'
   | 'MISSION_START'
+  | 'MISSION_CANCELED'
   | 'MISSION_COMPLETED'
   | 'TO_START'
   | 'TO_COMPLETED'

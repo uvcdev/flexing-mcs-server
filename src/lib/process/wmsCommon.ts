@@ -5,6 +5,7 @@ import { logging } from '../logging';
 import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from '../mqttUtil';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
 import { formatDetailedDateTime, isCurrentTimeFasterThanAnyMinutes } from '../usefullToolUtil';
+import { InfoAckInCallByCallIdBody } from '../wms/mqtt/call';
 import { setRemainingAckCommand } from './wmsAck';
 import { CallInfoBody } from './wmsCallInfo';
 
@@ -176,11 +177,14 @@ export const checkCancelCall = async () => {
   }
 };
 
-const checkCancelCallInfo = async (cancelCallInfo: CancelCallInfo) => {
+export const checkCancelCallInfo = async (cancelCallInfo: CancelCallInfo) => {
   const callId = cancelCallInfo.Call_ID;
 
   // 진행 중인 CALL INFO 중 해당 CALL INFO가 있는지 확인함
-  const infoAckInCallByCallId = await redisUtil.hgetObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId, callId);
+  const infoAckInCallByCallId = await redisUtil.hgetObject<InfoAckInCallByCallIdBody>(
+    RedisKeys.InfoAckInCallByCallId,
+    callId
+  );
   // 진행 중인 CALL INFO가 있다면 해당 정보로 CancelCall 날림
 
   // if (infoAckInCallByCallId?.Call_Quantity !== cancelCallInfo.Call_Quantity) {

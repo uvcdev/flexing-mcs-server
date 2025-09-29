@@ -805,11 +805,12 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
   const wmsCallInfoList = ackReqCallInfoListBody.Call_InfoList || [];
 
   // MCS가 관리하고 있는 Call 리스트
-  const mcsCallInfoList = (await redisUtil.hgetAllObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId)) || [];
+  const mcsCallInfoList =
+    (await redisUtil.hgetAllObject<InfoAckInCallByCallIdBody>(RedisKeys.InfoAckInCallByCallId)) || [];
 
   // 각 리스트에서 Call_ID만 추출 (비교용)
   const wmsCallIds = new Set(wmsCallInfoList.map((call) => call.Call_ID));
-  const mcsCallIds = new Set(mcsCallInfoList.map((call) => call.Call_ID));
+  const mcsCallIds = new Set(mcsCallInfoList.map((call) => call.CALL_ID));
 
   console.log('wmsCallIds', wmsCallIds);
   console.log('mcsCallIds', mcsCallIds);
@@ -895,7 +896,7 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
   }
 
   // MCS에만 있는 Call 객체들
-  const mcsOnlyCallInfoList = mcsCallInfoList.filter((call) => !wmsCallIds.has(call.Call_ID));
+  const mcsOnlyCallInfoList = mcsCallInfoList.filter((call) => !wmsCallIds.has(call.CALL_ID));
   console.log('mcsOnlyCallInfoList', mcsOnlyCallInfoList);
   // MCS에만 있으면 해당 Call 정보들 삭제
   for (let i = 0, length = mcsOnlyCallInfoList.length; i < length; i++) {
@@ -903,7 +904,7 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
 
     // 2. CallInfo 정보 삭제
     const callInfoData = mcsOnlyCallInfoList[i];
-    deleteInfoAckInCallByCallId(callInfoData.Call_ID);
+    deleteInfoAckInCallByCallId(callInfoData.CALL_ID);
     deleteRecentCallInfoTaskByCmdId(callInfoData.Cmd_ID);
 
     // 2025-09-24 수정본
@@ -936,7 +937,7 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
       const mqttHeader = makeMbsMqttHeader(callInfoSubject);
       const mqttBody: MbsMqttBody = {
         Cmd_ID: newCmdId,
-        Call_ID: callInfoData.Call_ID,
+        Call_ID: callInfoData.CALL_ID,
         Call_Type: callInfoData.Call_Type,
         Caller: callInfoData.Caller,
         Call_Quantity: callInfoData.Call_Quantity,
