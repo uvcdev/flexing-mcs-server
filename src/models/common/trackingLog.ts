@@ -79,7 +79,7 @@ export type TrackingLogState =
   | 'WORK-ORDER-CANCELED'
   | 'FMS-CANCELED'; // 시작 전 , 진행 중 , 완료 , 중단 , 취소, 정지, 에러
 
-export type TrackingLogProcessState = 'NORMAL' | 'CANCELED' | 'ABORTED';
+export type TrackingLogProcessState = 'NORMAL' | 'CANCELED' | 'ABORTED' | 'OUT_OF_STOCK';
 
 class TrackingLog extends Model implements TrackingLogAttributes {
   public readonly id!: TrackingLogAttributes['id'];

@@ -146,7 +146,7 @@ const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
     subject: trackingLogSubject,
     detail: trackingLogDetail,
     state: trackingLogState,
-    startFacility: infoAckInCallByCallId.Caller,
+    startFacility: null,
     transferId: null,
     destFacility: null,
     assignedRobot: null,
@@ -397,6 +397,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         assignedRobot: null,
         value: null,
         description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`,
+        processState: 'OUT_OF_STOCK',
       };
       await editTrackingLogRedis(trackingLogUpdateData, undefined, 'ABORTED', wmsName);
 
@@ -583,7 +584,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
       //   params: null,
       //   result: false,
       // });
-      redisUtil.hset(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId, JSON.stringify(callId))
+      redisUtil.hset(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId, JSON.stringify(callId));
 
       const trackingLogState = 'ABORTED';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
@@ -599,7 +600,6 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         description: `CallId (${callId}) Execution not possible at this time - comment : ${ackComment}`,
       };
       await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
-
 
       // 정보 재전송
       // setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
@@ -801,7 +801,6 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
 
   deleteRemainingAckCommand(remainingAckCommandSubjectCmdId);
 
-
   // WMS에서 온 Call 리스트
   const wmsCallInfoList = ackReqCallInfoListBody.Call_InfoList || [];
 
@@ -812,21 +811,20 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
   const wmsCallIds = new Set(wmsCallInfoList.map((call) => call.Call_ID));
   const mcsCallIds = new Set(mcsCallInfoList.map((call) => call.Call_ID));
 
-  console.log("wmsCallIds", wmsCallIds)
-  console.log("mcsCallIds", mcsCallIds)
-
+  console.log('wmsCallIds', wmsCallIds);
+  console.log('mcsCallIds', mcsCallIds);
 
   // WMS에만 있는 Call 객체들
   const wmsOnlyCallInfoList = wmsCallInfoList.filter((call) => !mcsCallIds.has(call.Call_ID));
 
   // WMS에만 있으면 해당 Call 등록
   // 콜 Request가 켜져 있으면 Call_Response True를 한 번 더 써줌
-  console.log("wmsOnlyCallInfoList", wmsOnlyCallInfoList)
+  console.log('wmsOnlyCallInfoList', wmsOnlyCallInfoList);
   for (let i = 0, length = wmsOnlyCallInfoList.length; i < length; i++) {
     const callInfoData = wmsOnlyCallInfoList[i];
     // 1. 콜이 있으면 해당 설비에 호출 응답 적어줌
     const caller = callInfoData.Caller;
-    console.log('caller', caller)
+    console.log('caller', caller);
 
     const targetKey = kepServerUtil.getTargetKey(caller);
     await kepServerUtil.updateTagMapValues(targetKey, caller, ['Call_Request']);
@@ -871,36 +869,34 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
       // 추가 사항 ( 250924 )
       // WMS에는 콜이 있고 MCS입장에서는 ACK를 못 받은 정보인 경우 -> ACK를 받았다고 처리한 후, 콜 정보 저장
 
-      // WMS에는 콜이 있고 MCS에서도 ACK를 받았었던 정보라면 
+      // WMS에는 콜이 있고 MCS에서도 ACK를 받았었던 정보라면
       // 반대편 설비의 응답이 켜져 있는 경우에는 키고, 켜져 있는 경우에는 유지
       // ACK는 받은 경우
       // 반대편 설비의 응답이 켜져 있는 경우에는 키고, 켜져 있는 경우에는 유지
       // 현재 진행중인 정보로 트래킹 로그 추가
-    }
-    else if (callRequestValue === false) {
+    } else if (callRequestValue === false) {
       // CALL CANCEL REQUEST
-      const systemName = wmsName
-      const topic = 'CALL'
-      const subtopic = 'CANCEL_CALL_INFO'
+      const systemName = wmsName;
+      const topic = 'CALL';
+      const subtopic = 'CANCEL_CALL_INFO';
       const newCmdId = generateUUIDNode();
-      const mqttHeader = makeMbsMqttHeader(subtopic)
+      const mqttHeader = makeMbsMqttHeader(subtopic);
       const mqttBody: MbsMqttBody = {
         Cmd_ID: newCmdId,
         Call_ID: callInfoData.Call_ID,
-        Call_Quantity: callInfoData.Call_Quantity
-      }
+        Call_Quantity: callInfoData.Call_Quantity,
+      };
 
       sendMbsMqtt(topic, mqttHeader, mqttBody, systemName);
 
       // CALLINFO에 대한 ack 초기값 설정
       setRemainingAckCommand(topic, systemName, { header: mqttHeader, body: mqttBody }, {});
     }
-
   }
 
   // MCS에만 있는 Call 객체들
   const mcsOnlyCallInfoList = mcsCallInfoList.filter((call) => !wmsCallIds.has(call.Call_ID));
-  console.log("mcsOnlyCallInfoList", mcsOnlyCallInfoList)
+  console.log('mcsOnlyCallInfoList', mcsOnlyCallInfoList);
   // MCS에만 있으면 해당 Call 정보들 삭제
   for (let i = 0, length = mcsOnlyCallInfoList.length; i < length; i++) {
     // 1. 트래킹 로그 정보 있으면 Cancel
@@ -932,19 +928,56 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
         value: false,
       });
 
-      const newCallInfoData: EqpCallStats = {
-        EQP_CALL_ID: callInfoData.Call_ID.slice(-4), // 뒤의 4자리
-        CALL_ID: callInfoData.Call_ID, // 작업지시코드
-        Call_Type: callInfoData.Call_Type || 'NC11',
-        Caller: caller, // 앞의 4자리
-        Call_Quantity: 1,
+      // CALL INFO 재전송 가능한 경우 해당 내용으로 CALLINFO 재전송
+      const callInfoTopic = 'CALL';
+      const callInfoSubject = 'CALL_INFO';
+      const newCmdId = generateUUIDNode();
+
+      const mqttHeader = makeMbsMqttHeader(callInfoSubject);
+      const mqttBody: MbsMqttBody = {
+        Cmd_ID: newCmdId,
+        Call_ID: callInfoData.Call_ID,
+        Call_Type: callInfoData.Call_Type,
+        Caller: callInfoData.Caller,
+        Call_Quantity: callInfoData.Call_Quantity,
         Call_Priority: callInfoData.Call_Priority,
       };
+      // CALLINFO MQTT 데이터 전송
+      sendMbsMqtt(callInfoTopic, mqttHeader, mqttBody, wmsName);
 
+      // CALLINFO에 대한 ack 초기값 설정
+      setRemainingAckCommand(callInfoTopic, wmsName, { header: mqttHeader, body: mqttBody });
 
-      const wmsCallInfoString = JSON.stringify(newCallInfoData);
+      // Recent call info task 기록
+      const recentCallInfoTaskParams: RecentCallInfo = {
+        cmdId: mqttBody.Cmd_ID || '',
+        callId: mqttBody.Call_ID,
+        transferId: null,
+        callType: mqttBody.Call_Type,
+        callQuantity: mqttBody.Call_Quantity,
+        callPriority: mqttBody.Call_Priority,
+        caller: mqttBody.Caller,
+        port: null,
+      };
+      setRecentCallInfoTaskByCmdId(recentCallInfoTaskParams);
 
-      await redisUtil.hset(RedisKeys.InfoInCallByCallId, String(callInfoData.Call_ID), wmsCallInfoString);
+      // CALL INFO 추가 로깅
+      const trackingLogSubject = 'CALL_INFO';
+      const trackingLogDetail = 'CALL_INFO';
+      const trackingLogState = 'PROCESSING';
+      const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+        callId: mqttBody.Call_ID,
+        subject: trackingLogSubject,
+        detail: trackingLogDetail,
+        state: trackingLogState,
+        startFacility: null,
+        transferId: null,
+        destFacility: null,
+        assignedRobot: null,
+        value: null,
+        description: `Requesting CALL_INFO from WMS(${wmsName}) for Call ID ${mqttBody.Call_ID}`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
     }
   }
 };

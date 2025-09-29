@@ -448,3 +448,14 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - edit call Count in WMS
   - edit CANCEL_CALL_INFO - HCACK = 2
   - edit TRANSFER_CANCEL_COMPLETED, TRANSFER_ABORT_COMPLETED
+  - edit syncronization Logic - CALL ( CALL_INFO 호출 부 재수정 )
+
+- 재고 없음 로직
+  - 재고 없음 발생 시, 트래킹 로그 물류 상태에 `재고 없음 표시` 
+
+- 창고 취소 로직 
+  - process / index 에 창고 취소 로직 주석 처리
+  - call cancel util에 창고 부분 내용 수정
+
+- Dock_Disable 처리 로직
+  - Dock Disable 신호 감지 처리

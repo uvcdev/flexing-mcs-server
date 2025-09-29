@@ -1,19 +1,18 @@
-import { WmsCommandSetting } from "../../models/common/setting";
-import { EqpCallStats } from "../callRemoveUtil";
-import { generateUUIDNode } from "../hashUtil";
-import { logging } from "../logging";
-import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from "../mqttUtil";
-import { RedisKeys, RedisSettingKeys, useRedisUtil } from "../redisUtil";
-import { formatDetailedDateTime, isCurrentTimeFasterThanAnyMinutes } from "../usefullToolUtil";
-import { setRemainingAckCommand } from "./wmsAck";
-import { CallInfoBody } from "./wmsCallInfo";
+import { WmsCommandSetting } from '../../models/common/setting';
+import { EqpCallStats } from '../callRemoveUtil';
+import { generateUUIDNode } from '../hashUtil';
+import { logging } from '../logging';
+import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from '../mqttUtil';
+import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
+import { formatDetailedDateTime, isCurrentTimeFasterThanAnyMinutes } from '../usefullToolUtil';
+import { setRemainingAckCommand } from './wmsAck';
+import { CallInfoBody } from './wmsCallInfo';
 
 const redisUtil = useRedisUtil();
 
 const WmsWaitTimeSettingDefaultValue = {
-  retryWaitTimeMinutes: 5
-}
-
+  retryWaitTimeMinutes: 5,
+};
 
 export interface AbortedCommandForRetryInfo {
   subjectCmdId: string;
@@ -51,16 +50,21 @@ export interface AbnormalCompletedCallInfo {
   callPriority: string;
 }
 
-export const setAbortedCommandForRetry = (systemName: string, subject: string, messageTopic: string, mqttMessage: MbsMqttMesaage) => {
+export const setAbortedCommandForRetry = (
+  systemName: string,
+  subject: string,
+  messageTopic: string,
+  mqttMessage: MbsMqttMesaage
+) => {
   const newMqttBody = { ...mqttMessage.body };
   newMqttBody.Cmd_ID = generateUUIDNode();
 
-  const subjectCmdId = `${subject}-${newMqttBody.Cmd_ID}`
+  const subjectCmdId = `${subject}-${newMqttBody.Cmd_ID}`;
 
   const newMessage = {
     header: mqttMessage.header,
-    body: newMqttBody
-  }
+    body: newMqttBody,
+  };
 
   const abortedCommandForRetryInfo: AbortedCommandForRetryInfo = {
     subjectCmdId: subjectCmdId,
@@ -68,24 +72,33 @@ export const setAbortedCommandForRetry = (systemName: string, subject: string, m
     messageTopic: messageTopic,
     messageSubject: subject,
     createdTime: formatDetailedDateTime(new Date()),
-    message: newMessage
-  }
+    message: newMessage,
+  };
 
-  redisUtil.hset(RedisKeys.AbortedCommandForRetryBySubjectCmdId, subjectCmdId, JSON.stringify(abortedCommandForRetryInfo))
-}
+  redisUtil.hset(
+    RedisKeys.AbortedCommandForRetryBySubjectCmdId,
+    subjectCmdId,
+    JSON.stringify(abortedCommandForRetryInfo)
+  );
+};
 
 export const deleteAbortedCommandForRetry = (subjectCmdId: string) => {
   // logging 처리는 이 함수를 사용하는 쪽에서 사용
   redisUtil.hdel(RedisKeys.AbortedCommandForRetryBySubjectCmdId, subjectCmdId);
-}
+};
 
 export const checkAbortedCommandForRetry = async () => {
-  const WmsCommandSetting = await redisUtil.hgetObject<WmsCommandSetting>(RedisKeys.Setting, RedisSettingKeys.WmsCommandSetting);
-  const retryWaitTimeMinutes = Number(WmsCommandSetting?.data.retryWaitTimeMinutes) || WmsWaitTimeSettingDefaultValue.retryWaitTimeMinutes;
-  const abortedCommandForRetryList = await redisUtil.hgetAllObject<AbortedCommandForRetryInfo>(RedisKeys.AbortedCommandForRetryBySubjectCmdId) || [];
+  const WmsCommandSetting = await redisUtil.hgetObject<WmsCommandSetting>(
+    RedisKeys.Setting,
+    RedisSettingKeys.WmsCommandSetting
+  );
+  const retryWaitTimeMinutes =
+    Number(WmsCommandSetting?.data.retryWaitTimeMinutes) || WmsWaitTimeSettingDefaultValue.retryWaitTimeMinutes;
+  const abortedCommandForRetryList =
+    (await redisUtil.hgetAllObject<AbortedCommandForRetryInfo>(RedisKeys.AbortedCommandForRetryBySubjectCmdId)) || [];
 
   if (abortedCommandForRetryList.length === 0) {
-    return
+    return;
   }
 
   if (!abortedCommandForRetryList) {
@@ -95,7 +108,7 @@ export const checkAbortedCommandForRetry = async () => {
       params: null,
       result: false,
     });
-    return
+    return;
   }
 
   for (let i = 0, length = abortedCommandForRetryList.length; i < length; i++) {
@@ -104,12 +117,16 @@ export const checkAbortedCommandForRetry = async () => {
 
     // 일정 시간 보다 시간이 더 지난 경우
     if (isCurrentTimeFasterThanAnyMinutes(abortedCommandForRetryCreatedTime, retryWaitTimeMinutes)) {
-      const abortedCommandForRetryKey = abortedCommandForRetryInfo.subjectCmdId
-      const newMqttHeader = makeMbsMqttHeader(abortedCommandForRetryInfo.messageSubject)
+      const abortedCommandForRetryKey = abortedCommandForRetryInfo.subjectCmdId;
+      const newMqttHeader = makeMbsMqttHeader(abortedCommandForRetryInfo.messageSubject);
       // 해당 내용 MQTT 재전송
-      sendMbsMqtt(abortedCommandForRetryInfo.messageTopic, newMqttHeader, abortedCommandForRetryInfo.message.body, abortedCommandForRetryInfo.systemName);
+      sendMbsMqtt(
+        abortedCommandForRetryInfo.messageTopic,
+        newMqttHeader,
+        abortedCommandForRetryInfo.message.body,
+        abortedCommandForRetryInfo.systemName
+      );
       if (newMqttHeader.subject.includes('CALL_INFO')) {
-
         const recentCallInfoTaskByCmdIdParams: RecentCallInfo = {
           cmdId: abortedCommandForRetryInfo.subjectCmdId,
           callId: abortedCommandForRetryInfo.message.body.Call_ID,
@@ -118,52 +135,52 @@ export const checkAbortedCommandForRetry = async () => {
           callType: abortedCommandForRetryInfo.message.body.Call_Type,
           callPriority: abortedCommandForRetryInfo.message.body.Call_Priority,
           callQuantity: abortedCommandForRetryInfo.message.body.Call_Quantity,
-          transferId: null
-        }
-        setRecentCallInfoTaskByCmdId(recentCallInfoTaskByCmdIdParams)
+          transferId: null,
+        };
+        setRecentCallInfoTaskByCmdId(recentCallInfoTaskByCmdIdParams);
       }
       // 해당 내용 REDIS 삭제
-      deleteAbortedCommandForRetry(abortedCommandForRetryKey)
+      deleteAbortedCommandForRetry(abortedCommandForRetryKey);
     }
   }
-}
+};
 
 export const setRecentCallInfoTaskByCmdId = (recentCallInfoParams: RecentCallInfo) => {
-  const cmdId = recentCallInfoParams.cmdId
+  const cmdId = recentCallInfoParams.cmdId;
 
-  redisUtil.hset(RedisKeys.RecentCallInfoTaskByCmdId, cmdId, JSON.stringify(recentCallInfoParams))
-}
+  redisUtil.hset(RedisKeys.RecentCallInfoTaskByCmdId, cmdId, JSON.stringify(recentCallInfoParams));
+};
 
 export const deleteRecentCallInfoTaskByCmdId = async (cmdId: string) => {
-  redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId)
-}
+  redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
+};
 
 // 설비 콜 취소 내용 수신 후 처리 로직
 export const checkCancelCall = async () => {
-  const cancelCallByCallIdList = await redisUtil.hgetAllObject<EqpCallStats>(RedisKeys.InfoCancelCallByCallId) || []
+  const cancelCallByCallIdList = (await redisUtil.hgetAllObject<EqpCallStats>(RedisKeys.InfoCancelCallByCallId)) || [];
 
   for (let i = 0, length = cancelCallByCallIdList.length; i < length; i++) {
     const infoCancelCallByCallId = cancelCallByCallIdList[i];
 
     const newCancelCallInfoData: CancelCallInfo = {
       Call_ID: infoCancelCallByCallId.CALL_ID,
-      Call_Quantity: infoCancelCallByCallId.Call_Quantity || 0,
-      systemName: infoCancelCallByCallId.SYSTEM_NAME || 'MW01'
-    }
+      Call_Quantity: infoCancelCallByCallId.Call_Quantity || 1,
+      systemName: infoCancelCallByCallId.SYSTEM_NAME || 'MW01',
+    };
 
     if (!newCancelCallInfoData.Cmd_ID || newCancelCallInfoData.Cmd_ID === '') {
-      newCancelCallInfoData.Cmd_ID = generateUUIDNode()
+      newCancelCallInfoData.Cmd_ID = generateUUIDNode();
     }
 
-    await checkCancelCallInfo(newCancelCallInfoData)
+    await checkCancelCallInfo(newCancelCallInfoData);
   }
-}
+};
 
 const checkCancelCallInfo = async (cancelCallInfo: CancelCallInfo) => {
-  const callId = cancelCallInfo.Call_ID
+  const callId = cancelCallInfo.Call_ID;
 
   // 진행 중인 CALL INFO 중 해당 CALL INFO가 있는지 확인함
-  const infoAckInCallByCallId = await redisUtil.hgetObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId, callId)
+  const infoAckInCallByCallId = await redisUtil.hgetObject<CallInfoBody>(RedisKeys.InfoAckInCallByCallId, callId);
   // 진행 중인 CALL INFO가 있다면 해당 정보로 CancelCall 날림
 
   // if (infoAckInCallByCallId?.Call_Quantity !== cancelCallInfo.Call_Quantity) {
@@ -186,11 +203,11 @@ const checkCancelCallInfo = async (cancelCallInfo: CancelCallInfo) => {
     return;
   }
 
-  const systemName = cancelCallInfo.systemName || 'MW01' // 이거 동적으로 바꿔야 함
-  const topic = 'CALL'
-  const subtopic = 'CANCEL_CALL_INFO'
-  const mqttHeader = makeMbsMqttHeader(subtopic)
-  const mqttBody: MbsMqttBody = cancelCallInfo
+  const systemName = cancelCallInfo.systemName || 'MW01'; // 이거 동적으로 바꿔야 함
+  const topic = 'CALL';
+  const subtopic = 'CANCEL_CALL_INFO';
+  const mqttHeader = makeMbsMqttHeader(subtopic);
+  const mqttBody: MbsMqttBody = cancelCallInfo;
 
   sendMbsMqtt(topic, mqttHeader, mqttBody, systemName);
 
@@ -198,5 +215,5 @@ const checkCancelCallInfo = async (cancelCallInfo: CancelCallInfo) => {
   setRemainingAckCommand(topic, systemName, { header: mqttHeader, body: mqttBody }, {});
 
   // InfoCancelCallByCallId 정보 삭제
-  redisUtil.hdel(RedisKeys.InfoCancelCallByCallId, cancelCallInfo.Call_ID)
-}
+  redisUtil.hdel(RedisKeys.InfoCancelCallByCallId, cancelCallInfo.Call_ID);
+};

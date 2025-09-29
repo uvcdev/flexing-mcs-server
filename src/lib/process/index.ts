@@ -70,7 +70,8 @@ export const processMcs = async () => {
     await checkCallInfoOnPortTimeout();
 
     // 콜 취소 요청 들어 왔을 때 처리 로직
-    await checkCancelCall();
+    // cancel call 재정의
+    // await checkCancelCall();
 
     // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
     // 1. 창고(반출) -> 설비(입고) - CALLINFO는 창고 기준 반출만 사용한다.
