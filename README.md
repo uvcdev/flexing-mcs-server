@@ -461,3 +461,5 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - Dock Disable 신호 감지 처리
 
 - 창고 로직 중 취소로직 내용 수정
+
+- ACK_CANCEL_CALL_INFO 버그 수정

@@ -494,6 +494,11 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
       //   params: null,
       //   result: true,
       // });
+      const selectedInfoAckInCallByCallId = await redisUtil.hgetObject<InfoAckInCallByCallIdBody>(
+        RedisKeys.InfoAckInCallByCallId,
+        callId
+      );
+      const selectedInfoAckInCallByCallIdCmdId = selectedInfoAckInCallByCallId?.Cmd_ID || '';
 
       const trackingLogState = 'CANCELED';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
@@ -506,12 +511,16 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         destFacility: null,
         assignedRobot: null,
         value: callId,
-        description: `Call ID ${callId} cancellation successful on EQP ${callInfoData.Caller}`,
+        description: `CancelCallInfo (HCACK=4): Call ${callId} cancelled on EQP ${callInfoData.Caller}`,
       };
       await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
       // 진행중 정보를 가지고 있는 CALL 정보 삭제
       redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId);
+      redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, selectedInfoAckInCallByCallIdCmdId);
+
+      // 두번째 설비 호출 취소 요청일 수 있으니, ReinboundIfPortAssignedForFacilityCancelByCallId 삭제
+      redisUtil.hdel(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId);
 
       break;
     }
@@ -584,6 +593,8 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
       //   params: null,
       //   result: false,
       // });
+
+      // 해당 콜 아이디 정보로 재고순환 로직 추가
       redisUtil.hset(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId, JSON.stringify(callId));
 
       const trackingLogState = 'ABORTED';
@@ -597,7 +608,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         destFacility: null,
         assignedRobot: null,
         value: callId,
-        description: `CallId (${callId}) Execution not possible at this time - comment : ${ackComment}`,
+        description: `CancelCallInfo (HCACK=4): CallId (${callId}) Execution not possible at this time - comment : ${ackComment}`,
       };
       await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
