@@ -311,7 +311,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: false,
       });
 
-      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
+      await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 
@@ -381,7 +381,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       // 20250919 - 해당 내용 변경 ( Call Info 정보를 무조건 지우는 것이 아니라 해당 정보로 재요청 하는 것으로 변경 )
       // // RecentCallInfoTaskByCmdId 정보 삭제
       // deleteRecentCallInfoTaskByCmdId(cmdId);
-      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
+      await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       trackingLogSubject = 'ACK_CALL_INFO';
       trackingLogDetail = 'ACK_CALL_INFO';
@@ -391,7 +391,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         subject: trackingLogSubject,
         detail: trackingLogDetail,
         state: trackingLogState,
-        startFacility: callInfoData.Caller,
+        startFacility: null,
         transferId: null,
         destFacility: null,
         assignedRobot: null,
@@ -399,7 +399,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`,
         processState: 'OUT_OF_STOCK',
       };
-      await editTrackingLogRedis(trackingLogUpdateData, undefined, 'ABORTED', wmsName);
+      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'ABORTED', wmsName);
 
       logging.ACTION_DEBUG({
         filename: `call.ts - ackCallInfo`,
@@ -423,7 +423,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       // RecentCallInfoTaskByCmdId 정보 삭제
       deleteRecentCallInfoTaskByCmdId(cmdId);
 
-      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
+      await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 

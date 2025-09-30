@@ -90,7 +90,7 @@ export const useCallRegisterUtil = () => {
           const callInfo: EqpCallStats = {
             EQP_CALL_ID: String(callCountValue), // 뒤의 4자리
             CALL_ID: '', // 작업지시코드
-            Call_Type: callType || 'NC11',
+            Call_Type: callType || 'SKID',
             Caller: targetCode, // 앞의 4자리
             Call_Quantity: 1,
             Call_Priority: callPriorityValue === 'true' ? '99' : '1',
@@ -113,7 +113,7 @@ export const useCallRegisterUtil = () => {
                 type: 'MISSION',
                 isMissionOrder: true,
                 callPriority: callInfo.Call_Priority || '',
-                callType: callInfo.Call_Type || 'NC11',
+                callType: callInfo.Call_Type || 'SKID',
                 portName: null,
                 eqpName: callInfo.Caller,
                 triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
@@ -226,7 +226,7 @@ export const useCallRegisterUtil = () => {
                       type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
                       isMissionOrder: false,
                       callPriority: callInfo.Call_Priority,
-                      callType: callInfo.Call_Type || 'NC11',
+                      callType: callInfo.Call_Type || 'SKID',
                       fromFacilityName:
                         (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
                       toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,
@@ -338,7 +338,7 @@ export const useCallRegisterUtil = () => {
                   //     type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
                   //     isMissionOrder: false,
                   //     callPriority: callInfo.Call_Priority,
-                  //     callType: callInfo.Call_Type || 'NC11',
+                  //     callType: callInfo.Call_Type || 'SKID',
                   //     fromFacilityName:
                   //       (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
                   //     toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,
@@ -596,7 +596,7 @@ export const useCallRegisterUtil = () => {
     //           type: remainCall?.type.toUpperCase() === 'IN' ? 'IN' : 'OUT',
     //           isMissionOrder: false,
     //           callPriority: remainCall.callPriority,
-    //           callType: remainCall.callType || 'NC11',
+    //           callType: remainCall.callType || 'SKID',
     //           fromFacilityName:
     //             remainCall?.type.toUpperCase() === 'IN' ? remainCall.toFacilityName! : remainCall.fromFacilityName,
     //           toFacilityName:

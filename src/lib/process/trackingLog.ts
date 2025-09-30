@@ -293,6 +293,9 @@ export const editTrackingLogRedis = async (
     description: trackingLogUpdateData.description
       ? trackingLogUpdateData.description
       : infoTrackingLogByCallId.description,
+    processState: trackingLogUpdateData.processState
+      ? trackingLogUpdateData.processState
+      : infoTrackingLogByCallId.processState,
   };
 
   await trackingLogDao.update(trackingLogUpdateParams);
@@ -344,8 +347,8 @@ export const editTrackingLogRedis = async (
     createdDateTime: infoTrackingLogByCallId.createdDateTime,
     updatedDateTime: dateNow,
     itemLogList: itemLogList,
-    processState: null,
-    missionDestination: null,
+    processState: trackingLogUpdateParams?.processState ?? null,
+    missionDestination: trackingLogUpdateParams?.missionDestination ?? null,
   };
 
   // redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, plcName, JSON.stringify(trackingLogRedisBody));

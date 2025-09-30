@@ -190,7 +190,7 @@ export const useCallCancelUtil = () => {
         type: 'MISSION',
         isMissionOrder: true,
         callPriority: '',
-        callType: params.CALL_TYPE || 'NC11',
+        callType: params.CALL_TYPE || 'SKID',
         portName: null,
         eqpName: params.PORT_ID,
       };

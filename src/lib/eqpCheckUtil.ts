@@ -62,7 +62,7 @@ export const useEqpCheckUtil = () => {
                   ...targetTagInfo,
                   EQP_CALL_ID: '',
                   CALL_ID: eqpCallId,
-                  Call_Type: callType || 'NC11',
+                  Call_Type: callType || 'SKID',
                   Caller: facilitySerial,
                   Call_Quantity: 1,
                   Call_Priority: '1',
@@ -77,7 +77,7 @@ export const useEqpCheckUtil = () => {
                 const callInfo: EqpCallStats = {
                   EQP_CALL_ID: eqpCallId.slice(-4), // 뒤의 4자리
                   CALL_ID: eqpCallId,
-                  Call_Type: callType || 'NC11',
+                  Call_Type: callType || 'SKID',
                   Caller: facilitySerial, // 앞의 4자리
                   Call_Quantity: 1,
                   Call_Priority: '1',

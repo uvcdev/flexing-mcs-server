@@ -51,14 +51,27 @@ export interface AbnormalCompletedCallInfo {
   callPriority: string;
 }
 
-export const setAbortedCommandForRetry = (
+export const setAbortedCommandForRetry = async (
   systemName: string,
   subject: string,
   messageTopic: string,
   mqttMessage: MbsMqttMesaage
 ) => {
   const newMqttBody = { ...mqttMessage.body };
-  newMqttBody.Cmd_ID = generateUUIDNode();
+
+  const newCmdId = generateUUIDNode();
+  newMqttBody.Cmd_ID = newCmdId
+
+  const oldCmdId = newMqttBody.Cmd_ID || '';
+  if (oldCmdId) {
+    const oldRecentCallInfoTaskByCmdId = await redisUtil.hgetObject<RecentCallInfo>(RedisKeys.RecentCallInfoTaskByCmdId, oldCmdId)
+    redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, oldCmdId)
+
+    if (oldRecentCallInfoTaskByCmdId && newCmdId) {
+      oldRecentCallInfoTaskByCmdId.cmdId = newCmdId
+      redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, newCmdId);
+    }
+  }
 
   const subjectCmdId = `${subject}-${newMqttBody.Cmd_ID}`;
 
@@ -127,6 +140,7 @@ export const checkAbortedCommandForRetry = async () => {
         abortedCommandForRetryInfo.message.body,
         abortedCommandForRetryInfo.systemName
       );
+      setRemainingAckCommand(abortedCommandForRetryInfo.messageTopic, abortedCommandForRetryInfo.systemName, { header: newMqttHeader, body: abortedCommandForRetryInfo.message.body });
       if (newMqttHeader.subject.includes('CALL_INFO')) {
         const recentCallInfoTaskByCmdIdParams: RecentCallInfo = {
           cmdId: abortedCommandForRetryInfo.subjectCmdId,
@@ -138,7 +152,7 @@ export const checkAbortedCommandForRetry = async () => {
           callQuantity: abortedCommandForRetryInfo.message.body.Call_Quantity,
           transferId: null,
         };
-        setRecentCallInfoTaskByCmdId(recentCallInfoTaskByCmdIdParams);
+        // setRecentCallInfoTaskByCmdId(recentCallInfoTaskByCmdIdParams);
       }
       // 해당 내용 REDIS 삭제
       deleteAbortedCommandForRetry(abortedCommandForRetryKey);

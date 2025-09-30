@@ -39,7 +39,7 @@ interface BranchInfoRepBody extends MbsMqttBody {
   CarrierList: Array<BranchInfoRepCarrierInfo>;
 }
 
-export interface InfoBranchCallAttributes extends BranchInfoReqBody, DeletedBranchInfoReq {}
+export interface InfoBranchCallAttributes extends BranchInfoReqBody, DeletedBranchInfoReq { }
 
 const branchInfoRep = async (
   wmsName: string,
@@ -412,7 +412,7 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
         result: false,
       });
 
-      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
+      await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 
@@ -488,7 +488,7 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
         result: false,
       });
 
-      setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
+      await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 
