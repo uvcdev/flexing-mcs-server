@@ -383,23 +383,23 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       // deleteRecentCallInfoTaskByCmdId(cmdId);
       await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
-      trackingLogSubject = 'ACK_CALL_INFO';
-      trackingLogDetail = 'ACK_CALL_INFO';
-      trackingLogState = 'ABORTED' as TrackingLogState;
-      trackingLogUpdateData = {
+      const abortedTrackingLogSubject = 'ACK_CALL_INFO';
+      const abortedTrackingLogDetail = 'ACK_CALL_INFO';
+      const abortedTrackingLogState = 'ABORTED' as TrackingLogState;
+      const abortedTrackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,
-        subject: trackingLogSubject,
-        detail: trackingLogDetail,
-        state: trackingLogState,
+        subject: abortedTrackingLogSubject,
+        detail: abortedTrackingLogDetail,
+        state: abortedTrackingLogState,
         startFacility: null,
         transferId: null,
         destFacility: null,
         assignedRobot: null,
         value: null,
-        description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`,
+        description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})-Out of Stock(51)`,
         processState: 'OUT_OF_STOCK',
       };
-      await editTrackingLogRedis(trackingLogUpdateData, hcack, 'ABORTED', wmsName);
+      await editTrackingLogRedis(abortedTrackingLogUpdateData, hcack, 'ABORTED', wmsName);
 
       logging.ACTION_DEBUG({
         filename: `call.ts - ackCallInfo`,

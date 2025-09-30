@@ -59,17 +59,21 @@ export const setAbortedCommandForRetry = async (
 ) => {
   const newMqttBody = { ...mqttMessage.body };
 
-  const newCmdId = generateUUIDNode();
-  newMqttBody.Cmd_ID = newCmdId
-
   const oldCmdId = newMqttBody.Cmd_ID || '';
+
+  const newCmdId = generateUUIDNode();
+  newMqttBody.Cmd_ID = newCmdId;
+
   if (oldCmdId) {
-    const oldRecentCallInfoTaskByCmdId = await redisUtil.hgetObject<RecentCallInfo>(RedisKeys.RecentCallInfoTaskByCmdId, oldCmdId)
-    redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, oldCmdId)
+    const oldRecentCallInfoTaskByCmdId = await redisUtil.hgetObject<RecentCallInfo>(
+      RedisKeys.RecentCallInfoTaskByCmdId,
+      oldCmdId
+    );
+    redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, oldCmdId);
 
     if (oldRecentCallInfoTaskByCmdId && newCmdId) {
-      oldRecentCallInfoTaskByCmdId.cmdId = newCmdId
-      redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, newCmdId);
+      oldRecentCallInfoTaskByCmdId.cmdId = newCmdId;
+      redisUtil.hset(RedisKeys.RecentCallInfoTaskByCmdId, newCmdId, JSON.stringify(oldRecentCallInfoTaskByCmdId));
     }
   }
 
@@ -140,7 +144,10 @@ export const checkAbortedCommandForRetry = async () => {
         abortedCommandForRetryInfo.message.body,
         abortedCommandForRetryInfo.systemName
       );
-      setRemainingAckCommand(abortedCommandForRetryInfo.messageTopic, abortedCommandForRetryInfo.systemName, { header: newMqttHeader, body: abortedCommandForRetryInfo.message.body });
+      setRemainingAckCommand(abortedCommandForRetryInfo.messageTopic, abortedCommandForRetryInfo.systemName, {
+        header: newMqttHeader,
+        body: abortedCommandForRetryInfo.message.body,
+      });
       if (newMqttHeader.subject.includes('CALL_INFO')) {
         const recentCallInfoTaskByCmdIdParams: RecentCallInfo = {
           cmdId: abortedCommandForRetryInfo.subjectCmdId,
