@@ -465,3 +465,5 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - ACK_CANCEL_CALL_INFO 버그 수정
 
 - 재고없음 , 트래킹로그 , Abort 로직 버그 수정
+
+- 미션 결정지에서 Dock_Disable === False 인 경우에만 진입 가능

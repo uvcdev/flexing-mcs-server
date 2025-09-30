@@ -54,6 +54,7 @@ export const checkMissionOrder = async () => {
               'Call_Count',
               'Dock_EQ_Status',
               'Call_Response',
+              'Dock_Disable',
             ]);
 
             const eqAuto = opcuaUtil.tagMap.get(`${targetCode}.EQ_Auto`);
@@ -61,12 +62,14 @@ export const checkMissionOrder = async () => {
             const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
             const dockEqStatus = opcuaUtil.tagMap.get(`${targetCode}.Dock_EQ_Status`);
             const callResponse = opcuaUtil.tagMap.get(`${targetCode}.Call_Response`);
+            const dockDisable = opcuaUtil.tagMap.get(`${targetCode}.Dock_Disable`);
 
             const eqAutoValue = (eqAuto?.value as boolean) || false;
             const callRequestValue = (callRequest?.value as boolean) || false;
             const callCountValue = (Number(callCount?.value) as number) || 0;
             const dockEqStatusValue = (dockEqStatus?.value as boolean) || false;
             const callResponseValue = (callResponse?.value as boolean) || false;
+            const dockDisableValue = (dockDisable?.value as boolean) || false;
 
             // 콜 카운트 없어도 되나욤 ?
             if (
@@ -74,7 +77,8 @@ export const checkMissionOrder = async () => {
               callRequestValue === true &&
               // callCountValue > 0 &&
               dockEqStatusValue === false &&
-              callResponseValue === false
+              callResponseValue === false &&
+              dockDisableValue === false
             ) {
               const missionOrderMqttMessage = {
                 EQP_CALL_ID: missionOrderMqttInfo.missionOrderCode.slice(-4),
