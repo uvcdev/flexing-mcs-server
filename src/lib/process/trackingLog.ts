@@ -1,5 +1,6 @@
 import {
   TrackingLogInsertParams,
+  TrackingLogProcessState,
   TrackingLogRedisAttributes,
   TrackingLogRedisUpdateParams,
   TrackingLogState,
@@ -16,6 +17,29 @@ import { logging } from '../logging';
 import { ItemLogInsertParams, ItemLogSubjectType } from '../../models/timescale/itemLog';
 import { formatDetailedDateTime } from '../usefullToolUtil';
 import { sendMqtt } from '../mqttUtil';
+
+export interface InitAbnormalTrackingLogParams {
+  callId: string;
+  subjcet: TrackingLogSubjectType;
+  detail: string;
+  state: TrackingLogState;
+  processState: TrackingLogProcessState;
+  eqpCallId?: string;
+  transferId?: string;
+  callType?: string;
+  caller?: string;
+  callQuantity?: number;
+  callPriority?: string;
+  systemName?: string;
+  startFacility?: string;
+  destFacility?: string;
+  assignedRobot?: string;
+  value?: string;
+  description?: string;
+  missionDestination?: string;
+  message?: string;
+  location?: string;
+}
 
 const redisUtil = useRedisUtil();
 
@@ -153,6 +177,141 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
   // 설비당 트래킹 로그가 다수 존재할 수 있기 때문에 FacilityCode에 해당하는 로그는 의미가 없어짐
   // await redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, callInfo.Caller, JSON.stringify(trackingLogRedisBody));
   await redisUtil.hset(RedisKeys.InfoTrackingLogByCallId, callInfo.CALL_ID, JSON.stringify(trackingLogRedisBody));
+};
+
+export const initAbnormalTrackingLogRedis = async (callInfo: InitAbnormalTrackingLogParams) => {
+  // Subject = CALL_CREATED
+  const subject: TrackingLogSubjectType = callInfo.subjcet;
+  const detail = callInfo.detail;
+  const state: TrackingLogState = callInfo.state;
+  // 콜 발생 정보 수집
+  // 여기서 eqpCallId는 설비의 Call Count가 아닌, 자체 Count 번호
+  const callId = callInfo.callId;
+
+  // 2025-08-18 멀티콜 때문에 기존에 있는 Tracking Log 삭제를 진행하지 않음
+  // Redis에서 삭제되는 조건은 1번 완료 2번 Update 시간이 1일 이상 지연된 경우 정도 될 예정
+  // 기존에 있던 tracking log 먼저 조회 - 이전 데이터를 삭제하기 위함
+  // const infoTrackingLogByFacilityCode = await redisUtil.hgetObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByFacilityCode, facilityCode);
+
+  // // 이미 해당 설비에 해당하는 콜 정보가 살아있는 경우에는 콜 정보를 지운 후 새로운 콜 정보를 올린다.
+  // // InfoTrackingLogByCallId 정보는 지우고 InfoTrackingLogByFacilityCode 정보는 덮어쓴다.
+  // if (infoTrackingLogByFacilityCode) {
+  //   const lastCallId = infoTrackingLogByFacilityCode.callId;
+  //   if (lastCallId) {
+  //     redisUtil.hdel(RedisKeys.InfoTrackingLogByCallId, lastCallId)
+  //   }
+  // }
+
+  // tracking Log insert
+  const trackingLogInsertParams: TrackingLogInsertParams = {
+    code: generateUUIDNode(),
+    plcName: callInfo.caller || null,
+    portName: null,
+    callId: callId,
+    callType: callInfo.callType || null,
+    eqpCallId: callInfo.eqpCallId || null,
+    transferId: null,
+    subject: subject,
+    detail: detail,
+    state: state,
+    startFacility: callInfo.startFacility || null,
+    destFacility: callInfo.destFacility || null,
+    assignedRobot: callInfo.assignedRobot || null,
+    value: callInfo.value || null,
+    description: callInfo.description || null,
+    missionDestination: callInfo.description || null,
+    processState: callInfo.processState,
+  };
+
+  const trackingLogInsertedResult = await trackingLogDao.insert(trackingLogInsertParams);
+
+  const trackingLogId = trackingLogInsertedResult.insertedId;
+
+  if (!trackingLogId || trackingLogId === 0) {
+    logging.ACTION_ERROR({
+      filename: 'trackingLog.ts - initTrackingLogRedis',
+      error: `trackingLogId (${trackingLogId}) is invalid `,
+      params: null,
+      result: false,
+    });
+    return;
+  }
+
+  // item Log insert
+  const dateNow = formatDetailedDateTime(new Date());
+  const itemLogInsertParams: ItemLogInsertParams = {
+    itemCode: null,
+    facilityCode: null,
+    facilityName: callInfo.caller || null,
+    amrCode: null,
+    amrName: null,
+    floor: null,
+    topic: null,
+    subject: subject,
+    body: null,
+    trackingLogId: trackingLogId,
+    state: subject,
+    location: callInfo.location || null,
+    message: callInfo.message || null,
+    callId: callId,
+    value: callInfo.value || null,
+    resultStatus: 'SUCCESS',
+    createdDateTime: dateNow,
+  };
+
+  // Item Log Insert
+  void itemLogDao.insert(itemLogInsertParams);
+  // const itemLogInsertedResult = await itemLogDao.insert(itemLogInsertParams)
+  // if (!itemLogInsertedResult) {
+  //   logging.ACTION_ERROR({
+  //     filename: 'trackingLog.ts - initTrackingLogRedis',
+  //     error: `itemLogInsertedResult (${itemLogInsertedResult}) is invalid `,
+  //     params: null,
+  //     result: false,
+  //   });
+  // }
+
+  // const itemLogId = itemLogInsertedResult.insertedId
+
+  // if (!itemLogId || itemLogId === 0) {
+  //   logging.ACTION_ERROR({
+  //     filename: 'trackingLog.ts - initTrackingLogRedis',
+  //     error: `itemLogId (${itemLogId}) is invalid `,
+  //     params: null,
+  //     result: false,
+  //   });
+  // }
+
+  const itemLogList = [{ ...itemLogInsertParams }];
+
+  const trackingLogRedisBody: TrackingLogRedisAttributes = {
+    id: trackingLogId,
+    code: trackingLogInsertParams.code,
+    plcName: trackingLogInsertParams.plcName,
+    portName: trackingLogInsertParams.portName,
+    callId: trackingLogInsertParams.callId,
+    callType: trackingLogInsertParams.callType,
+    eqpCallId: trackingLogInsertParams.eqpCallId,
+    transferId: trackingLogInsertParams.transferId,
+    subject: subject,
+    detail: detail,
+    state: state,
+    startFacility: trackingLogInsertParams.startFacility,
+    destFacility: trackingLogInsertParams.destFacility,
+    assignedRobot: trackingLogInsertParams.assignedRobot,
+    value: trackingLogInsertParams.value,
+    description: trackingLogInsertParams.description,
+    missionDestination: trackingLogInsertParams.missionDestination,
+    processState: trackingLogInsertParams.processState,
+    createdDateTime: dateNow,
+    updatedDateTime: dateNow,
+    itemLogList: itemLogList,
+  };
+
+  // 물류 로그 Redis Set
+  // 설비당 트래킹 로그가 다수 존재할 수 있기 때문에 FacilityCode에 해당하는 로그는 의미가 없어짐
+  // await redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, callInfo.Caller, JSON.stringify(trackingLogRedisBody));
+  await redisUtil.hset(RedisKeys.InfoTrackingLogByCallId, callId, JSON.stringify(trackingLogRedisBody));
 };
 
 export const editTrackingLogRedis = async (

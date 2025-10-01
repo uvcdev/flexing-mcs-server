@@ -472,3 +472,5 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - ABORTED 상태는 다시 조회 가능하도록
   - ACS 작업 취소를 CANCELED 상태로 재변경
   - ACK_CALL_INFO에서 출발지 정보 기입되는 버그수정
+
+- 창고 수동 작업 지시 트래킹 로그 생성

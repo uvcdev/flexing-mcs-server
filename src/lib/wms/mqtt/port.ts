@@ -2,7 +2,11 @@ import { TrackingLogRedisUpdateParams } from '../../../models/common/trackingLog
 import { PendingWorkOrderAttributes } from '../../../models/operation/workOrder';
 import { logging } from '../../logging';
 import { separateMqttMessage, MbsMqttMesaage, makeMbsMqttHeader, MbsMqttBody } from '../../mqttUtil';
-import { editTrackingLogRedis } from '../../process/trackingLog';
+import {
+  editTrackingLogRedis,
+  InitAbnormalTrackingLogParams,
+  initAbnormalTrackingLogRedis,
+} from '../../process/trackingLog';
 import { setReceivedAckCommand } from '../../process/wmsAck';
 import { CallInfoBody, deleteInfoAckInCallByCallId } from '../../process/wmsCallInfo';
 import { deleteRecentCallInfoTaskByCmdId } from '../../process/wmsCommon';
@@ -79,8 +83,20 @@ const portPresenceStatus = async (
       };
 
       // pending workOrder 레디스 정보 저장
-
-      console.log('infoPendingWorkOrder', infoPendingWorkOrder);
+      // 트래킹 로그 만들기
+      const initAbnormalTrackingLogParams: InitAbnormalTrackingLogParams = {
+        callId: callId,
+        subjcet: 'WORK_ORDER_CREATED',
+        detail: 'WORK_ORDER_CREATED',
+        state: 'PROCESSING',
+        processState: 'NORMAL',
+        callQuantity: 1,
+        startFacility: fromFacilityName,
+        destFacility: toFacilityName,
+        message: `WMS manual mission created CALLID(${callId})`,
+        location: 'WMS',
+      };
+      await initAbnormalTrackingLogRedis(initAbnormalTrackingLogParams);
 
       redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder));
     }
