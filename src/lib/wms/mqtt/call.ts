@@ -233,7 +233,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         subject: trackingLogSubject,
         detail: trackingLogDetail,
         state: trackingLogState,
-        startFacility: callInfoData.Caller,
+        startFacility: null,
         transferId: null,
         destFacility: null,
         assignedRobot: null,

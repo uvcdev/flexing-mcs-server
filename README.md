@@ -467,3 +467,8 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 재고없음 , 트래킹로그 , Abort 로직 버그 수정
 
 - 미션 결정지에서 Dock_Disable === False 인 경우에만 진입 가능
+
+- 트래킹 로그 문제 수정
+  - ABORTED 상태는 다시 조회 가능하도록
+  - ACS 작업 취소를 CANCELED 상태로 재변경
+  - ACK_CALL_INFO에서 출발지 정보 기입되는 버그수정

@@ -61,7 +61,8 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED' || state === 'MISSION_COMPLETED') {
       assignState = 'COMPLETED';
     } else if (state === 'MISSION_CANCELED') {
-      assignState = 'ABORTED';
+      // assignState = 'ABORTED';
+      assignState = 'CANCELED';
     }
     // 물류 로그 저장
     const trackingLogSubject = 'MISSION_STATE';

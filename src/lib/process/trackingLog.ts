@@ -371,7 +371,7 @@ export const sendTrackingLogs = async () => {
     // sendMqtt(`tracking_log/${facilityCode}`, JSON.stringify(infoTrackingLogByFacilityCode))
     // 'PUBLISHED' | 'PROCESSING' | 'COMPLETED' | 'ABORTED' | 'CANCELED' | 'PAUSED' | 'ERROR';
     sendMqtt(`tracking_log/${trackingLogCallId}`, JSON.stringify(trackingLogByCallIdInfo));
-    const MQTT_SENDABLE_STATES = ['PUBLISHED', 'PROCESSING'];
+    const MQTT_SENDABLE_STATES = ['PUBLISHED', 'PROCESSING', 'ABORTED'];
     if (!MQTT_SENDABLE_STATES.includes(trackingLogState)) {
       // sendMqtt(`tracking_log/${trackingLogCallId}`, JSON.stringify(trackingLogByCallIdInfo));
       if (trackingLogCallId !== '') {
