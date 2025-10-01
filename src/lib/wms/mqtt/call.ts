@@ -273,12 +273,68 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
     // 해당 내용 로깅 처리 후 알람 발생
     // 동일한 Call Info 수신
     case '0':
-      logging.ACTION_ERROR({
+      // 물류 로그 기록
+      // InfoAckInCallByCallId 레디스 기록
+      const infoAckInCallByCallIdDataHcack0: InfoAckInCallByCallIdBody = {
+        Cmd_ID: callInfoData.Cmd_ID,
+        CALL_ID: callInfoData.Call_ID,
+        EQP_CALL_ID: callId.slice(-4),
+        Call_Type: callInfoData.Call_Type,
+        Caller: callInfoData.Caller,
+        Call_Priority: callInfoData.Call_Priority,
+        Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
+        updatedTime: new Date(),
+      };
+      redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdDataHcack0));
+
+      logging.ACTION_INFO({
         filename: `call.ts - ackCallInfo`,
         error: `[HCACK = ${hcack}] Cmd_ID(${cmdId}) Command has already been executed - comment : ${ackComment}`,
         params: null,
         result: false,
       });
+
+      const hcack0TrackingLogSubject = 'ACK_CALL_INFO';
+      const hcack0TrackingLogDetail = 'ACK_CALL_INFO';
+      const hcack0TrackingLogState = 'PROCESSING' as TrackingLogState;
+      const hcack0TrackingLogUpdateData: TrackingLogRedisUpdateParams = {
+        callId: callId,
+        subject: hcack0TrackingLogSubject,
+        detail: hcack0TrackingLogDetail,
+        state: hcack0TrackingLogState,
+        startFacility: null,
+        transferId: null,
+        destFacility: null,
+        assignedRobot: null,
+        value: null,
+        description: `HCACK(${hcack})Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`,
+      };
+      await editTrackingLogRedis(hcack0TrackingLogUpdateData, undefined, 'SUCCESS', wmsName);
+
+      // call_response 작성
+      await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: callInfoData.Caller,
+        tagName: 'Call_Response',
+        value: true,
+      });
+
+      await useCallTypeUtil().callTypeResponse(callInfoData.Caller);
+      const callResponseTrackingLogSubjectHcack0 = 'CALL_RESPONSE';
+      const callResponseTrackingLogDetailHcack0 = 'CALL_RESPONSE';
+      const callResponseTrackingLogStateHcack0 = 'PROCESSING';
+      const callResponseTrackingLogUpdateDataHcack0: TrackingLogRedisUpdateParams = {
+        callId: callId,
+        subject: callResponseTrackingLogSubjectHcack0,
+        detail: callResponseTrackingLogDetailHcack0,
+        state: callResponseTrackingLogStateHcack0,
+        startFacility: callInfoData.Caller,
+        transferId: null,
+        destFacility: null,
+        assignedRobot: null,
+        value: null,
+        description: `[Call ID ${callId}] Call responsed`,
+      };
+      await editTrackingLogRedis(callResponseTrackingLogUpdateDataHcack0, undefined, 'SUCCESS', wmsName);
 
       // 콜 진행 정보를 삭제
       // 동일 Call 정보를 수신 했다면 해당 정보 있어야 하기 때문에 Call Id 쪽 삭제는 보류

@@ -474,3 +474,5 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - ACK_CALL_INFO에서 출발지 정보 기입되는 버그수정
 
 - 창고 수동 작업 지시 트래킹 로그 생성
+
+- ACK_CALL_INFO HCACK=0 추가 로직 구현
