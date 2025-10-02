@@ -361,6 +361,16 @@ export interface PendingWorkOrderAttributes {
   triggerCallCount?: number;
 }
 
+export interface RecentWorkOrderInfoByFacilitySerialAttributes {
+  callId: string;
+  state?: string;
+}
+
+export interface RecentWorkOrderListByFacilitySerialAttributes {
+  count: number;
+  workOrderList: Array<RecentWorkOrderInfoByFacilitySerialAttributes>;
+}
+
 // include attributes
 export const WorkOrderAttributesInclude = [
   'id',

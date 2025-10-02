@@ -1,10 +1,12 @@
 import { TrackingLogRedisUpdateParams, TrackingLogState } from '../../models/common/trackingLog';
+import { FacilityAttributes } from '../../models/operation/facility';
+import { RecentWorkOrderListByFacilitySerialAttributes } from '../../models/operation/workOrder';
 import { useKepServerUtil } from '../kepServerUtil';
 import { separateMqttMessage, MbsMqttMesaage } from '../mqttUtil';
 import { useMultiCallRegisterUtil } from '../multiCallRegisterUtil';
 import { editTrackingLogRedis } from '../process/trackingLog';
 import { sendAckToWms } from '../process/wmsAck';
-import { RedisKeys } from '../redisUtil';
+import { RedisKeys, useRedisUtil } from '../redisUtil';
 
 const topic = 'MISSION_STATE';
 
@@ -86,6 +88,55 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
       trackingLogUpdateData.description += `(MISSION Canceled - ACS)`;
     }
     await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
+
+    // workOrder Count down
+    const redisUtil = useRedisUtil();
+    const facilitySerial = callId.slice(0, 4) ?? '';
+
+    if (assignState === 'COMPLETED' || assignState === 'CANCELED') {
+      if (facilitySerial && facilitySerial.length > 3) {
+        const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+          RedisKeys.InfoFacilityBySerial,
+          facilitySerial
+        );
+
+        if (facilityInfo?.system === 'WMS') {
+          let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+            RedisKeys.RecentWorkOrderListByFacilitySerial,
+            facilitySerial
+          );
+          if (workOrderListInfo) {
+            const removeWorkOrderByCallId = (targetCallId: string) => {
+              const workOrderList = workOrderListInfo?.workOrderList || [];
+
+              // targetCallId와 같은 항목이 있는지 확인
+              const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
+
+              if (hasMatchingCallId) {
+                workOrderListInfo = {
+                  count: (workOrderListInfo?.count || 0) - 1,
+                  workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
+                };
+              }
+
+              return workOrderListInfo;
+            };
+
+            const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
+              removeWorkOrderByCallId(callId) ?? {
+                count: 0,
+                workOrderList: [],
+              };
+
+            redisUtil.hset(
+              RedisKeys.RecentWorkOrderListByFacilitySerial,
+              facilitySerial,
+              JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+            );
+          }
+        }
+      }
+    }
 
     if (state === 'MISSION_CANCELED') {
       // // 물류 로그 저장

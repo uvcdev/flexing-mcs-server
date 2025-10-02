@@ -1,6 +1,10 @@
-import { WorkOrderAttributesDeep, WorkOrderUpdateByCodeParams } from 'models/operation/workOrder';
+import {
+  RecentWorkOrderListByFacilitySerialAttributes,
+  WorkOrderAttributesDeep,
+  WorkOrderUpdateByCodeParams,
+} from '../models/operation/workOrder';
 import { MqttTopics, sendMqtt } from './mqttUtil';
-import Facility from 'models/operation/facility';
+import Facility, { FacilityAttributes } from '../models/operation/facility';
 import Amr from 'models/common/amr';
 import { calculateDurationInSeconds } from './dateUtil';
 import { EqpCallStats } from './callRegisterUtil';
@@ -116,6 +120,35 @@ export const useWorkOrderUtil = () => {
             plcName: params.EQP_ID,
           };
           await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', 'MCS');
+
+          const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+            RedisKeys.InfoFacilityBySerial,
+            workOrder.eqpName
+          );
+          if (facilityInfo?.system === 'WMS') {
+            const workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+              RedisKeys.RecentWorkOrderListByFacilitySerial,
+              workOrder.eqpName
+            );
+            const workOrderList = workOrderListInfo?.workOrderList || [];
+
+            workOrderList.forEach((workOrderInfo) => {
+              if (workOrderInfo.callId === workOrder.callId) {
+                workOrderInfo.state = 'workOrder';
+              }
+            });
+
+            const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+              count: workOrderListInfo?.count || 0,
+              workOrderList: workOrderList,
+            };
+
+            redisUtil.hset(
+              RedisKeys.RecentWorkOrderListByFacilitySerial,
+              workOrder.eqpName,
+              JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+            );
+          }
 
           try {
             sendMqtt(messageTopic, message);

@@ -1,5 +1,8 @@
 import { AttributeIds } from 'node-opcua-client';
-import { PendingWorkOrderAttributes } from '../models/operation/workOrder';
+import {
+  PendingWorkOrderAttributes,
+  RecentWorkOrderListByFacilitySerialAttributes,
+} from '../models/operation/workOrder';
 import { CancelType, FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
 import { TagValue, useKepServerUtil } from './kepServerUtil';
 import { logging, logToConsoleAndFile, makeLogFormat, RequestLog } from './logging';
@@ -19,6 +22,7 @@ import { AbortedCommandForRetryInfo, CancelCallInfo, checkCancelCallInfo, Recent
 import { CallInfoBody } from './process/wmsCallInfo';
 import { generateUUIDNode } from './hashUtil';
 import { InfoAckInCallByCallIdBody } from './wms/mqtt/call';
+import { count } from 'console';
 
 export interface EqpCallStats {
   CALL_ID: string;
@@ -516,6 +520,41 @@ export const useCallCancelUtil = () => {
                 description: `Call ID ${recentCallInfoCallId} cancellation successful on EQP ${targetCode}`,
               };
               await editTrackingLogRedis(trackingLogUpdateData, '', 'ABORTED', targetCode);
+
+              // workOrder 카운트처리
+              let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+                RedisKeys.RecentWorkOrderListByFacilitySerial,
+                targetCode
+              );
+              if (workOrderListInfo) {
+                const removeWorkOrderByCallId = (targetCallId: string) => {
+                  const workOrderList = workOrderListInfo?.workOrderList || [];
+
+                  // targetCallId와 같은 항목이 있는지 확인
+                  const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
+
+                  if (hasMatchingCallId) {
+                    workOrderListInfo = {
+                      count: (workOrderListInfo?.count || 0) - 1,
+                      workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
+                    };
+                  }
+
+                  return workOrderListInfo;
+                };
+
+                const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
+                  removeWorkOrderByCallId(recentCallInfoCallId) ?? {
+                    count: 0,
+                    workOrderList: [],
+                  };
+
+                redisUtil.hset(
+                  RedisKeys.RecentWorkOrderListByFacilitySerial,
+                  targetCode,
+                  JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+                );
+              }
             }
 
             redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId);
@@ -568,11 +607,110 @@ export const useCallCancelUtil = () => {
                 description: `Call ID ${selectedCallId} cancellation successful on EQP ${targetCode}`,
               };
               await editTrackingLogRedis(trackingLogUpdateData, '', 'ABORTED', targetCode);
+
+              // workOrder 카운트처리
+              let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+                RedisKeys.RecentWorkOrderListByFacilitySerial,
+                targetCode
+              );
+              if (workOrderListInfo) {
+                const removeWorkOrderByCallId = (targetCallId: string) => {
+                  const workOrderList = workOrderListInfo?.workOrderList || [];
+
+                  // targetCallId와 같은 항목이 있는지 확인
+                  const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
+
+                  if (hasMatchingCallId) {
+                    workOrderListInfo = {
+                      count: (workOrderListInfo?.count || 0) - 1,
+                      workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
+                    };
+                  }
+
+                  return workOrderListInfo;
+                };
+
+                const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
+                  removeWorkOrderByCallId(selectedCallId) ?? {
+                    count: 0,
+                    workOrderList: [],
+                  };
+
+                redisUtil.hset(
+                  RedisKeys.RecentWorkOrderListByFacilitySerial,
+                  targetCode,
+                  JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+                );
+              }
             }
           }
         }
 
         // 3. 진행 중인 작업 지시 확인
+        if (facilityInfo?.system === 'WMS') {
+          let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+            RedisKeys.RecentWorkOrderListByFacilitySerial,
+            targetCode
+          );
+
+          if (workOrderListInfo) {
+            const workOrderList = workOrderListInfo?.workOrderList || [];
+            let workOrderCount = workOrderListInfo?.count || 0;
+
+            // state가 'workOrder'인 항목들만 필터링
+            const filterWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'workOrder') || [];
+
+            // 취소할 callId들 저장
+            const callIdsToRemove: string[] = [];
+
+            for (let i = 0, length = filterWorkOrderList.length; i < length; i++) {
+              const workOrderInfo = filterWorkOrderList[i];
+              const workOrderCallId = workOrderInfo.callId;
+
+              // workOrderCount down
+              workOrderCount = workOrderCount - 1;
+
+              // 삭제할 callId 저장
+              callIdsToRemove.push(workOrderCallId);
+
+              // 트래킹 로그 반영
+              const trackingLogSubject = 'MISSION_CANCELED';
+              const trackingLogDetail = 'MISSION_CANCELED';
+              const trackingLogState = 'CANCELED';
+              const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+                callId: workOrderCallId,
+                subject: trackingLogSubject,
+                detail: trackingLogDetail,
+                state: trackingLogState,
+                startFacility: null,
+                transferId: null,
+                destFacility: null,
+                assignedRobot: null,
+                value: targetCode,
+                description: `Call ID ${workOrderCallId} cancellation successful on EQP ${targetCode}`,
+              };
+              await editTrackingLogRedis(trackingLogUpdateData, '', 'ABORTED', targetCode);
+
+              await cancelWorkOrderToAcs(workOrderCallId, cancelType, true, undefined);
+            }
+
+            // workOrderList에서 취소된 항목들 제거
+            const updatedWorkOrderList = workOrderList.filter(
+              (workOrder) => !callIdsToRemove.includes(workOrder.callId)
+            );
+
+            const newRecentWorkOrderListByFacilitySerialParams = {
+              count: workOrderCount,
+              workOrderList: updatedWorkOrderList,
+            };
+
+            redisUtil.hset(
+              RedisKeys.RecentWorkOrderListByFacilitySerial,
+              targetCode,
+              JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+            );
+          }
+        }
 
         // PLC 취소 응답 처리
         await writeCallCancelResponse(targetCode);

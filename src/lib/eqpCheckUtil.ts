@@ -15,6 +15,10 @@ import { sendMqtt } from './mqttUtil';
 import { timestampToDate } from '../lib/usefullToolUtil';
 import { FacilityAttributesDeep } from '../models/operation/facility';
 import { initTrackingLogRedis } from './process/trackingLog';
+import {
+  RecentWorkOrderInfoByFacilitySerialAttributes,
+  RecentWorkOrderListByFacilitySerialAttributes,
+} from '../models/operation/workOrder';
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -86,6 +90,45 @@ export const useEqpCheckUtil = () => {
                   ALWAYS_CALL_COUNT: -1,
                 };
                 await initTrackingLogRedis(callInfo);
+
+                if (facilityInfo.system === 'WMS') {
+                  const workOrderState = 'beforeWorkOrder';
+                  const workOrderInfo = {
+                    callId: eqpCallId,
+                    state: workOrderState,
+                  };
+                  const RecentWorkOrderListByFacilityInfo =
+                    await useRedisUtil().hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+                      RedisKeys.RecentWorkOrderListByFacilitySerial,
+                      facilitySerial
+                    );
+                  if (!RecentWorkOrderListByFacilityInfo) {
+                    // 해당 정보가 없을 경우 신규 등록
+                    const recentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+                      count: 1,
+                      workOrderList: [workOrderInfo],
+                    };
+                    useRedisUtil().hset(
+                      RedisKeys.RecentWorkOrderListByFacilitySerial,
+                      facilitySerial,
+                      JSON.stringify(recentWorkOrderListByFacilitySerialParams)
+                    );
+                  } else {
+                    const newCount = RecentWorkOrderListByFacilityInfo.count + 1;
+                    const newWorkOrderList: RecentWorkOrderInfoByFacilitySerialAttributes[] =
+                      RecentWorkOrderListByFacilityInfo.workOrderList;
+                    newWorkOrderList.push(workOrderInfo);
+                    const recentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+                      count: newCount,
+                      workOrderList: newWorkOrderList,
+                    };
+                    useRedisUtil().hset(
+                      RedisKeys.RecentWorkOrderListByFacilitySerial,
+                      facilitySerial,
+                      JSON.stringify(recentWorkOrderListByFacilitySerialParams)
+                    );
+                  }
+                }
               }
             }
           } else {
