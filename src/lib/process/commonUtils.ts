@@ -1,7 +1,7 @@
-import { FacilityAttributes } from "../../models/operation/facility";
-import { logging } from "../logging";
-import { RedisKeys, useRedisUtil } from "../redisUtil";
-import { MqttBranchInfoDataFromAcs } from "./wmsBranch";
+import { FacilityAttributes } from '../../models/operation/facility';
+import { logging } from '../logging';
+import { RedisKeys, useRedisUtil } from '../redisUtil';
+import { MqttBranchInfoDataFromAcs } from './wmsBranch';
 
 const redisUtil = useRedisUtil();
 
@@ -10,7 +10,7 @@ export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDa
 
   // 자동인 경우 미션 오더 처리
   if (mode === 'auto') {
-    const facilitySerial = messageJson.workOrderCode.substring(0, 4)
+    const facilitySerial = messageJson.workOrderCode.substring(0, 4);
 
     if (!facilitySerial || facilitySerial.length < 4) {
       logging.ACTION_ERROR({
@@ -19,40 +19,33 @@ export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDa
         params: null,
         result: false,
       });
-      return
+      return;
     }
 
-    const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilitySerial)
+    const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilitySerial);
 
-    const facilityLinckedList = facilityInfo?.linkedEqpIds || []
+    const facilityLinckedList = facilityInfo?.linkedEqpIds || [];
 
     // EQP에 생긴 미션오더
     if (facilityLinckedList && facilityLinckedList.length > 0) {
       for (let i = 0, length = facilityLinckedList.length; i < length; i++) {
-        // 모든 설비 데이터가 
+        // 모든 설비 데이터가
       }
       return {
         state: 'EQP',
-        facilityInfo: facilityInfo
-      }
+        facilityInfo: facilityInfo,
+      };
     }
-    // WMS에 생긴 미션오더 
+    // WMS에 생긴 미션오더
     else {
       return {
         state: 'WMS',
-        facilityInfo: null
-      }
+        facilityInfo: facilityInfo,
+      };
     }
-
   } else {
-
   }
-}
-
+};
 
 // EQP 도킹 실행 시키는 함수 ( 파트장님이 원하는 위치로 옮기셔도 될 것 같습니다 ! )
-export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => {
-
-
-
-}
+export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => { };
