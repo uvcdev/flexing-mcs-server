@@ -478,3 +478,5 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - ACK_CALL_INFO HCACK=0 추가 로직 구현
 
 - 미션 결정지 오류 수정
+
+- WMS 콜 캔슬 로직 수정

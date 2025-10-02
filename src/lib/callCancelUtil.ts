@@ -473,8 +473,44 @@ export const useCallCancelUtil = () => {
                 assignedRobot: null,
                 value: targetCode,
                 description: `Call ID ${recentCallInfoCallId} cancellation successful on EQP ${targetCode}`,
+                processState: 'CANCELED',
               };
-              await editTrackingLogRedis(trackingLogUpdateData, '', 'ABORTED', targetCode);
+              await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', targetCode);
+
+              // workOrder 카운트처리
+              let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+                RedisKeys.RecentWorkOrderListByFacilitySerial,
+                targetCode
+              );
+              if (workOrderListInfo) {
+                const removeWorkOrderByCallId = (targetCallId: string) => {
+                  const workOrderList = workOrderListInfo?.workOrderList || [];
+
+                  // targetCallId와 같은 항목이 있는지 확인
+                  const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
+
+                  if (hasMatchingCallId) {
+                    workOrderListInfo = {
+                      count: (workOrderListInfo?.count || 0) - 1,
+                      workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
+                    };
+                  }
+
+                  return workOrderListInfo;
+                };
+
+                const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
+                  removeWorkOrderByCallId(recentCallInfoCallId) ?? {
+                    count: 0,
+                    workOrderList: [],
+                  };
+
+                redisUtil.hset(
+                  RedisKeys.RecentWorkOrderListByFacilitySerial,
+                  targetCode,
+                  JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+                );
+              }
             }
 
             redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId);
@@ -518,8 +554,9 @@ export const useCallCancelUtil = () => {
                 assignedRobot: null,
                 value: targetCode,
                 description: `Call ID ${recentCallInfoCallId} cancellation successful on EQP ${targetCode}`,
+                processState: 'CANCELED',
               };
-              await editTrackingLogRedis(trackingLogUpdateData, '', 'ABORTED', targetCode);
+              await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', targetCode);
 
               // workOrder 카운트처리
               let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
@@ -605,8 +642,9 @@ export const useCallCancelUtil = () => {
                 assignedRobot: null,
                 value: targetCode,
                 description: `Call ID ${selectedCallId} cancellation successful on EQP ${targetCode}`,
+                processState: 'CANCELED',
               };
-              await editTrackingLogRedis(trackingLogUpdateData, '', 'ABORTED', targetCode);
+              await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', targetCode);
 
               // workOrder 카운트처리
               let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
@@ -688,8 +726,9 @@ export const useCallCancelUtil = () => {
                 assignedRobot: null,
                 value: targetCode,
                 description: `Call ID ${workOrderCallId} cancellation successful on EQP ${targetCode}`,
+                processState: 'CANCELED',
               };
-              await editTrackingLogRedis(trackingLogUpdateData, '', 'ABORTED', targetCode);
+              await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', targetCode);
 
               await cancelWorkOrderToAcs(workOrderCallId, cancelType, true, undefined);
             }
