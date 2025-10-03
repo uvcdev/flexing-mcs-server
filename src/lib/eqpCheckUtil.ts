@@ -16,7 +16,7 @@ import { timestampToDate } from '../lib/usefullToolUtil';
 import { FacilityAttributesDeep } from '../models/operation/facility';
 import { initTrackingLogRedis } from './process/trackingLog';
 import {
-  RecentCallCountByFacilitySerailAttributes,
+  RecentCallCountByFacilitySerialAttributes,
   RecentWorkOrderInfoByFacilitySerialAttributes,
   RecentWorkOrderListByFacilitySerialAttributes,
 } from '../models/operation/workOrder';
@@ -47,30 +47,32 @@ export const useEqpCheckUtil = () => {
               facilitySerial
             );
             if (facilityInfo && facilityInfo.system === 'WMS' && facilityInfo.type === 'in' && facilityInfo.isActiveCallTrigger) {
-              const recentCallCountByFacilitySerailInfo =
-                await useRedisUtil().hgetObject<RecentCallCountByFacilitySerailAttributes>(
-                  RedisKeys.RecentCallCountByFacilitySerail,
+              const recentCallCountByFacilitySerialInfo =
+                await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
+                  RedisKeys.RecentCallCountByFacilitySerial,
                   facilitySerial
                 );
-              if (!recentCallCountByFacilitySerailInfo) {
+              if (!recentCallCountByFacilitySerialInfo) {
                 // 해당 정보가 없을 경우 신규 등록
-                const recentCallCountByFacilitySerailParams: RecentCallCountByFacilitySerailAttributes = {
+                const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                  facilitySerial: facilitySerial,
+                  targetKey: targetKey,
                   callRequest: true,
                   callRequestMulti1: false,
                   callRequestMulti2: false,
                 };
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerail,
+                  RedisKeys.RecentCallCountByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerailParams)
+                  JSON.stringify(recentCallCountByFacilitySerialParams)
                 );
               } else {
-                recentCallCountByFacilitySerailInfo.callRequest = true
+                recentCallCountByFacilitySerialInfo.callRequest = true
 
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerail,
+                  RedisKeys.RecentCallCountByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerailInfo)
+                  JSON.stringify(recentCallCountByFacilitySerialInfo)
                 );
               }
             }
@@ -173,30 +175,32 @@ export const useEqpCheckUtil = () => {
               facilitySerial
             );
             if (facilityInfo && facilityInfo.system === 'WMS' && facilityInfo.type === 'in' && facilityInfo.isActiveCallTrigger) {
-              const recentCallCountByFacilitySerailInfo =
-                await useRedisUtil().hgetObject<RecentCallCountByFacilitySerailAttributes>(
-                  RedisKeys.RecentCallCountByFacilitySerail,
+              const recentCallCountByFacilitySerialInfo =
+                await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
+                  RedisKeys.RecentCallCountByFacilitySerial,
                   facilitySerial
                 );
-              if (!recentCallCountByFacilitySerailInfo) {
+              if (!recentCallCountByFacilitySerialInfo) {
                 // 해당 정보가 없을 경우 신규 등록
-                const recentCallCountByFacilitySerailParams: RecentCallCountByFacilitySerailAttributes = {
+                const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                  facilitySerial: facilitySerial,
+                  targetKey: targetKey,
                   callRequest: false,
                   callRequestMulti1: false,
                   callRequestMulti2: false,
                 };
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerail,
+                  RedisKeys.RecentCallCountByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerailParams)
+                  JSON.stringify(recentCallCountByFacilitySerialParams)
                 );
               } else {
-                recentCallCountByFacilitySerailInfo.callRequest = false
+                recentCallCountByFacilitySerialInfo.callRequest = false
 
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerail,
+                  RedisKeys.RecentCallCountByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerailInfo)
+                  JSON.stringify(recentCallCountByFacilitySerialInfo)
                 );
               }
             }
@@ -283,12 +287,91 @@ export const useEqpCheckUtil = () => {
               tagName: 'Call_Response_Multi_1',
               value: true,
             });
+            if (targetTagInfo.value === true) {
+              const facilitySerial = targetTagInfo.EQ_CODE;
+              const targetKey = targetTagInfo.TAGGROUP
+                ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
+                : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+              const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributesDeep>(
+                RedisKeys.InfoFacilityBySerial,
+                facilitySerial
+              );
+              if (facilityInfo && facilityInfo.system === 'WMS' && facilityInfo.type === 'in' && facilityInfo.isActiveCallTrigger) {
+                const recentCallCountByFacilitySerialInfo =
+                  await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
+                    RedisKeys.RecentCallCountByFacilitySerial,
+                    facilitySerial
+                  );
+                if (!recentCallCountByFacilitySerialInfo) {
+                  // 해당 정보가 없을 경우 신규 등록
+                  const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                    facilitySerial: facilitySerial,
+                    targetKey: targetKey,
+                    callRequest: false,
+                    callRequestMulti1: true,
+                    callRequestMulti2: false,
+                  };
+                  useRedisUtil().hset(
+                    RedisKeys.RecentCallCountByFacilitySerial,
+                    facilitySerial,
+                    JSON.stringify(recentCallCountByFacilitySerialParams)
+                  );
+                } else {
+                  recentCallCountByFacilitySerialInfo.callRequestMulti1 = true
+
+                  useRedisUtil().hset(
+                    RedisKeys.RecentCallCountByFacilitySerial,
+                    facilitySerial,
+                    JSON.stringify(recentCallCountByFacilitySerialInfo)
+                  );
+                }
+              }
+            }
           } else if (targetTagInfo.value === false) {
             await useKepServerUtil().writeSimpleTagValue({
               targetFacility: targetTagInfo.EQ_CODE,
               tagName: 'Call_Response_Multi_1',
               value: false,
             });
+            const facilitySerial = targetTagInfo.EQ_CODE;
+            const targetKey = targetTagInfo.TAGGROUP
+              ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
+              : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+            const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributesDeep>(
+              RedisKeys.InfoFacilityBySerial,
+              facilitySerial
+            );
+            if (facilityInfo && facilityInfo.system === 'WMS' && facilityInfo.type === 'in' && facilityInfo.isActiveCallTrigger) {
+              const recentCallCountByFacilitySerialInfo =
+                await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
+                  RedisKeys.RecentCallCountByFacilitySerial,
+                  facilitySerial
+                );
+              if (!recentCallCountByFacilitySerialInfo) {
+                // 해당 정보가 없을 경우 신규 등록
+                const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                  facilitySerial: facilitySerial,
+                  targetKey: targetKey,
+                  callRequest: false,
+                  callRequestMulti1: false,
+                  callRequestMulti2: false,
+                };
+                useRedisUtil().hset(
+                  RedisKeys.RecentCallCountByFacilitySerial,
+                  facilitySerial,
+                  JSON.stringify(recentCallCountByFacilitySerialParams)
+                );
+              } else {
+                recentCallCountByFacilitySerialInfo.callRequestMulti1 = false
+
+                useRedisUtil().hset(
+                  RedisKeys.RecentCallCountByFacilitySerial,
+                  facilitySerial,
+                  JSON.stringify(recentCallCountByFacilitySerialInfo)
+                );
+              }
+            }
+
           }
           break;
 
@@ -300,12 +383,90 @@ export const useEqpCheckUtil = () => {
               tagName: 'Call_Response_Multi_2',
               value: true,
             });
+            if (targetTagInfo.value === true) {
+              const facilitySerial = targetTagInfo.EQ_CODE;
+              const targetKey = targetTagInfo.TAGGROUP
+                ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
+                : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+              const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributesDeep>(
+                RedisKeys.InfoFacilityBySerial,
+                facilitySerial
+              );
+              if (facilityInfo && facilityInfo.system === 'WMS' && facilityInfo.type === 'in' && facilityInfo.isActiveCallTrigger) {
+                const recentCallCountByFacilitySerialInfo =
+                  await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
+                    RedisKeys.RecentCallCountByFacilitySerial,
+                    facilitySerial
+                  );
+                if (!recentCallCountByFacilitySerialInfo) {
+                  // 해당 정보가 없을 경우 신규 등록
+                  const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                    facilitySerial: facilitySerial,
+                    targetKey: targetKey,
+                    callRequest: false,
+                    callRequestMulti1: false,
+                    callRequestMulti2: true,
+                  };
+                  useRedisUtil().hset(
+                    RedisKeys.RecentCallCountByFacilitySerial,
+                    facilitySerial,
+                    JSON.stringify(recentCallCountByFacilitySerialParams)
+                  );
+                } else {
+                  recentCallCountByFacilitySerialInfo.callRequestMulti2 = true
+
+                  useRedisUtil().hset(
+                    RedisKeys.RecentCallCountByFacilitySerial,
+                    facilitySerial,
+                    JSON.stringify(recentCallCountByFacilitySerialInfo)
+                  );
+                }
+              }
+            }
           } else if (targetTagInfo.value === false) {
             await useKepServerUtil().writeSimpleTagValue({
               targetFacility: targetTagInfo.EQ_CODE,
               tagName: 'Call_Response_Multi_2',
               value: false,
             });
+            const facilitySerial = targetTagInfo.EQ_CODE;
+            const targetKey = targetTagInfo.TAGGROUP
+              ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
+              : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+            const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributesDeep>(
+              RedisKeys.InfoFacilityBySerial,
+              facilitySerial
+            );
+            if (facilityInfo && facilityInfo.system === 'WMS' && facilityInfo.type === 'in' && facilityInfo.isActiveCallTrigger) {
+              const recentCallCountByFacilitySerialInfo =
+                await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
+                  RedisKeys.RecentCallCountByFacilitySerial,
+                  facilitySerial
+                );
+              if (!recentCallCountByFacilitySerialInfo) {
+                // 해당 정보가 없을 경우 신규 등록
+                const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                  facilitySerial: facilitySerial,
+                  targetKey: targetKey,
+                  callRequest: false,
+                  callRequestMulti1: false,
+                  callRequestMulti2: false,
+                };
+                useRedisUtil().hset(
+                  RedisKeys.RecentCallCountByFacilitySerial,
+                  facilitySerial,
+                  JSON.stringify(recentCallCountByFacilitySerialParams)
+                );
+              } else {
+                recentCallCountByFacilitySerialInfo.callRequestMulti2 = false
+
+                useRedisUtil().hset(
+                  RedisKeys.RecentCallCountByFacilitySerial,
+                  facilitySerial,
+                  JSON.stringify(recentCallCountByFacilitySerialInfo)
+                );
+              }
+            }
           }
           break;
 

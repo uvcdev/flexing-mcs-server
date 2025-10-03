@@ -326,7 +326,7 @@ const service = {
       if (!facilityInfo) {
         logging.ACTION_ERROR({
           filename: `facilityService.ts - editFacilityMode`,
-          params: `Serail(${params.serial})에 해당하는 설비 정보를 찾을 수 없습니다.`,
+          params: `Serial(${params.serial})에 해당하는 설비 정보를 찾을 수 없습니다.`,
           result: null,
           error: false,
         });

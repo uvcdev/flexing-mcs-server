@@ -480,3 +480,5 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 미션 결정지 오류 수정
 
 - WMS 콜 캔슬 로직 수정
+
+- 멀티콜 1,2 WMS 내용 반영

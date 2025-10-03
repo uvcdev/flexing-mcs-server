@@ -81,7 +81,7 @@ export enum RedisKeys {
   InfoMissionOrderByWorkOrderCode = 'info_mission_order_by_work_order_code', // ACS에서 MCS로 전달한 미션 오더 정보
   InfoCallKey = 'info_call_key', // 서버 재부팅시 기존에 있던 데이터인지 추가해줄 데이터인지 확인하는 정보
   RecentWorkOrderListByFacilitySerial = 'recent_work_order_list_by_facility_serial',  // 현재 진행 중인 작업 지시 카운트
-  RecentCallCountByFacilitySerail = 'recent_call_count_by_facility_serail',           // Call_Request, Mutil Call 1 , Mutil Call 2 on 상태
+  RecentCallCountByFacilitySerial = 'recent_call_count_by_facility_serail',           // Call_Request, Mutil Call 1 , Mutil Call 2 on 상태
 }
 export enum RedisSettingKeys {
   // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

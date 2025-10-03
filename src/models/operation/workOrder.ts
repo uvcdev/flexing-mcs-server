@@ -371,7 +371,9 @@ export interface RecentWorkOrderListByFacilitySerialAttributes {
   workOrderList: Array<RecentWorkOrderInfoByFacilitySerialAttributes>;
 }
 
-export interface RecentCallCountByFacilitySerailAttributes {
+export interface RecentCallCountByFacilitySerialAttributes {
+  facilitySerial: string;
+  targetKey: string;
   callRequest: boolean
   callRequestMulti1: boolean
   callRequestMulti2: boolean
