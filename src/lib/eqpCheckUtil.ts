@@ -16,6 +16,7 @@ import { timestampToDate } from '../lib/usefullToolUtil';
 import { FacilityAttributesDeep } from '../models/operation/facility';
 import { initTrackingLogRedis } from './process/trackingLog';
 import {
+  RecentCallCountByFacilitySerailAttributes,
   RecentWorkOrderInfoByFacilitySerialAttributes,
   RecentWorkOrderListByFacilitySerialAttributes,
 } from '../models/operation/workOrder';
@@ -45,6 +46,34 @@ export const useEqpCheckUtil = () => {
               RedisKeys.InfoFacilityBySerial,
               facilitySerial
             );
+            if (facilityInfo && facilityInfo.system === 'WMS' && facilityInfo.type === 'in' && facilityInfo.isActiveCallTrigger) {
+              const recentCallCountByFacilitySerailInfo =
+                await useRedisUtil().hgetObject<RecentCallCountByFacilitySerailAttributes>(
+                  RedisKeys.RecentCallCountByFacilitySerail,
+                  facilitySerial
+                );
+              if (!recentCallCountByFacilitySerailInfo) {
+                // 해당 정보가 없을 경우 신규 등록
+                const recentCallCountByFacilitySerailParams: RecentCallCountByFacilitySerailAttributes = {
+                  callRequest: true,
+                  callRequestMulti1: false,
+                  callRequestMulti2: false,
+                };
+                useRedisUtil().hset(
+                  RedisKeys.RecentCallCountByFacilitySerail,
+                  facilitySerial,
+                  JSON.stringify(recentCallCountByFacilitySerailParams)
+                );
+              } else {
+                recentCallCountByFacilitySerailInfo.callRequest = true
+
+                useRedisUtil().hset(
+                  RedisKeys.RecentCallCountByFacilitySerail,
+                  facilitySerial,
+                  JSON.stringify(recentCallCountByFacilitySerailInfo)
+                );
+              }
+            }
             if (facilityInfo && facilityInfo.isActiveCallTrigger) {
               const eqpCallId = await useCallRegisterUtil().createWorkOrderCode(
                 targetKey,
@@ -91,7 +120,7 @@ export const useEqpCheckUtil = () => {
                 };
                 await initTrackingLogRedis(callInfo);
 
-                if (facilityInfo.system === 'WMS') {
+                if (facilityInfo.system === 'WMS' && facilityInfo.type === 'in') {
                   const workOrderState = 'beforeWorkOrder';
                   const workOrderInfo = {
                     callId: eqpCallId,
@@ -134,6 +163,43 @@ export const useEqpCheckUtil = () => {
           } else {
             await useCallRemoveUtil().callRemove(targetTagInfo);
             // await useRedisUtil().hdel(RedisKeys.InfoCallKey, facilitySerial);
+            const facilitySerial = targetTagInfo.EQ_CODE;
+            const timezoneValue = process.env.TIME_ZONE || '';
+            const targetKey = targetTagInfo.TAGGROUP
+              ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
+              : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+            const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributesDeep>(
+              RedisKeys.InfoFacilityBySerial,
+              facilitySerial
+            );
+            if (facilityInfo && facilityInfo.system === 'WMS' && facilityInfo.type === 'in' && facilityInfo.isActiveCallTrigger) {
+              const recentCallCountByFacilitySerailInfo =
+                await useRedisUtil().hgetObject<RecentCallCountByFacilitySerailAttributes>(
+                  RedisKeys.RecentCallCountByFacilitySerail,
+                  facilitySerial
+                );
+              if (!recentCallCountByFacilitySerailInfo) {
+                // 해당 정보가 없을 경우 신규 등록
+                const recentCallCountByFacilitySerailParams: RecentCallCountByFacilitySerailAttributes = {
+                  callRequest: false,
+                  callRequestMulti1: false,
+                  callRequestMulti2: false,
+                };
+                useRedisUtil().hset(
+                  RedisKeys.RecentCallCountByFacilitySerail,
+                  facilitySerial,
+                  JSON.stringify(recentCallCountByFacilitySerailParams)
+                );
+              } else {
+                recentCallCountByFacilitySerailInfo.callRequest = false
+
+                useRedisUtil().hset(
+                  RedisKeys.RecentCallCountByFacilitySerail,
+                  facilitySerial,
+                  JSON.stringify(recentCallCountByFacilitySerailInfo)
+                );
+              }
+            }
           }
           break;
 

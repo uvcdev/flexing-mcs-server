@@ -371,6 +371,12 @@ export interface RecentWorkOrderListByFacilitySerialAttributes {
   workOrderList: Array<RecentWorkOrderInfoByFacilitySerialAttributes>;
 }
 
+export interface RecentCallCountByFacilitySerailAttributes {
+  callRequest: boolean
+  callRequestMulti1: boolean
+  callRequestMulti2: boolean
+}
+
 // include attributes
 export const WorkOrderAttributesInclude = [
   'id',
