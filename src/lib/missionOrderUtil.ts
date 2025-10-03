@@ -32,20 +32,34 @@ export const checkMissionOrder = async () => {
           linkedEqpIds = missionFromfacilityInfo?.linkedEqpIds || [];
         }
 
+        const newFacilityArray = [];
+
         if (linkedEqpIds && linkedEqpIds.length > 0) {
-          for (let i = 0; i < linkedEqpIds.length; i++) {
+          for (let i = 0, length = linkedEqpIds.length; i < length; i++) {
             const linkedEqpId = linkedEqpIds[i];
             const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
               RedisKeys.InfoFacilityById,
               linkedEqpId.toString() || ''
             );
+            newFacilityArray.push(linkedFacilityInfo)
+          }
+
+          newFacilityArray.sort((a, b) => (b?.priority ?? 0) - (a?.priority ?? 0))
+
+          for (let i = 0; i < newFacilityArray.length; i++) {
+            // const linkedEqpId = linkedEqpIds[i];
+            // const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+            //   RedisKeys.InfoFacilityById,
+            //   linkedEqpId.toString() || ''
+            // );
+            const sortLinkedFacilityInfo = newFacilityArray[i];
             const plcInfo = await redisUtil.hgetObject<FacilityAttributes>(
               RedisKeys.InfoPlcBySerial,
-              linkedFacilityInfo?.serial?.toString() || ''
+              sortLinkedFacilityInfo?.serial?.toString() || ''
             );
             const plcInfoToJson = JSON.parse(JSON.stringify(plcInfo));
 
-            const targetCode = linkedFacilityInfo?.serial;
+            const targetCode = sortLinkedFacilityInfo?.serial;
 
             const targetKey = kepServerUtil.getTargetKey(targetCode || '');
             await kepServerUtil.updateTagMapValues(targetKey, targetCode || '', [
@@ -55,6 +69,8 @@ export const checkMissionOrder = async () => {
               'Dock_EQ_Status',
               'Call_Response',
               'Dock_Disable',
+              'Dock_Out_Permit',
+              'Dock_Permit',
             ]);
 
             const eqAuto = opcuaUtil.tagMap.get(`${targetCode}.EQ_Auto`);
@@ -63,6 +79,8 @@ export const checkMissionOrder = async () => {
             const dockEqStatus = opcuaUtil.tagMap.get(`${targetCode}.Dock_EQ_Status`);
             const callResponse = opcuaUtil.tagMap.get(`${targetCode}.Call_Response`);
             const dockDisable = opcuaUtil.tagMap.get(`${targetCode}.Dock_Disable`);
+            const dockOutPermit = opcuaUtil.tagMap.get(`${targetCode}.Dock_Out_Permit`);
+            const dockPermit = opcuaUtil.tagMap.get(`${targetCode}.Dock_Permit`);
 
             const eqAutoValue = (eqAuto?.value as boolean) || false;
             const callRequestValue = (callRequest?.value as boolean) || false;
@@ -70,6 +88,8 @@ export const checkMissionOrder = async () => {
             const dockEqStatusValue = (dockEqStatus?.value as boolean) || false;
             const callResponseValue = (callResponse?.value as boolean) || false;
             const dockDisableValue = (dockDisable?.value as boolean) || false;
+            const dockOutPermitValue = (dockOutPermit?.value as boolean) || false;
+            const dockPermitValue = (dockPermit?.value as boolean) || false;
 
             // 콜 카운트 없어도 되나욤 ?
             if (
@@ -78,13 +98,15 @@ export const checkMissionOrder = async () => {
               // callCountValue > 0 &&
               dockEqStatusValue === false &&
               callResponseValue === false &&
-              dockDisableValue === false
+              dockDisableValue === false &&
+              dockOutPermitValue === false &&
+              dockPermitValue === false
             ) {
               const missionOrderMqttMessage = {
                 EQP_CALL_ID: missionOrderMqttInfo.missionOrderCode.slice(-4),
                 TYPE: 'MISSION',
                 WORK_ORDER_ID: missionOrderMqttInfo.workOrderId,
-                EQP_ID: linkedFacilityInfo?.serial,
+                EQP_ID: sortLinkedFacilityInfo?.serial,
                 AMR_ID: missionOrderMqttInfo.amrName,
                 AMR_DB_ID: Number(missionOrderMqttInfo.amrId) || 0,
                 CALL_TYPE: missionOrderMqttInfo.callType,
@@ -96,7 +118,7 @@ export const checkMissionOrder = async () => {
               };
 
               // if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
-              if (linkedFacilityInfo) {
+              if (sortLinkedFacilityInfo) {
                 // 링크된 설비 콜이 떠 있는 경우 작업 생성
                 sendMqtt('acs/missionorder', JSON.stringify(missionOrderMqttMessage));
 
@@ -108,12 +130,12 @@ export const checkMissionOrder = async () => {
                 // });
                 // call_response 작성
                 await useKepServerUtil().writeSimpleTagValue({
-                  targetFacility: linkedFacilityInfo.serial || '',
+                  targetFacility: sortLinkedFacilityInfo.serial || '',
                   tagName: 'Call_Response',
                   value: true,
                 });
 
-                await useCallTypeUtil().callTypeResponse(linkedFacilityInfo.serial || '');
+                await useCallTypeUtil().callTypeResponse(sortLinkedFacilityInfo.serial || '');
                 redisUtil.hdel(RedisKeys.InfoMissionOrderByWorkOrderCode, mqttCallId);
                 break;
               }

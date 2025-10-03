@@ -437,11 +437,6 @@ export const useDockingUtil = () => {
         value: JSON.parse(JSON.stringify(targetTagInfo)),
         message: `설비가 도킹완료 0으로 내림`,
       });
-      await useKepServerUtil().writeSimpleTagValue({
-        targetFacility: targetTagInfo.EQ_CODE,
-        tagName: 'Dock_AMR_Status',
-        value: false,
-      });
       return;
     }
 
@@ -777,6 +772,19 @@ export const useDockingUtil = () => {
           case EXC_CLS.CHARGE: //충전도킹
             // 충전 도킹 요청 PLC 쓰기
             // 도킹 요청 ID/기종 확인 안함
+
+            await useKepServerUtil().writeSimpleTagValue({
+              targetFacility: paramsSerial,
+              tagName: 'Dock_Signal_Reset',
+              value: true,
+            });
+            setTimeout(() => {
+              useKepServerUtil().writeSimpleTagValue({
+                targetFacility: paramsSerial,
+                tagName: 'Dock_Signal_Reset',
+                value: false,
+              });
+            }, 500);
             const dockingChargeRequestTag = await useKepServerUtil().makeWriteDatas({
               targetFacility: paramsSerial,
               tagInfo: [
