@@ -19,6 +19,7 @@ import { useMultiCallRegisterUtil } from '../multiCallRegisterUtil';
 import { useCallResponseUtil } from '../callResponseUtil';
 import { sendCallInfoList, sendReqPortStateList } from './wmsSyncronization';
 import { checkMissionOrder } from '../missionOrderUtil';
+import { checkCallCreate } from '../callCheckUtil';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5;
 const heapUse = () => {
@@ -84,7 +85,7 @@ export const processMcs = async () => {
 
     // Call_Request ON 인 경우 실시간 조회해서 작업 생성
     await useCallRegisterUtil().callRegister();
-
+    await checkCallCreate();
     // 모든 설비에서 조회해서 Call_Request 켜져있으면 RedisKeys.InfoCallRequestOnBySerial 에 등록
 
     // pending 된 작업 지시 생성
