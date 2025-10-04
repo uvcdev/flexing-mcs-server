@@ -482,3 +482,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - WMS 콜 캔슬 로직 수정
 
 - 멀티콜 1,2 WMS 내용 반영
+
+- 트래킹 로그 문제 개선
+  - 재고 없음 후속처리
+  - 창고 수동 작업 후속 처리
