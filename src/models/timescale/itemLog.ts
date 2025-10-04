@@ -18,13 +18,13 @@ export interface ItemLogAttributes {
   body: Record<string, any> | null;
   // MBS 추가본
   trackingLogId: number | null;
-  callId: string | null;  // 추적을 위한 CALL ID
-  value: string | null;  // 각 로그에서 사용할 데이터
-  state: string | null;  // 기존에 body에 있던 state
+  callId: string | null; // 추적을 위한 CALL ID
+  value: string | null; // 각 로그에서 사용할 데이터
+  state: string | null; // 기존에 body에 있던 state
   location: string | null; // 발생 위치 창고 (WMS, MW01) , 설비 ( SP11, SP12 ) , AMR ( AMR_01 )...
   message: string | null;
-  resultStatus: ResultStatus | null;  // 상태값 정상, 오류 , 멈춤(해결가능) , 멈춤(단순멈춤)
-  createdDateTime: string | null;  // 발생 시간. redis 조회 시 용이하게 사용하기 위해 추가
+  resultStatus: ResultStatus | null; // 상태값 정상, 오류 , 멈춤(해결가능) , 멈춤(단순멈춤)
+  createdDateTime: string | null; // 발생 시간. redis 조회 시 용이하게 사용하기 위해 추가
   createdAt: Date;
 }
 
@@ -48,10 +48,9 @@ export type ItemLogSubjectType =
   | 'ALARM_CLEAR'
   | 'ACK_MISSION_COMMAND'
   // MBS 추가
-  | TrackingLogSubjectType
-  ;
+  | TrackingLogSubjectType;
 
-type ResultStatus = 'SUCCESS' | 'ERROR' | 'ABORTED' | 'PAUSED';
+type ResultStatus = 'SUCCESS' | 'ERROR' | 'ABORTED' | 'PAUSED' | 'CANCELED';
 
 class ItemLog extends Model implements ItemLogAttributes {
   public readonly id!: ItemLogAttributes['id'];

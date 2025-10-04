@@ -514,6 +514,182 @@ export const editTrackingLogRedis = async (
   redisUtil.hset(RedisKeys.InfoTrackingLogByCallId, callId, JSON.stringify(trackingLogRedisBody));
 };
 
+export const editAbnormalTrackingLogRedis = async (
+  trackingLogUpdateData: TrackingLogRedisUpdateParams,
+  value?: string,
+  resultStatus?: string,
+  location?: string
+) => {
+  // 필수 값 확인
+  const callId = trackingLogUpdateData.callId;
+  const transferId = trackingLogUpdateData.transferId || null;
+
+  // Redis 값 업데이트
+  const dateNow = formatDetailedDateTime(new Date());
+
+  if (!callId) {
+    logging.ACTION_ERROR({
+      filename: 'trackingLog.ts - editTrackingLogRedis',
+      error: `callId (${callId}) is invalid `,
+      params: null,
+      result: false,
+    });
+    return;
+  }
+
+  const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
+    RedisKeys.InfoTrackingLogByCallId,
+    callId
+  );
+
+  if (!infoTrackingLogByCallId) {
+    logging.ACTION_ERROR({
+      filename: 'trackingLog.ts - editTrackingLogRedis',
+      error: `infoTrackingLogByCallId (${infoTrackingLogByCallId}) is invalid `,
+      params: null,
+      result: false,
+    });
+    return;
+  }
+
+  if (!infoTrackingLogByCallId.id) {
+    logging.ACTION_ERROR({
+      filename: 'trackingLog.ts - editTrackingLogRedis',
+      error: `infoTrackingLogByCallId.id (${infoTrackingLogByCallId.id}) is invalid `,
+      params: null,
+      result: false,
+    });
+    return;
+  }
+
+  // 2차 검증 => 서로 관리하는 데이터의 id 값이 동일해야한다.
+  // if (infoTrackingLogByCallId.id !== infoTrackingLogByFacilityCode.id) {
+  //   logging.ACTION_ERROR({
+  //     filename: 'trackingLog.ts - editTrackingLogRedis',
+  //     error: `ID information mismatch: InfoTrackingLogByFacilityCode (${infoTrackingLogByFacilityCode.id}) does not match with InfoTrackingLogByCallId id (${infoTrackingLogByCallId.id}).`,
+  //     params: null,
+  //     result: false,
+  //   });
+  //   return
+  // }
+
+  // message 내용 추가
+  const FromMissionStates = [
+    'AMR_ACQUIRE_STARTED',
+    'AMR_ACQUIRE_COMPLETED',
+    'FROM_DOCKING_REQ',
+    'FROM_DOCKING_PERMIT',
+    'FROM_DOCKING_COMPLETED',
+  ];
+  const ToMissionStates = [
+    'TO_DOCKING_REQ',
+    'TO_DOCKING_PERMIT',
+    'TO_DOCKING_COMPLETED',
+    'AMR_DEPOSIT_STARTED',
+    'AMR_DEPOSIT_COMPLETED',
+  ];
+
+  if (trackingLogUpdateData.detail) {
+    if (FromMissionStates.includes(trackingLogUpdateData.detail)) {
+      if (infoTrackingLogByCallId.startFacility) {
+        trackingLogUpdateData.description = `FAC(${infoTrackingLogByCallId.startFacility}) : AMR(${infoTrackingLogByCallId.assignedRobot}) Mission State : ${trackingLogUpdateData.detail}`;
+      }
+    }
+    if (ToMissionStates.includes(trackingLogUpdateData.detail)) {
+      if (infoTrackingLogByCallId.destFacility) {
+        trackingLogUpdateData.description = `FAC(${infoTrackingLogByCallId.destFacility}) : AMR(${infoTrackingLogByCallId.assignedRobot}) Mission State : ${trackingLogUpdateData.detail}`;
+      }
+    }
+  }
+
+  // 기존 tracking Log 업데이트
+  const trackingLogUpdateParams: TrackingLogUpdateParams = {
+    id: infoTrackingLogByCallId.id,
+    code: infoTrackingLogByCallId.code,
+    plcName: infoTrackingLogByCallId.plcName,
+    portName: infoTrackingLogByCallId.portName,
+    callId: infoTrackingLogByCallId.callId,
+    callType: infoTrackingLogByCallId.callType,
+    eqpCallId: infoTrackingLogByCallId.eqpCallId,
+    transferId: transferId || infoTrackingLogByCallId.transferId,
+    subject: trackingLogUpdateData.subject ? trackingLogUpdateData.subject : infoTrackingLogByCallId.subject,
+    detail: trackingLogUpdateData.detail ? trackingLogUpdateData.detail : infoTrackingLogByCallId.detail,
+    state: trackingLogUpdateData.state ? trackingLogUpdateData.state : infoTrackingLogByCallId.state,
+    startFacility: trackingLogUpdateData.startFacility
+      ? trackingLogUpdateData.startFacility
+      : infoTrackingLogByCallId.startFacility,
+    destFacility: trackingLogUpdateData.destFacility
+      ? trackingLogUpdateData.destFacility
+      : infoTrackingLogByCallId.destFacility,
+    assignedRobot: trackingLogUpdateData.assignedRobot
+      ? trackingLogUpdateData.assignedRobot
+      : infoTrackingLogByCallId.assignedRobot,
+    value: trackingLogUpdateData.value ? trackingLogUpdateData.value : infoTrackingLogByCallId.value,
+    description: trackingLogUpdateData.description
+      ? trackingLogUpdateData.description
+      : infoTrackingLogByCallId.description,
+    processState: trackingLogUpdateData.processState
+      ? trackingLogUpdateData.processState
+      : infoTrackingLogByCallId.processState,
+  };
+
+  await trackingLogDao.update(trackingLogUpdateParams);
+
+  // item Log insert
+  const itemLogInsertParams: ItemLogInsertParams = {
+    itemCode: null,
+    facilityCode: null,
+    facilityName: null,
+    amrCode: null,
+    amrName: null,
+    floor: null,
+    topic: null,
+    subject: trackingLogUpdateData.subject ? (trackingLogUpdateData.subject as ItemLogSubjectType) : null,
+    body: null,
+    trackingLogId: infoTrackingLogByCallId.id,
+    state: trackingLogUpdateData.detail ? trackingLogUpdateData.detail : null,
+    location: location,
+    message: trackingLogUpdateData.description ? trackingLogUpdateData.description : null,
+    callId: infoTrackingLogByCallId.callId,
+    value: value,
+    resultStatus: resultStatus,
+    createdDateTime: dateNow,
+  };
+  // Item Log Insert
+  void itemLogDao.insert(itemLogInsertParams);
+
+  const itemLogList = [...infoTrackingLogByCallId.itemLogList];
+
+  itemLogList.push(itemLogInsertParams);
+
+  const trackingLogRedisBody: TrackingLogRedisAttributes = {
+    id: trackingLogUpdateParams.id,
+    code: trackingLogUpdateParams.code ?? null,
+    plcName: trackingLogUpdateParams.plcName ?? null,
+    portName: trackingLogUpdateParams.portName ?? null,
+    callId: trackingLogUpdateParams.callId ?? null,
+    callType: trackingLogUpdateParams.callType ?? null,
+    eqpCallId: trackingLogUpdateParams.eqpCallId ?? null,
+    transferId: trackingLogUpdateParams.transferId ?? null,
+    subject: trackingLogUpdateParams.subject ?? null,
+    detail: trackingLogUpdateParams.detail ?? null,
+    state: trackingLogUpdateParams.state ?? null,
+    startFacility: trackingLogUpdateParams.startFacility ?? null,
+    destFacility: trackingLogUpdateParams.destFacility ?? null,
+    assignedRobot: trackingLogUpdateParams.assignedRobot ?? null,
+    value: trackingLogUpdateParams.value ?? null,
+    description: trackingLogUpdateParams.description ?? null,
+    createdDateTime: infoTrackingLogByCallId.createdDateTime,
+    updatedDateTime: dateNow,
+    itemLogList: itemLogList,
+    processState: trackingLogUpdateParams?.processState ?? null,
+    missionDestination: trackingLogUpdateParams?.missionDestination ?? null,
+  };
+
+  // redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, plcName, JSON.stringify(trackingLogRedisBody));
+  redisUtil.hset(RedisKeys.InfoTrackingLogByCallId, callId, JSON.stringify(trackingLogRedisBody));
+};
+
 export const sendTrackingLogs = async () => {
   const trackingLogByCallIdList =
     (await redisUtil.hgetAllObject<TrackingLogRedisAttributes>(RedisKeys.InfoTrackingLogByCallId)) || [];

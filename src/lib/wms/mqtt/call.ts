@@ -152,6 +152,7 @@ const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
     assignedRobot: null,
     value: null,
     description: `Requesting CALL_INFO from WMS(${wmsName}) for Call ID ${callId}`,
+    processState: 'NORMAL',
   };
   await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
@@ -239,6 +240,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         assignedRobot: null,
         value: null,
         description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`,
+        processState: 'NORMAL',
       };
       await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
@@ -264,6 +266,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         assignedRobot: null,
         value: null,
         description: `[Call ID ${callId}] Call responsed`,
+        processState: 'NORMAL',
       };
       await editTrackingLogRedis(callResponseTrackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
@@ -308,6 +311,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         assignedRobot: null,
         value: null,
         description: `HCACK(${hcack})Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`,
+        processState: 'NORMAL',
       };
       await editTrackingLogRedis(hcack0TrackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
@@ -333,6 +337,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         assignedRobot: null,
         value: null,
         description: `[Call ID ${callId}] Call responsed`,
+        processState: 'NORMAL',
       };
       await editTrackingLogRedis(callResponseTrackingLogUpdateDataHcack0, undefined, 'SUCCESS', wmsName);
 
@@ -568,6 +573,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         assignedRobot: null,
         value: callId,
         description: `CancelCallInfo (HCACK=4): Call ${callId} cancelled on EQP ${callInfoData.Caller}`,
+        processState: 'CANCELED',
       };
       await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
@@ -591,7 +597,13 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
       //   result: false,
       // });
       // 물류 로그 기록
-      const trackingLogState = 'ABORTED';
+      const selectedInfoAckInCallByCallId = await redisUtil.hgetObject<InfoAckInCallByCallIdBody>(
+        RedisKeys.InfoAckInCallByCallId,
+        callId
+      );
+      const selectedInfoAckInCallByCallIdCmdId = selectedInfoAckInCallByCallId?.Cmd_ID || '';
+
+      const trackingLogState = 'CANCELED';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
         callId: callId,
         subject: trackingLogSubject,
@@ -602,12 +614,17 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         destFacility: null,
         assignedRobot: null,
         value: callId,
-        description: `Cmd_ID(${cmdId}) Command has already been executed - comment : ${ackComment}`,
+        description: `CancelCallInfo (HCACK=0): Call ${callId} cancelled on EQP ${callInfoData.Caller}`,
+        processState: 'CANCELED',
       };
       await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
-      // 진행중 정보를 가지고 있는 CALL 정보 삭제 - 이미 실행 되었다면 삭제되었기 때문에 redis 정보 삭제
+      // 진행중 정보를 가지고 있는 CALL 정보 삭제
       redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId);
+      redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, selectedInfoAckInCallByCallIdCmdId);
+
+      // 두번째 설비 호출 취소 요청일 수 있으니, ReinboundIfPortAssignedForFacilityCancelByCallId 삭제
+      redisUtil.hdel(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId);
 
       break;
     }
@@ -695,6 +712,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         assignedRobot: null,
         value: callId,
         description: `One or more values are invalid - comment : ${ackComment}`,
+        processState: 'CANCELED',
       };
       await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
@@ -725,6 +743,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         assignedRobot: null,
         value: callId,
         description: `Command already received - comment : ${ackComment}`,
+        processState: 'CANCELED',
       };
       await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
@@ -755,6 +774,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         assignedRobot: null,
         value: callId,
         description: `Object does not exist - comment : ${ackComment}`,
+        processState: 'CANCELED',
       };
       await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
@@ -785,6 +805,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         assignedRobot: null,
         value: hcack,
         description: `NG error occurred - comment : ${ackComment}`,
+        processState: 'CANCELED',
       };
       await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
@@ -845,6 +866,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
         assignedRobot: null,
         value: hcack,
         description: `HCACK Id ${hcack} is invalid - Undefined HCACK received - comment : ${ackComment}`,
+        processState: 'CANCELED',
       };
       await editTrackingLogRedis(trackingLogUpdateData, hcack, 'SUCCESS', wmsName);
 
@@ -1044,6 +1066,7 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
         assignedRobot: null,
         value: null,
         description: `Requesting CALL_INFO from WMS(${wmsName}) for Call ID ${mqttBody.Call_ID}`,
+        processState: 'NORMAL',
       };
       await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
     }

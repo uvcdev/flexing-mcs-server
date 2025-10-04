@@ -4,7 +4,7 @@ import { RecentWorkOrderListByFacilitySerialAttributes } from '../../models/oper
 import { useKepServerUtil } from '../kepServerUtil';
 import { separateMqttMessage, MbsMqttMesaage } from '../mqttUtil';
 import { useMultiCallRegisterUtil } from '../multiCallRegisterUtil';
-import { editTrackingLogRedis } from '../process/trackingLog';
+import { editAbnormalTrackingLogRedis, editTrackingLogRedis } from '../process/trackingLog';
 import { sendAckToWms } from '../process/wmsAck';
 import { RedisKeys, useRedisUtil } from '../redisUtil';
 
@@ -87,7 +87,12 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     } else if (assignTask === 'WORK-ORDER-CANCELED') {
       trackingLogUpdateData.description += `(MISSION Canceled - ACS)`;
     }
-    await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
+
+    if (callId.split('_').length === 4) {
+      await editAbnormalTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
+    } else {
+      await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
+    }
 
     // workOrder Count down
     const redisUtil = useRedisUtil();
