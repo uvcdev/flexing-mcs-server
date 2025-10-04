@@ -679,6 +679,15 @@ export const useCallCancelUtil = () => {
                   targetCode,
                   JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
                 );
+
+                redisUtil.hset(
+                  RedisKeys.RecentWorkOrderListByFacilitySerial,
+                  targetCode,
+                  JSON.stringify({
+                    count: 0,
+                    workOrderList: [],
+                  })
+                );
               }
             }
           }

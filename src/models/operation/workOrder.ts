@@ -3,6 +3,7 @@ import { sequelize } from '../sequelize';
 import { FacilityAttributesDeep } from './facility';
 import { ItemAttributes } from './item';
 import { AmrAttributes } from '../../models/common/amr';
+import { TagValue } from '../../lib/kepServerUtil';
 
 // 기본 interface
 export interface WorkOrderAttributes {
@@ -372,11 +373,12 @@ export interface RecentWorkOrderListByFacilitySerialAttributes {
 }
 
 export interface RecentCallCountByFacilitySerialAttributes {
+  targetTagInfo: TagValue;
   facilitySerial: string;
   targetKey: string;
-  callRequest: boolean
-  callRequestMulti1: boolean
-  callRequestMulti2: boolean
+  callRequest: boolean;
+  callRequestMulti1: boolean;
+  callRequestMulti2: boolean;
 }
 
 // include attributes

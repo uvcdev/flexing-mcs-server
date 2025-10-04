@@ -26,6 +26,11 @@ export interface EqpCallStats {
   ALWAYS_CALL_COUNT?: number;
   TRIGGER_CALL_COUNT?: number;
   CREATE_TIME?: string;
+  EQ_CODE?: string;
+  TAGGROUP?: string;
+  CHANNEL?: string;
+  DEVICE?: string;
+
   // NODE_ID: string;
 }
 
