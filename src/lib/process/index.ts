@@ -29,6 +29,19 @@ const heapUse = () => {
 
   // console.log(`heap use: ${heapUsedMB} MB / ${heapTotalMB} MB`);
 };
+
+// heartbeat 전용 함수
+export const startHeartbeat = () => {
+  setInterval(() => {
+    try {
+      // console.log('sendAllHeartBeat');
+      sendAllHeartbeat();
+    } catch (error) {
+      console.error('Error in heartbeat:', error);
+    }
+  }, 5000); // 정확히 5초마다
+};
+
 let counter = 0;
 export const processMcs = async () => {
   try {
@@ -51,9 +64,9 @@ export const processMcs = async () => {
     // }
     // const dryrunMode = dryrunSetting.data.mode || 'normal';
 
-    if (counter % 5 === 0) {
-      sendAllHeartbeat(); // wms heartbeat 전송 ( n초마다 실행 )
-    }
+    // if (counter % 5 === 0) {
+    //   sendAllHeartbeat(); // wms heartbeat 전송 ( n초마다 실행 )
+    // }
     // 현재 진행 중인 물류 로그 전송
     await sendTrackingLogs();
 

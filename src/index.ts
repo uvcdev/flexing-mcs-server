@@ -24,7 +24,7 @@ import { makeinitDailyWorkOrderstatsScheduleSet, makeSendServerStatusInterval } 
 import opcuaUtil from './lib/opcuaUtil';
 import { logToConsoleAndFile } from './lib/logging';
 
-import { processMcs, syncWithWms } from './lib/process/index';
+import { processMcs, startHeartbeat, syncWithWms } from './lib/process/index';
 import { initAllRedisData } from './lib/redis/init';
 import { useKepServerUtil } from './lib/kepServerUtil';
 
@@ -232,10 +232,13 @@ if (env === 'development') {
       // 설비 정보 동기화
 
       // WMS 정보 동기화
-      syncWithWms()
-      // WMS 로직
-      await processMcs()
+      syncWithWms();
 
+      // HeartBeat 생성 함수
+      await startHeartbeat();
+
+      // WMS 로직
+      await processMcs();
 
       // =====🔥kepserver 관련🔥=====
       // 초기 태그 데이터 초기화

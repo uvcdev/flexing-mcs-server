@@ -486,3 +486,13 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 트래킹 로그 문제 개선
   - 재고 없음 후속처리
   - 창고 수동 작업 후속 처리
+
+## v2.0.1
+- 멀티콜 코드 주석
+
+## v2.0.2
+- Dock Out Request 부분 수정
+  - Dock Out Request 진행 전에 한 번 끄고 다시 키는 로직으로 변경
+
+## v2.0.3
+- HEART BEAT 전송 로직 수정
