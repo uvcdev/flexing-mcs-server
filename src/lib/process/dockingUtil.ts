@@ -889,8 +889,25 @@ export const useDockingUtil = () => {
           await useKepServerUtil().writeSimpleTagValue({
             targetFacility: paramsSerial || '',
             tagName: 'Dock_Out_Request',
-            value: true,
+            value: false,
           });
+          // await useKepServerUtil().writeSimpleTagValue({
+          //   targetFacility: paramsSerial,
+          //   tagName: 'Dock_Signal_Reset',
+          //   value: true,
+          // });
+          setTimeout(() => {
+            // useKepServerUtil().writeSimpleTagValue({
+            //   targetFacility: paramsSerial || '',
+            //   tagName: 'Dock_Signal_Reset',
+            //   value: false,
+            // });
+            useKepServerUtil().writeSimpleTagValue({
+              targetFacility: paramsSerial || '',
+              tagName: 'Dock_Out_Request',
+              value: true,
+            });
+          }, 500);
         }
       }
     } catch (error) {

@@ -99,10 +99,10 @@ export const processMcs = async () => {
     // await useCallRegisterUtil().createFacilityModeWorkOrder();
 
     // 멀티콜 판단로직
-    await useCallResponseUtil().decisionWorkOrder();
+    // await useCallResponseUtil().decisionWorkOrder();
 
     // 멀티콜 작업을 pending 처리
-    await useMultiCallRegisterUtil().multiCallRegister();
+    // await useMultiCallRegisterUtil().multiCallRegister();
 
     // 미션 결정지에 있는 AMR 이동
     await checkMissionOrder();
