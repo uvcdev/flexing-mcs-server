@@ -496,3 +496,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 ## v2.0.3
 - HEART BEAT 전송 로직 수정
+
+## v2.0.4
+- BS12 PIO 수정

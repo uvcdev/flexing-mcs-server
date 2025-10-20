@@ -922,16 +922,18 @@ export const receiveMqtt = (): void => {
                 });
 
                 // BS12 값 write
-                // await kepServerUtil.writeSimpleTagValue({
-                //   targetFacility: messageJson.OUT_SERIAL,
-                //   tagName: 'Dock_AMR_Status',
-                //   value: true,
-                // });
                 await kepServerUtil.writeSimpleTagValue({
                   targetFacility: messageJson.OUT_SERIAL,
                   tagName: 'Dock_Request',
                   value: true,
                 });
+                setTimeout(() => {
+                  useKepServerUtil().writeSimpleTagValue({
+                    targetFacility: messageJson.OUT_SERIAL,
+                    tagName: 'Dock_AMR_Status',
+                    value: true,
+                  });
+                }, 500);
                 logging.MQTT_LOG({
                   title: 'acs same_pio request',
                   topic: messageTopic,
