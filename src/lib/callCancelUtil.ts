@@ -767,6 +767,8 @@ export const useCallCancelUtil = () => {
         return;
       }
 
+      await writeCallCancelResponse(targetCode);
+
       let workOrderInfo = null;
       if (facilityInfo.isActiveCallTrigger === true) {
         if (facilityInfo.type === 'in') {

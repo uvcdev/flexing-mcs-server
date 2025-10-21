@@ -5,12 +5,12 @@ WORKDIR /app
 # 노드 패키지 설치
 COPY package*.json src /app/
 COPY kepserverTag.json src /app/
-RUN npm install -g pnpm && pnpm install -rP
+RUN npm install -g pnpm && pnpm install
 # RUN npm i --save-dev @types/node-schedule
 # 소스코드 빌드
 COPY . .
-#RUN npx tsc
-#RUN pnpm build
+RUN npx tsc
+# RUN pnpm build
 
 # ==== 결과 이미지 생성
 FROM node:18.12.1-alpine3.16 as final

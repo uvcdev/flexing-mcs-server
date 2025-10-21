@@ -984,6 +984,11 @@ export const useDockingUtil = () => {
         });
         return;
       }
+      if (dockingParams.PORT_ID === 'BS11') {
+        dockingParams.SAME_PIO_SERIAL = 'BS12';
+      } else if (dockingParams.PORT_ID === 'BS12') {
+        dockingParams.SAME_PIO_SERIAL = 'BS11';
+      }
       const usageFacilitylist = facilityInfoList.filter(
         (facility) => dockingParams.PORT_ID === facility.serial || dockingParams.SAME_PIO_SERIAL === facility.serial
       );
