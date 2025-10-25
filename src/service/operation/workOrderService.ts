@@ -236,12 +236,12 @@ const service = {
   },
   async facilityCancel(params: WorkOrderCancelByCodeParams, logFormat: LogFormat<unknown>): Promise<UpdatedResult> {
     let workOrderResult: UpdatedResult;
-    const transaction: Transaction = await sequelize.transaction();
+    // const transaction: Transaction = await sequelize.transaction();
     try {
       // 취소할 작업지시 조회
       const workOrder = await workOrderDao.selectInfoByCode({ code: params.code });
       if (!workOrder) {
-        await transaction.rollback();
+        // await transaction.rollback();
         const errorMessage = `postgres에 workOrder ${params.code} 데이터가 없습니다.`;
         logging.ACTION_DEBUG({
           filename: 'workOrderService.ts.forceCancel',
@@ -257,7 +257,7 @@ const service = {
         });
       }
       if (workOrder.state === 'facilityCanceled') {
-        await transaction.rollback();
+        // await transaction.rollback();
         await useKepServerUtil().writeSimpleTagValue({
           targetFacility: params.linkedEqpId,
           tagName: 'Call_Cancel_Response',
@@ -287,7 +287,7 @@ const service = {
 
       workOrderResult = await workOrderDao.update(workOrderUpdateParmas);
     } catch (err) {
-      await transaction.rollback();
+      // await transaction.rollback();
       return new Promise((resolve, reject) => {
         reject(err);
       });
