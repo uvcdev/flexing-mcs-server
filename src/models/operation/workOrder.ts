@@ -364,7 +364,7 @@ export interface PendingWorkOrderAttributes {
 
 export interface RecentWorkOrderInfoByFacilitySerialAttributes {
   callId: string;
-  state?: string;
+  state?: string; // 'beforeRequest' | 'beforeWorkOrder' | 'workOrder' | 'fromWorkOrder' | 'toWorkOrder' | 'missionWorkOrder'
 }
 
 export interface RecentWorkOrderListByFacilitySerialAttributes {

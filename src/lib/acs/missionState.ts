@@ -105,40 +105,78 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
           facilitySerial
         );
 
-        if (facilityInfo?.system === 'WMS') {
-          let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
-            RedisKeys.RecentWorkOrderListByFacilitySerial,
-            facilitySerial
-          );
-          if (workOrderListInfo) {
-            const removeWorkOrderByCallId = (targetCallId: string) => {
-              const workOrderList = workOrderListInfo?.workOrderList || [];
+        // if (facilityInfo?.system === 'WMS') {
+        let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+          RedisKeys.RecentWorkOrderListByFacilitySerial,
+          facilitySerial
+        );
+        if (workOrderListInfo) {
+          const removeWorkOrderByCallId = (targetCallId: string) => {
+            const workOrderList = workOrderListInfo?.workOrderList || [];
 
-              // targetCallId와 같은 항목이 있는지 확인
-              const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
+            // targetCallId와 같은 항목이 있는지 확인
+            const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
 
-              if (hasMatchingCallId) {
-                workOrderListInfo = {
-                  count: (workOrderListInfo?.count || 0) - 1,
-                  workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
-                };
-              }
+            if (hasMatchingCallId) {
+              workOrderListInfo = {
+                count: (workOrderListInfo?.count || 0) - 1,
+                workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
+              };
+            }
 
-              return workOrderListInfo;
+            return workOrderListInfo;
+          };
+
+          const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
+            removeWorkOrderByCallId(callId) ?? {
+              count: 0,
+              workOrderList: [],
             };
 
-            const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-              removeWorkOrderByCallId(callId) ?? {
-                count: 0,
-                workOrderList: [],
-              };
+          redisUtil.hset(
+            RedisKeys.RecentWorkOrderListByFacilitySerial,
+            facilitySerial,
+            JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+          );
+        }
+        // }
+      }
+    }
 
-            redisUtil.hset(
-              RedisKeys.RecentWorkOrderListByFacilitySerial,
-              facilitySerial,
-              JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
-            );
+    if (state === 'AMR_ASSIGNED' || state === 'CARRIER_TRANSFERRING' || state === 'MISSION_ORDER_ASSIGNED') {
+      if (facilitySerial && facilitySerial.length > 3) {
+        const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+          RedisKeys.InfoFacilityBySerial,
+          facilitySerial
+        );
+
+        let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+          RedisKeys.RecentWorkOrderListByFacilitySerial,
+          facilitySerial
+        );
+        if (workOrderListInfo) {
+          for (let i = 0; i < workOrderListInfo.count; i++) {
+            if (workOrderListInfo.workOrderList[i].callId === callId) {
+              if (state === 'AMR_ASSIGNED') {
+                workOrderListInfo.workOrderList[i].state = 'fromWorkOrder';
+              } else if (state === 'CARRIER_TRANSFERRING') {
+                workOrderListInfo.workOrderList[i].state = 'toWorkOrder';
+              } else if (state === 'MISSION_ORDER_ASSIGNED') {
+                workOrderListInfo.workOrderList[i].state = 'missionWorkOrder';
+              }
+            }
           }
+
+          const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+            count: workOrderListInfo.count,
+            workOrderList: workOrderListInfo.workOrderList,
+          };
+
+          redisUtil.hset(
+            RedisKeys.RecentWorkOrderListByFacilitySerial,
+            facilitySerial,
+            JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+          );
         }
       }
     }

@@ -499,3 +499,18 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 ## v2.0.4
 - BS12 PIO 수정
+
+
+## v2.0.11
+- 현장 코드 수정본 적용
+
+## v2.1.1
+- 2차 이후 국내 수정 진행 사항
+
+- 콜 생성 방식 변경
+  - callCheckUtil.ts
+    - 콜 발생 데이터에 따라, Call Request 생성 여부 판별
+  - callRegisterUtil.ts
+    - WMS 관련 공급 포트 내용 수정
+  - eqpCheckUtil.ts
+    - Request 발생, 처리 로직 변경

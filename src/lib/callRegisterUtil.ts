@@ -1,4 +1,8 @@
-import { PendingWorkOrderAttributes } from '../models/operation/workOrder';
+import {
+  PendingWorkOrderAttributes,
+  RecentWorkOrderInfoByFacilitySerialAttributes,
+  RecentWorkOrderListByFacilitySerialAttributes,
+} from '../models/operation/workOrder';
 import { FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
 import { makeCallType, TagValue, useKepServerUtil } from './kepServerUtil';
 import { useMultiCallRegisterUtil } from './multiCallRegisterUtil';
@@ -382,6 +386,32 @@ export const useCallRegisterUtil = () => {
                     RedisKeys.InfoWorkOrderCountBySerial,
                     callInfo.Caller
                   );
+
+                  let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+                    RedisKeys.RecentWorkOrderListByFacilitySerial,
+                    targetTagInfo.EQ_CODE
+                  );
+
+                  if (workOrderListInfo) {
+                    for (let i = 0; i < workOrderListInfo.count; i++) {
+                      if (workOrderListInfo.workOrderList[i].callId === eqpCallId) {
+                        workOrderListInfo.workOrderList[i].state = 'beforeWorkOrder';
+                      }
+                    }
+
+                    // eslint-disable-next-line prettier/prettier
+                    const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+                      count: workOrderListInfo.count,
+                      // eslint-disable-next-line prettier/prettier
+                      workOrderList: workOrderListInfo.workOrderList,
+                    };
+
+                    redisUtil.hset(
+                      RedisKeys.RecentWorkOrderListByFacilitySerial,
+                      targetTagInfo.EQ_CODE,
+                      JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+                    );
+                  }
                 }
                 // else if ((facilityInfo?.type).toUpperCase() === 'OUT' && facilityInfo.system === 'WMS') {
                 //   await redisUtil.hset(RedisKeys.InfoOutCallByCallId, String(createdCallId), callInfoString);

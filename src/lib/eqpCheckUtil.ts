@@ -48,8 +48,8 @@ export const useEqpCheckUtil = () => {
             );
             if (
               facilityInfo &&
-              facilityInfo.system === 'WMS' &&
-              facilityInfo.type === 'in' &&
+              // facilityInfo.system === 'WMS' &&
+              // facilityInfo.type === 'in' &&
               facilityInfo.isActiveCallTrigger
             ) {
               const recentCallCountByFacilitySerialInfo =
@@ -98,94 +98,94 @@ export const useEqpCheckUtil = () => {
                   JSON.stringify(recentWorkOrderListByFacilitySerialParams)
                 );
               }
-              // return;
+              return;
             }
-            if (facilityInfo && facilityInfo.isActiveCallTrigger) {
-              const eqpCallId = await useCallRegisterUtil().createWorkOrderCode(
-                targetKey,
-                facilityInfo,
-                targetTagInfo.reRegister
-              );
-              if (!eqpCallId) return;
+            // if (facilityInfo && facilityInfo.isActiveCallTrigger) {
+            //   const eqpCallId = await useCallRegisterUtil().createWorkOrderCode(
+            //     targetKey,
+            //     facilityInfo,
+            //     targetTagInfo.reRegister
+            //   );
+            //   if (!eqpCallId) return;
 
-              // InfoCallRequestOnBySerial 중복 등록 방지
-              const callRegisterList = await useRedisUtil().hgetAllObject<TagValue>(
-                RedisKeys.InfoCallRequestOnBySerial
-              );
-              const findExistCall = callRegisterList?.find((call) => call.DEVICE === facilitySerial);
-              if (!findExistCall) {
-                const callType = await makeCallType(facilitySerial);
-                const createDateTime = timestampToDate(timezoneValue);
+            //   // InfoCallRequestOnBySerial 중복 등록 방지
+            //   const callRegisterList = await useRedisUtil().hgetAllObject<TagValue>(
+            //     RedisKeys.InfoCallRequestOnBySerial
+            //   );
+            //   const findExistCall = callRegisterList?.find((call) => call.DEVICE === facilitySerial);
+            //   if (!findExistCall) {
+            //     const callType = await makeCallType(facilitySerial);
+            //     const createDateTime = timestampToDate(timezoneValue);
 
-                const targetEqpCallInfo: EqpCallStats = {
-                  ...targetTagInfo,
-                  EQP_CALL_ID: '',
-                  CALL_ID: eqpCallId,
-                  Call_Type: callType || 'SKID',
-                  Caller: facilitySerial,
-                  Call_Quantity: 1,
-                  Call_Priority: '1',
-                  CREATE_TIME: createDateTime,
-                };
-                await useRedisUtil().hset(
-                  RedisKeys.InfoCallRequestOnBySerial,
-                  facilitySerial,
-                  JSON.stringify(targetEqpCallInfo)
-                );
+            //     const targetEqpCallInfo: EqpCallStats = {
+            //       ...targetTagInfo,
+            //       EQP_CALL_ID: '',
+            //       CALL_ID: eqpCallId,
+            //       Call_Type: callType || 'SKID',
+            //       Caller: facilitySerial,
+            //       Call_Quantity: 1,
+            //       Call_Priority: '1',
+            //       CREATE_TIME: createDateTime,
+            //     };
+            //     await useRedisUtil().hset(
+            //       RedisKeys.InfoCallRequestOnBySerial,
+            //       facilitySerial,
+            //       JSON.stringify(targetEqpCallInfo)
+            //     );
 
-                const callInfo: EqpCallStats = {
-                  EQP_CALL_ID: eqpCallId.slice(-4), // 뒤의 4자리
-                  CALL_ID: eqpCallId,
-                  Call_Type: callType || 'SKID',
-                  Caller: facilitySerial, // 앞의 4자리
-                  Call_Quantity: 1,
-                  Call_Priority: '1',
-                  DATA_TYPE: targetTagInfo.DATA_TYPE,
-                  TRIGGER_CALL_COUNT: 0,
-                  ALWAYS_CALL_COUNT: -1,
-                };
-                await initTrackingLogRedis(callInfo);
+            //     const callInfo: EqpCallStats = {
+            //       EQP_CALL_ID: eqpCallId.slice(-4), // 뒤의 4자리
+            //       CALL_ID: eqpCallId,
+            //       Call_Type: callType || 'SKID',
+            //       Caller: facilitySerial, // 앞의 4자리
+            //       Call_Quantity: 1,
+            //       Call_Priority: '1',
+            //       DATA_TYPE: targetTagInfo.DATA_TYPE,
+            //       TRIGGER_CALL_COUNT: 0,
+            //       ALWAYS_CALL_COUNT: -1,
+            //     };
+            //     await initTrackingLogRedis(callInfo);
 
-                if (facilityInfo.system === 'WMS' && facilityInfo.type === 'in') {
-                  const workOrderState = 'beforeWorkOrder';
-                  const workOrderInfo = {
-                    callId: eqpCallId,
-                    state: workOrderState,
-                  };
-                  const RecentWorkOrderListByFacilityInfo =
-                    await useRedisUtil().hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
-                      RedisKeys.RecentWorkOrderListByFacilitySerial,
-                      facilitySerial
-                    );
-                  if (!RecentWorkOrderListByFacilityInfo) {
-                    // 해당 정보가 없을 경우 신규 등록
-                    const recentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
-                      count: 1,
-                      workOrderList: [workOrderInfo],
-                    };
-                    useRedisUtil().hset(
-                      RedisKeys.RecentWorkOrderListByFacilitySerial,
-                      facilitySerial,
-                      JSON.stringify(recentWorkOrderListByFacilitySerialParams)
-                    );
-                  } else {
-                    const newCount = RecentWorkOrderListByFacilityInfo.count + 1;
-                    const newWorkOrderList: RecentWorkOrderInfoByFacilitySerialAttributes[] =
-                      RecentWorkOrderListByFacilityInfo.workOrderList;
-                    newWorkOrderList.push(workOrderInfo);
-                    const recentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
-                      count: newCount,
-                      workOrderList: newWorkOrderList,
-                    };
-                    useRedisUtil().hset(
-                      RedisKeys.RecentWorkOrderListByFacilitySerial,
-                      facilitySerial,
-                      JSON.stringify(recentWorkOrderListByFacilitySerialParams)
-                    );
-                  }
-                }
-              }
-            }
+            //     if (facilityInfo.system === 'WMS' && facilityInfo.type === 'in') {
+            //       const workOrderState = 'beforeWorkOrder';
+            //       const workOrderInfo = {
+            //         callId: eqpCallId,
+            //         state: workOrderState,
+            //       };
+            //       const RecentWorkOrderListByFacilityInfo =
+            //         await useRedisUtil().hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+            //           RedisKeys.RecentWorkOrderListByFacilitySerial,
+            //           facilitySerial
+            //         );
+            //       if (!RecentWorkOrderListByFacilityInfo) {
+            //         // 해당 정보가 없을 경우 신규 등록
+            //         const recentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+            //           count: 1,
+            //           workOrderList: [workOrderInfo],
+            //         };
+            //         useRedisUtil().hset(
+            //           RedisKeys.RecentWorkOrderListByFacilitySerial,
+            //           facilitySerial,
+            //           JSON.stringify(recentWorkOrderListByFacilitySerialParams)
+            //         );
+            //       } else {
+            //         const newCount = RecentWorkOrderListByFacilityInfo.count + 1;
+            //         const newWorkOrderList: RecentWorkOrderInfoByFacilitySerialAttributes[] =
+            //           RecentWorkOrderListByFacilityInfo.workOrderList;
+            //         newWorkOrderList.push(workOrderInfo);
+            //         const recentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+            //           count: newCount,
+            //           workOrderList: newWorkOrderList,
+            //         };
+            //         useRedisUtil().hset(
+            //           RedisKeys.RecentWorkOrderListByFacilitySerial,
+            //           facilitySerial,
+            //           JSON.stringify(recentWorkOrderListByFacilitySerialParams)
+            //         );
+            //       }
+            //     }
+            //   }
+            // }
           } else {
             await useCallRemoveUtil().callRemove(targetTagInfo);
             // await useRedisUtil().hdel(RedisKeys.InfoCallKey, facilitySerial);
@@ -200,8 +200,8 @@ export const useEqpCheckUtil = () => {
             );
             if (
               facilityInfo &&
-              facilityInfo.system === 'WMS' &&
-              facilityInfo.type === 'in' &&
+              // facilityInfo.system === 'WMS' &&
+              // facilityInfo.type === 'in' &&
               facilityInfo.isActiveCallTrigger
             ) {
               const recentCallCountByFacilitySerialInfo =
@@ -328,8 +328,8 @@ export const useEqpCheckUtil = () => {
               );
               if (
                 facilityInfo &&
-                facilityInfo.system === 'WMS' &&
-                facilityInfo.type === 'in' &&
+                // facilityInfo.system === 'WMS' &&
+                // facilityInfo.type === 'in' &&
                 facilityInfo.isActiveCallTrigger
               ) {
                 const recentCallCountByFacilitySerialInfo =
@@ -379,8 +379,8 @@ export const useEqpCheckUtil = () => {
             );
             if (
               facilityInfo &&
-              facilityInfo.system === 'WMS' &&
-              facilityInfo.type === 'in' &&
+              // facilityInfo.system === 'WMS' &&
+              // facilityInfo.type === 'in' &&
               facilityInfo.isActiveCallTrigger
             ) {
               const recentCallCountByFacilitySerialInfo =
@@ -435,8 +435,8 @@ export const useEqpCheckUtil = () => {
               );
               if (
                 facilityInfo &&
-                facilityInfo.system === 'WMS' &&
-                facilityInfo.type === 'in' &&
+                // facilityInfo.system === 'WMS' &&
+                // facilityInfo.type === 'in' &&
                 facilityInfo.isActiveCallTrigger
               ) {
                 const recentCallCountByFacilitySerialInfo =
@@ -486,8 +486,8 @@ export const useEqpCheckUtil = () => {
             );
             if (
               facilityInfo &&
-              facilityInfo.system === 'WMS' &&
-              facilityInfo.type === 'in' &&
+              // facilityInfo.system === 'WMS' &&
+              // facilityInfo.type === 'in' &&
               facilityInfo.isActiveCallTrigger
             ) {
               const recentCallCountByFacilitySerialInfo =

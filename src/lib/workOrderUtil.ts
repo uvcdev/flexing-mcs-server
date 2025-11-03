@@ -125,30 +125,28 @@ export const useWorkOrderUtil = () => {
             RedisKeys.InfoFacilityBySerial,
             workOrder.eqpName
           );
-          if (facilityInfo?.system === 'WMS') {
-            const workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
-              RedisKeys.RecentWorkOrderListByFacilitySerial,
-              workOrder.eqpName
-            );
-            const workOrderList = workOrderListInfo?.workOrderList || [];
+          const workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+            RedisKeys.RecentWorkOrderListByFacilitySerial,
+            workOrder.eqpName
+          );
+          const workOrderList = workOrderListInfo?.workOrderList || [];
 
-            workOrderList.forEach((workOrderInfo) => {
-              if (workOrderInfo.callId === workOrder.callId) {
-                workOrderInfo.state = 'workOrder';
-              }
-            });
+          workOrderList.forEach((workOrderInfo) => {
+            if (workOrderInfo.callId === workOrder.callId) {
+              workOrderInfo.state = 'workOrder';
+            }
+          });
 
-            const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
-              count: workOrderListInfo?.count || 0,
-              workOrderList: workOrderList,
-            };
+          const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+            count: workOrderListInfo?.count || 0,
+            workOrderList: workOrderList,
+          };
 
-            redisUtil.hset(
-              RedisKeys.RecentWorkOrderListByFacilitySerial,
-              workOrder.eqpName,
-              JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
-            );
-          }
+          redisUtil.hset(
+            RedisKeys.RecentWorkOrderListByFacilitySerial,
+            workOrder.eqpName,
+            JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+          );
 
           try {
             sendMqtt(messageTopic, message);

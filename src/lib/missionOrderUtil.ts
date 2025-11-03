@@ -41,10 +41,10 @@ export const checkMissionOrder = async () => {
               RedisKeys.InfoFacilityById,
               linkedEqpId.toString() || ''
             );
-            newFacilityArray.push(linkedFacilityInfo)
+            newFacilityArray.push(linkedFacilityInfo);
           }
 
-          newFacilityArray.sort((a, b) => (b?.priority ?? 0) - (a?.priority ?? 0))
+          newFacilityArray.sort((a, b) => (b?.priority ?? 0) - (a?.priority ?? 0));
 
           for (let i = 0; i < newFacilityArray.length; i++) {
             // const linkedEqpId = linkedEqpIds[i];
