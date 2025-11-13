@@ -514,3 +514,18 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
     - WMS 관련 공급 포트 내용 수정
   - eqpCheckUtil.ts
     - Request 발생, 처리 로직 변경
+
+- 설비 관리 컬럼 추가
+  - is_wms_port => wms 포트에 위치하는 설비들만 true ( ex WS11 ) MBS 프로젝트만 사용
+  ```sql
+    ALTER TABLE public.facilities ADD is_wms_port bool DEFAULT false NULL;
+  ```
+
+- 창고 수동 작업을 처리하기 위해 workOrder Type 데이터 수정
+  - PendingWorkOrderAttributes 수정
+  - McsWorkOrderRequestType 수정
+
+- ACS 작업 취소 시, 미션 결정지 Redis 데이터삭제
+- 창고 취소 로직 버그 수정 ( 확정본 )
+- 미션 결정지 로직 수정 ( 미션 포인트와 연동 )
+  - IS_MANUAL_MISSION_ORDER 적용

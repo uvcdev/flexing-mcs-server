@@ -18,7 +18,7 @@ export const checkMissionOrder = async () => {
     const missionOrderMqttInfo = missionOrderList[i];
     const missionOrderType = await routeMissionOrderMqttMessage(missionOrderMqttInfo);
     const mqttCallId = missionOrderMqttInfo.workOrderCode;
-
+    const missionFacilitySerials = missionOrderMqttInfo.facilitySerials || [];
     if (missionOrderType) {
       const missionFromfacilityInfo = missionOrderType.facilityInfo;
 
@@ -34,12 +34,21 @@ export const checkMissionOrder = async () => {
 
         const newFacilityArray = [];
 
-        if (linkedEqpIds && linkedEqpIds.length > 0) {
-          for (let i = 0, length = linkedEqpIds.length; i < length; i++) {
-            const linkedEqpId = linkedEqpIds[i];
+        // if (linkedEqpIds && linkedEqpIds.length > 0) {
+        if (missionFacilitySerials && missionFacilitySerials.length > 0) {
+          // for (let i = 0, length = linkedEqpIds.length; i < length; i++) {
+          for (let i = 0, length = missionFacilitySerials.length; i < length; i++) {
+            // const linkedEqpId = linkedEqpIds[i];
+            const linkedEqpSerial = missionFacilitySerials[i];
+            // const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+            //   RedisKeys.InfoFacilityById,
+            //   linkedEqpId.toString() || ''
+            // );
+            // newFacilityArray.push(linkedFacilityInfo);
+
             const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-              RedisKeys.InfoFacilityById,
-              linkedEqpId.toString() || ''
+              RedisKeys.InfoFacilityBySerial,
+              linkedEqpSerial.toString() || ''
             );
             newFacilityArray.push(linkedFacilityInfo);
           }

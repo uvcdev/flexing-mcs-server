@@ -51,6 +51,9 @@ export type McsWorkOrderRequestType = {
   CALL_COUNT: number;
   ALWAYS_CALL_COUNT: number;
   TRIGGER_CALL_COUNT: number;
+  // 추가 ... 11월 13일 이준규 - 미션 오더 때문에 추가
+  IS_MANUAL_MISSION_ORDER: string; // 작업 지시의 manual mission order 여부
+  // MODE: 'AUTO' | 'MANUAL'; // 수동 자동 여부인데 창고 수동만 MANUAL 사용
 };
 
 export type McsPendingWorkOrderRequestType = {
@@ -66,6 +69,8 @@ export type McsPendingWorkOrderRequestType = {
   callCount: number;
   alwaysCallCount: number;
   triggerCallCount: number;
+  isManualMissionOrder?: boolean;
+  // mode?: 'AUTO' | 'MANUAL';
 };
 
 export const useWorkOrderUtil = () => {
@@ -87,6 +92,8 @@ export const useWorkOrderUtil = () => {
             CALL_PRIORITY: workOrder.callPriority,
             CALL_TYPE: workOrder.callType,
             IS_MISSION_ORDER: workOrder.type === 'MISSION' ? 'true' : 'false',
+            IS_MANUAL_MISSION_ORDER: workOrder.isManualMissionOrder === true ? 'true' : 'false',
+            // MODE: workOrder.mode === 'MANUAL' ? 'MANUAL' : 'AUTO',
             TAG_ID: '',
             TX_ID: '',
             ZONE_ID: process.env.FLOOR || '1F',

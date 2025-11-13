@@ -6,6 +6,7 @@ import { separateMqttMessage, MbsMqttMesaage } from '../mqttUtil';
 import { useMultiCallRegisterUtil } from '../multiCallRegisterUtil';
 import { editAbnormalTrackingLogRedis, editTrackingLogRedis } from '../process/trackingLog';
 import { sendAckToWms } from '../process/wmsAck';
+import { MqttBranchInfoDataFromAcs } from '../process/wmsBranch';
 import { RedisKeys, useRedisUtil } from '../redisUtil';
 
 const topic = 'MISSION_STATE';
@@ -51,7 +52,7 @@ export interface MissionFailed {
 
 const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
   try {
-    console.log('catch acs missionState');
+    // console.log('catch acs missionState');
     const kepServerUtil = useKepServerUtil();
     const missionStateBody = messageJson.body as MissionStateBody;
     const state = missionStateBody.state;
@@ -199,6 +200,9 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
       //   description: `AMR(${assignAmrName}) Mission State : ${state}`,
       // };
       // await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
+      // 미션 결정지 정보 삭제하기
+
+      redisUtil.hdel(RedisKeys.InfoMissionOrderByWorkOrderCode, callId);
     } else if (state === 'MISSION_FAILED') {
     } else if (state === 'MISSION_COMPLETED') {
     }

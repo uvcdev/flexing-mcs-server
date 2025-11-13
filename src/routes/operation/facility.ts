@@ -53,6 +53,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, FacilityInser
       generatedCallCount: req.body.generatedCallCount,
       isActiveCallTrigger: req.body.isActiveCallTrigger,
       priority: req.body.priority,
+      isWmsPort: req.body.isWmsPort,
     };
     logging.REQUEST_PARAM(logFormat);
 

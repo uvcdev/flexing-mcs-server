@@ -360,6 +360,8 @@ export interface PendingWorkOrderAttributes {
   portName?: string | null;
   alwaysCallCount?: number;
   triggerCallCount?: number;
+  isManualMissionOrder?: boolean;
+  // mode?: 'AUTO' | 'MANUAL';
 }
 
 export interface RecentWorkOrderInfoByFacilitySerialAttributes {

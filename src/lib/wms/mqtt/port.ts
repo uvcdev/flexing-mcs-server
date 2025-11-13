@@ -14,6 +14,7 @@ import { RedisKeys, useRedisUtil } from '../../redisUtil';
 import { dao as workOrderDao } from '../../../dao/operation/workOrderDao';
 import { sendCallInfoList } from '../../process/wmsSyncronization';
 import { InfoAckInCallByCallIdBody } from './call';
+import { FacilityAttributes } from '../../../models/operation/facility';
 
 const systemTopic = 'PORT';
 
@@ -73,7 +74,11 @@ const portPresenceStatus = async (
         fromFacilityName: fromFacilityName,
         toFacilityName: toFacilityName,
         type: 'OUT',
+        // type: 'MISSION',
         isMissionOrder: false,
+        isManualMissionOrder: false,
+        // mode: 'MANUAL',
+        // mode: 'AUTO',
         callPriority: '99',
         // ToDO - CALL TYPE 이 없는데 ...
         // 해당 영역 어떻게 처리 할 지 고민 필요
@@ -81,6 +86,15 @@ const portPresenceStatus = async (
         eqpName: fromFacilityName,
         portName: toFacilityName,
       };
+
+      const toFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        toFacilityName
+      );
+
+      if (toFacilityInfo?.isWmsPort === true) {
+        infoPendingWorkOrder.isManualMissionOrder = true;
+      }
 
       // pending workOrder 레디스 정보 저장
       // 트래킹 로그 만들기
