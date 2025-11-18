@@ -455,6 +455,9 @@ export const editTrackingLogRedis = async (
     processState: trackingLogUpdateData.processState
       ? trackingLogUpdateData.processState
       : infoTrackingLogByCallId.processState,
+    missionDestination: trackingLogUpdateData.missionDestination
+      ? trackingLogUpdateData.missionDestination
+      : infoTrackingLogByCallId.missionDestination,
   };
 
   await trackingLogDao.update(trackingLogUpdateParams);
@@ -631,6 +634,9 @@ export const editAbnormalTrackingLogRedis = async (
     processState: trackingLogUpdateData.processState
       ? trackingLogUpdateData.processState
       : infoTrackingLogByCallId.processState,
+    missionDestination: trackingLogUpdateData.missionDestination
+      ? trackingLogUpdateData.missionDestination
+      : infoTrackingLogByCallId.missionDestination,
   };
 
   await trackingLogDao.update(trackingLogUpdateParams);

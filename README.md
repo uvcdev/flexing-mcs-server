@@ -537,3 +537,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 콜 생성 방식 버그 수정
   - SP11 라인 관련 버그 수정 ( Redis 상 동일 CALL 정보 2개 생성 )
   - SP12 라인 관련 버그 수정 ( Tracking Log 상 2배수 생성 )
+
+- 트래킹 로그에 미션 결정지 내용 추가
+  - 미션 결정지 내용 추가

@@ -174,8 +174,6 @@ export const checkCallCreate = async () => {
       null;
     if (!beforeWorkOrderInfo) {
       for (let i = 0; i < filterRecentWorkOrderList.length; i++) {
-        console.log('몇 번 찍히나 ?', filterRecentWorkOrderList.length);
-        console.log('filterRecentWorkOrderList[i]', filterRecentWorkOrderList);
         const timezoneValue = process.env.TIME_ZONE || '';
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
@@ -233,15 +231,12 @@ export const checkCallCreate = async () => {
             ALWAYS_CALL_COUNT: -1,
           };
 
-          console.log('여기가 두 번 들어오는지 봐줄래 ??', callInfo);
           await initTrackingLogRedis(callInfo);
 
           // // 리스트 중 1개만 해도 일단 break
           // break;
 
           const workOrderState = 'beforeWorkOrder';
-
-          console.log('recentWorkOrderListByFacilitySerial', recentWorkOrderListByFacilitySerial);
 
           const copiedRecentWorkOrderListByFacilitySerial = { ...recentWorkOrderListByFacilitySerial };
 

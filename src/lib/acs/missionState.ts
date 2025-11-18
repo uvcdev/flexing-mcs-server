@@ -31,6 +31,7 @@ export type MissionStateType =
 export interface MissionStateBody {
   mission: string;
   state: MissionStateType;
+  missionDestination?: string;
   assign: {
     robot: string;
     task: string;
@@ -58,6 +59,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     const state = missionStateBody.state;
     const callId = missionStateBody.mission.split('$')[0];
     const assignAmrName = missionStateBody.assign.robot || '';
+    const missionDestination = missionStateBody.missionDestination || '';
     let assignTask = (missionStateBody.assign.task as TrackingLogState) || '';
     let assignState = 'PROCESSING' as TrackingLogState;
 
@@ -82,6 +84,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
       assignedRobot: assignAmrName,
       value: assignAmrName,
       description: `AMR(${assignAmrName}) Mission State : ${state}`,
+      missionDestination: missionDestination,
     };
     if (assignTask === 'FMS-CANCELED') {
       trackingLogUpdateData.description += `(Task Canceled - FMS)`;
