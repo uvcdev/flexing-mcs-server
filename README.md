@@ -529,3 +529,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 창고 취소 로직 버그 수정 ( 확정본 )
 - 미션 결정지 로직 수정 ( 미션 포인트와 연동 )
   - IS_MANUAL_MISSION_ORDER 적용
+
+- WMS 동기화
+  - CALL_LIST 미 호출 예상 부분 수정
+  - 창고 수동 작업 지시 누락 내용 추가

@@ -257,6 +257,7 @@ const ackReqPortStateList = async (
       if (separateCallId.length === 4) {
         const workOrderInfo = await workOrderDao.selectInfoByCode({ code: portCallId });
 
+        // 이미 작업이 만들어진 상황이라서 Continue
         if (workOrderInfo) {
           continue;
         }
@@ -271,6 +272,7 @@ const ackReqPortStateList = async (
             toFacilityName: toFacilityName,
             type: 'OUT',
             isMissionOrder: false,
+            isManualMissionOrder: false,
             callPriority: '99',
             // ToDO - CALL TYPE 이 없는데 ...
             // 해당 영역 어떻게 처리 할 지 고민 필요
@@ -279,13 +281,50 @@ const ackReqPortStateList = async (
             portName: toFacilityName,
           };
 
+          const toFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+            RedisKeys.InfoFacilityBySerial,
+            toFacilityName
+          );
+
+          if (toFacilityInfo?.isWmsPort === true) {
+            infoPendingWorkOrder.isManualMissionOrder = true;
+          }
+
           // pending workOrder 레디스 정보 저장
           console.log('infoPendingWorkOrder', infoPendingWorkOrder);
 
           redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, portCallId, JSON.stringify(infoPendingWorkOrder));
+
+          // pending workOrder 레디스 정보 저장
+          // 트래킹 로그 만들기
+          const initAbnormalTrackingLogParams: InitAbnormalTrackingLogParams = {
+            callId: portCallId,
+            subjcet: 'WORK_ORDER_CREATED',
+            detail: 'WORK_ORDER_CREATED',
+            state: 'PROCESSING',
+            processState: 'NORMAL',
+            callQuantity: 1,
+            startFacility: fromFacilityName,
+            destFacility: toFacilityName,
+            message: `WMS manual mission created CALLID(${portCallId}) - Port_State_List`,
+            location: 'WMS',
+          };
+          await initAbnormalTrackingLogRedis(initAbnormalTrackingLogParams);
+
+          redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, portCallId, JSON.stringify(infoPendingWorkOrder));
         }
       } else {
-        // 해당 포트가 재고순환 작업을 들고 있지 않은 경우
+        // 해당 포트가 재고순환 작업을 들고 있지 않은 경우 = 일반 작업인 경우
+
+        // 1. 해당 작업 지시가 있는지 판별
+        const portPresenceWorkOrder = await workOrderDao.selectInfoByCode({ code: portCallId });
+        if (portPresenceWorkOrder) {
+          console.log(`이미 처리된 콜 ID 입니다. ${portCallId}`);
+          continue;
+        }
+
+        // 2. CALL 정보가 남아 있는 데이터인지 남아있지 않은 데이터인지 판별
+        // 2-1. CALL 정보가 남아있는 경우
         const infoAckInCallByCallId =
           (await redisUtil.hgetObject<InfoAckInCallByCallIdBody>(RedisKeys.InfoAckInCallByCallId, portCallId)) || null;
         // PORT_PRESENCE를 받았는지 여부 확인 ( ACK_CALL_INFO에 대한 응답이 남아 있는지 ? )
@@ -309,6 +348,7 @@ const ackReqPortStateList = async (
             Cmd_ID: portCmdId,
           };
 
+          // PORT_PRESENCE_STATUS 에 대한 응답을 하지 않았기 때문에 해당 응답을 전해줌
           // HCACK = 4 수신
           setReceivedAckCommand(systemTopic, wmsName, portCallId, { header: mqttHeader, body: mqttBody });
 
@@ -359,17 +399,21 @@ const ackReqPortStateList = async (
         else if (!infoAckInCallByCallId) {
           // work order 존재가 있는 경우 ( pending 도 확인 필요 )
           // work order 가 있기 때문에 이미 처리 중인 정보라서 continue
-          const portPresenceWorkOrder = await workOrderDao.selectInfoByCode({ code: portCallId });
-          if (portPresenceWorkOrder) {
-            console.log(`이미 처리된 콜 ID 입니다. ${portCallId}`);
-            continue;
-          }
+          // 2025-11-18 : 이미 처리된 콜은 맨 위에서 한 번 걸러준다.
+          // const portPresenceWorkOrder = await workOrderDao.selectInfoByCode({ code: portCallId });
+          // if (portPresenceWorkOrder) {
+          //   console.log(`이미 처리된 콜 ID 입니다. ${portCallId}`);
+          //   continue;
+          // }
           // work order도 없는 경우
           // PORT_PRESENCE와 같은 로직으로 처리한다. 단, 해당 경우는 거의 발생할 수 없는 경우이기 때문에 일단 코드 작성은 진행한다.
           // 일단 미작업. 해당 경우로 WMS와 인터페이스 오류가 발생할 가능성이 있음
-          else if (!portPresenceWorkOrder) {
-            // 이 경우는 에러로 처리하는 것이 맞는 것으로 보임
-          }
+          // 해당 경우 추가 2025-11-18
+          // 콜 정보는 없는데 포트 배정은 있는 경우 ( 설비 취소와 연관 )
+          // SP 공급 라인에서 콜 발생 -> WMS에 Call_Info 요청 -> WMS에서 ACK_CALL_INFO ->
+          // WMS 연결 끊김 ( 스키드는 나오는 중 ) -> SP 공급 라인에서 콜 취소 -> MCS는 해당 콜 정보 삭제 ->
+          // WMS 재연결으로 해당 콜이 포트 배정 -> MCS는 해당 스키드 재반입 시도
+          // 해당 기능에 대해서는 조금 더 고민 필요
         }
       }
     }
