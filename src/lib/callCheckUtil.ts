@@ -172,9 +172,10 @@ export const checkCallCreate = async () => {
     const beforeWorkOrderInfo =
       recentWorkOrderListByFacilitySerial?.workOrderList.find((workOrder) => workOrder.state === 'beforeWorkOrder') ||
       null;
-
     if (!beforeWorkOrderInfo) {
       for (let i = 0; i < filterRecentWorkOrderList.length; i++) {
+        console.log('몇 번 찍히나 ?', filterRecentWorkOrderList.length);
+        console.log('filterRecentWorkOrderList[i]', filterRecentWorkOrderList);
         const timezoneValue = process.env.TIME_ZONE || '';
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
@@ -231,47 +232,34 @@ export const checkCallCreate = async () => {
             TRIGGER_CALL_COUNT: 0,
             ALWAYS_CALL_COUNT: -1,
           };
+
+          console.log('여기가 두 번 들어오는지 봐줄래 ??', callInfo);
           await initTrackingLogRedis(callInfo);
+
+          // // 리스트 중 1개만 해도 일단 break
+          // break;
+
+          const workOrderState = 'beforeWorkOrder';
+
+          console.log('recentWorkOrderListByFacilitySerial', recentWorkOrderListByFacilitySerial);
+
+          const copiedRecentWorkOrderListByFacilitySerial = { ...recentWorkOrderListByFacilitySerial };
+
+          const updatedStateRecentWorkOrderListByFacilitySerial = {
+            ...copiedRecentWorkOrderListByFacilitySerial,
+            workOrderList: copiedRecentWorkOrderListByFacilitySerial?.workOrderList?.map((item) =>
+              item.callId === eqpCallId ? { ...item, state: workOrderState } : item
+            ),
+          };
+
+          useRedisUtil().hset(
+            RedisKeys.RecentWorkOrderListByFacilitySerial,
+            facilitySerial,
+            JSON.stringify(updatedStateRecentWorkOrderListByFacilitySerial)
+          );
 
           // 리스트 중 1개만 해도 일단 break
           break;
-
-          // const workOrderState = 'beforeWorkOrder';
-          // const workOrderInfo = {
-          //   callId: eqpCallId,
-          //   state: workOrderState,
-          // };
-          // const RecentWorkOrderListByFacilityInfo =
-          //   await useRedisUtil().hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
-          //     RedisKeys.RecentWorkOrderListByFacilitySerial,
-          //     facilitySerial
-          //   );
-          // if (!RecentWorkOrderListByFacilityInfo) {
-          //   // 해당 정보가 없을 경우 신규 등록
-          //   const recentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
-          //     count: 1,
-          //     workOrderList: [workOrderInfo],
-          //   };
-          //   useRedisUtil().hset(
-          //     RedisKeys.RecentWorkOrderListByFacilitySerial,
-          //     facilitySerial,
-          //     JSON.stringify(recentWorkOrderListByFacilitySerialParams)
-          //   );
-          // } else {
-          //   const newCount = RecentWorkOrderListByFacilityInfo.count + 1;
-          //   const newWorkOrderList: RecentWorkOrderInfoByFacilitySerialAttributes[] =
-          //     RecentWorkOrderListByFacilityInfo.workOrderList;
-          //   newWorkOrderList.push(workOrderInfo);
-          //   const recentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
-          //     count: newCount,
-          //     workOrderList: newWorkOrderList,
-          //   };
-          //   useRedisUtil().hset(
-          //     RedisKeys.RecentWorkOrderListByFacilitySerial,
-          //     facilitySerial,
-          //     JSON.stringify(recentWorkOrderListByFacilitySerialParams)
-          //   );
-          // }
         }
       }
     }

@@ -533,3 +533,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - WMS 동기화
   - CALL_LIST 미 호출 예상 부분 수정
   - 창고 수동 작업 지시 누락 내용 추가
+
+- 콜 생성 방식 버그 수정
+  - SP11 라인 관련 버그 수정 ( Redis 상 동일 CALL 정보 2개 생성 )
+  - SP12 라인 관련 버그 수정 ( Tracking Log 상 2배수 생성 )
