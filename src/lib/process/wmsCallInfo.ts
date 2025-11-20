@@ -27,6 +27,7 @@ export interface CallInfoBody {
   Cmd_ID: string; // 메세지에 대한 uuid  ex) 4c6cc04d-6ed8-4247-9962-6fe1d2bd4d2b
   Call_ID: string; // 설비에서 발생한 Call Id   ex) MP122025041514300001 => ( 설비명 (MP12) + 년월일분 (202504151430) + 설비 CALL ID 4자리 (0001) )
   Call_Type: string; // Call 호출 요청 기종  ex) 99  ( 0~65537 )
+  Cargo_Type: string; // Call 호출 요청 기종  ex) 99  ( 0~65537 )
   Caller: string; // Call 호출 PLC  ex) BM170  ( EQP NAME )
   Call_Quantity: string; // Call 요청 수량 ex) 1   ( 1 ~ 99 -> 부품창고 : 2, BMA창고 :1 사용 )
   Call_Priority: string; // Call 우선 순위 ex) 99  ( 1 ~ 99 -> PLC Call Priority Bit On : 99, Off :1)
@@ -51,6 +52,7 @@ export const checkCallInfoForWms = async () => {
       Call_Priority: callInfo.Call_Priority,
       Call_Quantity: callInfo.Call_Quantity.toString(),
       Call_Type: callInfo.Call_Type,
+      Cargo_Type: callInfo.Cargo_Type,
       Caller: callInfo.Caller,
       Cmd_ID: '',
     };
@@ -183,6 +185,7 @@ export const checkCallInfoOnPortTimeout = async () => {
         Call_Priority: infoAckInCallByCallIdInfo.Call_Priority,
         Call_Quantity: infoAckInCallByCallIdInfo.Call_Quantity.toString(),
         Call_Type: infoAckInCallByCallIdInfo.Call_Type,
+        Cargo_Type: infoAckInCallByCallIdInfo.Cargo_Type,
         Caller: infoAckInCallByCallIdInfo.Caller,
         Cmd_ID: infoAckInCallByCallIdInfo.Cmd_ID,
       };

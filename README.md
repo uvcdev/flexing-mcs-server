@@ -540,3 +540,9 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 - 트래킹 로그에 미션 결정지 내용 추가
   - 미션 결정지 내용 추가
+
+- WorkOrder 테이블에 CargoType 컬럼 추가
+  ```sql
+    ALTER TABLE public.work_orders ADD cargo_type varchar(20) NULL;
+  ```
+  - CallType이 없는 경우를 대체하기 위함 ( UI에 잘못된 콜타입 정보가 계속 나타남 - Default 값)

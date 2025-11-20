@@ -27,6 +27,7 @@ interface BranchInfoRepCarrierInfo {
   CarrierID: string;
   CarrierState: string;
   Call_Type: string;
+  Cargo_Type: string;
   NewDest: string;
   ResultCode: string;
 }
@@ -161,6 +162,7 @@ const branchInfoRep = async (
           isMissionOrder: false,
           callPriority: branchInfoRepData.callPriority || '',
           callType: carrierInfo.Call_Type,
+          cargoType: carrierInfo.Cargo_Type || '',
           portName: carrierInfo.NewDest,
           eqpName: prefixFromFacilityName,
         };

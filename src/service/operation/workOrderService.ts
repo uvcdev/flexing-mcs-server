@@ -157,6 +157,7 @@ const service = {
         description: null,
         alwaysCallCount: params.ALWAYS_CALL_COUNT,
         triggerCallCount: params.TRIGGER_CALL_COUNT,
+        cargoType: params.CARGO_TYPE,
       };
       workOrderResult = await workOrderDao.insertTransac(transParams, transaction);
       await transaction.commit(); // 트랜잭션 커밋

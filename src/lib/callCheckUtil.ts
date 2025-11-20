@@ -207,6 +207,7 @@ export const checkCallCreate = async () => {
             EQP_CALL_ID: '',
             CALL_ID: eqpCallId,
             Call_Type: callType || 'SKID',
+            Cargo_Type: callType || '',
             Caller: facilitySerial,
             Call_Quantity: 1,
             Call_Priority: '1',
@@ -223,6 +224,7 @@ export const checkCallCreate = async () => {
             EQP_CALL_ID: eqpCallId.slice(-4), // 뒤의 4자리
             CALL_ID: eqpCallId,
             Call_Type: callType || 'SKID',
+            Cargo_Type: callType || '',
             Caller: facilitySerial, // 앞의 4자리
             Call_Quantity: 1,
             Call_Priority: '1',

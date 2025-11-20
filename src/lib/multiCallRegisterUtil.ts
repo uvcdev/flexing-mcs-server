@@ -25,6 +25,7 @@ export interface EqpCallStats {
   ALWAYS_CALL_COUNT?: number;
   TRIGGER_CALL_COUNT: number;
   // NODE_ID: string;
+  Cargo_Type: string;
 }
 
 export interface EqpCallStatsForAck extends EqpCallStats {
@@ -101,6 +102,7 @@ export const useMultiCallRegisterUtil = () => {
             EQP_CALL_ID: String(callCountValue), // 뒤의 4자리,
             CALL_ID: '', // 작업지시코드
             Call_Type: callType || 'SKID',
+            Cargo_Type: callType || '',
             Caller: targetCode, // 앞의 4자리
             Call_Quantity: 1,
             Call_Priority: callPriorityValue === 'true' ? '99' : '1',
@@ -129,6 +131,7 @@ export const useMultiCallRegisterUtil = () => {
                 isMissionOrder: true,
                 callPriority: callInfo.Call_Priority || '',
                 callType: callInfo.Call_Type || 'SKID',
+                cargoType: callInfo.Call_Type || '',
                 portName: null,
                 eqpName: callInfo.Caller,
                 triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
@@ -218,6 +221,7 @@ export const useMultiCallRegisterUtil = () => {
                     isMissionOrder: false,
                     callPriority: callInfo.Call_Priority,
                     callType: callInfo.Call_Type || 'SKID',
+                    cargoType: callInfo.Call_Type || '',
                     fromFacilityName:
                       (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
                     toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,

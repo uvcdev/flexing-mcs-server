@@ -46,6 +46,7 @@ interface CallInfoData {
   Call_ID: string;
   Cmd_ID: string;
   Call_Type: string;
+  Cargo_Type: string;
   Caller: string;
   Call_Quantity: string;
   Call_Priority: string;
@@ -212,6 +213,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         CALL_ID: callInfoData.Call_ID,
         EQP_CALL_ID: callId.slice(-4),
         Call_Type: callInfoData.Call_Type,
+        Cargo_Type: callInfoData.Cargo_Type,
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
@@ -283,6 +285,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         CALL_ID: callInfoData.Call_ID,
         EQP_CALL_ID: callId.slice(-4),
         Call_Type: callInfoData.Call_Type,
+        Cargo_Type: callInfoData.Cargo_Type,
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
@@ -947,6 +950,7 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
         CALL_ID: callInfoData.Call_ID,
         EQP_CALL_ID: callInfoData.Call_ID.slice(-4),
         Call_Type: callInfoData.Call_Type,
+        Cargo_Type: callInfoData.Cargo_Type,
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,

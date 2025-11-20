@@ -82,7 +82,8 @@ const portPresenceStatus = async (
         callPriority: '99',
         // ToDO - CALL TYPE 이 없는데 ...
         // 해당 영역 어떻게 처리 할 지 고민 필요
-        callType: 'NG11',
+        callType: 'SKID',
+        cargoType: '1234556',
         eqpName: fromFacilityName,
         portName: toFacilityName,
       };
@@ -109,6 +110,7 @@ const portPresenceStatus = async (
         destFacility: toFacilityName,
         message: `WMS manual mission created CALLID(${callId})`,
         location: 'WMS',
+        callType: infoPendingWorkOrder.cargoType,
       };
       await initAbnormalTrackingLogRedis(initAbnormalTrackingLogParams);
 
@@ -164,13 +166,12 @@ const portPresenceStatus = async (
       isMissionOrder: false,
       callPriority: infoAckInCallByCallId.Call_Priority,
       callType: infoAckInCallByCallId.Call_Type,
+      cargoType: infoAckInCallByCallId.Cargo_Type || '',
       eqpName: infoAckInCallByCallId.Caller,
       portName: portId,
     };
 
     // pending workOrder 레디스 정보 저장
-
-    console.log('infoPendingWorkOrder', infoPendingWorkOrder);
 
     const reinboundIfPortAssignedForFacilityCancelByCallId = await redisUtil.hget(
       RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId,
@@ -276,7 +277,8 @@ const ackReqPortStateList = async (
             callPriority: '99',
             // ToDO - CALL TYPE 이 없는데 ...
             // 해당 영역 어떻게 처리 할 지 고민 필요
-            callType: 'NG11',
+            callType: 'SKID',
+            cargoType: '',
             eqpName: fromFacilityName,
             portName: toFacilityName,
           };
@@ -291,8 +293,6 @@ const ackReqPortStateList = async (
           }
 
           // pending workOrder 레디스 정보 저장
-          console.log('infoPendingWorkOrder', infoPendingWorkOrder);
-
           redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, portCallId, JSON.stringify(infoPendingWorkOrder));
 
           // pending workOrder 레디스 정보 저장
@@ -308,6 +308,7 @@ const ackReqPortStateList = async (
             destFacility: toFacilityName,
             message: `WMS manual mission created CALLID(${portCallId}) - Port_State_List`,
             location: 'WMS',
+            caller: infoPendingWorkOrder.cargoType,
           };
           await initAbnormalTrackingLogRedis(initAbnormalTrackingLogParams);
 
@@ -360,6 +361,7 @@ const ackReqPortStateList = async (
             isMissionOrder: false,
             callPriority: infoAckInCallByCallId.Call_Priority,
             callType: infoAckInCallByCallId.Call_Type,
+            cargoType: infoAckInCallByCallId.Cargo_Type || '',
             eqpName: infoAckInCallByCallId.Caller,
             portName: portPortId,
           };

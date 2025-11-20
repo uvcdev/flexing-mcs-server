@@ -196,6 +196,7 @@ export const useCallCancelUtil = () => {
         isMissionOrder: true,
         callPriority: '',
         callType: params.CALL_TYPE || 'SKID',
+        cargoType: params.CALL_TYPE || '',
         portName: null,
         eqpName: params.PORT_ID,
       };
