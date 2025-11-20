@@ -546,3 +546,5 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
     ALTER TABLE public.work_orders ADD cargo_type varchar(20) NULL;
   ```
   - CallType이 없는 경우를 대체하기 위함 ( UI에 잘못된 콜타입 정보가 계속 나타남 - Default 값)
+
+- 스페인 시간대로 데이터를 제어하기 위해서 dayjs에 timezone 내용 추가

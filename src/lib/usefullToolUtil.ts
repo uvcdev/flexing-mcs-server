@@ -1,11 +1,19 @@
 import { LogFormat, logging, makeLogFormat, RequestLog } from './logging';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { makeResponseError as resError, SelectedListResult } from './resUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { FacilityAttributesDeep } from '../models/operation/facility';
 import { service as facilityService } from '../service/operation/facilityService';
 
 // 랜덤한 코드를 생성 for 출고(itemOutflow)
+const timezoneValue = process.env.TIME_ZONE || 'Europe/Madrid';
+
+// 플러그인 등록 (필수!)
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 export const makeCode = (pre: string): string => {
   const now = new Date().getTime();
   const result = `${pre}-${now}`;
@@ -124,7 +132,9 @@ export const pushArrayWithPromise = (array: Array<any>, item: any) => {
 
 export const formatDetailedDateTime = (date: Date) => {
   return (
-    dayjs(date).format('YYYY.MM.DD HH:mm:ss') + '.' + String(date.getMilliseconds()).padStart(3, '0').substring(0, 2)
+    dayjs(date).tz(timezoneValue).format('YYYY.MM.DD HH:mm:ss') +
+    '.' +
+    String(date.getMilliseconds()).padStart(3, '0').substring(0, 2)
   );
 };
 
