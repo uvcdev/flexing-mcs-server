@@ -548,3 +548,9 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - CallType이 없는 경우를 대체하기 위함 ( UI에 잘못된 콜타입 정보가 계속 나타남 - Default 값)
 
 - 스페인 시간대로 데이터를 제어하기 위해서 dayjs에 timezone 내용 추가
+
+- User 테이블에 auth 컬럼 추가 
+  - 권한 관리 컬럼 추가
+  ```sql
+    ALTER TABLE public.users ADD auth varchar(8) DEFAULT 'staff' NULL;
+  ```

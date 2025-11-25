@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import * as express from 'express';
 import { Request, Response } from 'express';
 import { isLoggedIn } from '../../lib/middleware';
@@ -41,6 +40,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, UserInsertPar
       email: req.body.email,
       mobile: req.body.mobile,
       active: req.body.active || UserDefaults.active,
+      auth: req.body.auth || 'staff',
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -222,6 +222,7 @@ router.put(
         email: req.body.email,
         mobile: req.body.mobile,
         active: req.body.active || UserDefaults.active,
+        auth: req.body.auth,
       };
       logging.REQUEST_PARAM(logFormat);
 

@@ -11,6 +11,7 @@ export const initUser: UserInsertParams = {
   email: null,
   mobile: null,
   active: true,
+  auth: 'system',
 };
 
 // 공통 코드

@@ -3,7 +3,14 @@ import { EqpCallStats, EqpCallStatsForAck } from '../../callRegisterUtil';
 import { useKepServerUtil } from '../../kepServerUtil';
 import { generateUUIDNode } from '../../hashUtil';
 import { logging } from '../../logging';
-import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, makeMbsMqttHeader, sendMbsMqtt } from '../../mqttUtil';
+import {
+  separateMqttMessage,
+  MbsMqttMesaage,
+  MbsMqttBody,
+  makeMbsMqttHeader,
+  sendMbsMqtt,
+  MbsMqttHeader,
+} from '../../mqttUtil';
 import { editTrackingLogRedis } from '../../process/trackingLog';
 import {
   deleteRemainingAckCommand,
@@ -60,14 +67,25 @@ export interface InfoAckInCallByCallIdBody extends EqpCallStatsForAck {
   updatedTime: Date;
 }
 
-const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const callRequest = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsCallRequest');
   // set Data
   const callRequestBody = messageMessage.body as CallRequestBody;
   const callId = callRequestBody.Call_ID;
 
   // set GetAckCommandByCmdId - Call Request
-  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
+  // setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
+  // 2025-11-20 : call Request 한정으로 바로 ACK 응답
+  const newSubtopic = `ACK_${subject}`;
+  const cmdId = callRequestBody.Cmd_ID;
+
+  const ackMqttHeader = makeMbsMqttHeader(newSubtopic);
+  const ackMqttBody: MbsMqttBody = {
+    Cmd_ID: cmdId,
+    HCACK: '4',
+  };
+
+  sendMbsMqtt(systemTopic, ackMqttHeader, ackMqttBody, wmsName);
 
   // 1안
   // 1. 콜 아이디에 해당하는 정보 다시 쓰기
@@ -1083,7 +1101,7 @@ export const wmsCall = async (wmsName: string, messageJson: MbsMqttMesaage) => {
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
   console.log('wmsName 콜 들어올 때', wmsName);
   if (subject === 'CALL_REQUEST') {
-    await callRequest(wmsName, messageJson);
+    await callRequest(wmsName, subject, messageJson);
   } else if (subject === 'ACK_CALL_INFO') {
     await ackCallInfo(wmsName, subject, messageBody as ackCallInfoBody);
   } else if (subject === 'ACK_CANCEL_CALL_INFO') {

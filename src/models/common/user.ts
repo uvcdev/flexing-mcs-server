@@ -14,6 +14,7 @@ export interface UserAttributes {
   lastLogin: Date | null;
   lastLogout: Date | null;
   otherDate: Date;
+  auth: 'viewer' | 'staff' | 'admin' | 'system';
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -31,6 +32,7 @@ class User extends Model implements UserAttributes {
   public lastLogin!: UserAttributes['lastLogin'];
   public lastLogout!: UserAttributes['lastLogout'];
   public otherDate!: UserAttributes['otherDate'];
+  public auth!: UserAttributes['auth'];
   public readonly createdAt!: UserAttributes['createdAt'];
   public readonly updatedAt!: UserAttributes['updatedAt'];
   public readonly deletedAt!: UserAttributes['deletedAt'];
@@ -89,6 +91,11 @@ User.init(
     otherDate: {
       type: DataTypes.DATE,
     },
+    auth: {
+      type: DataTypes.STRING(8),
+      allowNull: false,
+      defaultValue: UserDefaults.auth,
+    },
   },
   {
     sequelize,
@@ -108,6 +115,7 @@ export interface UserInsertParams {
   email: string | null;
   mobile: string | null;
   active: boolean;
+  auth: 'viewer' | 'staff' | 'admin' | 'system';
 }
 
 // selectList
@@ -144,6 +152,7 @@ export interface UserUpdateParams {
   email?: string | null;
   mobile?: string | null;
   active?: boolean;
+  auth?: 'viewer' | 'staff' | 'admin' | 'system';
 }
 
 // updatePassword
@@ -177,6 +186,6 @@ export interface UserLogoutParams {
 }
 
 // include attributes
-export const UserAttributesInclude = ['id', 'userid', 'name', 'createdAt', 'active'];
+export const UserAttributesInclude = ['id', 'userid', 'name', 'createdAt', 'active', 'auth'];
 
 export default User;
