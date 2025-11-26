@@ -14,12 +14,16 @@ const topic = 'MISSION_STATE';
 export type MissionStateType =
   | 'MISSION_INITIATED'
   | 'AMR_ASSIGNED'
-  | 'AMR_ARRIVED'
-  | 'AMR_ACQUIRE_STARTED'
-  | 'AMR_ACQUIRE_COMPLETED'
+  | 'FROM_START' // from 작업 시작
+  | 'AMR_ARRIVED' // docking 완료 ( from , to 동일 )
+  | 'AMR_ACQUIRE_STARTED' // from lift 시작
+  | 'AMR_ACQUIRE_COMPLETED' // from lift 완료
+  | 'FROM_COMPLETED'
   | 'CARRIER_TRANSFERRING'
-  | 'AMR_DEPOSIT_STARTED'
-  | 'AMR_DEPOSIT_COMPLETED'
+  | 'TO_START' // to 작업 시작
+  | 'AMR_DEPOSIT_STARTED' // to lift 시작
+  | 'AMR_DEPOSIT_COMPLETED' // to lift 완료
+  | 'TO_COMPLETED'
   | 'AMR_UNASSIGNED'
   | 'MISSION_COMPLETED'
   | 'MISSION_CANCELED'
@@ -62,6 +66,8 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     const missionDestination = missionStateBody.missionDestination || '';
     let assignTask = (missionStateBody.assign.task as TrackingLogState) || '';
     let assignState = 'PROCESSING' as TrackingLogState;
+
+    console.log('messageJson!!!!!!!!!!!!!!!!', messageJson);
 
     if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED' || state === 'MISSION_COMPLETED') {
       assignState = 'COMPLETED';

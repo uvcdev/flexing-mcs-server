@@ -1021,10 +1021,11 @@ export const useDockingUtil = () => {
               return;
             }
 
-            const trackingLogSubject =
-              infoTrackingLogByCallId.startFacility === dockingParams.PORT_ID
-                ? 'FROM_DOCKING_COMPLETED'
-                : 'TO_DOCKING_COMPLETED';
+            // const trackingLogSubject =
+            //   infoTrackingLogByCallId.startFacility === dockingParams.PORT_ID
+            //     ? 'FROM_DOCKING_COMPLETED'
+            //     : 'TO_DOCKING_COMPLETED';
+            const trackingLogSubject = 'AMR_ARRIVED';
             const trackingLogDetail =
               infoTrackingLogByCallId.startFacility === dockingParams.PORT_ID
                 ? 'FROM_DOCKING_COMPLETED'
