@@ -70,7 +70,7 @@ export const useCallTypeUtil = () => {
     try {
       if (!targetCode) return;
       let value = '0';
-      if (process.env.PLC_CONN_TYPE === 'SC') {
+      if (process.env.PLC_CONN_TYPE === 'CONNECTOR') {
         value = '';
       }
       await plcConnectUtil.writeTagValue({

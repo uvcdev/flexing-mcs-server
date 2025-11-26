@@ -37,7 +37,7 @@ export const usePlcConnectUtil = () => {
       if (plcConnType === 'KEP') {
         // 초기 태그 데이터 초기화
         await kepServerUtil.initTagData();
-      } else if (plcConnType === 'SC') {
+      } else if (plcConnType === 'CONNECTOR') {
         await smartConnectorUtils.initTagData();
       }
     } catch (error) {
@@ -65,7 +65,7 @@ export const usePlcConnectUtil = () => {
       if (plcConnType === 'KEP') {
         // NODE-OPCUA <-> KEPServerex 연결 및 초기화
         await opcuaUtil.initKepserverex();
-      } else if (plcConnType === 'SC') {
+      } else if (plcConnType === 'CONNECTOR') {
         // Smart Connector 초기화
         await smartConnectorUtils.initSmartConnector();
       }
@@ -94,7 +94,7 @@ export const usePlcConnectUtil = () => {
       if (plcConnType === 'KEP') {
         // PLC 데이터 수집 (kepware 상태 불러와서 mqtt 전송)
         await kepServerUtil.monitorTagData();
-      } else if (plcConnType === 'SC') {
+      } else if (plcConnType === 'CONNECTOR') {
         // PLC 데이터 수집 (smart connector 상태 불러와서 mqtt 전송)
         await smartConnectorUtils.monitorTagData();
       }
@@ -144,7 +144,7 @@ export const usePlcConnectUtil = () => {
           return;
         }
         await kepServerUtil.writeTagsValue(writeDatas);
-      } else if (plcConnType === 'SC') {
+      } else if (plcConnType === 'CONNECTOR') {
         const sendMessage: SendSmartConnectorMqttMessage[] = params.tagInfo.map((tagInfo) => ({
           facilityName: params.targetFacility,
           tag: tagInfo.tagName,
@@ -195,7 +195,7 @@ export const usePlcConnectUtil = () => {
         await kepServerUtil.updateTagMapValues(targetKey, targetCode, [tagName]);
 
         return opcuaUtil.tagMap.get(`${targetCode}.${tagName}`)?.value as boolean | number | string | null;
-      } else if (plcConnType === 'SC') {
+      } else if (plcConnType === 'CONNECTOR') {
         const data = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(targetCode, tagName);
         // tagMap에서 데이터 타입을 보고 해당 데이터 타입으로 반환해야함
         const tagMapValue = smartConnector.tagMap.get(`${targetCode}.${tagName}`);

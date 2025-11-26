@@ -58,7 +58,7 @@ router.post(
 
         // 비즈니스 로직 호출
         result = await kepwareService.write(paramsList, logFormat);
-      } else if (plcConnType === 'SC') {
+      } else if (plcConnType === 'CONNECTOR') {
         const paramsList: Array<SendSmartConnectorMqttMessage> = [];
         for (let i = 0, length = req.body.length; i < length; i++) {
           const params: SendSmartConnectorMqttMessage = {
