@@ -6,11 +6,12 @@ import { MqttBranchInfoDataFromAcs } from './process/wmsBranch';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from './redisUtil';
 import opcuaUtil from './opcuaUtil';
 import { useCallTypeUtil } from './callTypeUtil';
+import { usePlcConnectUtil } from './plcConnectUtil';
 
 export const checkMissionOrder = async () => {
   const kepServerUtil = useKepServerUtil();
   const redisUtil = useRedisUtil();
-
+  const plcConnectUtil = usePlcConnectUtil();
   const missionOrderList =
     (await redisUtil.hgetAllObject<MqttBranchInfoDataFromAcs>(RedisKeys.InfoMissionOrderByWorkOrderCode)) || [];
 
@@ -62,43 +63,17 @@ export const checkMissionOrder = async () => {
             //   linkedEqpId.toString() || ''
             // );
             const sortLinkedFacilityInfo = newFacilityArray[i];
-            const plcInfo = await redisUtil.hgetObject<FacilityAttributes>(
-              RedisKeys.InfoPlcBySerial,
-              sortLinkedFacilityInfo?.serial?.toString() || ''
-            );
-            const plcInfoToJson = JSON.parse(JSON.stringify(plcInfo));
 
             const targetCode = sortLinkedFacilityInfo?.serial;
-
-            const targetKey = kepServerUtil.getTargetKey(targetCode || '');
-            await kepServerUtil.updateTagMapValues(targetKey, targetCode || '', [
-              'EQ_Auto',
-              'Call_Request',
-              'Call_Count',
-              'Dock_EQ_Status',
-              'Call_Response',
-              'Dock_Disable',
-              'Dock_Out_Permit',
-              'Dock_Permit',
-            ]);
-
-            const eqAuto = opcuaUtil.tagMap.get(`${targetCode}.EQ_Auto`);
-            const callRequest = opcuaUtil.tagMap.get(`${targetCode}.Call_Request`);
-            const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`);
-            const dockEqStatus = opcuaUtil.tagMap.get(`${targetCode}.Dock_EQ_Status`);
-            const callResponse = opcuaUtil.tagMap.get(`${targetCode}.Call_Response`);
-            const dockDisable = opcuaUtil.tagMap.get(`${targetCode}.Dock_Disable`);
-            const dockOutPermit = opcuaUtil.tagMap.get(`${targetCode}.Dock_Out_Permit`);
-            const dockPermit = opcuaUtil.tagMap.get(`${targetCode}.Dock_Permit`);
-
-            const eqAutoValue = (eqAuto?.value as boolean) || false;
-            const callRequestValue = (callRequest?.value as boolean) || false;
-            const callCountValue = (Number(callCount?.value) as number) || 0;
-            const dockEqStatusValue = (dockEqStatus?.value as boolean) || false;
-            const callResponseValue = (callResponse?.value as boolean) || false;
-            const dockDisableValue = (dockDisable?.value as boolean) || false;
-            const dockOutPermitValue = (dockOutPermit?.value as boolean) || false;
-            const dockPermitValue = (dockPermit?.value as boolean) || false;
+            if (!targetCode) continue;
+            const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
+            const callRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request')) as boolean;
+            const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
+            const dockEqStatusValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_EQ_Status')) as boolean;
+            const callResponseValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Response')) as boolean;
+            const dockDisableValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Disable')) as boolean;
+            const dockOutPermitValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Out_Permit')) as boolean;
+            const dockPermitValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Permit')) as boolean;
 
             // 콜 카운트 없어도 되나욤 ?
             if (
@@ -132,16 +107,14 @@ export const checkMissionOrder = async () => {
                 sendMqtt('acs/missionorder', JSON.stringify(missionOrderMqttMessage));
 
                 // // 콜 기준 설비 call_response 작성
-                // await useKepServerUtil().writeSimpleTagValue({
+                // await plcConnectUtil.writeTagValue({
                 //   targetFacility: missionFromfacilityInfo.serial || '',
-                //   tagName: 'Call_Response',
-                //   value: true,
+                //   tagInfo: [{ tagName: 'Call_Response', value: true }],
                 // });
                 // call_response 작성
-                await useKepServerUtil().writeSimpleTagValue({
+                await plcConnectUtil.writeTagValue({
                   targetFacility: sortLinkedFacilityInfo.serial || '',
-                  tagName: 'Call_Response',
-                  value: true,
+                  tagInfo: [{ tagName: 'Call_Response', value: true }],
                 });
 
                 await useCallTypeUtil().callTypeResponse(sortLinkedFacilityInfo.serial || '');

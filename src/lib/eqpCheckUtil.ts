@@ -20,6 +20,7 @@ import {
   RecentWorkOrderInfoByFacilitySerialAttributes,
   RecentWorkOrderListByFacilitySerialAttributes,
 } from '../models/operation/workOrder';
+import { usePlcConnectUtil } from './plcConnectUtil';
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -30,6 +31,7 @@ export interface EQP_WCS {
 
 export const useEqpCheckUtil = () => {
   const eqpTaskStatus = async (targetTagInfo: TagValue, newValue: boolean) => {
+    const plcConnectUtil = usePlcConnectUtil();
     try {
       // TAG_NAME에 따라 다른 함수 실행
       switch (targetTagInfo.TAG_NAME) {
@@ -42,10 +44,12 @@ export const useEqpCheckUtil = () => {
             const targetKey = targetTagInfo.TAGGROUP
               ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
               : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+            console.log('3');
             const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributesDeep>(
               RedisKeys.InfoFacilityBySerial,
               facilitySerial
             );
+            console.log('4');
             if (
               facilityInfo &&
               // facilityInfo.system === 'WMS' &&
@@ -283,39 +287,29 @@ export const useEqpCheckUtil = () => {
         case 'Complete':
           console.log(`Changed Complete`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           // await useCallTypeUtil().callTypeResponse(targetTagInfo);
-          // await useKepServerUtil().writeSimpleTagValue({
-          //   targetFacility: targetTagInfo.EQ_CODE,
-          //   tagName: 'Dock_Signal_Reset',
-          //   value: true,
-          // });
-
-          await useKepServerUtil().writeSimpleTagValue({
+          await plcConnectUtil.writeTagValue({
             targetFacility: targetTagInfo.EQ_CODE,
-            tagName: 'Dock_Request',
-            value: false,
+            tagInfo: [
+              { tagName: 'Dock_Request', value: false },
+              // { tagName: 'Dock_Signal_Reset', value: true }],
+              // { tagName: 'Dock_AMR_Status', value: false },
+            ],
           });
 
-          // await useKepServerUtil().writeSimpleTagValue({
-          //   targetFacility: targetTagInfo.EQ_CODE,
-          //   tagName: 'Dock_AMR_Status',
-          //   value: false,
-          // });
           // setTimeout(() => {
-          //   useKepServerUtil().writeSimpleTagValue({
-          //     targetFacility: targetTagInfo.EQ_CODE,
-          //     tagName: 'Dock_Signal_Reset',
-          //     value: false,
-          //   });
+          // await plcConnectUtil.writeTagValue({
+          //   targetFacility: targetTagInfo.EQ_CODE,
+          //   tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+          // });
           // }, 1000);
           break;
 
         case 'Call_Request_Multi_1':
           console.log(`Changed Call_Request_Multi_1`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
-            await useKepServerUtil().writeSimpleTagValue({
+            await plcConnectUtil.writeTagValue({
               targetFacility: targetTagInfo.EQ_CODE,
-              tagName: 'Call_Response_Multi_1',
-              value: true,
+              tagInfo: [{ tagName: 'Call_Response_Multi_1', value: true }],
             });
             if (targetTagInfo.value === true) {
               const facilitySerial = targetTagInfo.EQ_CODE;
@@ -364,10 +358,9 @@ export const useEqpCheckUtil = () => {
               }
             }
           } else if (targetTagInfo.value === false) {
-            await useKepServerUtil().writeSimpleTagValue({
+            await plcConnectUtil.writeTagValue({
               targetFacility: targetTagInfo.EQ_CODE,
-              tagName: 'Call_Response_Multi_1',
-              value: false,
+              tagInfo: [{ tagName: 'Call_Response_Multi_1', value: false }],
             });
             const facilitySerial = targetTagInfo.EQ_CODE;
             const targetKey = targetTagInfo.TAGGROUP
@@ -419,10 +412,9 @@ export const useEqpCheckUtil = () => {
         case 'Call_Request_Multi_2':
           console.log(`Changed Call_Request_Multi_2`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
-            await useKepServerUtil().writeSimpleTagValue({
+            await plcConnectUtil.writeTagValue({
               targetFacility: targetTagInfo.EQ_CODE,
-              tagName: 'Call_Response_Multi_2',
-              value: true,
+              tagInfo: [{ tagName: 'Call_Response_Multi_2', value: true }],
             });
             if (targetTagInfo.value === true) {
               const facilitySerial = targetTagInfo.EQ_CODE;
@@ -471,10 +463,9 @@ export const useEqpCheckUtil = () => {
               }
             }
           } else if (targetTagInfo.value === false) {
-            await useKepServerUtil().writeSimpleTagValue({
+            await plcConnectUtil.writeTagValue({
               targetFacility: targetTagInfo.EQ_CODE,
-              tagName: 'Call_Response_Multi_2',
-              value: false,
+              tagInfo: [{ tagName: 'Call_Response_Multi_2', value: false }],
             });
             const facilitySerial = targetTagInfo.EQ_CODE;
             const targetKey = targetTagInfo.TAGGROUP
@@ -580,38 +571,39 @@ export const useEqpCheckUtil = () => {
     multiValue: number
   ): Promise<string[] | null> => {
     try {
+      const plcConnectUtil = usePlcConnectUtil();
       // 설비코드 1 + 설비코드 2 + 콜 ID 시간1(년도) + 콜 ID시간2(월,일) + 콜ID(0~9999)
-      const EQCode01 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_01`);
-      const EQCode02 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_02`);
-      const callTimeYear = opcuaUtil.tagMap.get(`${targetKey}.Call_Time_Year`);
-      const callTimeMonthDay = opcuaUtil.tagMap.get(`${targetKey}.Call_Time_MonthDay`);
+      // const EQCode01 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_01`);
+      // const EQCode02 = opcuaUtil.tagMap.get(`${targetKey}.EQ_Code_02`);
+      // const callTimeYear = opcuaUtil.tagMap.get(`${targetKey}.Call_Time_Year`);
+      // const callTimeMonthDay = opcuaUtil.tagMap.get(`${targetKey}.Call_Time_MonthDay`);
 
-      // 필요한 모든 nodeId들을 배열로 모음
-      const needNodeIds = [
-        EQCode01?.NODE_ID,
-        EQCode02?.NODE_ID,
-        callTimeYear?.NODE_ID,
-        callTimeMonthDay?.NODE_ID,
-      ].filter((nodeId): nodeId is string => nodeId !== undefined);
+      // // 필요한 모든 nodeId들을 배열로 모음
+      // const needNodeIds = [
+      //   EQCode01?.NODE_ID,
+      //   EQCode02?.NODE_ID,
+      //   callTimeYear?.NODE_ID,
+      //   callTimeMonthDay?.NODE_ID,
+      // ].filter((nodeId): nodeId is string => nodeId !== undefined);
 
-      const readDatas = await useKepServerUtil().readTagsValue(needNodeIds);
-      console.log('🚀 ~ createEQPCallId ~ readDatas:', readDatas);
+      // const readDatas = await useKepServerUtil().readTagsValue(needNodeIds);
+      // console.log('🚀 ~ createEQPCallId ~ readDatas:', readDatas);
 
-      const needKeys = [
-        EQCode01?.TAG_NAME,
-        EQCode02?.TAG_NAME,
-        callTimeYear?.TAG_NAME,
-        callTimeMonthDay?.TAG_NAME,
-      ].filter((tagName): tagName is string => tagName !== undefined);
+      // const needKeys = [
+      //   EQCode01?.TAG_NAME,
+      //   EQCode02?.TAG_NAME,
+      //   callTimeYear?.TAG_NAME,
+      //   callTimeMonthDay?.TAG_NAME,
+      // ].filter((tagName): tagName is string => tagName !== undefined);
 
-      for (let i = 0; i < needKeys.length; i++) {
-        useKepServerUtil().updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
-      }
-
-      const EQCode01Value = EQCode01?.value.toString() || '0';
-      const EQCode02Value = EQCode02?.value.toString() || '0';
-      const callTimeYearValue = callTimeYear?.value.toString() || '0';
-      const callTimeMonthDayValue = callTimeMonthDay?.value.toString() || '0';
+      // for (let i = 0; i < needKeys.length; i++) {
+      //   useKepServerUtil().updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
+      // }
+      const targetCode = useKepServerUtil().getTagCode(targetKey);
+      const EQCode01Value = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Code_01')) as string;
+      const EQCode02Value = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Code_02')) as string;
+      const callTimeYearValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Time_Year')) as string;
+      const callTimeMonthDayValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Time_MonthDay')) as string;
 
       // callTimeMonthDay 값을 4자릿수로 변환
       const callTimeMonthDayStr = callTimeMonthDayValue.toString().padStart(4, '0');

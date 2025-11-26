@@ -28,5 +28,5 @@ uploads
 .idea
 
 
-# kepserver settings
-kepserverTag.json
+# plc settings
+plcTagInfo.json

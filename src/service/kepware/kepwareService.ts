@@ -6,7 +6,6 @@ import { AttributeIds, StatusCode, WriteValueOptions } from 'node-opcua-client';
 import { opcuaUtil } from '../../lib/opcuaUtil';
 import { parseAsciiToDecWord } from '../../lib/kepServerUtil';
 const service = {
-
   parseValue(value: string, dataType: string): boolean | number | string {
     switch (dataType) {
       case 'Boolean':
@@ -28,6 +27,7 @@ const service = {
     }
   },
 
+  // todo[sc] 나중에 sc쓰는 함수 만들었을때 여기서 분기처리 해줘야함.
   async write(paramsList: KepwareWriteParams[], logFormat: LogFormat<unknown>): Promise<StatusCode[]> {
     let result: StatusCode[] = [];
     try {
@@ -52,7 +52,7 @@ const service = {
           });
         }
       }
-      console.log("🚀 ~ service ~ writeDatas:", writeDatas)
+      console.log('🚀 ~ service ~ writeDatas:', writeDatas);
       result = await useKepServerUtil().writeTagsValue(writeDatas);
       logging.METHOD_ACTION(logFormat, __filename, paramsList, result);
     } catch (err) {
@@ -64,7 +64,7 @@ const service = {
     return new Promise((resolve) => {
       resolve(result);
     });
-  }
+  },
 };
 
 export { service };

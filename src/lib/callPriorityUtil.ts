@@ -1,25 +1,25 @@
-import { TagValue, useKepServerUtil } from "./kepServerUtil";
-import { RedisKeys, useRedisUtil } from "./redisUtil";
-import { logging, logToConsoleAndFile } from "./logging";
-import { MqttTopics, sendMqtt } from "./mqttUtil";
-import { opcuaUtil } from "./opcuaUtil";
-import { dao as workOrderDao } from "../dao/operation/workOrderDao";
-import { FacilityAttributes } from "../models/operation/facility";
+import { TagValue, useKepServerUtil } from './kepServerUtil';
+import { RedisKeys, useRedisUtil } from './redisUtil';
+import { logging, logToConsoleAndFile } from './logging';
+import { MqttTopics, sendMqtt } from './mqttUtil';
+import { opcuaUtil } from './opcuaUtil';
+import { dao as workOrderDao } from '../dao/operation/workOrderDao';
+import { FacilityAttributes } from '../models/operation/facility';
+import { usePlcConnectUtil } from './plcConnectUtil';
 
 export interface OnCallPriorityInfo {
   EQP_ID: string; // 설비 이름 : SC11
-  EQP_CALL_ID: string; // 설비 call_count : 1234 
+  EQP_CALL_ID: string; // 설비 call_count : 1234
   CALL_ID: string; // 작업지시코드 : SC11202508111234
   CALL_PRIORITY: boolean; // 우선순위 : true
 }
 
-
 export const useCallPriorityUtil = () => {
-  const kepServerUtil = useKepServerUtil()
-  const redisUtil = useRedisUtil()
+  const kepServerUtil = useKepServerUtil();
+  const redisUtil = useRedisUtil();
+  const plcConnectUtil = usePlcConnectUtil();
   const onCallPriority = async (targetTagInfo: TagValue) => {
     try {
-
       if (!targetTagInfo.value) {
         logging.KEPWARE_DEBUG({
           action: 'TAG_READ',
@@ -30,17 +30,9 @@ export const useCallPriorityUtil = () => {
         return;
       }
 
-      const targetKey = kepServerUtil.getTargetKey(targetTagInfo.EQ_CODE)
       const targetCode = targetTagInfo.EQ_CODE;
-      const targetValue = targetTagInfo.value;
 
-      await kepServerUtil.updateTagMapValues(
-        targetKey,
-        targetCode,
-        ['Call_Count']
-      )
-
-      const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`)?.value as number;
+      const callCount = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
       if (!callCount) {
         logToConsoleAndFile(`callCount is 0 ${targetTagInfo.EQ_CODE}`, 'red');
         logging.ACTION_ERROR({
@@ -67,22 +59,21 @@ export const useCallPriorityUtil = () => {
       const workOrderInfo = await workOrderDao.selectInfoByTriggerCallCount({
         triggerCallCount: callCount,
         fromFacilityId: facilityInfo.id,
-      })
+      });
 
       if (workOrderInfo) {
-
         const onCallPriorityInfo: OnCallPriorityInfo = {
           EQP_ID: targetCode,
           EQP_CALL_ID: callCount.toString(),
           CALL_ID: workOrderInfo?.code || '',
           CALL_PRIORITY: true as boolean,
-        }
+        };
 
         sendMqtt(MqttTopics.OnCallPriority, JSON.stringify(onCallPriorityInfo));
         await workOrderDao.update({
           id: workOrderInfo.id,
           callPriority: true as boolean,
-        })
+        });
       } else {
         logging.KEPWARE_DEBUG({
           action: 'TAG_READ',
@@ -92,13 +83,12 @@ export const useCallPriorityUtil = () => {
         });
         return;
       }
-
     } catch (error) {
       console.error('CallPriority error:', error);
     }
-  }
+  };
 
   return {
     onCallPriority,
-  }
-}
+  };
+};

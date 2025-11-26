@@ -17,7 +17,7 @@ import { DryrunSetting } from '../models/common/setting';
 import { dao as workOrderDao } from '../dao/operation/workOrderDao';
 import { ErrorClass, responseCode } from './resUtil';
 import { useCallTypeUtil } from './callTypeUtil';
-
+import { usePlcConnectUtil } from './plcConnectUtil';
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -46,15 +46,20 @@ export interface EqpCallStatsForAck extends EqpCallStats {
 export const useCallRegisterUtil = () => {
   const kepServerUtil = useKepServerUtil();
   const redisUtil = useRedisUtil();
+  const plcConnectUtil = usePlcConnectUtil();
   const callRegister = async () => {
     try {
+      console.log('🚀 ~ callRegister ~ callRegister');
       const callRegisterList = await redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoCallRequestOnBySerial);
+      console.log('🚀 ~ callRegister ~ callRegisterList:', callRegisterList);
       if (!callRegisterList) return;
 
       for (let i = 0, length = callRegisterList.length; i < length; i++) {
         const targetTagInfo = callRegisterList[i];
         const targetCode = targetTagInfo.EQ_CODE;
         const eqpCallId = targetTagInfo.CALL_ID || '';
+        console.log('🚀 ~ callRegister ~ targetCode:', targetCode);
+        console.log('🚀 ~ callRegister ~ eqpCallId:', eqpCallId);
         if (!targetCode) continue; // 코드 없으면 처리 불가
 
         // remainCall doesn't need callRegister again
@@ -73,19 +78,15 @@ export const useCallRegisterUtil = () => {
         // }
         // if (nextCallInfo === true) continue;
 
-        const targetKey = targetTagInfo.TAGGROUP
-          ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
-          : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
-
-        // 필요한 태그 값들 업데이트
-        await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Count', 'Call_Priority', 'EQ_Auto']);
-
         // 필요한 태그 값들 가져오기
-        const callCountValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`)?.value as number;
-        const callPriorityValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`)?.value as string;
-        const eqAutoValue = opcuaUtil.tagMap.get(`${targetCode}.EQ_Auto`)?.value as boolean;
+        const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
+        const callPriorityValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Priority')) as boolean;
+        const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
         const callType = await makeCallType(targetCode);
-
+        console.log('🚀 ~ callRegister ~ callCountValue:', callCountValue);
+        console.log('🚀 ~ callRegister ~ callPriorityValue:', callPriorityValue);
+        console.log('🚀 ~ callRegister ~ eqAutoValue:', eqAutoValue);
+        console.log('🚀 ~ callRegister ~ callType:', callType);
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
           targetCode
@@ -104,7 +105,7 @@ export const useCallRegisterUtil = () => {
             Cargo_Type: callType || '',
             Caller: targetCode, // 앞의 4자리
             Call_Quantity: 1,
-            Call_Priority: callPriorityValue === 'true' ? '99' : '1',
+            Call_Priority: callPriorityValue ? '99' : '1',
             DATA_TYPE: targetTagInfo.DATA_TYPE,
             TRIGGER_CALL_COUNT: callCountValue,
             ALWAYS_CALL_COUNT: -1,
@@ -143,17 +144,14 @@ export const useCallRegisterUtil = () => {
                 RedisKeys.InfoWorkOrderCountBySerial,
                 callInfo.Caller
               );
-              await kepServerUtil.writeSimpleTagValue({
+              await plcConnectUtil.writeTagValue({
                 targetFacility: callInfo.Caller,
-                tagName: 'Call_Response',
-                value: true,
+                tagInfo: [
+                  { tagName: 'Call_Response', value: true },
+                  { tagName: 'Call_Response_Count', value: callCountValue.toString() },
+                ],
               });
               await useCallTypeUtil().callTypeResponse(callInfo.Caller);
-              await kepServerUtil.writeSimpleTagValue({
-                targetFacility: callInfo.Caller,
-                tagName: 'Call_Response_Count',
-                value: callCountValue.toString(),
-              });
               const trackingLogSubject = 'CALL_RESPONSE';
               const trackingLogDetail = 'CALL_RESPONSE';
               const trackingLogState = 'PROCESSING';
@@ -198,27 +196,42 @@ export const useCallRegisterUtil = () => {
                     continue;
                   }
 
-                  const linkedTargetKey = kepServerUtil.getTargetKey(linkedFacilityInfo.serial || '');
-                  await kepServerUtil.updateTagMapValues(linkedTargetKey, linkedFacilityInfo.serial || '', [
-                    'Call_Request',
-                    'Call_Response',
-                    'Call_Count',
-                    'EQ_Auto',
-                  ]);
-                  const linkedFacilityCallRequestValue = opcuaUtil.tagMap.get(
-                    `${linkedFacilityInfo?.serial}.Call_Request`
-                  )?.value as boolean;
-                  const linkedFacilityCallResponseValue = opcuaUtil.tagMap.get(
-                    `${linkedFacilityInfo?.serial}.Call_Response`
-                  )?.value as boolean;
-                  const linkedFacilityEQAutoValue = opcuaUtil.tagMap.get(`${linkedFacilityInfo?.serial}.EQ_Auto`)
-                    ?.value as boolean;
-                  const linkedFacilityCallCountValue = opcuaUtil.tagMap.get(`${linkedFacilityInfo?.serial}.Call_Count`)
-                    ?.value as number;
+                  const linkedFacilityCallRequestValue = (await plcConnectUtil.getTagValue(
+                    linkedFacilityInfo.serial,
+                    'Call_Request'
+                  )) as boolean;
+                  const linkedFacilityCallResponseValue = (await plcConnectUtil.getTagValue(
+                    linkedFacilityInfo.serial,
+                    'Call_Response'
+                  )) as boolean;
+                  const linkedFacilityEQAutoValue = (await plcConnectUtil.getTagValue(
+                    linkedFacilityInfo.serial,
+                    'EQ_Auto'
+                  )) as boolean;
+                  const linkedFacilityCallCountValue = (await plcConnectUtil.getTagValue(
+                    linkedFacilityInfo.serial,
+                    'Call_Count'
+                  )) as number;
                   const linkedFacilityCallTypeValue = await makeCallType(linkedFacilityInfo?.serial?.toString());
-
+                  console.log('🚀 ~ callRegister ~ linkedFacilityEQAutoValue:', linkedFacilityEQAutoValue);
                   if (!linkedFacilityEQAutoValue) continue;
 
+                  console.log('🚀 ~ callRegister ~ linkedFacilityCallRequestValue:', linkedFacilityCallRequestValue);
+                  console.log(
+                    '🚀 ~ callRegister ~ linkedFacilityCallRequestValue type:',
+                    typeof linkedFacilityCallRequestValue
+                  );
+                  console.log('🚀 ~ callRegister ~ linkedFacilityCallResponseValue:', linkedFacilityCallResponseValue);
+                  console.log(
+                    '🚀 ~ callRegister ~ linkedFacilityCallResponseValue type:',
+                    typeof linkedFacilityCallResponseValue
+                  );
+                  console.log('🚀 ~ callRegister ~ linkedFacilityCallTypeValue:', linkedFacilityCallTypeValue);
+                  console.log(
+                    '🚀 ~ callRegister ~ linkedFacilityCallTypeValue type:',
+                    typeof linkedFacilityCallTypeValue
+                  );
+                  console.log('🚀 ~ callRegister ~ callType:', callType);
                   // 반대쪽에 콜 요청 떠 있고 콜 응답 내려가 있는 경우 작업 생성
                   if (
                     linkedFacilityInfo &&
@@ -260,17 +273,14 @@ export const useCallRegisterUtil = () => {
                       targetTagInfo.EQ_CODE
                     );
                     // 콜 응답 관련 데이터 쓰기
-                    await useKepServerUtil().writeSimpleTagValue({
+                    await plcConnectUtil.writeTagValue({
                       targetFacility: facilityInfo.serial || '',
-                      tagName: 'Call_Response',
-                      value: true,
+                      tagInfo: [
+                        { tagName: 'Call_Response', value: true },
+                        { tagName: 'Call_Response_Count', value: String(infoPendingWorkOrder.triggerCallCount) },
+                      ],
                     });
                     await useCallTypeUtil().callTypeResponse(facilityInfo.serial || '');
-                    await useKepServerUtil().writeSimpleTagValue({
-                      targetFacility: facilityInfo.serial || '',
-                      tagName: 'Call_Response_Count',
-                      value: String(infoPendingWorkOrder.triggerCallCount),
-                    });
 
                     const trackingLogSubject = 'CALL_RESPONSE';
                     const trackingLogDetail = 'CALL_RESPONSE';
@@ -290,17 +300,14 @@ export const useCallRegisterUtil = () => {
                     await editTrackingLogRedis(trackingLogUpdateReqData, undefined, 'SUCCESS', callInfo.Caller);
 
                     // 콜 응답 관련 데이터 쓰기
-                    await useKepServerUtil().writeSimpleTagValue({
+                    await plcConnectUtil.writeTagValue({
                       targetFacility: linkedFacilityInfo.serial || '',
-                      tagName: 'Call_Response',
-                      value: true,
+                      tagInfo: [
+                        { tagName: 'Call_Response', value: true },
+                        { tagName: 'Call_Response_Count', value: String(infoPendingWorkOrder.alwaysCallCount) },
+                      ],
                     });
                     await useCallTypeUtil().callTypeResponse(linkedFacilityInfo.serial || '');
-                    await useKepServerUtil().writeSimpleTagValue({
-                      targetFacility: linkedFacilityInfo.serial || '',
-                      tagName: 'Call_Response_Count',
-                      value: String(infoPendingWorkOrder.alwaysCallCount),
-                    });
 
                     const trackingLogUpdateResData: TrackingLogRedisUpdateParams = {
                       callId: String(eqpCallId),
@@ -455,11 +462,7 @@ export const useCallRegisterUtil = () => {
 
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, eqCode);
 
-        const targetKey = kepServerUtil.getTargetKey(eqCode);
-
-        await kepServerUtil.updateTagMapValues(targetKey, eqCode, ['Call_Request']);
-
-        const callRequestValue = opcuaUtil.tagMap.get(`${eqCode}.Call_Request`)?.value as boolean;
+        const callRequestValue = (await plcConnectUtil.getTagValue(eqCode, 'Call_Request')) as boolean;
 
         if (callRequestValue === false) {
           await redisUtil.hdel(RedisKeys.InfoFacilityModeBySerial, eqCode);
@@ -476,17 +479,13 @@ export const useCallRegisterUtil = () => {
     }
   };
   const createWorkOrderCode = async (
-    targetKey: string,
+    targetCode: string,
     facilityInfo: FacilityAttributesDeep,
     reRegister: string
   ): Promise<string | null> => {
     try {
-      const targetCode = kepServerUtil.getTagCode(targetKey);
-
-      await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Time_Year', 'Call_Time_MonthDay']);
-
-      const callTimeYearValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_Year`)?.value.toString() || '0';
-      const callTimeMonthDayValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_MonthDay`)?.value.toString() || '0';
+      const callTimeYearValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Time_Year')) as string;
+      const callTimeMonthDayValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Time_MonthDay')) as string;
 
       // callTimeMonthDayValue, generatedCallCountValue 값을 4자릿수로 변환
       const callTimeMonthDayStr = formatToDateCode(Number(callTimeMonthDayValue)).toString();
@@ -573,15 +572,12 @@ export const useCallRegisterUtil = () => {
     //         //triggerCallResponseValue === false
     //       ) {
     //         // 콜 응답 관련 데이터 쓰기
-    //         await useKepServerUtil().writeSimpleTagValue({
+    //         await plcConnectUtil.writeTagValue({
     //           targetFacility: alwaysCallCountFacilityName,
-    //           tagName: 'Call_Response',
-    //           value: true,
-    //         });
-    //         await useKepServerUtil().writeSimpleTagValue({
-    //           targetFacility: alwaysCallCountFacilityName,
-    //           tagName: 'Call_Response_Count',
-    //           value: String(alwaysCallCountValue),
+    //           tagInfo: [
+    //             { tagName: 'Call_Response', value: true },
+    //             { tagName: 'Call_Response_Count', value: String(alwaysCallCountValue) },
+    //           ],
     //         });
     //         const trackingLogSubject = 'CALL_RESPONSE';
     //         const trackingLogDetail = 'CALL_RESPONSE';
@@ -600,15 +596,12 @@ export const useCallRegisterUtil = () => {
     //         };
     //         await editTrackingLogRedis(trackingLogUpdateReqData, undefined, 'SUCCESS', remainCall.fromFacilityName);
     //         // 콜 응답 관련 데이터 쓰기
-    //         await useKepServerUtil().writeSimpleTagValue({
+    //         await plcConnectUtil.writeTagValue({
     //           targetFacility: triggerCallCountFacilityName,
-    //           tagName: 'Call_Response',
-    //           value: true,
-    //         });
-    //         await useKepServerUtil().writeSimpleTagValue({
-    //           targetFacility: triggerCallCountFacilityName,
-    //           tagName: 'Call_Response_Count',
-    //           value: String(triggerCallCountValue),
+    //           tagInfo: [
+    //             { tagName: 'Call_Response', value: true },
+    //             { tagName: 'Call_Response_Count', value: String(triggerCallCountValue) },
+    //           ],
     //         });
     //         const trackingLogUpdateResData: TrackingLogRedisUpdateParams = {
     //           callId: infoTrackingLogByCallId?.callId,

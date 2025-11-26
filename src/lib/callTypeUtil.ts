@@ -10,6 +10,7 @@ import { RedisKeys, RedisSettingKeys, useRedisUtil } from './redisUtil';
 import { editTrackingLogRedis, initTrackingLogRedis } from './process/trackingLog';
 import { TrackingLogRedisAttributes, TrackingLogRedisUpdateParams } from '../models/common/trackingLog';
 import { DryrunSetting } from '../models/common/setting';
+import { usePlcConnectUtil } from './plcConnectUtil';
 export interface EqpCallStats {
   CALL_ID: string;
   EQP_CALL_ID: string;
@@ -26,42 +27,37 @@ export interface EqpCallStatsForAck extends EqpCallStats {
 }
 
 export const useCallTypeUtil = () => {
-  const kepServerUtil = useKepServerUtil();
   const redisUtil = useRedisUtil();
+  const plcConnectUtil = usePlcConnectUtil();
   const callTypeResponse = async (targetCode: string) => {
     try {
       if (!targetCode) return;
       // const targetCode = targetTagInfo.EQ_CODE;
-      const targetKey = kepServerUtil.getTargetKey(targetCode);
 
-      await kepServerUtil.updateTagMapValues(targetKey, targetCode, [
-        'Call_Type_01',
-        'Call_Type_02',
-        'Call_Type_03',
-        'Call_Type_04',
-        'Call_Type_05',
-        'Call_Type_06',
-        'Call_Type_07',
-        'Call_Type_08',
-        'Call_Type_09',
-        'Call_Type_10',
-      ]);
       for (let i = 1; i <= 10; i++) {
         const suffix = i < 10 ? `0${i}` : `${i}`;
-        const readCallType = `${targetCode}.Call_Type_${suffix}`;
+        const readCallType = `Call_Type_${suffix}`;
         const writeCallType = `Call_Type_Response_${suffix}`;
 
         // 값 읽기
-        const callTypeValue = opcuaUtil.tagMap.get(readCallType);
-        if (typeof callTypeValue?.value === 'string') {
-          const setCallType = callTypeValue.value.replace(/[\s]/g, '');
-
-          const callType = parseAsciiToDecWord(setCallType);
+        const callTypeValue = (await plcConnectUtil.getTagValue(targetCode, readCallType)) as string;
+        if (typeof callTypeValue === 'string') {
+          const setCallType = callTypeValue.replace(/[\s]/g, '');
+          let callType = '';
+          if (process.env.PLC_CONN_TYPE === 'KEP') {
+            console.log(`setCallType`, setCallType);
+            callType = parseAsciiToDecWord(setCallType).toString();
+            console.log(`callType`, callType);
+            console.log(`callType type`, typeof callType);
+          } else {
+            callType = setCallType;
+            console.log(`callType`, callType);
+            console.log(`callType type`, typeof callType);
+          }
           // 값 쓰기
-          await useKepServerUtil().writeSimpleTagValue({
-            targetFacility: targetCode || '',
-            tagName: writeCallType,
-            value: callType.toString(),
+          await plcConnectUtil.writeTagValue({
+            targetFacility: targetCode,
+            tagInfo: [{ tagName: writeCallType, value: callType }],
           });
         }
       }
@@ -69,5 +65,32 @@ export const useCallTypeUtil = () => {
       throw error;
     }
   };
-  return { callTypeResponse };
+
+  const callTypeResponseReset = async (targetCode: string) => {
+    try {
+      if (!targetCode) return;
+      let value = '0';
+      if (process.env.PLC_CONN_TYPE === 'SC') {
+        value = '';
+      }
+      await plcConnectUtil.writeTagValue({
+        targetFacility: targetCode,
+        tagInfo: [
+          { tagName: 'Call_Type_Response_02', value: value },
+          { tagName: 'Call_Type_Response_03', value: value },
+          { tagName: 'Call_Type_Response_01', value: value },
+          { tagName: 'Call_Type_Response_04', value: value },
+          { tagName: 'Call_Type_Response_05', value: value },
+          { tagName: 'Call_Type_Response_06', value: value },
+          { tagName: 'Call_Type_Response_07', value: value },
+          { tagName: 'Call_Type_Response_08', value: value },
+          { tagName: 'Call_Type_Response_09', value: value },
+          { tagName: 'Call_Type_Response_10', value: value },
+        ],
+      });
+    } catch (error) {
+      throw error;
+    }
+  };
+  return { callTypeResponse, callTypeResponseReset };
 };

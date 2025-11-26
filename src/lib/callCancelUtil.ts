@@ -24,6 +24,7 @@ import { CallInfoBody } from './process/wmsCallInfo';
 import { generateUUIDNode } from './hashUtil';
 import { InfoAckInCallByCallIdBody } from './wms/mqtt/call';
 import { count } from 'console';
+import { usePlcConnectUtil } from './plcConnectUtil';
 
 export interface EqpCallStats {
   CALL_ID: string;
@@ -57,7 +58,7 @@ export interface CancelWorkOrderRequestType {
 export const useCallCancelUtil = () => {
   const kepServerUtil = useKepServerUtil();
   const redisUtil = useRedisUtil();
-
+  const plcConnectUtil = usePlcConnectUtil();
   // ACS에 취소 요청 전달
   const cancelWorkOrderToAcs = async (
     callId: string,
@@ -125,10 +126,9 @@ export const useCallCancelUtil = () => {
   const writeCallCancelResponse = async (targetCode: string) => {
     try {
       // 콜 취소 응답 쓰기
-      await kepServerUtil.writeSimpleTagValue({
+      await plcConnectUtil.writeTagValue({
         targetFacility: targetCode,
-        tagName: 'Call_Cancel_Response',
-        value: true,
+        tagInfo: [{ tagName: 'Call_Cancel_Response', value: true }],
       });
     } catch (error) {
       logging.KEPWARE_ERROR({
@@ -144,20 +144,13 @@ export const useCallCancelUtil = () => {
   const initResponsePlc = async (targetCode: string) => {
     try {
       // 콜응답, 콜취소응답, 콜로봇할당, 콜ID, 콜타입 등은 callRemove에서 0으로 내림.
-      await kepServerUtil.writeSimpleTagValue({
+      await plcConnectUtil.writeTagValue({
         targetFacility: targetCode,
-        tagName: 'Call_Response',
-        value: false,
-      });
-      await kepServerUtil.writeSimpleTagValue({
-        targetFacility: targetCode,
-        tagName: 'Call_Robot_Assigned',
-        value: false,
-      });
-      await kepServerUtil.writeSimpleTagValue({
-        targetFacility: targetCode,
-        tagName: 'Call_Response_Count',
-        value: '0',
+        tagInfo: [
+          { tagName: 'Call_Response', value: false },
+          { tagName: 'Call_Robot_Assigned', value: false },
+          { tagName: 'Call_Response_Count', value: '0' }
+        ],
       });
     } catch (error) {
       logging.KEPWARE_ERROR({
@@ -371,17 +364,12 @@ export const useCallCancelUtil = () => {
 
         // 콜응답, 콜취소응답, 콜로봇할당, 콜ID, 콜타입 등은 callRemove에서 0으로 내림.
         // 이 함수에서는 콜취소응답만 0으로 내리기.
-        await kepServerUtil.writeSimpleTagValue({
+        await plcConnectUtil.writeTagValue({
           targetFacility: targetTagInfo.EQ_CODE,
-          tagName: 'Call_Cancel_Response',
-          value: false,
+          tagInfo: [{ tagName: 'Call_Cancel_Response', value: false }],
         });
         return;
       }
-
-      const targetKey = targetTagInfo.TAGGROUP
-        ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
-        : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
       const targetCode = targetTagInfo.EQ_CODE;
 
@@ -416,27 +404,16 @@ export const useCallCancelUtil = () => {
         return;
       }
 
-      // 필요한 태그 값들 업데이트
-      await kepServerUtil.updateTagMapValues(targetKey, targetCode, [
-        'Call_Request',
-        'Call_Count',
-        'Call_Response',
-        'Call_Robot_Assigned',
-        'Call_Time_Year',
-        'Call_Time_MonthDay',
-      ]);
-
-      const callRequest = opcuaUtil.tagMap.get(`${targetCode}.Call_Request`)?.value as boolean;
-      const callCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Count`)?.value as number;
-      const callPriority = opcuaUtil.tagMap.get(`${targetCode}.Call_Priority`)?.value as boolean;
-      const callResponse = opcuaUtil.tagMap.get(`${targetCode}.Call_Response`)?.value as boolean;
-      const callResponseCount = opcuaUtil.tagMap.get(`${targetCode}.Call_Response_Count`)?.value as number;
-      const callRobotAssigned = opcuaUtil.tagMap.get(`${targetCode}.Call_Robot_Assigned`)?.value as boolean;
-      const callTimeYear = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_Year`)?.value as string;
-      const callTimeMonthDay = opcuaUtil.tagMap.get(`${targetCode}.Call_Time_MonthDay`)?.value as string;
-
-      const callTimeMonthDayStr = formatToDateCode(Number(callTimeMonthDay)).toString();
-      const callCountStr = callCount.toString().padStart(4, '0');
+      const callCount = await plcConnectUtil.getTagValue(targetCode, 'Call_Count') as number;
+      if (!callCount) {
+        logging.ACTION_ERROR({
+          filename: `callCancelUtil.ts - callCancel`,
+          error: `${targetCode} 콜 카운트 정보가 없습니다.`,
+          params: null,
+          result: true,
+        });
+        return;
+      }
 
       if (cancelType === 'EQP_TO_WMS') {
         let preWorkOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(

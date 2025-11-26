@@ -38,6 +38,8 @@ import { opcuaUtil } from './opcuaUtil';
 import { useMultiCallRegisterUtil } from './multiCallRegisterUtil';
 import { useCallCancelUtil } from './callCancelUtil';
 import { timestampToDate } from '../lib/usefullToolUtil';
+import { initSmartConnectorMqtt } from './smartConnectorMqttUtil';
+import { usePlcConnectUtil } from './plcConnectUtil';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -121,7 +123,7 @@ export enum MqttTopics {
   WorkOrderStats = 'work_order_stats',
   InsertFacilityInfo = 'facility_info',
   // MBS용
-  KepwareStatus = 'kepware_status',
+  PLCStatus = 'plc_status',
   ServerStatus = 'server/status',
   ImcsEqpDockingRequest = 'imcs/docking/eqp/request',
   ImcsEqpDockingOutRequest = 'imcs/docking/eqp/out_request',
@@ -177,6 +179,7 @@ if (mqttConfig.host !== '') {
 // mqtt 연결, 구독, 메세지 수신
 export const receiveMqtt = (): void => {
   const kepServerUtil = useKepServerUtil();
+  const plcConnectUtil = usePlcConnectUtil();
   if (mqttConfig.host !== '') {
     // mqtt host가 등록된 경우에만 구독한다.
     client.on('connect', () => {
@@ -288,6 +291,10 @@ export const receiveMqtt = (): void => {
         }
       }
 
+      if (process.env.PLC_CONN_TYPE === 'SC') {
+        // Smart Connector MQTT 구독
+        initSmartConnectorMqtt(client);
+      }
       // // 전체 구독
       // client.subscribe('#', (err) => {
       //   logging.MQTT_LOG({
@@ -442,15 +449,12 @@ export const receiveMqtt = (): void => {
               const targetFacility = messageJson.facilityName.substring(0, 4);
 
               if (state === 'AMR_ARRIVED') {
-                await kepServerUtil.writeSimpleTagValue({
+                await plcConnectUtil.writeTagValue({
                   targetFacility: messageJson.facilitySerial,
-                  tagName: 'Call_Robot_Assigned',
-                  value: true,
-                });
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: messageJson.facilitySerial,
-                  tagName: 'Call_Response',
-                  value: true,
+                  tagInfo: [
+                    { tagName: 'Call_Robot_Assigned', value: true },
+                    { tagName: 'Call_Response', value: true },
+                  ],
                 });
               }
 
@@ -477,48 +481,25 @@ export const receiveMqtt = (): void => {
               //     alwaysOnFacility = messageJson.toSerial;
               //     triggerFacility = messageJson.fromSerial;
               //   }
+              // await plcConnectUtil.writeTagValue({
+              //   targetFacility: alwaysOnFacility,
+              //   tagInfo: [
+              //     { tagName: 'Call_Response', value: false },
+              //     { tagName: 'Call_Robot_Assigned', value: false },
+              //     { tagName: 'Call_Response_Count', value: '0' },
+              //     { tagName: 'Dock_Request', value: false },
+              //   ],
+              // });
 
-              //   await kepServerUtil.writeSimpleTagValue({
-              //     targetFacility: alwaysOnFacility,
-              //     tagName: 'Call_Response',
-              //     value: false,
-              //   });
-              //   await kepServerUtil.writeSimpleTagValue({
-              //     targetFacility: alwaysOnFacility,
-              //     tagName: 'Call_Robot_Assigned',
-              //     value: false,
-              //   });
-              //   await kepServerUtil.writeSimpleTagValue({
-              //     targetFacility: alwaysOnFacility,
-              //     tagName: 'Call_Response_Count',
-              //     value: '0',
-              //   });
-              //   await kepServerUtil.writeSimpleTagValue({
-              //     targetFacility: alwaysOnFacility,
-              //     tagName: 'Dock_Request',
-              //     value: false,
-              //   });
-
-              //   await kepServerUtil.writeSimpleTagValue({
-              //     targetFacility: triggerFacility,
-              //     tagName: 'Call_Response',
-              //     value: false,
-              //   });
-              //   await kepServerUtil.writeSimpleTagValue({
-              //     targetFacility: triggerFacility,
-              //     tagName: 'Call_Robot_Assigned',
-              //     value: false,
-              //   });
-              //   await kepServerUtil.writeSimpleTagValue({
-              //     targetFacility: triggerFacility,
-              //     tagName: 'Call_Response_Count',
-              //     value: '0',
-              //   });
-              //   await kepServerUtil.writeSimpleTagValue({
-              //     targetFacility: triggerFacility,
-              //     tagName: 'Dock_Request',
-              //     value: false,
-              //   });
+              // await plcConnectUtil.writeTagValue({
+              //   targetFacility: triggerFacility,
+              //   tagInfo: [
+              //     { tagName: 'Call_Response', value: false },
+              //     { tagName: 'Call_Robot_Assigned', value: false },
+              //     { tagName: 'Call_Response_Count', value: '0' },
+              //     { tagName: 'Dock_Request', value: false },
+              //   ],
+              // });
 
               //   if (workOrderMode !== 'manual') {
               //     await useMultiCallRegisterUtil().hsetWithDecrementCount(
@@ -680,46 +661,24 @@ export const receiveMqtt = (): void => {
                 triggerFacility = messageJson.FromFacility.serial;
               }
 
-              await kepServerUtil.writeSimpleTagValue({
+              await plcConnectUtil.writeTagValue({
                 targetFacility: alwaysOnFacility,
-                tagName: 'Call_Response',
-                value: false,
-              });
-              await kepServerUtil.writeSimpleTagValue({
-                targetFacility: alwaysOnFacility,
-                tagName: 'Call_Robot_Assigned',
-                value: false,
-              });
-              await kepServerUtil.writeSimpleTagValue({
-                targetFacility: alwaysOnFacility,
-                tagName: 'Call_Response_Count',
-                value: '0',
-              });
-              await kepServerUtil.writeSimpleTagValue({
-                targetFacility: alwaysOnFacility,
-                tagName: 'Dock_Request',
-                value: false,
+                tagInfo: [
+                  { tagName: 'Call_Response', value: false },
+                  { tagName: 'Call_Robot_Assigned', value: false },
+                  { tagName: 'Call_Response_Count', value: '0' },
+                  { tagName: 'Dock_Request', value: false },
+                ],
               });
 
-              await kepServerUtil.writeSimpleTagValue({
+              await plcConnectUtil.writeTagValue({
                 targetFacility: triggerFacility,
-                tagName: 'Call_Response',
-                value: false,
-              });
-              await kepServerUtil.writeSimpleTagValue({
-                targetFacility: triggerFacility,
-                tagName: 'Call_Robot_Assigned',
-                value: false,
-              });
-              await kepServerUtil.writeSimpleTagValue({
-                targetFacility: triggerFacility,
-                tagName: 'Call_Response_Count',
-                value: '0',
-              });
-              await kepServerUtil.writeSimpleTagValue({
-                targetFacility: triggerFacility,
-                tagName: 'Dock_Request',
-                value: false,
+                tagInfo: [
+                  { tagName: 'Call_Response', value: false },
+                  { tagName: 'Call_Robot_Assigned', value: false },
+                  { tagName: 'Call_Response_Count', value: '0' },
+                  { tagName: 'Dock_Request', value: false },
+                ],
               });
 
               if (workOrderMode !== 'manual') {
@@ -728,23 +687,18 @@ export const receiveMqtt = (): void => {
                   triggerFacility
                 );
 
-                const triggerFacilityTargetKey = kepServerUtil.getTargetKey(triggerFacility);
-                const alwaysOnFacilityTargetKey = kepServerUtil.getTargetKey(alwaysOnFacility);
-                await kepServerUtil.updateTagMapValues(triggerFacilityTargetKey, triggerFacility, [
-                  'Call_Request',
-                  'EQ_Auto',
-                ]);
-                await kepServerUtil.updateTagMapValues(alwaysOnFacilityTargetKey, alwaysOnFacility, [
-                  'Call_Request',
-                  'EQ_Auto',
-                ]);
-
                 // todo 250805 : ACS에서 취소된 작업 다시 만들 때 멀티콜 판단해서 작업지시 만들어야 하나?
                 // 멀티콜일 때 acs 작업 취소하면 어떻게 되야 하는지 문의 필요
-                const triggerCallRequestValue = opcuaUtil.tagMap.get(`${triggerFacility}.Call_Request`)?.value;
-                const triggerEQAutoValue = opcuaUtil.tagMap.get(`${triggerFacility}.EQ_Auto`)?.value;
-                const alwaysCallRequestValue = opcuaUtil.tagMap.get(`${alwaysOnFacility}.Call_Request`)?.value;
-                const alwaysEQAutoValue = opcuaUtil.tagMap.get(`${alwaysOnFacility}.EQ_Auto`)?.value;
+                const triggerCallRequestValue = (await plcConnectUtil.getTagValue(
+                  triggerFacility,
+                  'Call_Request'
+                )) as boolean;
+                const triggerEQAutoValue = (await plcConnectUtil.getTagValue(triggerFacility, 'EQ_Auto')) as boolean;
+                const alwaysCallRequestValue = (await plcConnectUtil.getTagValue(
+                  alwaysOnFacility,
+                  'Call_Request'
+                )) as boolean;
+                const alwaysEQAutoValue = (await plcConnectUtil.getTagValue(alwaysOnFacility, 'EQ_Auto')) as boolean;
                 if (
                   triggerCallRequestValue === true &&
                   alwaysCallRequestValue === true &&
@@ -847,17 +801,14 @@ export const receiveMqtt = (): void => {
                 //         sendMqtt('acs/missionorder', JSON.stringify(missionOrderMqttMessage));
 
                 //         // 콜 기준 설비 call_response 작성
-                //         await useKepServerUtil().writeSimpleTagValue({
-                //           targetFacility: missionFromfacilityInfo.serial || '',
-                //           tagName: 'Call_Response',
-                //           value: true,
-                //         });
-                //         // call_response 작성
-                //         await useKepServerUtil().writeSimpleTagValue({
-                //           targetFacility: linkedFacilityInfo.serial || '',
-                //           tagName: 'Call_Response',
-                //           value: true,
-                //         });
+                // await plcConnectUtil.writeTagValue({
+                //   targetFacility: missionFromfacilityInfo.serial || '',
+                //   tagInfo: [{ tagName: 'Call_Response', value: true }],
+                // });
+                // await plcConnectUtil.writeTagValue({
+                //   targetFacility: linkedFacilityInfo.serial || '',
+                //   tagInfo: [{ tagName: 'Call_Response', value: true }],
+                // });
 
                 //         break
                 //       } else if (!plcInfoToJson.Call_Request && linkedFacilityInfo) {
@@ -888,56 +839,39 @@ export const receiveMqtt = (): void => {
               const messageJson = JSON.parse(message);
               try {
                 // BS11 값 write
-                await useKepServerUtil().writeSimpleTagValue({
+                await plcConnectUtil.writeTagValue({
                   targetFacility: messageJson.IN_SERIAL,
-                  tagName: 'Dock_Request',
-                  value: false,
-                });
-                await useKepServerUtil().writeSimpleTagValue({
-                  targetFacility: messageJson.IN_SERIAL,
-                  tagName: 'Dock_Out_Request',
-                  value: true,
-                });
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: messageJson.IN_SERIAL,
-                  tagName: 'Dock_AMR_Status',
-                  value: false,
-                });
-                await useKepServerUtil().writeSimpleTagValue({
-                  targetFacility: messageJson.IN_SERIAL,
-                  tagName: 'Dock_Signal_Reset',
-                  value: true,
+                  tagInfo: [
+                    { tagName: 'Dock_Request', value: false },
+                    { tagName: 'Dock_Out_Request', value: true },
+                    { tagName: 'Dock_AMR_Status', value: false },
+                    { tagName: 'Dock_Signal_Reset', value: true },
+                  ],
                 });
                 setTimeout(() => {
-                  useKepServerUtil().writeSimpleTagValue({
+                  plcConnectUtil.writeTagValue({
                     targetFacility: messageJson.IN_SERIAL,
-                    tagName: 'Dock_Signal_Reset',
-                    value: false,
+                    tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
                   });
                 }, 500);
-                await useKepServerUtil().writeSimpleTagValue({
+                await plcConnectUtil.writeTagValue({
                   targetFacility: messageJson.IN_SERIAL,
-                  tagName: 'Dock_Out_Request',
-                  value: false,
+                  tagInfo: [{ tagName: 'Dock_Out_Request', value: false }],
                 });
 
                 // BS12 값 write
-                await kepServerUtil.writeSimpleTagValue({
+                await plcConnectUtil.writeTagValue({
                   targetFacility: messageJson.OUT_SERIAL,
-                  tagName: 'Dock_Request',
-                  value: true,
-                });
-                await kepServerUtil.writeSimpleTagValue({
-                  targetFacility: messageJson.OUT_SERIAL,
-                  tagName: 'Dock_AMR_Status',
-                  value: true,
+                  tagInfo: [
+                    { tagName: 'Dock_Request', value: true },
+                    { tagName: 'Dock_AMR_Status', value: true },
+                  ],
                 });
                 // setTimeout(() => {
-                //   useKepServerUtil().writeSimpleTagValue({
-                //     targetFacility: messageJson.OUT_SERIAL,
-                //     tagName: 'Dock_AMR_Status',
-                //     value: true,
-                //   });
+                // await plcConnectUtil.writeTagValue({
+                //   targetFacility: messageJson.OUT_SERIAL,
+                //   tagInfo: [{ tagName: 'Dock_AMR_Status', value: true }],
+                // });
                 // }, 500);
                 logging.MQTT_LOG({
                   title: 'acs same_pio request',

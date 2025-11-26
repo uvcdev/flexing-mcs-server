@@ -30,9 +30,11 @@ import { removeAckPrefix } from '../../usefullToolUtil';
 import opcuaUtil from '../../opcuaUtil';
 import { useCallTypeUtil } from '../../callTypeUtil';
 import { useCallCancelUtil } from '../../callCancelUtil';
+import { usePlcConnectUtil } from '../../plcConnectUtil';
 
 const systemTopic = 'CALL';
 const redisUtil = useRedisUtil();
+const plcConnectUtil = usePlcConnectUtil();
 interface ackCallInfoBody extends MbsMqttBody {
   HCACK: string;
   Comment: string;
@@ -265,10 +267,9 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
       // call_response 작성
-      await useKepServerUtil().writeSimpleTagValue({
+      await plcConnectUtil.writeTagValue({
         targetFacility: callInfoData.Caller,
-        tagName: 'Call_Response',
-        value: true,
+        tagInfo: [{ tagName: 'Call_Response', value: true }],
       });
 
       await useCallTypeUtil().callTypeResponse(callInfoData.Caller);
@@ -337,10 +338,9 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       await editTrackingLogRedis(hcack0TrackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
       // call_response 작성
-      await useKepServerUtil().writeSimpleTagValue({
+      await plcConnectUtil.writeTagValue({
         targetFacility: callInfoData.Caller,
-        tagName: 'Call_Response',
-        value: true,
+        tagInfo: [{ tagName: 'Call_Response', value: true }],
       });
 
       await useCallTypeUtil().callTypeResponse(callInfoData.Caller);
@@ -901,6 +901,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
 // 트래킹 로그 추가하면 해당 내용도 같이 추가해야함
 const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody: AckReqCallInfoListBody) => {
   const kepServerUtil = useKepServerUtil();
+  const plcConnectUtil = usePlcConnectUtil();
   // set Data
   const ackReqCallInfoListBody: AckReqCallInfoListBody = messageBody;
 
@@ -937,15 +938,11 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
     const caller = callInfoData.Caller;
     console.log('caller', caller);
 
-    const targetKey = kepServerUtil.getTargetKey(caller);
-    await kepServerUtil.updateTagMapValues(targetKey, caller, ['Call_Request']);
-
-    const callRequestValue = opcuaUtil.tagMap.get(`${caller}.Call_Request`)?.value;
+    const callRequestValue = (await plcConnectUtil.getTagValue(caller, 'Call_Request')) as boolean;
     if (callRequestValue === true) {
-      await useKepServerUtil().writeSimpleTagValue({
+      await plcConnectUtil.writeTagValue({
         targetFacility: callInfoData.Caller,
-        tagName: 'Call_Response',
-        value: true,
+        tagInfo: [{ tagName: 'Call_Response', value: true }],
       });
       await useCallTypeUtil().callTypeResponse(callInfoData.Caller);
 
@@ -1026,18 +1023,14 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
     // const callInfoData = mcsOnlyCallInfoList[i];
     const caller = callInfoData.Caller;
 
-    const targetKey = kepServerUtil.getTargetKey(caller);
-    await kepServerUtil.updateTagMapValues(targetKey, caller, ['Call_Request']);
-
-    const callRequestValue = opcuaUtil.tagMap.get(`${caller}.Call_Request`)?.value;
+    const callRequestValue = (await plcConnectUtil.getTagValue(caller, 'Call_Request')) as boolean;
 
     if (callRequestValue === true) {
       // Line Call Response Off
       // 콜 응답 관련 데이터 쓰기
-      await useKepServerUtil().writeSimpleTagValue({
+      await plcConnectUtil.writeTagValue({
         targetFacility: caller || '',
-        tagName: 'Call_Response',
-        value: false,
+        tagInfo: [{ tagName: 'Call_Response', value: false }],
       });
 
       // CALL INFO 재전송 가능한 경우 해당 내용으로 CALLINFO 재전송

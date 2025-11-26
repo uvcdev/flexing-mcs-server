@@ -38,10 +38,11 @@ import dayjs from 'dayjs';
 import { DailyWorkOrderStats, WorkOrderStats, useWorkOrderUtil } from '../../lib/workOrderUtil';
 import { calculateDurationInSeconds } from '../../lib/dateUtil';
 import { useKepServerUtil } from '../../lib/kepServerUtil';
+import { usePlcConnectUtil } from '../../lib/plcConnectUtil';
 
 let accessToken = '';
 const workOrderStatsUtil = useWorkOrderUtil();
-
+const plcConnectUtil = usePlcConnectUtil();
 const service = {
   // insert
   async reg(params: WorkOrderInsertParams, logFormat: LogFormat<unknown>): Promise<InsertedResult> {
@@ -259,10 +260,9 @@ const service = {
       }
       if (workOrder.state === 'facilityCanceled') {
         // await transaction.rollback();
-        await useKepServerUtil().writeSimpleTagValue({
+        await plcConnectUtil.writeTagValue({
           targetFacility: params.linkedEqpId,
-          tagName: 'Call_Cancel_Response',
-          value: true,
+          tagInfo: [{ tagName: 'Call_Cancel_Response', value: true }],
         });
         const errorMessage = `이미 설비취소된 작업지시입니다.`;
         logging.ACTION_DEBUG({

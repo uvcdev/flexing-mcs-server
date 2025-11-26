@@ -1,4 +1,6 @@
 const path = require('path');
+const tsPlugin = require('@typescript-eslint/eslint-plugin');
+const tsParser = require('@typescript-eslint/parser');
 
 module.exports = [
   {
@@ -6,24 +8,23 @@ module.exports = [
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',
-      parser: require('@typescript-eslint/parser'),
+      parser: tsParser,
       parserOptions: {
         project: path.resolve(__dirname, './tsconfig.json'),
       },
     },
     plugins: {
-      '@typescript-eslint': require('@typescript-eslint/eslint-plugin'),
+      '@typescript-eslint': tsPlugin,
       'prettier': require('eslint-plugin-prettier'),
     },
     rules: {
-      ...require('@typescript-eslint/eslint-plugin').configs.recommended.rules,
+      ...tsPlugin.configs.recommended.rules,
       'prettier/prettier': [
         'error',
         {
           endOfLine: 'auto',
         },
       ],
-      // 사용하지 않는 변수/import 경고 끄기
       '@typescript-eslint/no-unused-vars': 'off',
       'no-unused-vars': 'off',
     },

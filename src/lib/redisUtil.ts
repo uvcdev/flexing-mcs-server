@@ -80,8 +80,11 @@ export enum RedisKeys {
   ReinboundIfPortAssignedForFacilityCancelByCallId = 'reinbound_if_port_assigned_for_facility_cancel_by_call_id', // 설비취소 작업에 대해 창고의 포트 배정 시 일반작업지시가 아닌 재반입작업지시로 만들기 위한 키
   InfoMissionOrderByWorkOrderCode = 'info_mission_order_by_work_order_code', // ACS에서 MCS로 전달한 미션 오더 정보
   InfoCallKey = 'info_call_key', // 서버 재부팅시 기존에 있던 데이터인지 추가해줄 데이터인지 확인하는 정보
-  RecentWorkOrderListByFacilitySerial = 'recent_work_order_list_by_facility_serial',  // 현재 진행 중인 작업 지시 카운트
-  RecentCallCountByFacilitySerial = 'recent_call_count_by_facility_serail',           // Call_Request, Mutil Call 1 , Mutil Call 2 on 상태
+  RecentWorkOrderListByFacilitySerial = 'recent_work_order_list_by_facility_serial', // 현재 진행 중인 작업 지시 카운트
+  RecentCallCountByFacilitySerial = 'recent_call_count_by_facility_serail', // Call_Request, Mutil Call 1 , Mutil Call 2 on 상태
+  // SmartConnector
+  PlcRealtimeData = 'plc_realtime_data', // PLC 실시간 데이터
+  SmartConnectorWriteTag = 'smart_connector_write_tag', // SmartConnector에 쓰기 요청 후 응답 처리 키
 }
 export enum RedisSettingKeys {
   // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정
@@ -227,6 +230,64 @@ export const useRedisUtil = () => {
     if (redisClient) redisClient.hdel(makeKey(key), field);
   };
 
+  /**
+   * [SmartConnector용] 특정 Hash의 모든 필드와 값을 객체로 가져옴.
+   * @param key Redis 키 (예: "plc_realtime_data:BM3I")
+   */
+  const hGetPlcAllTags = async (key: string): Promise<{ [key: string]: string } | null> => {
+    if (!redisClient) return null;
+    const asyncHgetAll = promisify(redisClient.hgetall).bind(redisClient);
+    return asyncHgetAll(makeKey(key));
+  };
+
+  /**
+   * [SmartConnector용] 객체를 받아 Hash에 여러 필드를 한번에 저장.
+   * @param key Redis 키 (예: "plc_realtime_data:BM3I")
+   * @param data 저장할 데이터 객체
+   */
+  const hSetPlcAllTags = (key: string, data: { [key: string]: string }): void => {
+    if (redisClient) {
+      const args = Object.entries(data).flat();
+      if (args.length === 0) return;
+
+      redisClient.hmset(makeKey(key), args, (err, reply) => {
+        if (err) {
+          logging.SYSTEM_ERROR(
+            {
+              title: 'redis hmset error for plc state',
+              message: `key: ${key}`,
+            },
+            err
+          );
+        }
+      });
+    }
+  };
+
+  /**
+   * [SmartConnector용] 특정 Hash에서 단일 필드(태그)의 값을 가져옴. (hget)
+   * @param key Redis 키 (예: "plc_realtime_data:BM3I")
+   * @param field 가져올 필드(태그) 이름
+   */
+  const hGetPlcTag = async (key: string, field: string): Promise<string | null> => {
+    if (!redisClient) return null;
+    // 기존의 hget 함수와 동일한 로직이지만, 명확한 구분을 위해 새로 만듭니다.
+    const asyncHget = promisify(redisClient.hget).bind(redisClient);
+    return asyncHget(makeKey(key), field);
+  };
+
+  /**
+   * [SmartConnector용] 특정 Hash에 단일 필드(태그)와 값을 저장. (hset)
+   * @param key Redis 키 (예: "plc_realtime_data:BM3I")
+   * @param field 저장할 필드(태그) 이름
+   * @param value 저장할 값
+   */
+  const hSetPlcTag = (key: string, field: string, value: string): void => {
+    if (redisClient) {
+      // 기존의 hset 함수와 동일한 로직이지만, 명확한 구분을 위해 새로 만듭니다.
+      redisClient.hset(makeKey(key), field, value);
+    }
+  };
   return {
     keys,
     hkeys,
@@ -240,5 +301,9 @@ export const useRedisUtil = () => {
     flushall,
     del,
     hdel,
+    hGetPlcAllTags,
+    hSetPlcAllTags,
+    hGetPlcTag,
+    hSetPlcTag,
   };
 };

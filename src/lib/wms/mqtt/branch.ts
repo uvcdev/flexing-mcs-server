@@ -15,9 +15,11 @@ import {
 import { setAbortedCommandForRetry } from '../../process/wmsCommon';
 import { RedisKeys, useRedisUtil } from '../../redisUtil';
 import { removeAckPrefix } from '../../usefullToolUtil';
+import { usePlcConnectUtil } from '../../plcConnectUtil';
 
 const systemTopic = 'BRANCH';
 const redisUtil = useRedisUtil();
+const plcConnectUtil = usePlcConnectUtil();
 interface ackBranchInfoReqBody extends MbsMqttBody {
   HCACK: string;
   Comment: string;
@@ -188,10 +190,9 @@ const branchInfoRep = async (
         await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
         // call_response 작성
-        await useKepServerUtil().writeSimpleTagValue({
+        await plcConnectUtil.writeTagValue({
           targetFacility: prefixFromFacilityName,
-          tagName: 'Call_Response',
-          value: true,
+          tagInfo: [{ tagName: 'Call_Response', value: true }],
         });
 
         await useCallTypeUtil().callTypeResponse(prefixFromFacilityName);

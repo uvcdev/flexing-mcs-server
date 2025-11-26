@@ -6,6 +6,7 @@ import { logging, makeLogFormat, RequestLog } from './logging';
 import opcuaUtil from './opcuaUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { timestampToDate } from '../lib/usefullToolUtil';
+import { usePlcConnectUtil } from './plcConnectUtil';
 
 export interface EqpCallStats {
   CALL_ID: string;
@@ -25,6 +26,7 @@ export interface EqpCallStatsForAck extends EqpCallStats {
 export const useCallResponseUtil = () => {
   const redisUtil = useRedisUtil();
   const kepServerUtil = useKepServerUtil();
+  const plcConnectUtil = usePlcConnectUtil();
   const callReRegister = async (targetTagInfo: TagValue) => {
     try {
       const targetCode = targetTagInfo.EQ_CODE;
@@ -33,10 +35,7 @@ export const useCallResponseUtil = () => {
       // todo 250805 : 아래 로직을 mqttUtil 에서 처리하고 있다면 이동시킬 필요는 있어보임
       const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityById, targetCode);
 
-      const targetKey = kepServerUtil.getTargetKey(targetCode);
-
-      await kepServerUtil.updateTagMapValues(targetKey, targetCode, ['Call_Request']);
-      const callRequestValue = opcuaUtil.tagMap.get(`${targetCode}.Call_Request`)?.value;
+      const callRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request')) as boolean;
       // 콜 주체가 아닌 콜이 항상 켜져 있는 설비에 Call_Response 가 꺼진 경우
       // if (facilityInfo && callRequestValue === true && !facilityInfo?.linkedEqpIds) {
       //   // targetCode 해당 설비가 in 타입이면 to 설비니까 from 설비로 작업 생성
@@ -88,16 +87,15 @@ export const useCallResponseUtil = () => {
         const facilityInfo = facilityInfoList[i];
         const facilityCode = facilityInfo.serial;
         if (facilityCode) {
-          const targetKey = kepServerUtil.getTargetKey(facilityCode);
-          await kepServerUtil.updateTagMapValues(targetKey, facilityCode, [
-            'Call_Request',
-            'Call_Request_Multi_1',
-            'Call_Request_Multi_2',
-          ]);
-
-          const callRequestValue = opcuaUtil.tagMap.get(`${facilityCode}.Call_Request`)?.value;
-          const multiCallFirstValue = opcuaUtil.tagMap.get(`${facilityCode}.Call_Request_Multi_1`)?.value;
-          const multiCallSecondValue = opcuaUtil.tagMap.get(`${facilityCode}.Call_Request_Multi_2`)?.value;
+          const callRequestValue = (await plcConnectUtil.getTagValue(facilityCode, 'Call_Request')) as boolean;
+          const multiCallFirstValue = (await plcConnectUtil.getTagValue(
+            facilityCode,
+            'Call_Request_Multi_1'
+          )) as boolean;
+          const multiCallSecondValue = (await plcConnectUtil.getTagValue(
+            facilityCode,
+            'Call_Request_Multi_2'
+          )) as boolean;
           if (!multiCallFirstValue || !callRequestValue) continue;
 
           const workOrderCount = await redisUtil.hget(RedisKeys.InfoWorkOrderCountBySerial, facilityCode || '');
@@ -138,7 +136,7 @@ export const useCallResponseUtil = () => {
 
             if (value === true) {
               const tagInfo = useKepServerUtil().findTagInfo(facilityCode, tagName);
-              const timezoneValue = process.env.TIME_ZONE || ''
+              const timezoneValue = process.env.TIME_ZONE || '';
 
               const targetTagInfo: TagValue = {
                 value: true,

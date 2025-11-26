@@ -25,7 +25,6 @@ export const checkCallRequestCreate = async () => {
     const recentCallCountByFacilitySerialInfo = recentCallCountByFacilitySerialList[i];
 
     const facilitySerial = recentCallCountByFacilitySerialInfo.facilitySerial;
-    const targetKey = recentCallCountByFacilitySerialInfo.targetKey;
 
     const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilitySerial);
     if (!facilityInfo) {
@@ -94,7 +93,7 @@ export const checkCallRequestCreate = async () => {
           facilitySerial
         );
         if (facilityInfo && facilityInfo.isActiveCallTrigger) {
-          const eqpCallId = await useCallRegisterUtil().createWorkOrderCode(targetKey, facilityInfo, '');
+          const eqpCallId = await useCallRegisterUtil().createWorkOrderCode(facilitySerial, facilityInfo, '');
           if (!eqpCallId) return;
 
           // check call request create 함수에서는 Request를 쓰기 바로 전 단계를 판단하는 것이라서 beforeRequest 상태 사용
@@ -151,7 +150,6 @@ export const checkCallCreate = async () => {
     const recentCallCountByFacilitySerialInfo = recentCallCountByFacilitySerialList[i];
 
     const facilitySerial = recentCallCountByFacilitySerialInfo.facilitySerial;
-    const targetKey = recentCallCountByFacilitySerialInfo.targetKey;
 
     const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilitySerial);
     if (!facilityInfo) {

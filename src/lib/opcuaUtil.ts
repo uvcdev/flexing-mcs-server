@@ -17,6 +17,7 @@ import { registerSubscriptionEvents } from '../events/kepserverSubscriptionEvent
 import { MonitorTag, parseAsciiToDecWord, parseDecWordToAscii, Tag, TagValue, useKepServerUtil } from './kepServerUtil';
 import { useEqpCheckUtil } from './eqpCheckUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
+import { usePlcConnectUtil } from './plcConnectUtil';
 
 const userIdentity: UserIdentityInfoUserName = {
   type: 1,
@@ -116,13 +117,13 @@ export const opcuaUtil = {
     }
   },
 
-  // kepserverTag.json에서 SUBSCRIPTION===true인 태그들만 배열에 담아 반환
+  // plcTagInfo.json에서 SUBSCRIPTION===true인 태그들만 배열에 담아 반환
   loadTagsAndCreateSubscriptionNodes(): ReadValueIdOptions[] {
-    const subscriptionsPath = path.resolve(__dirname, '../../kepserverTag.json');
+    const subscriptionsPath = path.resolve(__dirname, '../../plcTagInfo.json');
 
     try {
       const fileContent = fs.readFileSync(subscriptionsPath, 'utf8');
-      const allTags: Tag[] = JSON.parse(fileContent)['MBS'];
+      const allTags: Tag[] = JSON.parse(fileContent)[process.env.SITE || 'MBS'];
       const subscriptions: string[] = allTags
         .filter((tag: Tag) => tag.SUBSCRIPTION === true) // SUBSCRIPTION이 true인 것만 필터링
         .map((tag: Tag) => tag.NODE_ID); // NODE_ID만 추출
@@ -200,35 +201,31 @@ export const opcuaUtil = {
     });
 */
     monitoredItems.on('changed', (monitoredItem: ClientMonitoredItemBase, dataValue: DataValue) => {
-      try {
-        // const eqpCheckUtil = useEqpCheckUtil();
-        const redisUtil = useRedisUtil();
-        const nodeId = monitoredItem.itemToMonitor.nodeId.value.toString();
-        const value = dataValue;
-        const targetTagInfo = useKepServerUtil().updateTagValue(nodeId, value);
-
-        // logToConsoleAndFile(`Changed Tag Data NodeId: ${nodeId} ${value.value.value}`);
-        logging.KEPWARE_LOG({
-          action: 'TAG_WRITE',
-          tag: nodeId,
-          value: value.value.value,
-          message: `changing value from opcuaUtil.registerChangeEvent`,
-        });
-
-        // 변경되는 값 저장
-        redisUtil.hset(RedisKeys.InfoChangedTagById, nodeId, JSON.stringify(targetTagInfo));
-
-        if (targetTagInfo) {
-          // 변경된 데이터 값을 기준으로 판단하는 함수
-          this.eqpCheckUtil.eqpTaskStatus(targetTagInfo, value.value.value);
+      setImmediate(async () => {
+        try {
+          const redisUtil = useRedisUtil();
+          const nodeId = monitoredItem.itemToMonitor.nodeId.value.toString();
+          const value = dataValue;
+          const targetTagInfo = useKepServerUtil().updateTagValue(nodeId, value);
+          logging.KEPWARE_LOG({
+            action: 'TAG_WRITE',
+            tag: nodeId,
+            value: value.value.value,
+            message: `changing value from opcuaUtil.registerChangeEvent`,
+          });
+          redisUtil.hset(RedisKeys.InfoChangedTagById, nodeId, JSON.stringify(targetTagInfo));
+          if (targetTagInfo) {
+            this.eqpCheckUtil.eqpTaskStatus(targetTagInfo, value.value.value);
+          }
+        } catch (error) {
+          logToConsoleAndFile(`Error handling changed event: ${error}`, 'red');
         }
-      } catch (error) {
-        logToConsoleAndFile(`Error handling changed event: ${error}`, 'red');
-      }
+      });
     });
   },
 
   async populatePlcInit(): Promise<void> {
+    const plcConnectUtil = usePlcConnectUtil();
     // this.tagMap의 key값은 'EQ_CODE.TAG_NAME' 형식이다.
     // this.tagMap을 순회하며 TAG_NAME이 'EQ_Auto'인 태그를 찾는다.
     // 찾은 태그의 값(tagMapValue) 중 EQ_CODE를 추출하고 EQ_CODE는 4글자니 앞뒤 2글자씩 잘라서 문자열로 변환한다.(ex: 'WS11' -> EQ_Code_01: 'WS', EQ_Code_02: '11')
@@ -246,16 +243,12 @@ export const opcuaUtil = {
         const eqCode01Value = parseAsciiToDecWord(eqCode01);
         const eqCode02Value = parseAsciiToDecWord(eqCode02);
 
-        useKepServerUtil().writeSimpleTagValue({
+        plcConnectUtil.writeTagValue({
           targetFacility: eqCode,
-          tagName: 'EQ_Code_01',
-          value: eqCode01Value.toString(),
-        });
-
-        useKepServerUtil().writeSimpleTagValue({
-          targetFacility: eqCode,
-          tagName: 'EQ_Code_02',
-          value: eqCode02Value.toString(),
+          tagInfo: [
+            { tagName: 'EQ_Code_01', value: eqCode01Value.toString() },
+            { tagName: 'EQ_Code_02', value: eqCode02Value.toString() },
+          ],
         });
 
         const today = new Date();
@@ -263,16 +256,12 @@ export const opcuaUtil = {
         const month = (today.getMonth() + 1).toString().padStart(2, '0');
         const day = today.getDate().toString().padStart(2, '0');
 
-        useKepServerUtil().writeSimpleTagValue({
+        plcConnectUtil.writeTagValue({
           targetFacility: eqCode,
-          tagName: 'Call_Time_Year',
-          value: year,
-        });
-
-        useKepServerUtil().writeSimpleTagValue({
-          targetFacility: eqCode,
-          tagName: 'Call_Time_MonthDay',
-          value: `${month}${day}`,
+          tagInfo: [
+            { tagName: 'Call_Time_Year', value: year },
+            { tagName: 'Call_Time_MonthDay', value: `${month}${day}` },
+          ],
         });
       }
     });
