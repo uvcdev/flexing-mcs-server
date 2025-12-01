@@ -567,6 +567,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - kepware_status -> plc_status
 - .env 추가
   - PLC_CONN_TYPE, SITE
-  - ex. PLC_CONN_TYPE=KEP or CONNECTOR
+  - ex. PLC_CONN_TYPE=KEP or CONNECTOR, SITE=MBS or UNT
 - MCS PLC 모니터링 제어 API 변경
   '/plc-connectors'
