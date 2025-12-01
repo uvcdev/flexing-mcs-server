@@ -104,7 +104,7 @@ const smartConnectorSyncMqtt = async () => {
         TAGGROUP: '',
         TAG_NAME: tag.TAG_ID,
         DESCRIPTION: '',
-        DATA_TYPE: isASCII(tag.TAG_ID) ? 'String' : isDEC(tag.TAG_ID) ? 'Int16' : 'Boolean',
+        DATA_TYPE: isASCII(tag.TAG_ID) ? 'String' : isDEC(tag.TAG_ID) ? 'UInt16' : 'Boolean',
         ADDRESS: '',
         SUBSCRIPTION: false,
         INPUT_TYPE: isASCII(tag.TAG_ID) ? 'ASCII' : isDEC(tag.TAG_ID) ? 'DEC' : 'Bool',

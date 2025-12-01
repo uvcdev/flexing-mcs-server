@@ -220,7 +220,7 @@ export const useSmartConnectorUtils = () => {
           case 'Boolean':
             acc[key] = value === 'true' ? true : false;
             break;
-          case 'Int16':
+          case 'UInt16':
             acc[key] = Number(value);
             break;
           case 'String':
