@@ -190,6 +190,11 @@ export const makeCallType = async (value: string): Promise<string> => {
   return callType;
 };
 
+const isFacilityStatusTag = (tagName: string): boolean => {
+  return (
+    tagName === 'EQ_Auto' || tagName === 'EQ_Manual' || tagName === 'Call_Request' || tagName === 'Call_Robot_Assigned'
+  );
+};
 const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5;
 
 export const useKepServerUtil = () => {
@@ -414,6 +419,7 @@ export const useKepServerUtil = () => {
         // );
         for (const [key, value] of opcuaUtil.allTagNodeIds.entries()) {
           const result: Record<string, any> = {};
+          const facilityStatus: Record<string, boolean> = {};
           const readValueIdOptions = value.readValueIdOptions;
           const tagValue = value.tagValue;
 
@@ -426,6 +432,9 @@ export const useKepServerUtil = () => {
               // tagValue[index].value = 12532
             } else {
               tagValue[index].value = dataValue.value.value;
+              if (isFacilityStatusTag(tagValue[index].key)) {
+                facilityStatus[tagValue[index].key] = dataValue.value.value as boolean;
+              }
               // if (tagValue[index].value === null) {
               //   return;
               // }
@@ -441,6 +450,7 @@ export const useKepServerUtil = () => {
           // );
           const redisKey = `${RedisKeys.PlcRealtimeData}:${key}`;
           redisUtil.hSetPlcAllTags(redisKey, result);
+          sendMqtt(`${MqttTopics.FacilityStatus}/${key}`, JSON.stringify(facilityStatus));
           sendMqtt(`${MqttTopics.PLCStatus}/${key}`, JSON.stringify(result));
         }
       } catch (error) {

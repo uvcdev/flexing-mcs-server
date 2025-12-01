@@ -130,6 +130,7 @@ export enum MqttTopics {
   ImcsWcsDockingRequest = 'imcs/docking/wcs/request',
   EditFacility = 'edit-facility',
   OnCallPriority = 'acs/on_call_priority',
+  FacilityStatus = 'facility_status',
 }
 
 export interface MbsMqttHeader {

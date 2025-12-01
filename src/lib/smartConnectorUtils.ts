@@ -49,6 +49,11 @@ const loadTags = async (filePath: string) => {
   return data;
 };
 
+const isFacilityStatusTag = (tagName: string): boolean => {
+  return (
+    tagName === 'EQ_Auto' || tagName === 'EQ_Manual' || tagName === 'Call_Request' || tagName === 'Call_Robot_Assigned'
+  );
+};
 const smartConnectorStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5;
 
 export const asciiToWord = (value: string): number => {
@@ -141,6 +146,7 @@ export const useSmartConnectorUtils = () => {
         // redis key: MCS_plc_realtime_data:${facilityName}
         // 여기서 facilityName을 가져오기
         const plcRealtimeData = await redisUtil.keys(`${RedisKeys.PlcRealtimeData}:*`);
+        const facilityStatus: Record<string, boolean> = {};
         if (!plcRealtimeData || plcRealtimeData.length === 0) {
           logging.ACTION_ERROR({
             filename: 'smartConnectorUtils.ts-monitorTagData',
@@ -151,7 +157,6 @@ export const useSmartConnectorUtils = () => {
           throw new Error('plcRealtimeData is not found');
         }
         const suffixes = plcRealtimeData.map((k) => k.split(':')[1]); // 콜론 뒤만 추출
-
         suffixes.forEach(async (facilityName) => {
           const data = await getPlcRealtimeAllTagsDataFromRedis(facilityName);
           if (!data) {
@@ -163,7 +168,13 @@ export const useSmartConnectorUtils = () => {
             });
             throw new Error('data is not found for facilityName: ' + facilityName);
           }
+          Object.keys(data).forEach((key) => {
+            if (isFacilityStatusTag(key)) {
+              facilityStatus[key] = data[key] as boolean;
+            }
+          });
           sendMqtt(`${MqttTopics.PLCStatus}/${facilityName}`, JSON.stringify(data));
+          sendMqtt(`${MqttTopics.FacilityStatus}/${facilityName}`, JSON.stringify(facilityStatus));
         });
       } catch (error) {
         logging.ACTION_ERROR({
