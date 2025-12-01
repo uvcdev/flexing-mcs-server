@@ -554,3 +554,17 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   ```sql
     ALTER TABLE public.users ADD auth varchar(8) DEFAULT 'staff' NULL;
   ```
+
+## v2.1.2
+
+- kepware, smartConnector 분기 버전
+- plcTagInfo.json 추가
+  - 기존 kepserverTag.json -> plcTagInfo.json으로 변경
+  - 초기화 방법 : npm run sync-samrt-connector
+- PLC 상태 토픽 변경(server->front)
+  - kepware_status -> plc_status
+- .env 추가
+  - PLC_CONN_TYPE, SITE
+  - ex. PLC_CONN_TYPE=KEP or CONNECTOR, SITE=MBS or UNT
+- MCS PLC 모니터링 제어 API 변경
+  '/plc-connectors'
