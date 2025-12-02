@@ -49,17 +49,13 @@ export const useCallRegisterUtil = () => {
   const plcConnectUtil = usePlcConnectUtil();
   const callRegister = async () => {
     try {
-      console.log('🚀 ~ callRegister ~ callRegister');
-      const callRegisterList = await redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoCallRequestOnBySerial);
-      console.log('🚀 ~ callRegister ~ callRegisterList:', callRegisterList);
+      const callRegisterList = await redisUtil.hgetAllObject<EqpCallStats>(RedisKeys.InfoCallRequestOnBySerial);
       if (!callRegisterList) return;
 
       for (let i = 0, length = callRegisterList.length; i < length; i++) {
         const targetTagInfo = callRegisterList[i];
         const targetCode = targetTagInfo.EQ_CODE;
         const eqpCallId = targetTagInfo.CALL_ID || '';
-        console.log('🚀 ~ callRegister ~ targetCode:', targetCode);
-        console.log('🚀 ~ callRegister ~ eqpCallId:', eqpCallId);
         if (!targetCode) continue; // 코드 없으면 처리 불가
 
         // remainCall doesn't need callRegister again
@@ -82,17 +78,14 @@ export const useCallRegisterUtil = () => {
         const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
         const callPriorityValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Priority')) as boolean;
         const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
-        const callType = await makeCallType(targetCode);
-        console.log('🚀 ~ callRegister ~ callCountValue:', callCountValue);
-        console.log('🚀 ~ callRegister ~ callPriorityValue:', callPriorityValue);
-        console.log('🚀 ~ callRegister ~ eqAutoValue:', eqAutoValue);
-        console.log('🚀 ~ callRegister ~ callType:', callType);
+        const callRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request')) as boolean;
+        const callType = targetTagInfo.Call_Type;
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
           targetCode
         );
 
-        if (facilityInfo?.mode === 'manual' || !eqAutoValue) {
+        if (facilityInfo?.mode === 'manual' || !eqAutoValue || !callRequestValue) {
           continue;
         }
 
@@ -138,7 +131,7 @@ export const useCallRegisterUtil = () => {
                 JSON.stringify(infoPendingMissionWorkOrder)
               );
               // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
-              await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
+              await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
               // 현재 설비에 대한 작업지시 개수 증가
               await useMultiCallRegisterUtil().hsetWithIncrementCount(
                 RedisKeys.InfoWorkOrderCountBySerial,
@@ -213,32 +206,15 @@ export const useCallRegisterUtil = () => {
                     'Call_Count'
                   )) as number;
                   const linkedFacilityCallTypeValue = await makeCallType(linkedFacilityInfo?.serial?.toString());
-                  console.log('🚀 ~ callRegister ~ linkedFacilityEQAutoValue:', linkedFacilityEQAutoValue);
                   if (!linkedFacilityEQAutoValue) continue;
 
-                  console.log('🚀 ~ callRegister ~ linkedFacilityCallRequestValue:', linkedFacilityCallRequestValue);
-                  console.log(
-                    '🚀 ~ callRegister ~ linkedFacilityCallRequestValue type:',
-                    typeof linkedFacilityCallRequestValue
-                  );
-                  console.log('🚀 ~ callRegister ~ linkedFacilityCallResponseValue:', linkedFacilityCallResponseValue);
-                  console.log(
-                    '🚀 ~ callRegister ~ linkedFacilityCallResponseValue type:',
-                    typeof linkedFacilityCallResponseValue
-                  );
-                  console.log('🚀 ~ callRegister ~ linkedFacilityCallTypeValue:', linkedFacilityCallTypeValue);
-                  console.log(
-                    '🚀 ~ callRegister ~ linkedFacilityCallTypeValue type:',
-                    typeof linkedFacilityCallTypeValue
-                  );
-                  console.log('🚀 ~ callRegister ~ callType:', callType);
                   // 반대쪽에 콜 요청 떠 있고 콜 응답 내려가 있는 경우 작업 생성
                   if (
                     linkedFacilityInfo &&
                     linkedFacilityCallRequestValue === true &&
                     // todo: 20250908 for dryrun test (SC <-> CS/CR)
-                    linkedFacilityCallResponseValue === false
-                    //  linkedFacilityCallTypeValue === callType
+                    linkedFacilityCallResponseValue === false &&
+                    linkedFacilityCallTypeValue === callType
                   ) {
                     // const eqpCallId =
                     //   (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
@@ -266,11 +242,11 @@ export const useCallRegisterUtil = () => {
                       JSON.stringify(infoPendingWorkOrder)
                     );
                     // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
-                    await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
+                    await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
                     // 작업지시 개수 증가
                     await useMultiCallRegisterUtil().hsetWithIncrementCount(
                       RedisKeys.InfoWorkOrderCountBySerial,
-                      targetTagInfo.EQ_CODE
+                      targetCode
                     );
                     // 콜 응답 관련 데이터 쓰기
                     await plcConnectUtil.writeTagValue({
@@ -392,7 +368,7 @@ export const useCallRegisterUtil = () => {
 
                   await redisUtil.hset(RedisKeys.InfoInCallByCallId, eqpCallId, wmsCallInfoString);
                   // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
-                  await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetTagInfo.EQ_CODE);
+                  await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
                   await useMultiCallRegisterUtil().hsetWithIncrementCount(
                     RedisKeys.InfoWorkOrderCountBySerial,
                     callInfo.Caller
@@ -400,7 +376,7 @@ export const useCallRegisterUtil = () => {
 
                   let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
                     RedisKeys.RecentWorkOrderListByFacilitySerial,
-                    targetTagInfo.EQ_CODE
+                    targetCode
                   );
 
                   if (workOrderListInfo) {
@@ -419,7 +395,7 @@ export const useCallRegisterUtil = () => {
 
                     redisUtil.hset(
                       RedisKeys.RecentWorkOrderListByFacilitySerial,
-                      targetTagInfo.EQ_CODE,
+                      targetCode,
                       JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
                     );
                   }

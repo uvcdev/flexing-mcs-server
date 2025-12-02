@@ -47,7 +47,7 @@ const tagsToObject = (deviceId: string, tags: { TAG_ID: string; TAG_VALUE: strin
       case 'Boolean':
         stateObject[tag.TAG_ID] = tag.TAG_VALUE;
         break;
-      case 'Int16':
+      case 'UInt16':
         if (tag.TAG_ID.includes('Call_Time')) {
           stateObject[tag.TAG_ID] = tag.TAG_VALUE.padStart(4, '0');
         } else {
