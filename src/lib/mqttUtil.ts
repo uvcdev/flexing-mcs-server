@@ -40,6 +40,7 @@ import { useCallCancelUtil } from './callCancelUtil';
 import { timestampToDate } from '../lib/usefullToolUtil';
 import { initSmartConnectorMqtt } from './smartConnectorMqttUtil';
 import { usePlcConnectUtil } from './plcConnectUtil';
+import { useCallTypeUtil } from './callTypeUtil';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -918,6 +919,83 @@ export const receiveMqtt = (): void => {
               } catch (error) {
                 console.log('logging.res-cancel-work-order', error);
               }
+            }
+            if (topicSplit.length === 3 && topicSplit[1] === 'dock-signal-reset') {
+              const facilitySerial = topicSplit[2];
+              if (!facilitySerial || facilitySerial === '') {
+                logging.MQTT_ERROR({
+                  title: 'mcs dock-signal-reset',
+                  topic: messageTopic,
+                  message: message,
+                  error: new Error('facilitySerial is required'),
+                });
+                return;
+              }
+              const messageJson = JSON.parse(message);
+              logging.MQTT_LOG({
+                title: 'mcs dock-signal-reset',
+                topic: messageTopic,
+                message: messageJson,
+              });
+              await plcConnectUtil.writeTagValue({
+                targetFacility: facilitySerial,
+                tagInfo: [
+                  { tagName: 'Dock_Signal_Reset', value: true },
+                  { tagName: 'Dock_AMR_Status', value: false },
+                  { tagName: 'Dock_Request', value: false },
+                  { tagName: 'Dock_Request_Charge', value: false },
+                  { tagName: 'Dock_Request_Force', value: false },
+                  { tagName: 'Dock_Out_Request', value: false },
+                ],
+              });
+              setTimeout(() => {
+                plcConnectUtil.writeTagValue({
+                  targetFacility: facilitySerial,
+                  tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+                });
+              }, 500);
+            }
+            if (topicSplit.length === 3 && topicSplit[1] === 'facility-reset') {
+              const facilitySerial = topicSplit[2];
+              if (!facilitySerial || facilitySerial === '') {
+                logging.MQTT_ERROR({
+                  title: 'mcs facility-reset',
+                  topic: messageTopic,
+                  message: message,
+                  error: new Error('facilitySerial is required'),
+                });
+                return;
+              }
+              const messageJson = JSON.parse(message);
+              logging.MQTT_LOG({
+                title: 'mcs facility-reset',
+                topic: messageTopic,
+                message: messageJson,
+              });
+              await plcConnectUtil.writeTagValue({
+                targetFacility: facilitySerial,
+                tagInfo: [
+                  { tagName: 'Dock_Signal_Reset', value: true },
+                  { tagName: 'Dock_AMR_Status', value: false },
+                  { tagName: 'Dock_Request', value: false },
+                  { tagName: 'Dock_Request_Charge', value: false },
+                  { tagName: 'Dock_Request_Force', value: false },
+                  { tagName: 'Dock_Out_Request', value: false },
+                  { tagName: 'Call_Response', value: false },
+                  { tagName: 'Call_Response_Multi_1', value: false },
+                  { tagName: 'Call_Response_Multi_2', value: false },
+                  { tagName: 'Call_Cancel_Response', value: false },
+                  { tagName: 'Call_Robot_Assigned', value: false },
+                  { tagName: 'Call_Response_Count', value: '0' },
+                ],
+              });
+              await useCallTypeUtil().callTypeResponseReset(facilitySerial);
+              setTimeout(() => {
+                plcConnectUtil.writeTagValue({
+                  targetFacility: facilitySerial,
+                  tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+                });
+              }, 500);
             }
           }
 

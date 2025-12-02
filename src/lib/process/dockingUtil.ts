@@ -460,16 +460,19 @@ export const useDockingUtil = () => {
           ],
         });
         // 콜 취소 유무
-        const callCancelTagValue = (await plcConnectUtil.getTagValue(targetTagInfo.EQ_CODE, 'Call_Cancel')) as boolean;
+        const callCancelTagValue = (await plcConnectUtil.getTagValue(
+          targetTagInfo.EQ_CODE,
+          'Call_Cancel_Request'
+        )) as boolean;
 
         if (callCancelTagValue === true) {
           // 콜 취소로 인한 도킹 불허
           // 시퀀스 상으로 [콜 취소 완료 요청]을 응답해줘야 함
           // Call_Cancel_Response
-          await plcConnectUtil.writeTagValue({
-            targetFacility: dockingRequestInfo.SERIAL_ID,
-            tagInfo: [{ tagName: 'Call_Cancel_Response', value: true }],
-          });
+          // await plcConnectUtil.writeTagValue({
+          //   targetFacility: dockingRequestInfo.SERIAL_ID,
+          //   tagInfo: [{ tagName: 'Call_Cancel_Response', value: true }],
+          // });
         } else {
           // 알수 없는 이유로 도킹 불허
         }
