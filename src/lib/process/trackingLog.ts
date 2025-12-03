@@ -15,7 +15,7 @@ import { dao as trackingLogDao } from '../../dao/common/trackingLogDao';
 import { itemLogDao } from '../../dao/timescale/itemLogDao';
 import { logging } from '../logging';
 import { ItemLogInsertParams, ItemLogSubjectType } from '../../models/timescale/itemLog';
-import { formatDetailedDateTime } from '../usefullToolUtil';
+import { formatDetailedDateTime, isCurrentTimeFasterThanAnyMinutesFromTzString } from '../usefullToolUtil';
 import { sendMqtt } from '../mqttUtil';
 
 export interface InitAbnormalTrackingLogParams {
@@ -708,16 +708,30 @@ export const sendTrackingLogs = async () => {
     const facilityCode = trackingLogByCallIdInfo.startFacility;
     const trackingLogState = trackingLogByCallIdInfo.state || '';
 
-    // console.log('i', i, 'infoTrackingLogByFacilityCode', infoTrackingLogByFacilityCode)
-
     // sendMqtt(`tracking_log/${facilityCode}`, JSON.stringify(infoTrackingLogByFacilityCode))
     // 'PUBLISHED' | 'PROCESSING' | 'COMPLETED' | 'ABORTED' | 'CANCELED' | 'PAUSED' | 'ERROR';
     sendMqtt(`tracking_log/${trackingLogCallId}`, JSON.stringify(trackingLogByCallIdInfo));
+
+    // const MQTT_SENDABLE_STATES = ['PUBLISHED', 'PROCESSING', 'ABORTED'];
+    // if (!MQTT_SENDABLE_STATES.includes(trackingLogState)) {
+    //   // sendMqtt(`tracking_log/${trackingLogCallId}`, JSON.stringify(trackingLogByCallIdInfo));
+    //   if (trackingLogCallId !== '') {
+    //     redisUtil.hdel(RedisKeys.InfoTrackingLogByCallId, trackingLogCallId);
+    //   }
+    // }
+
+    // 11-26 트래킹 로그 삭제 조건 변경
+    // 'COMPLETED' | 'CANCELED' | 'PAUSED' | 'ERROR' 상태인 경우에 일정 시간이 지나면 삭제
     const MQTT_SENDABLE_STATES = ['PUBLISHED', 'PROCESSING', 'ABORTED'];
     if (!MQTT_SENDABLE_STATES.includes(trackingLogState)) {
       // sendMqtt(`tracking_log/${trackingLogCallId}`, JSON.stringify(trackingLogByCallIdInfo));
       if (trackingLogCallId !== '') {
-        redisUtil.hdel(RedisKeys.InfoTrackingLogByCallId, trackingLogCallId);
+        // 완료된 작업은 10 분 / 취소된 작업은 1일 트래킹 로그 유지
+        let deletedMinutes = 10;
+        if (trackingLogState === 'CANCELED' || trackingLogState === 'ERROR') deletedMinutes = 1440;
+        if (isCurrentTimeFasterThanAnyMinutesFromTzString(trackingLogByCallIdInfo.updatedDateTime, deletedMinutes)) {
+          redisUtil.hdel(RedisKeys.InfoTrackingLogByCallId, trackingLogCallId);
+        }
       }
     }
   }

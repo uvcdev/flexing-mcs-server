@@ -26,7 +26,7 @@ import {
   setRecentCallInfoTaskByCmdId,
 } from '../../process/wmsCommon';
 import { RedisKeys, useRedisUtil } from '../../redisUtil';
-import { removeAckPrefix } from '../../usefullToolUtil';
+import { formatDetailedDateTime, removeAckPrefix } from '../../usefullToolUtil';
 import opcuaUtil from '../../opcuaUtil';
 import { useCallTypeUtil } from '../../callTypeUtil';
 import { useCallCancelUtil } from '../../callCancelUtil';
@@ -66,7 +66,7 @@ interface AckReqCallInfoListBody extends MbsMqttBody {
 }
 
 export interface InfoAckInCallByCallIdBody extends EqpCallStatsForAck {
-  updatedTime: Date;
+  updatedTime: string;
 }
 
 const callRequest = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
@@ -237,7 +237,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
-        updatedTime: new Date(),
+        updatedTime: formatDetailedDateTime(new Date()),
       };
       redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
 
@@ -308,7 +308,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
-        updatedTime: new Date(),
+        updatedTime: formatDetailedDateTime(new Date()),
       };
       redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdDataHcack0));
 
@@ -969,7 +969,7 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
-        updatedTime: new Date(),
+        updatedTime: formatDetailedDateTime(new Date()),
       };
       redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callInfoData.Call_ID, JSON.stringify(infoAckInCallByCallIdData));
 

@@ -4,7 +4,11 @@ import { generateUUIDNode } from '../hashUtil';
 import { logging } from '../logging';
 import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from '../mqttUtil';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
-import { formatDetailedDateTime, isCurrentTimeFasterThanAnyMinutes } from '../usefullToolUtil';
+import {
+  formatDetailedDateTime,
+  isCurrentTimeFasterThanAnyMinutes,
+  isCurrentTimeFasterThanAnyMinutesFromTzString,
+} from '../usefullToolUtil';
 import { InfoAckInCallByCallIdBody } from '../wms/mqtt/call';
 import { setRemainingAckCommand } from './wmsAck';
 import { CallInfoBody } from './wmsCallInfo';
@@ -134,7 +138,7 @@ export const checkAbortedCommandForRetry = async () => {
     const abortedCommandForRetryCreatedTime = new Date(abortedCommandForRetryInfo.createdTime);
 
     // 일정 시간 보다 시간이 더 지난 경우
-    if (isCurrentTimeFasterThanAnyMinutes(abortedCommandForRetryCreatedTime, retryWaitTimeMinutes)) {
+    if (isCurrentTimeFasterThanAnyMinutesFromTzString(abortedCommandForRetryInfo.createdTime, retryWaitTimeMinutes)) {
       const abortedCommandForRetryKey = abortedCommandForRetryInfo.subjectCmdId;
       const newMqttHeader = makeMbsMqttHeader(abortedCommandForRetryInfo.messageSubject);
       // 해당 내용 MQTT 재전송

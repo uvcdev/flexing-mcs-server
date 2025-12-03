@@ -41,6 +41,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, UserInsertPar
       mobile: req.body.mobile,
       active: req.body.active || UserDefaults.active,
       auth: req.body.auth || 'staff',
+      language: req.body.language || UserDefaults.language,
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -223,6 +224,7 @@ router.put(
         mobile: req.body.mobile,
         active: req.body.active || UserDefaults.active,
         auth: req.body.auth,
+        language: req.body.language,
       };
       logging.REQUEST_PARAM(logFormat);
 

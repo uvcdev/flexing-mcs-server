@@ -9,7 +9,11 @@ import { editTrackingLogRedis } from './trackingLog';
 import { setRemainingAckCommand } from './wmsAck';
 import { RecentCallInfo, setRecentCallInfoTaskByCmdId } from './wmsCommon';
 import { InfoAckInCallByCallIdBody } from '../wms/mqtt/call';
-import { isCurrentTimeFasterThanAnyMinutes } from '../usefullToolUtil';
+import {
+  formatDetailedDateTime,
+  isCurrentTimeFasterThanAnyMinutes,
+  isCurrentTimeFasterThanAnyMinutesFromTzString,
+} from '../usefullToolUtil';
 
 const redisUtil = useRedisUtil();
 
@@ -170,7 +174,8 @@ export const checkCallInfoOnPortTimeout = async () => {
       Number(wmsCommandSetting?.data?.portRetryTimeoutMinutes) || WmsCommandSettingDefaultValue.portRetryTimeoutMinutes;
 
     const filteredInfoAckInCallByCallIdList = infoAckInCallByCallIdList.filter((data) => {
-      if (isCurrentTimeFasterThanAnyMinutes(new Date(data.updatedTime), portRetryTimeoutMinutes)) {
+      // if (isCurrentTimeFasterThanAnyMinutes(new Date(data.updatedTime), portRetryTimeoutMinutes)) {
+      if (isCurrentTimeFasterThanAnyMinutesFromTzString(data.updatedTime, portRetryTimeoutMinutes)) {
         return true;
       }
     });
@@ -193,7 +198,8 @@ export const checkCallInfoOnPortTimeout = async () => {
       sendCallInfoToWms(wmsCallInfo, systemName);
 
       // infoAckInCallByCallId updateTime 갱신
-      infoAckInCallByCallIdInfo.updatedTime = new Date();
+      // infoAckInCallByCallIdInfo.updatedTime = new Date();
+      infoAckInCallByCallIdInfo.updatedTime = formatDetailedDateTime(new Date());
 
       redisUtil.hset(
         RedisKeys.InfoAckInCallByCallId,

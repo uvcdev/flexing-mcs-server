@@ -12,6 +12,7 @@ export const initUser: UserInsertParams = {
   mobile: null,
   active: true,
   auth: 'system',
+  language: 'ko',
 };
 
 // 공통 코드
