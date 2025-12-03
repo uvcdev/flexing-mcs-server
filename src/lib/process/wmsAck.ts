@@ -6,7 +6,9 @@ import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
 import {
   formatDetailedDateTime,
   isCurrentTimeFasterThanAnyMinutes,
+  isCurrentTimeFasterThanAnyMinutesFromTzString,
   isCurrentTimeFasterThanAnySeconds,
+  isCurrentTimeFasterThanAnySecondsFromTzString,
 } from '../usefullToolUtil';
 import { editTrackingLogRedis } from './trackingLog';
 
@@ -26,8 +28,8 @@ export interface RemainingAckCommand {
   subjectCmdId: string; // [subject]-[Cmc_ID]
   count: number; // 호출 회수
   alarmStatus: boolean; // 알람 전송 여부
-  createdTime: Date; // 최초 생성 시간
-  updatedTime: Date; // 업데이트 되는 시간
+  createdTime: string; // 최초 생성 시간
+  updatedTime: string; // 업데이트 되는 시간
   systemTopic: string; // systemTopic : CALL, PORT ...
   systemName: string;
   message: MbsMqttMesaage;
@@ -93,8 +95,10 @@ export const setRemainingAckCommand = (
   const remainingAckCommand: RemainingAckCommand = {
     count: 0,
     alarmStatus: false,
-    createdTime: new Date(),
-    updatedTime: new Date(),
+    // createdTime: new Date(),
+    // updatedTime: new Date(),
+    createdTime: formatDetailedDateTime(new Date()),
+    updatedTime: formatDetailedDateTime(new Date()),
     subjectCmdId: subjectCmdId,
     systemName: systemName,
     systemTopic: systemTopic,
@@ -211,7 +215,7 @@ export const checkRemainingAckCommand = async () => {
     const remainingAckCommandUpdatedDate = new Date(remainingAckCommand.updatedTime);
 
     // 생성 시간이 ackRetryTimeLimit 이후라면 해당 레디스 데이터 삭제 후 재전송 없앰
-    if (isCurrentTimeFasterThanAnyMinutes(remainingAckCommandCreatedDate, ackRetryTimeLimit)) {
+    if (isCurrentTimeFasterThanAnyMinutesFromTzString(remainingAckCommand.createdTime, ackRetryTimeLimit)) {
       const remainingAckCommandKey = remainingAckCommand.subjectCmdId;
 
       deleteRemainingAckCommand(remainingAckCommandKey);
@@ -233,11 +237,13 @@ export const checkRemainingAckCommand = async () => {
     }
 
     // 기준 시간보다 오래 유지되고 있는 경우 retry
-    if (isCurrentTimeFasterThanAnySeconds(remainingAckCommandUpdatedDate, ackTimeoutTimeSeconds)) {
+    // if (isCurrentTimeFasterThanAnySeconds(remainingAckCommandUpdatedDate, ackTimeoutTimeSeconds)) {
+    if (isCurrentTimeFasterThanAnySecondsFromTzString(remainingAckCommand.updatedTime, ackTimeoutTimeSeconds)) {
       // 기존 정보 redis 의 count, time update
 
       remainingAckCommand.count++;
-      remainingAckCommand.updatedTime = new Date();
+      // remainingAckCommand.updatedTime = new Date();
+      remainingAckCommand.updatedTime = formatDetailedDateTime(new Date());
 
       remainingAckCommand.message.header.time = formatDetailedDateTime(new Date());
 

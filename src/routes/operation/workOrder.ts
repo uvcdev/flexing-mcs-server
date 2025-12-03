@@ -47,6 +47,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, WorkOrderInse
       type: req.body.type,
       alwaysCallCount: req.body.alwaysCallCount,
       triggerCallCount: req.body.triggerCallCount,
+      cargoType: req.body.cargoType,
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -222,6 +223,7 @@ router.put(
         description: req.body.description,
         alwaysCallCount: req.body.alwaysCallCount,
         triggerCallCount: req.body.triggerCallCount,
+        cargoType: req.body.cargoType,
       };
       logging.REQUEST_PARAM(logFormat);
 

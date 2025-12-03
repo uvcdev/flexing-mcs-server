@@ -6,6 +6,7 @@ import { separateMqttMessage, MbsMqttMesaage } from '../mqttUtil';
 import { useMultiCallRegisterUtil } from '../multiCallRegisterUtil';
 import { editAbnormalTrackingLogRedis, editTrackingLogRedis } from '../process/trackingLog';
 import { sendAckToWms } from '../process/wmsAck';
+import { MqttBranchInfoDataFromAcs } from '../process/wmsBranch';
 import { RedisKeys, useRedisUtil } from '../redisUtil';
 
 const topic = 'MISSION_STATE';
@@ -13,12 +14,16 @@ const topic = 'MISSION_STATE';
 export type MissionStateType =
   | 'MISSION_INITIATED'
   | 'AMR_ASSIGNED'
-  | 'AMR_ARRIVED'
-  | 'AMR_ACQUIRE_STARTED'
-  | 'AMR_ACQUIRE_COMPLETED'
+  | 'FROM_START' // from 작업 시작
+  | 'AMR_ARRIVED' // docking 완료 ( from , to 동일 )
+  | 'AMR_ACQUIRE_STARTED' // from lift 시작
+  | 'AMR_ACQUIRE_COMPLETED' // from lift 완료
+  | 'FROM_COMPLETED'
   | 'CARRIER_TRANSFERRING'
-  | 'AMR_DEPOSIT_STARTED'
-  | 'AMR_DEPOSIT_COMPLETED'
+  | 'TO_START' // to 작업 시작
+  | 'AMR_DEPOSIT_STARTED' // to lift 시작
+  | 'AMR_DEPOSIT_COMPLETED' // to lift 완료
+  | 'TO_COMPLETED'
   | 'AMR_UNASSIGNED'
   | 'MISSION_COMPLETED'
   | 'MISSION_CANCELED'
@@ -30,6 +35,7 @@ export type MissionStateType =
 export interface MissionStateBody {
   mission: string;
   state: MissionStateType;
+  missionDestination?: string;
   assign: {
     robot: string;
     task: string;
@@ -51,14 +57,17 @@ export interface MissionFailed {
 
 const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
   try {
-    console.log('catch acs missionState');
+    // console.log('catch acs missionState');
     const kepServerUtil = useKepServerUtil();
     const missionStateBody = messageJson.body as MissionStateBody;
     const state = missionStateBody.state;
     const callId = missionStateBody.mission.split('$')[0];
     const assignAmrName = missionStateBody.assign.robot || '';
+    const missionDestination = missionStateBody.missionDestination || '';
     let assignTask = (missionStateBody.assign.task as TrackingLogState) || '';
     let assignState = 'PROCESSING' as TrackingLogState;
+
+    console.log('messageJson!!!!!!!!!!!!!!!!', messageJson);
 
     if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED' || state === 'MISSION_COMPLETED') {
       assignState = 'COMPLETED';
@@ -81,6 +90,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
       assignedRobot: assignAmrName,
       value: assignAmrName,
       description: `AMR(${assignAmrName}) Mission State : ${state}`,
+      missionDestination: missionDestination,
     };
     if (assignTask === 'FMS-CANCELED') {
       trackingLogUpdateData.description += `(Task Canceled - FMS)`;
@@ -105,40 +115,78 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
           facilitySerial
         );
 
-        if (facilityInfo?.system === 'WMS') {
-          let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
-            RedisKeys.RecentWorkOrderListByFacilitySerial,
-            facilitySerial
-          );
-          if (workOrderListInfo) {
-            const removeWorkOrderByCallId = (targetCallId: string) => {
-              const workOrderList = workOrderListInfo?.workOrderList || [];
+        // if (facilityInfo?.system === 'WMS') {
+        let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+          RedisKeys.RecentWorkOrderListByFacilitySerial,
+          facilitySerial
+        );
+        if (workOrderListInfo) {
+          const removeWorkOrderByCallId = (targetCallId: string) => {
+            const workOrderList = workOrderListInfo?.workOrderList || [];
 
-              // targetCallId와 같은 항목이 있는지 확인
-              const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
+            // targetCallId와 같은 항목이 있는지 확인
+            const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
 
-              if (hasMatchingCallId) {
-                workOrderListInfo = {
-                  count: (workOrderListInfo?.count || 0) - 1,
-                  workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
-                };
-              }
+            if (hasMatchingCallId) {
+              workOrderListInfo = {
+                count: (workOrderListInfo?.count || 0) - 1,
+                workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
+              };
+            }
 
-              return workOrderListInfo;
+            return workOrderListInfo;
+          };
+
+          const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
+            removeWorkOrderByCallId(callId) ?? {
+              count: 0,
+              workOrderList: [],
             };
 
-            const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-              removeWorkOrderByCallId(callId) ?? {
-                count: 0,
-                workOrderList: [],
-              };
+          redisUtil.hset(
+            RedisKeys.RecentWorkOrderListByFacilitySerial,
+            facilitySerial,
+            JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+          );
+        }
+        // }
+      }
+    }
 
-            redisUtil.hset(
-              RedisKeys.RecentWorkOrderListByFacilitySerial,
-              facilitySerial,
-              JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
-            );
+    if (state === 'AMR_ASSIGNED' || state === 'CARRIER_TRANSFERRING' || state === 'MISSION_ORDER_ASSIGNED') {
+      if (facilitySerial && facilitySerial.length > 3) {
+        const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+          RedisKeys.InfoFacilityBySerial,
+          facilitySerial
+        );
+
+        let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+          RedisKeys.RecentWorkOrderListByFacilitySerial,
+          facilitySerial
+        );
+        if (workOrderListInfo) {
+          for (let i = 0; i < workOrderListInfo.count; i++) {
+            if (workOrderListInfo.workOrderList[i].callId === callId) {
+              if (state === 'AMR_ASSIGNED') {
+                workOrderListInfo.workOrderList[i].state = 'fromWorkOrder';
+              } else if (state === 'CARRIER_TRANSFERRING') {
+                workOrderListInfo.workOrderList[i].state = 'toWorkOrder';
+              } else if (state === 'MISSION_ORDER_ASSIGNED') {
+                workOrderListInfo.workOrderList[i].state = 'missionWorkOrder';
+              }
+            }
           }
+
+          const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+            count: workOrderListInfo.count,
+            workOrderList: workOrderListInfo.workOrderList,
+          };
+
+          redisUtil.hset(
+            RedisKeys.RecentWorkOrderListByFacilitySerial,
+            facilitySerial,
+            JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+          );
         }
       }
     }
@@ -161,6 +209,9 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
       //   description: `AMR(${assignAmrName}) Mission State : ${state}`,
       // };
       // await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
+      // 미션 결정지 정보 삭제하기
+
+      redisUtil.hdel(RedisKeys.InfoMissionOrderByWorkOrderCode, callId);
     } else if (state === 'MISSION_FAILED') {
     } else if (state === 'MISSION_COMPLETED') {
     }

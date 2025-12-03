@@ -499,3 +499,82 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 ## v2.0.4
 - BS12 PIO 수정
+
+
+## v2.0.11
+- 현장 코드 수정본 적용
+
+## v2.1.1
+- 2차 이후 국내 수정 진행 사항
+
+- 콜 생성 방식 변경
+  - callCheckUtil.ts
+    - 콜 발생 데이터에 따라, Call Request 생성 여부 판별
+  - callRegisterUtil.ts
+    - WMS 관련 공급 포트 내용 수정
+  - eqpCheckUtil.ts
+    - Request 발생, 처리 로직 변경
+
+- 설비 관리 컬럼 추가
+  - is_wms_port => wms 포트에 위치하는 설비들만 true ( ex WS11 ) MBS 프로젝트만 사용
+  ```sql
+    ALTER TABLE public.facilities ADD is_wms_port bool DEFAULT false NULL;
+  ```
+
+- 창고 수동 작업을 처리하기 위해 workOrder Type 데이터 수정
+  - PendingWorkOrderAttributes 수정
+  - McsWorkOrderRequestType 수정
+
+- ACS 작업 취소 시, 미션 결정지 Redis 데이터삭제
+- 창고 취소 로직 버그 수정 ( 확정본 )
+- 미션 결정지 로직 수정 ( 미션 포인트와 연동 )
+  - IS_MANUAL_MISSION_ORDER 적용
+
+- WMS 동기화
+  - CALL_LIST 미 호출 예상 부분 수정
+  - 창고 수동 작업 지시 누락 내용 추가
+
+- 콜 생성 방식 버그 수정
+  - SP11 라인 관련 버그 수정 ( Redis 상 동일 CALL 정보 2개 생성 )
+  - SP12 라인 관련 버그 수정 ( Tracking Log 상 2배수 생성 )
+
+- 트래킹 로그에 미션 결정지 내용 추가
+  - 미션 결정지 내용 추가
+
+- WorkOrder 테이블에 CargoType 컬럼 추가
+  ```sql
+    ALTER TABLE public.work_orders ADD cargo_type varchar(20) NULL;
+  ```
+  - CallType이 없는 경우를 대체하기 위함 ( UI에 잘못된 콜타입 정보가 계속 나타남 - Default 값)
+
+- 스페인 시간대로 데이터를 제어하기 위해서 dayjs에 timezone 내용 추가
+
+- User 테이블에 auth 컬럼 추가 
+  - 권한 관리 컬럼 추가
+  ```sql
+    ALTER TABLE public.users ADD auth varchar(8) DEFAULT 'staff' NULL;
+  ```
+  - 언어 컬럼 추가
+  ```sql
+    ALTER TABLE public.users ADD "language" varchar(10) DEFAULT 'es' NULL;
+  ```
+
+- 트래킹 로그 수정
+  - AMR_ARRIVE 위치 수정 : 도킹 완료 시, 해당 데이터 On
+  - MISSION_STATE LIST 추가
+
+- InfoWorkOrderCreatedByCallId 주석
+
+## v2.1.2
+
+- kepware, smartConnector 분기 버전
+- plcTagInfo.json 추가
+  - 기존 kepserverTag.json -> plcTagInfo.json으로 변경
+  - 초기화 방법 : npm run sync-samrt-connector
+- PLC 상태 토픽 변경(server->front)
+  - kepware_status -> plc_status
+- .env 추가
+  - PLC_CONN_TYPE, SITE
+  - ex. PLC_CONN_TYPE=KEP or CONNECTOR, SITE=MBS or UNT
+- MCS PLC 모니터링 제어 API 변경
+  '/plc-connectors'

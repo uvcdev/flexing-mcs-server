@@ -51,6 +51,11 @@ export type McsWorkOrderRequestType = {
   CALL_COUNT: number;
   ALWAYS_CALL_COUNT: number;
   TRIGGER_CALL_COUNT: number;
+  // 추가 ... 11월 13일 이준규 - 미션 오더 때문에 추가
+  IS_MANUAL_MISSION_ORDER: string; // 작업 지시의 manual mission order 여부
+  // MODE: 'AUTO' | 'MANUAL'; // 수동 자동 여부인데 창고 수동만 MANUAL 사용
+  // 추가 ... 11월 19일 이준규 - 콜 타입 없는 경우를 위한 CargoType 추가
+  CARGO_TYPE: string;
 };
 
 export type McsPendingWorkOrderRequestType = {
@@ -66,6 +71,9 @@ export type McsPendingWorkOrderRequestType = {
   callCount: number;
   alwaysCallCount: number;
   triggerCallCount: number;
+  isManualMissionOrder?: boolean;
+  // mode?: 'AUTO' | 'MANUAL';
+  cargoType: string;
 };
 
 export const useWorkOrderUtil = () => {
@@ -87,12 +95,15 @@ export const useWorkOrderUtil = () => {
             CALL_PRIORITY: workOrder.callPriority,
             CALL_TYPE: workOrder.callType,
             IS_MISSION_ORDER: workOrder.type === 'MISSION' ? 'true' : 'false',
+            IS_MANUAL_MISSION_ORDER: workOrder.isManualMissionOrder === true ? 'true' : 'false',
+            // MODE: workOrder.mode === 'MANUAL' ? 'MANUAL' : 'AUTO',
             TAG_ID: '',
             TX_ID: '',
             ZONE_ID: process.env.FLOOR || '1F',
             CALL_COUNT: workOrder.callCount,
             ALWAYS_CALL_COUNT: workOrder.alwaysCallCount,
             TRIGGER_CALL_COUNT: workOrder.triggerCallCount,
+            CARGO_TYPE: workOrder.cargoType,
           };
           const message = JSON.stringify(params);
           const messageJson = JSON.parse(message);
@@ -125,30 +136,28 @@ export const useWorkOrderUtil = () => {
             RedisKeys.InfoFacilityBySerial,
             workOrder.eqpName
           );
-          if (facilityInfo?.system === 'WMS') {
-            const workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
-              RedisKeys.RecentWorkOrderListByFacilitySerial,
-              workOrder.eqpName
-            );
-            const workOrderList = workOrderListInfo?.workOrderList || [];
+          const workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+            RedisKeys.RecentWorkOrderListByFacilitySerial,
+            workOrder.eqpName
+          );
+          const workOrderList = workOrderListInfo?.workOrderList || [];
 
-            workOrderList.forEach((workOrderInfo) => {
-              if (workOrderInfo.callId === workOrder.callId) {
-                workOrderInfo.state = 'workOrder';
-              }
-            });
+          workOrderList.forEach((workOrderInfo) => {
+            if (workOrderInfo.callId === workOrder.callId) {
+              workOrderInfo.state = 'workOrder';
+            }
+          });
 
-            const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
-              count: workOrderListInfo?.count || 0,
-              workOrderList: workOrderList,
-            };
+          const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+            count: workOrderListInfo?.count || 0,
+            workOrderList: workOrderList,
+          };
 
-            redisUtil.hset(
-              RedisKeys.RecentWorkOrderListByFacilitySerial,
-              workOrder.eqpName,
-              JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
-            );
-          }
+          redisUtil.hset(
+            RedisKeys.RecentWorkOrderListByFacilitySerial,
+            workOrder.eqpName,
+            JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+          );
 
           try {
             sendMqtt(messageTopic, message);
@@ -163,7 +172,7 @@ export const useWorkOrderUtil = () => {
 
           // ACS 작업지시 생성 요청 유무 확인용 Redis 저장
           // Todo[ssb] 추후 작업완료되는 시점에 삭제 필요, 혹시나 남아있을지 모르니까 하루 지나면 초기화 시키는 로직 추가
-          redisUtil.hset(RedisKeys.InfoWorkOrderCreatedByCallId, params.CALL_ID, message);
+          // redisUtil.hset(RedisKeys.InfoWorkOrderCreatedByCallId, params.CALL_ID, message);
 
           redisUtil.hdel(RedisKeys.InfoPendingWorkOrderByCallId, params.CALL_ID);
           redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, params.EQP_ID);

@@ -1,11 +1,19 @@
 import { LogFormat, logging, makeLogFormat, RequestLog } from './logging';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { makeResponseError as resError, SelectedListResult } from './resUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { FacilityAttributesDeep } from '../models/operation/facility';
 import { service as facilityService } from '../service/operation/facilityService';
 
 // 랜덤한 코드를 생성 for 출고(itemOutflow)
+const timezoneValue = process.env.TIME_ZONE || 'Europe/Madrid';
+
+// 플러그인 등록 (필수!)
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 export const makeCode = (pre: string): string => {
   const now = new Date().getTime();
   const result = `${pre}-${now}`;
@@ -124,7 +132,9 @@ export const pushArrayWithPromise = (array: Array<any>, item: any) => {
 
 export const formatDetailedDateTime = (date: Date) => {
   return (
-    dayjs(date).format('YYYY.MM.DD HH:mm:ss') + '.' + String(date.getMilliseconds()).padStart(3, '0').substring(0, 2)
+    dayjs(date).tz(timezoneValue).format('YYYY.MM.DD HH:mm:ss') +
+    '.' +
+    String(date.getMilliseconds()).padStart(3, '0').substring(0, 2)
   );
 };
 
@@ -138,6 +148,40 @@ export const isCurrentTimeFasterThanAnySeconds = (referenceTime: Date, anySecond
 export const isCurrentTimeFasterThanAnyMinutes = (referenceTime: Date, anyMinutes: number) => {
   const currentTime = new Date();
   const timeDifference = currentTime.getTime() - referenceTime.getTime();
+
+  return timeDifference >= 1000 * 60 * anyMinutes;
+};
+
+// 타임존 시간 문자열을 받는 함수 (AMR에서 받은 값) - 초 단위
+export const isCurrentTimeFasterThanAnySecondsFromTzString = (tzTimeString: string, anySeconds: number) => {
+  const currentTime = dayjs().tz(timezoneValue);
+
+  // "2025.11.26 08:05:06.98" 형식 파싱
+  const [datePart, timePart] = tzTimeString.split(' ');
+  const [year, month, day] = datePart.split('.');
+  const [hour, minute, second] = timePart.split(':');
+
+  // 해당 타임존에서 직접 시간 생성
+  const refTime = dayjs.tz(`${year}-${month}-${day} ${hour}:${minute}:${second}`, timezoneValue);
+
+  const timeDifference = currentTime.diff(refTime);
+
+  return timeDifference >= 1000 * anySeconds;
+};
+
+// 타임존 시간 문자열을 받는 함수 (AMR에서 받은 값)
+export const isCurrentTimeFasterThanAnyMinutesFromTzString = (tzTimeString: string, anyMinutes: number) => {
+  const currentTime = dayjs().tz(timezoneValue);
+
+  // "2025.11.26 08:05:06.98" 형식 파싱
+  const [datePart, timePart] = tzTimeString.split(' ');
+  const [year, month, day] = datePart.split('.');
+  const [hour, minute, second] = timePart.split(':');
+
+  // 해당 타임존에서 직접 시간 생성
+  const refTime = dayjs.tz(`${year}-${month}-${day} ${hour}:${minute}:${second}`, timezoneValue);
+
+  const timeDifference = currentTime.diff(refTime);
 
   return timeDifference >= 1000 * 60 * anyMinutes;
 };

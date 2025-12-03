@@ -27,6 +27,7 @@ export interface FacilityAttributes {
   generatedCallCount: number | null;
   isActiveCallTrigger: boolean | null;
   priority: number;
+  isWmsPort: boolean | null; // MBS 는 EQP | WMS
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -37,19 +38,17 @@ export interface FacilityAttributesDeep extends FacilityAttributes {
 }
 
 export type CancelType =
-
   // 취소로직 비활성화 설비
-  'NON_CANCELLABLE' |  // (불가)
+  | 'NON_CANCELLABLE' // (불가)
 
-  // 설비 to 설비 미션O 
-  'EQP_TO_EQP_MISSION' | // (후속작업)
+  // 설비 to 설비 미션O
+  | 'EQP_TO_EQP_MISSION' // (후속작업)
 
   // 설비 to 설비 미션X
-  'EQP_TO_EQP_NO_MISSION' | // (일반) 
+  | 'EQP_TO_EQP_NO_MISSION' // (일반)
 
   // 설비 to 창고
-  'EQP_TO_WMS'; // (창고)
-
+  | 'EQP_TO_WMS'; // (창고)
 
 class Facility extends Model implements FacilityAttributes {
   public readonly id!: FacilityAttributes['id'];
@@ -75,6 +74,7 @@ class Facility extends Model implements FacilityAttributes {
   public generatedCallCount!: FacilityAttributes['generatedCallCount'];
   public isActiveCallTrigger!: FacilityAttributes['isActiveCallTrigger'];
   public priority!: FacilityAttributes['priority'];
+  public isWmsPort!: FacilityAttributes['isWmsPort'];
   public readonly createdAt!: FacilityAttributes['createdAt'];
   public readonly updatedAt!: FacilityAttributes['updatedAt'];
   public readonly deletedAt!: FacilityAttributes['deletedAt'];
@@ -175,6 +175,10 @@ Facility.init(
       allowNull: false,
       defaultValue: FacilityDefaultValue.priority,
     },
+    isWmsPort: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     sequelize,
@@ -209,6 +213,7 @@ export interface FacilityInsertParams {
   generatedCallCount: number | null;
   isActiveCallTrigger: boolean;
   priority: number | null;
+  isWmsPort: string | null; // EQP | WMS
 }
 
 // selectList
@@ -282,6 +287,7 @@ export interface FacilityUpdateParams {
   generatedCallCount?: number;
   isActiveCallTrigger?: boolean;
   priority?: number;
+  isWmsPort?: string | null; // EQP | WMS
 }
 
 // update state
@@ -319,6 +325,7 @@ export const FacilityAttributesInclude = [
   'generatedCallCount',
   'isActiveCallTrigger',
   'priority',
+  'isWmsPort',
   'createdAt',
 ];
 

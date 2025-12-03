@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import * as express from 'express';
 import fs from 'fs';
 import path from 'path';
@@ -37,8 +36,13 @@ import { router as itemLogRouter } from './timescale/itemLog';
 // MBS
 import { router as trackingLogRouter } from './common/trackingLog';
 import { router as kepwareRouter } from './kepware/kepware';
-dotenv.config();
 
+// smartConnector
+import { router as smartConnectorRouter } from './smartConnector/smartConnector';
+import multer from 'multer';
+import { router as plcConnectorRouter } from './common/plcConnector';
+dotenv.config();
+const uploads = multer();
 const router = express.Router();
 
 // index
@@ -53,7 +57,6 @@ router.get('/', (req, res) => {
 
     let version = '';
     fs.readFile(filePath, 'utf8', (_err, jsonFile) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const jsonData: PackageJson = JSON.parse(jsonFile);
       version = jsonData.version;
 
@@ -67,7 +70,15 @@ router.get('/', (req, res) => {
 //스태틱파일 경로
 router.use('/uploads', express.static('uploads'));
 router.use('/files', express.static('files'));
-
+// router.post('/samkwang', uploads.single('file'), (req, res) => {
+//   console.log(req.file);
+//   console.log(req.body);
+//   res.send('success');
+// });
+// router.delete('/samkwang', (req, res) => {
+//   console.log(req.body);
+//   res.send('success');
+// });
 // .env 설정 응답(모두) - 앞으로는 여기에 코딩할 것
 router.get('/env', isActionKey, (req, res) => {
   try {
@@ -77,7 +88,7 @@ router.get('/env', isActionKey, (req, res) => {
     }
 
     const filePath = path.join(__dirname, '../../package.json');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     const packageInfo: PackageJson = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
     const envData = {
@@ -121,7 +132,6 @@ router.get('/info', (req, res) => {
     const filePath = path.join(__dirname, '../../package.json');
 
     fs.readFile(filePath, 'utf8', (_err, jsonFile) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const jsonData: PackageJson = JSON.parse(jsonFile);
 
       const name = jsonData.name;
@@ -217,4 +227,8 @@ router.use('/item-logs', itemLogRouter);
 router.use('/tracking-logs', trackingLogRouter);
 // kepware
 router.use('/kepware', kepwareRouter);
+// smartConnector
+router.use('/smart-connector', smartConnectorRouter);
+// plc connect
+router.use('/plc-connectors', plcConnectorRouter);
 export { router };

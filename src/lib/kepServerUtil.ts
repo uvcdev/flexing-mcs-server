@@ -17,6 +17,7 @@ import { KepwareWriteParams } from '../models/kepware/kepware';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { FacilityAttributes } from '../models/operation/facility';
 import { timestampToDate } from '../lib/usefullToolUtil';
+import { usePlcConnectUtil } from './plcConnectUtil';
 
 const timezoneValue = process.env.TIME_ZONE || '';
 
@@ -54,10 +55,10 @@ export interface TagValue {
 }
 
 interface TagValueJson {
-  MBS: TagValue[];
+  [key: string]: TagValue[];
 }
 interface TagsJson {
-  MBS: Tag[];
+  [key: string]: Tag[];
 }
 export interface Tag {
   NODE_ID: string;
@@ -92,28 +93,37 @@ export interface MakeWriteDatasParams {
 export interface WriteDataParams {
   targetFacility: string;
   tagName: string;
-  value: boolean | string;
+  value: boolean | string | number;
 }
 
 // ASCII → 10진수 Word
 export const parseAsciiToDecWord = (value: string): number => {
-  if (typeof value !== 'string' || value.length !== 2) {
-    return 0;
+  const v = value.slice(0, 2);
+
+  let high = 0;
+  let low = 0;
+
+  if (v.length === 1) {
+    // 'C' → 0x0043
+    low = v.charCodeAt(0);
+  } else if (v.length === 2) {
+    // 'CS' → 0x4353
+    high = v.charCodeAt(0);
+    low = v.charCodeAt(1);
   }
 
-  const char1 = value.charCodeAt(0); // 첫 번째 문자 (상위 바이트)
-  const char2 = value.charCodeAt(1); // 두 번째 문자 (하위 바이트)
-
-  return (char1 << 8) | char2; // 상위 바이트를 왼쪽으로 8비트 이동 후 OR 연산
+  return (high << 8) | low;
 };
 
 // ASCII → 16진수 Word
 export const parseAsciiToHexWord = (value: string): number => {
-  if (typeof value !== 'string' || value.length !== 2) {
-    return 0;
+  if (value.length > 2) {
+    value = value.substring(0, 2);
   }
+  if (value.length === 0) return 0;
 
-  const char1 = value.charCodeAt(0); // 첫 번째 문자 (상위 바이트)
+  // const char1 = value.charCodeAt(0); // 첫 번째 문자 (상위 바이트)
+  const char1 = value.length > 1 ? value.charCodeAt(0) : 0; // 첫 번째 문자 (상위 바이트)
   const char2 = value.charCodeAt(1); // 두 번째 문자 (하위 바이트)
 
   const word = (char1 << 8) | char2;
@@ -123,19 +133,16 @@ export const parseAsciiToHexWord = (value: string): number => {
 
 // 10진수 Word → ASCII
 export const parseDecWordToAscii = (value: number): string => {
-  if (typeof value !== 'number' || value < 0 || value > 0xffff) {
-    // throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
-    return '';
-  }
-
   if (value === 0) return '';
 
-  const lowByte = (value >> 8) & 0xff; // 반대로!
-  const highByte = value & 0xff;
+  const high = (value >> 8) & 0xff;
+  const low = value & 0xff;
 
-  const char1 = String.fromCharCode(lowByte);
-  const char2 = String.fromCharCode(highByte);
-  return char1 + char2;
+  let result = '';
+  if (high !== 0) result += String.fromCharCode(high);
+  if (low !== 0) result += String.fromCharCode(low);
+
+  return result;
 };
 
 // 16진수 Word → ASCII
@@ -155,41 +162,27 @@ export const parseHexWordToAscii = (value: number): string => {
   const lowHex = str.slice(2, 4); // "50"
 
   // 16진수로 해석 후 ASCII 문자 변환
-  const char1 = String.fromCharCode(parseInt(highHex, 16)); // 0x43 → 'C'
-  const char2 = String.fromCharCode(parseInt(lowHex, 16)); // 0x50 → 'P'
+  const char1 = String.fromCharCode(parseInt(highHex, 16)) || ''; // 0x43 → 'C'
+  const char2 = String.fromCharCode(parseInt(lowHex, 16)) || ''; // 0x50 → 'P'
   return char1 + char2;
 };
 
 // call_type 함축 함수
 export const makeCallType = async (value: string): Promise<string> => {
+  const plcConnectUtil = usePlcConnectUtil();
   // if (value < 0 || value > 0xFFFF) {
   //   throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
   // }
 
   let callType = '';
 
-  const kepServerUtil = useKepServerUtil();
-  const targetKey = kepServerUtil.getTargetKey(value);
   const targetCode = value;
-
-  await kepServerUtil.updateTagMapValues(targetKey, targetCode, [
-    'Call_Type_01',
-    'Call_Type_02',
-    'Call_Type_03',
-    'Call_Type_04',
-    'Call_Type_05',
-    'Call_Type_06',
-    'Call_Type_07',
-    'Call_Type_08',
-    'Call_Type_09',
-    'Call_Type_10',
-  ]);
 
   for (let i = 1; i <= 10; i++) {
     const suffix = i < 10 ? `0${i}` : `${i}`;
-    const tag = opcuaUtil.tagMap.get(`${value}.Call_Type_${suffix}`);
-    if (tag?.value) {
-      callType += tag.value;
+    const tag = (await plcConnectUtil.getTagValue(targetCode, `Call_Type_${suffix}`)) as string;
+    if (tag) {
+      callType += tag;
     }
   }
   callType = callType.replace(/[\s]/g, '');
@@ -197,11 +190,16 @@ export const makeCallType = async (value: string): Promise<string> => {
   return callType;
 };
 
+const isFacilityStatusTag = (tagName: string): boolean => {
+  return (
+    tagName === 'EQ_Auto' || tagName === 'EQ_Manual' || tagName === 'Call_Request' || tagName === 'Call_Robot_Assigned'
+  );
+};
 const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5;
 
 export const useKepServerUtil = () => {
   const redisUtil = useRedisUtil();
-
+  const site = process.env.SITE || 'MBS';
   // 필요한 태그 값들 읽어서 tagMap 업데이트 함수
   const updateTagMapValues = async (targetKey: string, targetCode: string, tagNames: string[]) => {
     if (!targetKey || !targetCode) {
@@ -325,6 +323,9 @@ export const useKepServerUtil = () => {
       const session = opcuaUtil.session;
       let statusCodes: StatusCode[] = [];
 
+      if (!session) {
+        throw new Error('OPC UA 세션이 존재하지 않습니다.');
+      }
       if (session) {
         // 태그 값 쓰기
         statusCodes = await session.write(data);
@@ -418,6 +419,7 @@ export const useKepServerUtil = () => {
         // );
         for (const [key, value] of opcuaUtil.allTagNodeIds.entries()) {
           const result: Record<string, any> = {};
+          const facilityStatus: Record<string, boolean> = {};
           const readValueIdOptions = value.readValueIdOptions;
           const tagValue = value.tagValue;
 
@@ -430,6 +432,9 @@ export const useKepServerUtil = () => {
               // tagValue[index].value = 12532
             } else {
               tagValue[index].value = dataValue.value.value;
+              if (isFacilityStatusTag(tagValue[index].key)) {
+                facilityStatus[tagValue[index].key] = dataValue.value.value as boolean;
+              }
               // if (tagValue[index].value === null) {
               //   return;
               // }
@@ -438,17 +443,20 @@ export const useKepServerUtil = () => {
           });
 
           // MQTT로 결과 전송
-          await redisUtil.hset(
-            RedisKeys.InfoPlcBySerial,
-            key.split('.').pop()?.toString() || '',
-            JSON.stringify(result)
-          );
-          sendMqtt(`${MqttTopics.KepwareStatus}/${key}`, JSON.stringify(result));
+          // await redisUtil.hset(
+          //   RedisKeys.InfoPlcBySerial,
+          //   key.split('.').pop()?.toString() || '',
+          //   JSON.stringify(result)
+          // );
+          const redisKey = `${RedisKeys.PlcRealtimeData}:${key}`;
+          redisUtil.hSetPlcAllTags(redisKey, result);
+          sendMqtt(`${MqttTopics.FacilityStatus}/${key}`, JSON.stringify(facilityStatus));
+          sendMqtt(`${MqttTopics.PLCStatus}/${key}`, JSON.stringify(result));
         }
       } catch (error) {
         logging.MQTT_ERROR({
           title: 'Error reading value from kepServerUtil.monitorTagData',
-          topic: `${MqttTopics.KepwareStatus}`,
+          topic: `${MqttTopics.PLCStatus}`,
           message: null,
           error: error,
         });
@@ -493,8 +501,8 @@ export const useKepServerUtil = () => {
   };
 
   const initTagData = async () => {
-    const allTagsStringData = await loadTags(path.join(__dirname, '../../kepserverTag.json'));
-    const allTags: Tag[] = JSON.parse(allTagsStringData)['MBS'];
+    const allTagsStringData = await loadTags(path.join(__dirname, '../../plcTagInfo.json'));
+    const allTags: Tag[] = JSON.parse(allTagsStringData)[site];
     // // tagMap 초기화
     opcuaUtil.tagMap.clear();
     // 각 태그에 대해 Map 엔트리 생성
@@ -615,10 +623,10 @@ export const useKepServerUtil = () => {
     const writeDatas: WriteValueOptions[] = [];
     const tagMap = opcuaUtil.tagMap;
     try {
-      const targetFacility = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        params.targetFacility
-      );
+      // const targetFacility = await redisUtil.hgetObject<FacilityAttributes>(
+      //   RedisKeys.InfoFacilityBySerial,
+      //   params.targetFacility
+      // );
       // if (!targetFacility) {
       //   throw new Error(`No facility found with name: ${params.targetFacility}`);
       // }
@@ -630,16 +638,16 @@ export const useKepServerUtil = () => {
       // const targetFacilitySerial = targetFacilityObject.serial.slice(0, 2) + '.' + targetFacilityObject.serial.slice(2);
       // const targetFacilityCode = targetFacilityObject.facilityCode;
       // const targetFacilityCode = 'STACK01.LOAD-PORT';
-      if (!targetFacility) {
-        logging.ACTION_ERROR({
-          filename: 'kepServerUtil.ts',
-          error: null,
-          params: null,
-          result: `No facility found with name: ${params.targetFacility}`,
-        });
-        return [];
-      }
-      const targetFacilitySerial = targetFacility.serial;
+      // if (!targetFacility) {
+      //   logging.ACTION_ERROR({
+      //     filename: 'kepServerUtil.ts',
+      //     error: null,
+      //     params: null,
+      //     result: `No facility found with name: ${params.targetFacility}`,
+      //   });
+      //   return [];
+      // }
+      const targetFacilitySerial = params.targetFacility;
       for (let i = 0, length = params.tagInfo.length; i < length; i++) {
         const tagMapValue = tagMap.get(`${targetFacilitySerial}.${params.tagInfo[i].tagName}`);
         if (tagMapValue) {
@@ -663,14 +671,14 @@ export const useKepServerUtil = () => {
   };
 
   const findTagInfo = (device: string, tagName: string): TagInfo | null => {
-    const jsonData: TagValueJson = JSON.parse(fsOrigin.readFileSync('kepserverTag.json', 'utf-8'));
-    const tag = jsonData.MBS.find((t: TagValue) => t.DEVICE === device && t.TAG_NAME === tagName);
+    const jsonData: TagValueJson = JSON.parse(fsOrigin.readFileSync('plcTagInfo.json', 'utf-8'));
+    const tag = jsonData[site].find((t: TagValue) => t.DEVICE === device && t.TAG_NAME === tagName);
     return tag || null;
   };
 
   const getTargetTag = (device: string, tagName: string): Tag | null => {
-    const jsonData: TagsJson = JSON.parse(fsOrigin.readFileSync('kepserverTag.json', 'utf-8'));
-    const tag = jsonData.MBS.find((t: Tag) => t.DEVICE === device && t.TAG_NAME === tagName);
+    const jsonData: TagsJson = JSON.parse(fsOrigin.readFileSync('plcTagInfo.json', 'utf-8'));
+    const tag = jsonData[site].find((t: Tag) => t.DEVICE === device && t.TAG_NAME === tagName);
     return tag || null;
   };
 

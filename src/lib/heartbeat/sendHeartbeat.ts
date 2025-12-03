@@ -78,6 +78,16 @@ export const sendAcsHeartbeat = (isAlive: boolean, receiveAt: string) => {
   redisUtil.hset(RedisKeys.Heartbeat, 'ACS', JSON.stringify(acsHeartbeatData));
 };
 
+// smart connector heartbeat 업데이트
+export const sendSmartConnectorHeartbeat = async (isAlive: boolean, receiveAt: string) => {
+  const smartConnectorHeartbeatData: HeartbeatInfo = {
+    systemName: 'SmartConnector',
+    state: isAlive ? 'connection' : 'disconnection',
+    time: receiveAt,
+  };
+  redisUtil.hset(RedisKeys.Heartbeat, 'SmartConnector', JSON.stringify(smartConnectorHeartbeatData));
+};
+
 // 통합 Heartbeat ( mcs, kepware , wms )
 const sendSystemHeartbeat = async () => {
   try {
@@ -88,12 +98,17 @@ const sendSystemHeartbeat = async () => {
       sendMqtt(`heartbeat/${systemName}`, JSON.stringify(systemHeartbeatInfo));
     }
   } catch (error) {
-    logging.ACTION_INFO;
+    logging.ACTION_INFO({
+      filename: 'sendSystemHeartbeat',
+      error: `[error] sendSystemHeartbeat error: ${error}`,
+      params: null,
+      result: false,
+    });
   }
 };
 
 export const sendAllHeartbeat = async () => {
   sendMcsHeartbeat();
-  await sendKepwareHeartbeat();
+  if (process.env.PLC_CONN_TYPE === 'KEP') await sendKepwareHeartbeat();
   await sendSystemHeartbeat();
 };

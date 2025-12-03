@@ -3,7 +3,14 @@ import { EqpCallStats, EqpCallStatsForAck } from '../../callRegisterUtil';
 import { useKepServerUtil } from '../../kepServerUtil';
 import { generateUUIDNode } from '../../hashUtil';
 import { logging } from '../../logging';
-import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, makeMbsMqttHeader, sendMbsMqtt } from '../../mqttUtil';
+import {
+  separateMqttMessage,
+  MbsMqttMesaage,
+  MbsMqttBody,
+  makeMbsMqttHeader,
+  sendMbsMqtt,
+  MbsMqttHeader,
+} from '../../mqttUtil';
 import { editTrackingLogRedis } from '../../process/trackingLog';
 import {
   deleteRemainingAckCommand,
@@ -19,13 +26,15 @@ import {
   setRecentCallInfoTaskByCmdId,
 } from '../../process/wmsCommon';
 import { RedisKeys, useRedisUtil } from '../../redisUtil';
-import { removeAckPrefix } from '../../usefullToolUtil';
+import { formatDetailedDateTime, removeAckPrefix } from '../../usefullToolUtil';
 import opcuaUtil from '../../opcuaUtil';
 import { useCallTypeUtil } from '../../callTypeUtil';
 import { useCallCancelUtil } from '../../callCancelUtil';
+import { usePlcConnectUtil } from '../../plcConnectUtil';
 
 const systemTopic = 'CALL';
 const redisUtil = useRedisUtil();
+const plcConnectUtil = usePlcConnectUtil();
 interface ackCallInfoBody extends MbsMqttBody {
   HCACK: string;
   Comment: string;
@@ -46,6 +55,7 @@ interface CallInfoData {
   Call_ID: string;
   Cmd_ID: string;
   Call_Type: string;
+  Cargo_Type: string;
   Caller: string;
   Call_Quantity: string;
   Call_Priority: string;
@@ -56,17 +66,28 @@ interface AckReqCallInfoListBody extends MbsMqttBody {
 }
 
 export interface InfoAckInCallByCallIdBody extends EqpCallStatsForAck {
-  updatedTime: Date;
+  updatedTime: string;
 }
 
-const callRequest = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const callRequest = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
   console.log('catch wmsCallRequest');
   // set Data
   const callRequestBody = messageMessage.body as CallRequestBody;
   const callId = callRequestBody.Call_ID;
 
   // set GetAckCommandByCmdId - Call Request
-  setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
+  // setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
+  // 2025-11-20 : call Request 한정으로 바로 ACK 응답
+  const newSubtopic = `ACK_${subject}`;
+  const cmdId = callRequestBody.Cmd_ID;
+
+  const ackMqttHeader = makeMbsMqttHeader(newSubtopic);
+  const ackMqttBody: MbsMqttBody = {
+    Cmd_ID: cmdId,
+    HCACK: '4',
+  };
+
+  sendMbsMqtt(systemTopic, ackMqttHeader, ackMqttBody, wmsName);
 
   // 1안
   // 1. 콜 아이디에 해당하는 정보 다시 쓰기
@@ -212,10 +233,11 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         CALL_ID: callInfoData.Call_ID,
         EQP_CALL_ID: callId.slice(-4),
         Call_Type: callInfoData.Call_Type,
+        Cargo_Type: callInfoData.Cargo_Type,
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
-        updatedTime: new Date(),
+        updatedTime: formatDetailedDateTime(new Date()),
       };
       redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
 
@@ -245,10 +267,9 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
       // call_response 작성
-      await useKepServerUtil().writeSimpleTagValue({
+      await plcConnectUtil.writeTagValue({
         targetFacility: callInfoData.Caller,
-        tagName: 'Call_Response',
-        value: true,
+        tagInfo: [{ tagName: 'Call_Response', value: true }],
       });
 
       await useCallTypeUtil().callTypeResponse(callInfoData.Caller);
@@ -283,10 +304,11 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         CALL_ID: callInfoData.Call_ID,
         EQP_CALL_ID: callId.slice(-4),
         Call_Type: callInfoData.Call_Type,
+        Cargo_Type: callInfoData.Cargo_Type,
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
-        updatedTime: new Date(),
+        updatedTime: formatDetailedDateTime(new Date()),
       };
       redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdDataHcack0));
 
@@ -316,10 +338,9 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       await editTrackingLogRedis(hcack0TrackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
       // call_response 작성
-      await useKepServerUtil().writeSimpleTagValue({
+      await plcConnectUtil.writeTagValue({
         targetFacility: callInfoData.Caller,
-        tagName: 'Call_Response',
-        value: true,
+        tagInfo: [{ tagName: 'Call_Response', value: true }],
       });
 
       await useCallTypeUtil().callTypeResponse(callInfoData.Caller);
@@ -880,6 +901,7 @@ const ackCancelCallInfo = async (wmsName: string, subject: string, messageBody: 
 // 트래킹 로그 추가하면 해당 내용도 같이 추가해야함
 const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody: AckReqCallInfoListBody) => {
   const kepServerUtil = useKepServerUtil();
+  const plcConnectUtil = usePlcConnectUtil();
   // set Data
   const ackReqCallInfoListBody: AckReqCallInfoListBody = messageBody;
 
@@ -916,15 +938,11 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
     const caller = callInfoData.Caller;
     console.log('caller', caller);
 
-    const targetKey = kepServerUtil.getTargetKey(caller);
-    await kepServerUtil.updateTagMapValues(targetKey, caller, ['Call_Request']);
-
-    const callRequestValue = opcuaUtil.tagMap.get(`${caller}.Call_Request`)?.value;
+    const callRequestValue = (await plcConnectUtil.getTagValue(caller, 'Call_Request')) as boolean;
     if (callRequestValue === true) {
-      await useKepServerUtil().writeSimpleTagValue({
+      await plcConnectUtil.writeTagValue({
         targetFacility: callInfoData.Caller,
-        tagName: 'Call_Response',
-        value: true,
+        tagInfo: [{ tagName: 'Call_Response', value: true }],
       });
       await useCallTypeUtil().callTypeResponse(callInfoData.Caller);
 
@@ -947,10 +965,11 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
         CALL_ID: callInfoData.Call_ID,
         EQP_CALL_ID: callInfoData.Call_ID.slice(-4),
         Call_Type: callInfoData.Call_Type,
+        Cargo_Type: callInfoData.Cargo_Type,
         Caller: callInfoData.Caller,
         Call_Priority: callInfoData.Call_Priority,
         Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
-        updatedTime: new Date(),
+        updatedTime: formatDetailedDateTime(new Date()),
       };
       redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callInfoData.Call_ID, JSON.stringify(infoAckInCallByCallIdData));
 
@@ -1004,18 +1023,14 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
     // const callInfoData = mcsOnlyCallInfoList[i];
     const caller = callInfoData.Caller;
 
-    const targetKey = kepServerUtil.getTargetKey(caller);
-    await kepServerUtil.updateTagMapValues(targetKey, caller, ['Call_Request']);
-
-    const callRequestValue = opcuaUtil.tagMap.get(`${caller}.Call_Request`)?.value;
+    const callRequestValue = (await plcConnectUtil.getTagValue(caller, 'Call_Request')) as boolean;
 
     if (callRequestValue === true) {
       // Line Call Response Off
       // 콜 응답 관련 데이터 쓰기
-      await useKepServerUtil().writeSimpleTagValue({
+      await plcConnectUtil.writeTagValue({
         targetFacility: caller || '',
-        tagName: 'Call_Response',
-        value: false,
+        tagInfo: [{ tagName: 'Call_Response', value: false }],
       });
 
       // CALL INFO 재전송 가능한 경우 해당 내용으로 CALLINFO 재전송
@@ -1079,7 +1094,7 @@ export const wmsCall = async (wmsName: string, messageJson: MbsMqttMesaage) => {
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
   console.log('wmsName 콜 들어올 때', wmsName);
   if (subject === 'CALL_REQUEST') {
-    await callRequest(wmsName, messageJson);
+    await callRequest(wmsName, subject, messageJson);
   } else if (subject === 'ACK_CALL_INFO') {
     await ackCallInfo(wmsName, subject, messageBody as ackCallInfoBody);
   } else if (subject === 'ACK_CANCEL_CALL_INFO') {

@@ -1,8 +1,7 @@
 import { makeMbsMqttHeader, MbsMqttBody, sendMbsMqtt } from '../mqttUtil';
 import { setRemainingAckCommand } from './wmsAck';
 
-
-const wmsName = (process.env.WMS_LIST)?.split(',')[0]
+const wmsName = process.env.WMS_LIST?.split(',')[0];
 export interface SendReqPortStateListBody extends MbsMqttBody {
   Cmd_ID: string;
 }

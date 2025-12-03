@@ -12,32 +12,34 @@ import {
 import { Payload } from '../../lib/tokenUtil';
 import { service as eventHistoryService } from '../../service/common/eventHistoryService';
 import { KepwareWriteParams } from '../../models/kepware/kepware';
+import { SmartConnectorWriteTagParams } from '../../models/smartConnector/smartConnector';
 import { service as kepwareService } from '../../service/kepware/kepwareService';
+import { SendSmartConnectorMqttMessage, useSmartConnectorUtils } from '../../lib/smartConnectorUtils';
 const router = express.Router();
 
-const TABLE_NAME = 'kepware'; // 이벤트 히스토리를 위한 테이블 명
+const TABLE_NAME = 'smartConnector'; // 이벤트 히스토리를 위한 테이블 명
 
 // workOrder 등록
 router.post(
-  '/write',
+  '/write-tag',
   isLoggedIn,
-  async (req: Request<unknown, unknown, Array<KepwareWriteParams>, unknown>, res: Response) => {
+  async (req: Request<unknown, unknown, Array<SmartConnectorWriteTagParams>, unknown>, res: Response) => {
     const logFormat = makeLogFormat(req);
     const tokenUser = (req as { decoded?: Payload }).decoded;
 
     try {
       // 요청 파라미터
-      const paramsList: Array<KepwareWriteParams> = [];
+      const paramsList: Array<SendSmartConnectorMqttMessage> = [];
       for (let i = 0, length = req.body.length; i < length; i++) {
-        const params: KepwareWriteParams = {
-          targetFacility: req.body[i].targetFacility,
-          tagName: req.body[i].tagName,
+        const params: SendSmartConnectorMqttMessage = {
+          facilityName: req.body[i].targetFacility,
+          tag: req.body[i].tagName,
           value: req.body[i].value,
         };
-        if (!params.targetFacility || !params.tagName) {
+        if (!params.facilityName || !params.tag || !params.value) {
           const err = new ErrorClass(
             resCode.BAD_REQUEST_NULLORINVALID,
-            'Null or invalid value (targetFacility, tagName)'
+            'Null or invalid value (facilityName, tag, value)'
           );
 
           const resJson = resError(err);
@@ -46,13 +48,12 @@ router.post(
           return res.status(resJson.status).json(resJson);
         }
 
-        console.log('🚀 ~ router.post ~ paramsList:', paramsList);
         paramsList.push(params);
       }
       logging.REQUEST_PARAM(logFormat);
 
       // 비즈니스 로직 호출
-      const result = await kepwareService.write(paramsList, logFormat);
+      const result = await useSmartConnectorUtils().setTagDataArrayToSmartConnector(paramsList);
 
       // 최종 응답 값 세팅
       const resJson = resSuccess(result, resType.WRITE);

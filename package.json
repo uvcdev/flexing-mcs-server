@@ -1,6 +1,6 @@
 {
   "name": "flexing-mcs-server",
-  "version": "2.0.9",
+  "version": "2.1.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -11,6 +11,7 @@
     "swagger-autogen": "ts-node ./src/swagger/swagger.ts",
     "obfuscate": "javascript-obfuscator ./build --output ./obfuscated --config ./obfuscation-config.js",
     "sync-kepware": "ts-node ./src/scripts/getNodesFromKepware.ts",
+    "sync-smart-connector": "ts-node ./src/scripts/getTagsInfoFromSmartConnector.ts",
     "update-subscription": "ts-node ./src/scripts/updateSubscription.ts",
     "update-input-type": "ts-node ./src/scripts/updateInputType.ts"
   },
@@ -88,8 +89,8 @@
     "@types/pg": "^8.11.2",
     "@types/pg-copy-streams": "^1.2.5",
     "@types/web-push": "^3.6.3",
-    "@typescript-eslint/eslint-plugin": "^8.15.0",
-    "@typescript-eslint/parser": "^8.15.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
     "eslint": "^9.19.0",
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-prettier": "^5.1.3",

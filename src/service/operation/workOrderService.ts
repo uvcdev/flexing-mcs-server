@@ -38,10 +38,11 @@ import dayjs from 'dayjs';
 import { DailyWorkOrderStats, WorkOrderStats, useWorkOrderUtil } from '../../lib/workOrderUtil';
 import { calculateDurationInSeconds } from '../../lib/dateUtil';
 import { useKepServerUtil } from '../../lib/kepServerUtil';
+import { usePlcConnectUtil } from '../../lib/plcConnectUtil';
 
 let accessToken = '';
 const workOrderStatsUtil = useWorkOrderUtil();
-
+const plcConnectUtil = usePlcConnectUtil();
 const service = {
   // insert
   async reg(params: WorkOrderInsertParams, logFormat: LogFormat<unknown>): Promise<InsertedResult> {
@@ -157,6 +158,7 @@ const service = {
         description: null,
         alwaysCallCount: params.ALWAYS_CALL_COUNT,
         triggerCallCount: params.TRIGGER_CALL_COUNT,
+        cargoType: params.CARGO_TYPE,
       };
       workOrderResult = await workOrderDao.insertTransac(transParams, transaction);
       await transaction.commit(); // 트랜잭션 커밋
@@ -236,12 +238,12 @@ const service = {
   },
   async facilityCancel(params: WorkOrderCancelByCodeParams, logFormat: LogFormat<unknown>): Promise<UpdatedResult> {
     let workOrderResult: UpdatedResult;
-    const transaction: Transaction = await sequelize.transaction();
+    // const transaction: Transaction = await sequelize.transaction();
     try {
       // 취소할 작업지시 조회
       const workOrder = await workOrderDao.selectInfoByCode({ code: params.code });
       if (!workOrder) {
-        await transaction.rollback();
+        // await transaction.rollback();
         const errorMessage = `postgres에 workOrder ${params.code} 데이터가 없습니다.`;
         logging.ACTION_DEBUG({
           filename: 'workOrderService.ts.forceCancel',
@@ -257,11 +259,10 @@ const service = {
         });
       }
       if (workOrder.state === 'facilityCanceled') {
-        await transaction.rollback();
-        await useKepServerUtil().writeSimpleTagValue({
+        // await transaction.rollback();
+        await plcConnectUtil.writeTagValue({
           targetFacility: params.linkedEqpId,
-          tagName: 'Call_Cancel_Response',
-          value: true,
+          tagInfo: [{ tagName: 'Call_Cancel_Response', value: true }],
         });
         const errorMessage = `이미 설비취소된 작업지시입니다.`;
         logging.ACTION_DEBUG({
@@ -287,7 +288,7 @@ const service = {
 
       workOrderResult = await workOrderDao.update(workOrderUpdateParmas);
     } catch (err) {
-      await transaction.rollback();
+      // await transaction.rollback();
       return new Promise((resolve, reject) => {
         reject(err);
       });

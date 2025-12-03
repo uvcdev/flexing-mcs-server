@@ -21,12 +21,11 @@ import * as process from 'process';
 import { service as workOrderService } from './service/operation/workOrderService';
 import { makeinitDailyWorkOrderstatsScheduleSet, makeSendServerStatusInterval } from './lib/scheduleUtil';
 
-import opcuaUtil from './lib/opcuaUtil';
 import { logToConsoleAndFile } from './lib/logging';
 
 import { processMcs, startHeartbeat, syncWithWms } from './lib/process/index';
 import { initAllRedisData } from './lib/redis/init';
-import { useKepServerUtil } from './lib/kepServerUtil';
+import { usePlcConnectUtil } from './lib/plcConnectUtil';
 
 dotenv.config();
 
@@ -222,7 +221,7 @@ if (httpsOption.key && httpsOption.cert) {
 // redis 초기 값 설정 (setting 등)
 if (env === 'development') {
   // useRedisUtil().flushall();
-
+  const plcConnectUtil = usePlcConnectUtil();
   Promise.all([])
     .then(async () => {
       // =====🔥MCS 관련🔥=====
@@ -240,15 +239,14 @@ if (env === 'development') {
       // WMS 로직
       await processMcs();
 
-      // =====🔥kepserver 관련🔥=====
+      // =====🔥PLC 관련🔥=====
       // 초기 태그 데이터 초기화
-      await useKepServerUtil().initTagData();
+      await plcConnectUtil.initTagData();
+      // PLC 연결 및 초기화
+      await plcConnectUtil.initPlcConnection();
 
-      // NODE-OPCUA <-> KEPServerex 연결 및 초기화
-      await opcuaUtil.initKepserverex();
-
-      // PLC 데이터 수집 (kepware 상태 불러와서 mqtt 전송)
-      await useKepServerUtil().monitorTagData();
+      // PLC 데이터 수집
+      await plcConnectUtil.monitorTagData();
     })
     .catch((error: Error) => {
       console.log(error);
