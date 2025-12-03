@@ -1,5 +1,7 @@
 import { FacilityAttributes } from '../../models/operation/facility';
+import { useKepServerUtil } from '../kepServerUtil';
 import { logging } from '../logging';
+import opcuaUtil from '../opcuaUtil';
 import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { MqttBranchInfoDataFromAcs } from './wmsBranch';
 
@@ -87,3 +89,29 @@ export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDa
 
 // EQP 도킹 실행 시키는 함수 ( 파트장님이 원하는 위치로 옮기셔도 될 것 같습니다 ! )
 export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => { };
+
+// 데이터 보정 함수
+export const fixEqpData = async () => {
+  const facilityList = (await redisUtil.hgetAllObject<FacilityAttributes>(RedisKeys.InfoFacilityById)) || [];
+
+  // Call_Cancel_Response 데이터 보정
+  for (let i = 0; i < facilityList.length; i++) {
+    const facilityInfo = facilityList[i];
+    const facilitySerial = facilityInfo.serial;
+
+    if (!facilitySerial) {
+      continue;
+    }
+
+    const callCancelRequestValue = opcuaUtil.tagMap.get(`${facilitySerial}.Call_Cancel_Request`)?.value as boolean;
+    const callCancelResponseValue = opcuaUtil.tagMap.get(`${facilitySerial}.Call_Cancel_Response`)?.value as boolean;
+
+    if (callCancelRequestValue === false && callCancelResponseValue === true) {
+      await useKepServerUtil().writeSimpleTagValue({
+        targetFacility: facilitySerial,
+        tagName: 'Call_Cancel_Response',
+        value: false,
+      });
+    }
+  }
+};

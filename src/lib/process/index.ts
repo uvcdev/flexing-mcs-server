@@ -20,6 +20,7 @@ import { useCallResponseUtil } from '../callResponseUtil';
 import { sendCallInfoList, sendReqPortStateList } from './wmsSyncronization';
 import { checkMissionOrder } from '../missionOrderUtil';
 import { checkCallCreate, checkCallRequestCreate } from '../callCheckUtil';
+import { fixEqpData } from './commonUtils';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5;
 const heapUse = () => {
@@ -104,6 +105,9 @@ export const processMcs = async () => {
 
     // pending 된 작업 지시 생성
     await useWorkOrderUtil().createWorkOrder();
+
+    // 데이터 보정
+    await fixEqpData();
 
     // 설비-설비 간에 작업 미생성된 콜에 대해 재판단(Call_Response) 처리
     // 250916 remove remain
