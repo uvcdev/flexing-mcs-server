@@ -578,3 +578,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - ex. PLC_CONN_TYPE=KEP or CONNECTOR, SITE=MBS or UNT
 - MCS PLC 모니터링 제어 API 변경
   '/plc-connectors'
+
+## v3.0.0
+- 신규 MCS 기준 브랜치 ( Kepware , Smart Connector 버전)
