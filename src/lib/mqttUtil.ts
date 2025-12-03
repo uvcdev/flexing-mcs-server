@@ -670,9 +670,12 @@ export const receiveMqtt = (): void => {
                   { tagName: 'Call_Robot_Assigned', value: false },
                   { tagName: 'Call_Response_Count', value: '0' },
                   { tagName: 'Dock_Request', value: false },
+                  { tagName: 'Call_Response_Multi_1', value: false },
+                  { tagName: 'Call_Response_Multi_2', value: false },
+                  { tagName: 'Call_Cancel_Response', value: false },
                 ],
               });
-
+              await useCallTypeUtil().callTypeResponseReset(alwaysOnFacility);
               await plcConnectUtil.writeTagValue({
                 targetFacility: triggerFacility,
                 tagInfo: [
@@ -680,9 +683,12 @@ export const receiveMqtt = (): void => {
                   { tagName: 'Call_Robot_Assigned', value: false },
                   { tagName: 'Call_Response_Count', value: '0' },
                   { tagName: 'Dock_Request', value: false },
+                  { tagName: 'Call_Response_Multi_1', value: false },
+                  { tagName: 'Call_Response_Multi_2', value: false },
+                  { tagName: 'Call_Cancel_Response', value: false },
                 ],
               });
-
+              await useCallTypeUtil().callTypeResponseReset(triggerFacility);
               if (workOrderMode !== 'manual') {
                 await useMultiCallRegisterUtil().hsetWithDecrementCount(
                   RedisKeys.InfoWorkOrderCountBySerial,
