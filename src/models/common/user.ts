@@ -15,6 +15,7 @@ export interface UserAttributes {
   lastLogout: Date | null;
   otherDate: Date;
   auth: 'viewer' | 'staff' | 'admin' | 'system';
+  language: 'ko' | 'en' | 'es';
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -33,6 +34,7 @@ class User extends Model implements UserAttributes {
   public lastLogout!: UserAttributes['lastLogout'];
   public otherDate!: UserAttributes['otherDate'];
   public auth!: UserAttributes['auth'];
+  public language!: UserAttributes['language'];
   public readonly createdAt!: UserAttributes['createdAt'];
   public readonly updatedAt!: UserAttributes['updatedAt'];
   public readonly deletedAt!: UserAttributes['deletedAt'];
@@ -42,6 +44,7 @@ export const UserDefaults = {
   auth: 'staff',
   active: false,
   loginFailCount: 0,
+  language: 'es',
 };
 
 User.init(
@@ -96,6 +99,10 @@ User.init(
       allowNull: false,
       defaultValue: UserDefaults.auth,
     },
+    language: {
+      type: DataTypes.STRING(10),
+      defaultValue: UserDefaults.language,
+    },
   },
   {
     sequelize,
@@ -116,6 +123,7 @@ export interface UserInsertParams {
   mobile: string | null;
   active: boolean;
   auth: 'viewer' | 'staff' | 'admin' | 'system';
+  language: UserAttributes['language'];
 }
 
 // selectList
@@ -153,6 +161,7 @@ export interface UserUpdateParams {
   mobile?: string | null;
   active?: boolean;
   auth?: 'viewer' | 'staff' | 'admin' | 'system';
+  language?: UserAttributes['language'];
 }
 
 // updatePassword
@@ -186,6 +195,6 @@ export interface UserLogoutParams {
 }
 
 // include attributes
-export const UserAttributesInclude = ['id', 'userid', 'name', 'createdAt', 'active', 'auth'];
+export const UserAttributesInclude = ['id', 'userid', 'name', 'createdAt', 'active', 'auth', 'language'];
 
 export default User;

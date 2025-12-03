@@ -554,6 +554,10 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   ```sql
     ALTER TABLE public.users ADD auth varchar(8) DEFAULT 'staff' NULL;
   ```
+  - 언어 컬럼 추가
+  ```sql
+    ALTER TABLE public.users ADD "language" varchar(10) DEFAULT 'es' NULL;
+  ```
 
 - 트래킹 로그 수정
   - AMR_ARRIVE 위치 수정 : 도킹 완료 시, 해당 데이터 On
