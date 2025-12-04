@@ -581,3 +581,11 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 ## v3.0.0
 - 신규 MCS 기준 브랜치 ( Kepware , Smart Connector 버전)
+
+## v3.0.0-ljk
+- WMS ACK 로직
+  - retryCycleInterval 로직 추가
+  - 관련 취소 로직 추가
+
+- token
+  - auth 정보 추가
