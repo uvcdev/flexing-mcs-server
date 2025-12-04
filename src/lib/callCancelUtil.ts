@@ -424,6 +424,7 @@ export const useCallCancelUtil = () => {
         if (preWorkOrderListInfo && preWorkOrderListInfo.count > 0) {
           const preWorkOrderCount = preWorkOrderListInfo.count;
           const preWorkOrderList = preWorkOrderListInfo.workOrderList || [];
+          const removableCmdIds = [];
 
           // 0. MCS가 가지고 있는 Call 정보 중 WMS에 Call_Info도 안보낸 정보 확인
           // 해당 정보는 트래킹 로그도 만들기 전 상태라서 정보 삭제만 하면 된다.
@@ -524,9 +525,93 @@ export const useCallCancelUtil = () => {
               }
 
               redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId);
-              redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
+              // redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
+              removableCmdIds.push(cmdId)
             }
           }
+          // 1-1 추가 Interval 상태에 있는 정보도 삭제 ( 삭제 해주지 않으면 해당 정보를 다시 요청하게 됨 )
+          const intervalCallInfoList =
+            (await redisUtil.hgetAllObject<RemainingAckCommand>(RedisKeys.IntervalCommandForRetryBySubjectCmdId)) || [];
+
+          const samePlcIntervalCallInfoList = intervalCallInfoList.filter(
+            (remainingCallInfo) => remainingCallInfo?.message?.body?.Caller === targetCode
+          );
+
+          if (samePlcIntervalCallInfoList && samePlcIntervalCallInfoList.length > 0) {
+            for (let i = 0, length = samePlcIntervalCallInfoList.length; i < length; i++) {
+              const samePlcIntervalCallInfo = samePlcIntervalCallInfoList[i];
+              const cmdId = samePlcIntervalCallInfo?.message?.body?.Cmd_ID || '';
+              const subjectCmdId = samePlcIntervalCallInfo.subjectCmdId;
+
+              // TrackingLog 취소 반영
+              const recentCallInfo = await redisUtil.hgetObject<RecentCallInfo>(
+                RedisKeys.RecentCallInfoTaskByCmdId,
+                cmdId
+              );
+
+              const recentCallInfoCallId = recentCallInfo?.callId;
+
+              if (recentCallInfoCallId) {
+                const trackingLogSubject = 'MISSION_CANCELED';
+                const trackingLogDetail = 'MISSION_CANCELED';
+                const trackingLogState = 'CANCELED';
+                const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+                  callId: recentCallInfoCallId,
+                  subject: trackingLogSubject,
+                  detail: trackingLogDetail,
+                  state: trackingLogState,
+                  startFacility: null,
+                  transferId: null,
+                  destFacility: null,
+                  assignedRobot: null,
+                  value: targetCode,
+                  description: `Call ID ${recentCallInfoCallId} cancellation successful on EQP ${targetCode}`,
+                  processState: 'CANCELED',
+                };
+                await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', targetCode);
+
+                // workOrder 카운트처리
+                let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+                  RedisKeys.RecentWorkOrderListByFacilitySerial,
+                  targetCode
+                );
+                if (workOrderListInfo) {
+                  const removeWorkOrderByCallId = (targetCallId: string) => {
+                    const workOrderList = workOrderListInfo?.workOrderList || [];
+
+                    // targetCallId와 같은 항목이 있는지 확인
+                    const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
+
+                    if (hasMatchingCallId) {
+                      workOrderListInfo = {
+                        count: (workOrderListInfo?.count || 0) - 1,
+                        workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
+                      };
+                    }
+
+                    return workOrderListInfo;
+                  };
+
+                  const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
+                    removeWorkOrderByCallId(recentCallInfoCallId) ?? {
+                      count: 0,
+                      workOrderList: [],
+                    };
+
+                  redisUtil.hset(
+                    RedisKeys.RecentWorkOrderListByFacilitySerial,
+                    targetCode,
+                    JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+                  );
+                }
+              }
+
+              redisUtil.hdel(RedisKeys.IntervalCommandForRetryBySubjectCmdId, subjectCmdId);
+              // redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
+              removableCmdIds.push(cmdId)
+            }
+          }
+
 
           // 1-2. Abort로 남아있는 경우 삭제
           const abortCallInfoList =
@@ -606,7 +691,8 @@ export const useCallCancelUtil = () => {
               }
 
               redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId);
-              redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
+              // redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
+              removableCmdIds.push(cmdId)
             }
           }
 
@@ -774,8 +860,13 @@ export const useCallCancelUtil = () => {
               );
             }
           }
-        }
+          // RecentCallInfoTaskByCmdId 삭제
+          const setRemovableCmdIds = new Set(removableCmdIds);
 
+          for (const cmdId of setRemovableCmdIds) {
+            redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
+          }
+        }
         // PLC 취소 응답 처리
         await writeCallCancelResponse(targetCode);
         await initResponsePlc(targetCode);
