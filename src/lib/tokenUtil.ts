@@ -7,6 +7,7 @@ export interface Payload {
   id: number | null;
   userid: string | null;
   name: string | null;
+  auth: UserAttributes['auth'] | null;
 }
 
 // payload 확장 인터페이스
@@ -21,6 +22,7 @@ export function makeAccessToken(user: UserAttributes | Payload | null): string {
     id: user && user.id,
     userid: user && user.userid,
     name: user && user.name,
+    auth: user && user.auth,
   };
 
   const accessToken = jwtSign(payload, token.secretKey, token.options);
