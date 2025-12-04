@@ -5,7 +5,7 @@ dotenv.config();
 import { RequestParams } from 'nodemailer/lib/xoauth2';
 import { sendAllHeartbeat } from '../heartbeat/sendHeartbeat';
 import { checkSystemConnectionStatus } from '../heartbeat/checkHeartbeat';
-import { checkReceivedAckCommand, checkRemainingAckCommand } from './wmsAck';
+import { checkIntervalRemainingAckCommand, checkReceivedAckCommand, checkRemainingAckCommand } from './wmsAck';
 import { checkCallInfoForWms, checkCallInfoOnPortTimeout } from './wmsCallInfo';
 import { checkAbortedCommandForRetry, checkCancelCall } from './wmsCommon';
 import { useCallRegisterUtil } from '../callRegisterUtil';
@@ -77,6 +77,9 @@ export const processMcs = async () => {
 
     // ACK 응답 여부 확인 ( ACK )
     await checkRemainingAckCommand();
+
+    // ACK Interval 처리 ( ACK )
+    await checkIntervalRemainingAckCommand();
 
     // Aborted 된 작업 재전송 여부 확인
     await checkAbortedCommandForRetry();

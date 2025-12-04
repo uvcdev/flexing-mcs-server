@@ -104,6 +104,7 @@ export type WmsCommandSetting = {
     timeoutTimeSeconds: number; //  초, defalut: 30
     retryCount: number; // 횟수, defalut: 3
     retryTimeLimit: number; // 분 default: 60
+    retryCycleInterval: number; // 분 default: 5 //  WaitTime과 비슷하게 사용하는 것으로 로직 변경됨
     retryWaitTimeMinutes: number; // 분 default: 5 -> n분 뒤에 재요청  Abort한 응답이 왔을 때, N분 뒤에 창고에 다시 요청하는 로직
     portRetryTimeoutMinutes: number; // 분  default : 15 -> 포트가 N 분동안 응답이 없을 경우에 Call Info 재요청 로직
   };

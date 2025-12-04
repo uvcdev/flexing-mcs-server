@@ -46,6 +46,7 @@ export enum RedisKeys {
   Heartbeat = 'heartbeat', // HEARTBEAT 리스트
   ReceivedAckCommandBySubjectCmdId = 'received_ack_command_by_subject_cmd_id', // MQTT로 받은 WMS 데이터
   RemainingAckCommandBySubjectCmdId = 'remaining_ack_command_by_subject_cmd_id', // MQTT로 WMS에 보낸 데이터 ( ACK 판단 유무 )
+  IntervalCommandForRetryBySubjectCmdId = 'Interval_command_for_retry_by_subject_cmd_id', // ACK 리밋 횟수 초과 시, n 분 뒤에 재전송 할 Command
   AbortedCommandForRetryBySubjectCmdId = 'aborted_command_for_retry_by_subject_cmd_id', // 특정 이유로 n 분 뒤에 재전송 할 Command
   InfoOutCallByCallId = 'info_out_call_by_call_id', // out 설비에서 발생한 콜이 미션 결정지를 가지 않고 바로 창고 포트로 들어가는 경우
   InfoAckOutCallByCallId = 'info_ack_out_call_by_call_id', // out 설비 콜 중 WMS에서 ACK_BRANCH_INFO_REQ 받은 콜

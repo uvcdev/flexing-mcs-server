@@ -19,6 +19,7 @@ const WmsCommandSettingDefaultValue = {
   timeoutTimeSeconds: 300, // 재시도 주기 시간  ( 초 )
   retryCount: 3, // 기본 재시도 알람 기준 횟수
   retryTimeLimit: 60, // 재시도 MAX LIMIT 시간 ( 분 )
+  retryCycleInterval: 5, // 재시도 사이클 타임 (분)
 };
 
 export interface DeletedData {
@@ -119,7 +120,6 @@ export const setReceivedAckCommand = (
   const cmdId = mqttMessage.body.Cmd_ID || null;
   const subject = mqttMessage.header.subject || '';
 
-  // console.log('cmdId', cmdId, 'subject', subject);
   if (!cmdId) {
     logging.ACTION_ERROR({
       filename: 'wmsAck.ts',
@@ -160,6 +160,13 @@ export const deleteRemainingAckCommand = (subjectCmdId: string) => {
   redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId);
 };
 
+// ACK 명령을 입력 받아서 intervalAckCommand 삭제
+export const deleteIntervalAckCommand = (subjectCmdId: string) => {
+  // logging 처리는 이 함수를 사용하는 쪽에서 사용
+  // TODO-ljk) ack 유효성 검사는 로직이 잡히면 추가될 예정
+  redisUtil.hdel(RedisKeys.IntervalCommandForRetryBySubjectCmdId, subjectCmdId);
+};
+
 // ACK 명령을 입력 받아서 remainingAckCommand 삭제
 export const deleteReceivedAckCommand = (subjectCmdId: string) => {
   // logging 처리는 이 함수를 사용하는 쪽에서 사용
@@ -170,32 +177,101 @@ export const deleteReceivedAckCommand = (subjectCmdId: string) => {
 // ACK를 응답 받지 못한 Command 재전송 로직
 // 남아있는 remainingAckCommand 중 setting의 timeoutTimeSeconds 이 지났다면 메세지 재전송
 // count가 setting의 retryCount 이상이 되면 알람 발생 ( 알람 발생 후 후처리가 어떻게 될지 논의 필요 )
-export const checkRemainingAckCommand = async () => {
-  // ACK TEST REDIS 생성용
-  // redisUtil.hset(RedisKeys.RemainingAckCommandBySubjectCmdId, "CALL_INFO-292db679-715f-4aea-a4ae-d5615c5355b2", JSON.stringify({
-  //   count: 0,
-  //   createdTime: new Date(),
-  //   updatedTime: new Date(),
-  //   subjectCmdId: "CALL_INFO-292db679-715f-4aea-a4ae-d5615c5355b2",
-  //   systemName: "MW01",
-  //   systemTopic: "CALL",
-  //   message: {
-  //     "header": {
-  //       "id": "5badb25a-8565-4170-99ea-766fdfca6579",
-  //       "time": "2025.04.15 14:11:53:031",
-  //       "subject": "CALL_INFO"
-  //     },
-  //     "body": {
-  //       "Cmd_ID": "292db679-715f-4aea-a4ae-d5615c5355b2",
-  //       "Call_ID": "MP122025041514300001",
-  //       "Call_Type": "N0961",
-  //       "Caller": "MP12",
-  //       "Call_Quantity": "1",
-  //       "Call_Priority": "99"
-  //     }
-  //   },
-  // }))
+// 기존 로직
+// export const checkRemainingAckCommand = async () => {
+//   // ACK TEST REDIS 생성용
+//   // redisUtil.hset(RedisKeys.RemainingAckCommandBySubjectCmdId, "CALL_INFO-292db679-715f-4aea-a4ae-d5615c5355b2", JSON.stringify({
+//   //   count: 0,
+//   //   createdTime: new Date(),
+//   //   updatedTime: new Date(),
+//   //   subjectCmdId: "CALL_INFO-292db679-715f-4aea-a4ae-d5615c5355b2",
+//   //   systemName: "MW01",
+//   //   systemTopic: "CALL",
+//   //   message: {
+//   //     "header": {
+//   //       "id": "5badb25a-8565-4170-99ea-766fdfca6579",
+//   //       "time": "2025.04.15 14:11:53:031",
+//   //       "subject": "CALL_INFO"
+//   //     },
+//   //     "body": {
+//   //       "Cmd_ID": "292db679-715f-4aea-a4ae-d5615c5355b2",
+//   //       "Call_ID": "MP122025041514300001",
+//   //       "Call_Type": "N0961",
+//   //       "Caller": "MP12",
+//   //       "Call_Quantity": "1",
+//   //       "Call_Priority": "99"
+//   //     }
+//   //   },
+//   // }))
 
+//   const remainingAckCommandList =
+//     (await redisUtil.hgetAllObject<RemainingAckCommand>(RedisKeys.RemainingAckCommandBySubjectCmdId)) || [];
+
+//   const WmsCommandSetting = await redisUtil.hgetObject<WmsCommandSetting>(
+//     RedisKeys.Setting,
+//     RedisSettingKeys.WmsCommandSetting
+//   );
+//   const ackTimeoutTimeSeconds =
+//     Number(WmsCommandSetting?.data.timeoutTimeSeconds) || WmsCommandSettingDefaultValue.timeoutTimeSeconds;
+//   const ackRetryCount = Number(WmsCommandSetting?.data.retryCount) || WmsCommandSettingDefaultValue.retryCount;
+//   const ackRetryTimeLimit =
+//     Number(WmsCommandSetting?.data.retryTimeLimit) || WmsCommandSettingDefaultValue.retryTimeLimit;
+
+//   for (let i = 0; i < remainingAckCommandList.length; i++) {
+//     const remainingAckCommand = remainingAckCommandList[i];
+//     const remainingAckCommandCreatedDate = new Date(remainingAckCommand.createdTime);
+//     const remainingAckCommandUpdatedDate = new Date(remainingAckCommand.updatedTime);
+
+//     // 생성 시간이 ackRetryTimeLimit 이후라면 해당 레디스 데이터 삭제 후 재전송 없앰
+//     if (isCurrentTimeFasterThanAnyMinutesFromTzString(remainingAckCommand.createdTime, ackRetryTimeLimit)) {
+//       const remainingAckCommandKey = remainingAckCommand.subjectCmdId;
+
+//       deleteRemainingAckCommand(remainingAckCommandKey);
+//     }
+
+//     // count가 setting의 retryCount 와 같은 경우 알람 발생
+//     // count보다 넘어가도 정해진 시간동안 계속
+//     if (Number(remainingAckCommand.count) === ackRetryCount + 1 && remainingAckCommand.alarmStatus === false) {
+//       // 알람 발생 - 알람 발생 => 해당 알람 발생 이후 만약 ack가 들어오면 알람 해제를 해줘야함
+//       // TODO - 알람 발생 로직 추가
+
+//       remainingAckCommand.alarmStatus = true;
+//       redisUtil.hset(
+//         RedisKeys.RemainingAckCommandBySubjectCmdId,
+//         remainingAckCommand.subjectCmdId,
+//         JSON.stringify(remainingAckCommand)
+//       );
+//     }
+
+//     // 기준 시간보다 오래 유지되고 있는 경우 retry
+//     // if (isCurrentTimeFasterThanAnySeconds(remainingAckCommandUpdatedDate, ackTimeoutTimeSeconds)) {
+//     if (isCurrentTimeFasterThanAnySecondsFromTzString(remainingAckCommand.updatedTime, ackTimeoutTimeSeconds)) {
+//       // 기존 정보 redis 의 count, time update
+
+//       remainingAckCommand.count++;
+//       // remainingAckCommand.updatedTime = new Date();
+//       remainingAckCommand.updatedTime = formatDetailedDateTime(new Date());
+
+//       remainingAckCommand.message.header.time = formatDetailedDateTime(new Date());
+
+//       redisUtil.hset(
+//         RedisKeys.RemainingAckCommandBySubjectCmdId,
+//         remainingAckCommand.subjectCmdId,
+//         JSON.stringify(remainingAckCommand)
+//       );
+//       // MQTT 메세지 재전송
+//       sendMbsMqtt(
+//         remainingAckCommand.systemTopic,
+//         remainingAckCommand.message.header,
+//         remainingAckCommand.message.body,
+//         remainingAckCommand.systemName
+//       );
+//     }
+//   }
+// };
+
+// 변경 로직 - 2025-12-03
+export const checkRemainingAckCommand = async () => {
   const remainingAckCommandList =
     (await redisUtil.hgetAllObject<RemainingAckCommand>(RedisKeys.RemainingAckCommandBySubjectCmdId)) || [];
 
@@ -214,26 +290,26 @@ export const checkRemainingAckCommand = async () => {
     const remainingAckCommandCreatedDate = new Date(remainingAckCommand.createdTime);
     const remainingAckCommandUpdatedDate = new Date(remainingAckCommand.updatedTime);
 
-    // 생성 시간이 ackRetryTimeLimit 이후라면 해당 레디스 데이터 삭제 후 재전송 없앰
-    if (isCurrentTimeFasterThanAnyMinutesFromTzString(remainingAckCommand.createdTime, ackRetryTimeLimit)) {
-      const remainingAckCommandKey = remainingAckCommand.subjectCmdId;
-
-      deleteRemainingAckCommand(remainingAckCommandKey);
-    }
-
-    // count가 setting의 retryCount 와 같은 경우 알람 발생
-    // count보다 넘어가도 정해진 시간동안 계속
-    if (Number(remainingAckCommand.count) === ackRetryCount + 1 && remainingAckCommand.alarmStatus === false) {
+    // count가 setting의 retryCount 와 같은 경우 n 분뒤에 재전송
+    // Limit Redis 데이터에 담기
+    if (Number(remainingAckCommand.count) === ackRetryCount + 1 || Number(remainingAckCommand.count) > ackRetryCount) {
       // 알람 발생 - 알람 발생 => 해당 알람 발생 이후 만약 ack가 들어오면 알람 해제를 해줘야함
       // TODO - 알람 발생 로직 추가
-      console.log('알람 발생');
+      const remainingAckCommandKey = remainingAckCommand.subjectCmdId;
 
+      remainingAckCommand.count++;
+      // remainingAckCommand.updatedTime = new Date();
+      remainingAckCommand.updatedTime = formatDetailedDateTime(new Date());
+
+      remainingAckCommand.message.header.time = formatDetailedDateTime(new Date());
       remainingAckCommand.alarmStatus = true;
       redisUtil.hset(
-        RedisKeys.RemainingAckCommandBySubjectCmdId,
+        RedisKeys.IntervalCommandForRetryBySubjectCmdId,
         remainingAckCommand.subjectCmdId,
         JSON.stringify(remainingAckCommand)
       );
+
+      deleteRemainingAckCommand(remainingAckCommandKey);
     }
 
     // 기준 시간보다 오래 유지되고 있는 경우 retry
@@ -259,6 +335,49 @@ export const checkRemainingAckCommand = async () => {
         remainingAckCommand.message.body,
         remainingAckCommand.systemName
       );
+    }
+  }
+};
+
+export const checkIntervalRemainingAckCommand = async () => {
+  const IntervalAckCommandList =
+    (await redisUtil.hgetAllObject<RemainingAckCommand>(RedisKeys.IntervalCommandForRetryBySubjectCmdId)) || [];
+
+  const WmsCommandSetting = await redisUtil.hgetObject<WmsCommandSetting>(
+    RedisKeys.Setting,
+    RedisSettingKeys.WmsCommandSetting
+  );
+
+  const ackRetryCycleInterval =
+    Number(WmsCommandSetting?.data.retryCycleInterval) || WmsCommandSettingDefaultValue.retryCycleInterval;
+
+  for (let i = 0; i < IntervalAckCommandList.length; i++) {
+    const intervalAckCommand = IntervalAckCommandList[i];
+    const remainingAckCommandCreatedDate = new Date(intervalAckCommand.createdTime);
+    const remainingAckCommandUpdatedDate = new Date(intervalAckCommand.updatedTime);
+
+    // 기준 시간보다 오래 유지되고 있는 경우 retry
+    if (isCurrentTimeFasterThanAnyMinutesFromTzString(intervalAckCommand.updatedTime, ackRetryCycleInterval)) {
+      // // 기존 정보 redis 의 count, time update
+      const intervalAckCommandKey = intervalAckCommand.subjectCmdId;
+      intervalAckCommand.count = 0;
+      intervalAckCommand.updatedTime = formatDetailedDateTime(new Date());
+      intervalAckCommand.message.header.time = formatDetailedDateTime(new Date());
+
+      redisUtil.hset(
+        RedisKeys.RemainingAckCommandBySubjectCmdId,
+        intervalAckCommandKey,
+        JSON.stringify(intervalAckCommand)
+      );
+      // MQTT 메세지 재전송
+      sendMbsMqtt(
+        intervalAckCommand.systemTopic,
+        intervalAckCommand.message.header,
+        intervalAckCommand.message.body,
+        intervalAckCommand.systemName
+      );
+
+      deleteIntervalAckCommand(intervalAckCommandKey);
     }
   }
 };
