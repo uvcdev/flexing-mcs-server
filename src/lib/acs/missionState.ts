@@ -61,13 +61,17 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     const kepServerUtil = useKepServerUtil();
     const missionStateBody = messageJson.body as MissionStateBody;
     const state = missionStateBody.state;
-    const callId = missionStateBody.mission.split('$')[0];
+
+    // const callId = missionStateBody.mission.split('$')[0];
+    let normalCallId = missionStateBody.mission.split('$')[0];
+    if (normalCallId.split('_').length === 2) {
+      normalCallId = normalCallId.split('_')[0];
+    }
+    const callId = normalCallId;
     const assignAmrName = missionStateBody.assign.robot || '';
     const missionDestination = missionStateBody.missionDestination || '';
     let assignTask = (missionStateBody.assign.task as TrackingLogState) || '';
     let assignState = 'PROCESSING' as TrackingLogState;
-
-    console.log('messageJson!!!!!!!!!!!!!!!!', messageJson);
 
     if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED' || state === 'MISSION_COMPLETED') {
       assignState = 'COMPLETED';
