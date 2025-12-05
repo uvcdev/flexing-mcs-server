@@ -627,3 +627,10 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - ACS -> MCS 설비신호리셋 시 처리 로직 수정
   - 도킹 관련 신호는 내리지 않게 수정
   - 트리거 설비,창고 설비일 경우 조건 로직 추가
+
+## v3.0.1
+
+2025.12.08 유진로봇 FMZ 테스트 버전
+
+- 버전승인: `v3.0.0-ljk`
+- 버전승인: `v3.0.0-ssb`
