@@ -441,7 +441,8 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 ## v1.0.8-ljk
 
-- MCS 동기화 로직 
+- MCS 동기화 로직
+
   - ACK_REQ_PORT_STATE_LIST 기능 추가
   - ACK_REQ_CALL_INFO_LIST 기능 개선
   - edit syncronization Logic - PORT , CALL
@@ -451,13 +452,16 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - edit syncronization Logic - CALL ( CALL_INFO 호출 부 재수정 )
 
 - 재고 없음 로직
-  - 재고 없음 발생 시, 트래킹 로그 물류 상태에 `재고 없음 표시` 
 
-- 창고 취소 로직 
+  - 재고 없음 발생 시, 트래킹 로그 물류 상태에 `재고 없음 표시`
+
+- 창고 취소 로직
+
   - process / index 에 창고 취소 로직 주석 처리
   - call cancel util에 창고 부분 내용 수정
 
 - Dock_Disable 처리 로직
+
   - Dock Disable 신호 감지 처리
 
 - 창고 로직 중 취소로직 내용 수정
@@ -469,6 +473,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 미션 결정지에서 Dock_Disable === False 인 경우에만 진입 가능
 
 - 트래킹 로그 문제 수정
+
   - ABORTED 상태는 다시 조회 가능하도록
   - ACS 작업 취소를 CANCELED 상태로 재변경
   - ACK_CALL_INFO에서 출발지 정보 기입되는 버그수정
@@ -488,26 +493,32 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - 창고 수동 작업 후속 처리
 
 ## v2.0.1
+
 - 멀티콜 코드 주석
 
 ## v2.0.2
+
 - Dock Out Request 부분 수정
   - Dock Out Request 진행 전에 한 번 끄고 다시 키는 로직으로 변경
 
 ## v2.0.3
+
 - HEART BEAT 전송 로직 수정
 
 ## v2.0.4
+
 - BS12 PIO 수정
 
-
 ## v2.0.11
+
 - 현장 코드 수정본 적용
 
 ## v2.1.1
+
 - 2차 이후 국내 수정 진행 사항
 
 - 콜 생성 방식 변경
+
   - callCheckUtil.ts
     - 콜 발생 데이터에 따라, Call Request 생성 여부 판별
   - callRegisterUtil.ts
@@ -516,50 +527,64 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
     - Request 발생, 처리 로직 변경
 
 - 설비 관리 컬럼 추가
+
   - is_wms_port => wms 포트에 위치하는 설비들만 true ( ex WS11 ) MBS 프로젝트만 사용
+
   ```sql
     ALTER TABLE public.facilities ADD is_wms_port bool DEFAULT false NULL;
   ```
 
 - 창고 수동 작업을 처리하기 위해 workOrder Type 데이터 수정
+
   - PendingWorkOrderAttributes 수정
   - McsWorkOrderRequestType 수정
 
 - ACS 작업 취소 시, 미션 결정지 Redis 데이터삭제
 - 창고 취소 로직 버그 수정 ( 확정본 )
 - 미션 결정지 로직 수정 ( 미션 포인트와 연동 )
+
   - IS_MANUAL_MISSION_ORDER 적용
 
 - WMS 동기화
+
   - CALL_LIST 미 호출 예상 부분 수정
   - 창고 수동 작업 지시 누락 내용 추가
 
 - 콜 생성 방식 버그 수정
+
   - SP11 라인 관련 버그 수정 ( Redis 상 동일 CALL 정보 2개 생성 )
   - SP12 라인 관련 버그 수정 ( Tracking Log 상 2배수 생성 )
 
 - 트래킹 로그에 미션 결정지 내용 추가
+
   - 미션 결정지 내용 추가
 
 - WorkOrder 테이블에 CargoType 컬럼 추가
+
   ```sql
     ALTER TABLE public.work_orders ADD cargo_type varchar(20) NULL;
   ```
+
   - CallType이 없는 경우를 대체하기 위함 ( UI에 잘못된 콜타입 정보가 계속 나타남 - Default 값)
 
 - 스페인 시간대로 데이터를 제어하기 위해서 dayjs에 timezone 내용 추가
 
-- User 테이블에 auth 컬럼 추가 
+- User 테이블에 auth 컬럼 추가
+
   - 권한 관리 컬럼 추가
+
   ```sql
     ALTER TABLE public.users ADD auth varchar(8) DEFAULT 'staff' NULL;
   ```
+
   - 언어 컬럼 추가
+
   ```sql
     ALTER TABLE public.users ADD "language" varchar(10) DEFAULT 'es' NULL;
   ```
 
 - 트래킹 로그 수정
+
   - AMR_ARRIVE 위치 수정 : 도킹 완료 시, 해당 데이터 On
   - MISSION_STATE LIST 추가
 
@@ -580,12 +605,25 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   '/plc-connectors'
 
 ## v3.0.0
+
 - 신규 MCS 기준 브랜치 ( Kepware , Smart Connector 버전)
 
 ## v3.0.0-ljk
+
 - WMS ACK 로직
+
   - retryCycleInterval 로직 추가
   - 관련 취소 로직 추가
 
 - token
   - auth 정보 추가
+
+## v3.0.0-ssb
+
+- 미션결정지에서 설비 선택 시 콜타입 비교 로직 수정
+
+  - system === 'WMS'(창고설비) or workOrderMode === 'manual'(수동작업) 일 시 콜타입 비교 안함
+
+- ACS -> MCS 설비신호리셋 시 처리 로직 수정
+  - 도킹 관련 신호는 내리지 않게 수정
+  - 트리거 설비,창고 설비일 경우 조건 로직 추가
