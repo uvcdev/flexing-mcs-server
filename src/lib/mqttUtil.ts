@@ -972,6 +972,19 @@ export const receiveMqtt = (): void => {
                 });
                 return;
               }
+              const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+                RedisKeys.InfoFacilityById,
+                facilitySerial
+              );
+              if (!facilityInfo) {
+                logging.MQTT_ERROR({
+                  title: 'mcs facility-reset',
+                  topic: messageTopic,
+                  message: message,
+                  error: new Error('facilityInfo not found'),
+                });
+                return;
+              }
               const messageJson = JSON.parse(message);
               logging.MQTT_LOG({
                 title: 'mcs facility-reset',
@@ -981,12 +994,6 @@ export const receiveMqtt = (): void => {
               await plcConnectUtil.writeTagValue({
                 targetFacility: facilitySerial,
                 tagInfo: [
-                  { tagName: 'Dock_Signal_Reset', value: true },
-                  { tagName: 'Dock_AMR_Status', value: false },
-                  { tagName: 'Dock_Request', value: false },
-                  { tagName: 'Dock_Request_Charge', value: false },
-                  { tagName: 'Dock_Request_Force', value: false },
-                  { tagName: 'Dock_Out_Request', value: false },
                   { tagName: 'Call_Response', value: false },
                   { tagName: 'Call_Response_Multi_1', value: false },
                   { tagName: 'Call_Response_Multi_2', value: false },
@@ -996,12 +1003,40 @@ export const receiveMqtt = (): void => {
                 ],
               });
               await useCallTypeUtil().callTypeResponseReset(facilitySerial);
-              setTimeout(() => {
-                plcConnectUtil.writeTagValue({
-                  targetFacility: facilitySerial,
-                  tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+
+              if (facilityInfo.isActiveCallTrigger === true) {
+                // 트리거 설비
+                logging.MQTT_LOG({
+                  title: 'mcs facility-reset - active call trigger',
+                  topic: messageTopic,
+                  message: message,
                 });
-              }, 500);
+                if (facilityInfo.system === 'EQP') {
+                  // EQP 설비
+                  // 설비 리셋 후 작업 생길 수 있도록 관련된 Redis 값 컨트롤
+                  // [todo] ljk 20251204
+                } else if (facilityInfo.system === 'WMS') {
+                  // WMS 설비
+                  // 설비 리셋 후 작업 생길 수 있도록 관련된 Redis 값 컨트롤
+                  // 설비 리셋 후 작업 생길 수 있도록 관련된 창고 통신 처리
+                  // [todo] ljk 20251204
+                } else {
+                  logging.ACTION_ERROR({
+                    filename: 'mqttUtil.ts - receiveMqtt',
+                    error: 'mcs facility-reset - active call trigger - system not found',
+                    params: null,
+                    result: false,
+                  });
+                  return;
+                }
+              } else {
+                // 트리거가 아닌 설비
+                logging.MQTT_LOG({
+                  title: 'mcs facility-reset - not active call trigger',
+                  topic: messageTopic,
+                  message: message,
+                });
+              }
             }
           }
 
