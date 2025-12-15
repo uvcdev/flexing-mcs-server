@@ -436,6 +436,32 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
     // hcack = 7 : NG
     // 해당 내용 로깅 처리
     case '7':
+      // 251209 NG case 관련 내용
+      // 콜 진행 정보를 삭제
+      // infoAckInCallByCallId 정보 삭제
+      deleteInfoAckInCallByCallId(callId);
+
+      // 해당 내용은 ABORT 하지 않고 무한 대기함
+      // 사용자 취소 혹은 설비 취소를 진행해야함
+      // 자동 재요청 시, 무한 요청의 늪에 빠질 수 있음
+      const ngTrackingLogSubject = 'ACK_CALL_INFO';
+      const ngTrackingLogDetail = 'ACK_CALL_INFO';
+      const ngTrackingLogState = 'ABORTED' as TrackingLogState;
+      const ngTrackingLogUpdateData: TrackingLogRedisUpdateParams = {
+        callId: callId,
+        subject: ngTrackingLogSubject,
+        detail: ngTrackingLogDetail,
+        state: ngTrackingLogState,
+        startFacility: null,
+        transferId: null,
+        destFacility: null,
+        assignedRobot: null,
+        value: null,
+        description: `Call ID ${callId} received ACK_CALL_INFO from WMS - NG (comment : ${ackComment})`,
+        processState: 'NG',
+      };
+      await editTrackingLogRedis(ngTrackingLogUpdateData, hcack, 'ABORTED', wmsName);
+
       logging.ACTION_ERROR({
         filename: `call.ts - ackCallInfo`,
         error: `[HCACK = ${hcack}] NG error occurred - comment : ${ackComment}`,
