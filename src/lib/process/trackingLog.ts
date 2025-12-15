@@ -464,6 +464,13 @@ export const editTrackingLogRedis = async (
   await trackingLogDao.update(trackingLogUpdateParams);
 
   // item Log insert
+  const nowProcessState = trackingLogUpdateParams.processState;
+
+  let nowResultStatus = resultStatus;
+  if (nowProcessState === 'CANCELED') {
+    nowResultStatus = 'CANCELED';
+  }
+
   const itemLogInsertParams: ItemLogInsertParams = {
     itemCode: null,
     facilityCode: null,
@@ -480,7 +487,7 @@ export const editTrackingLogRedis = async (
     message: trackingLogUpdateData.description ? trackingLogUpdateData.description : null,
     callId: infoTrackingLogByCallId.callId,
     value: value,
-    resultStatus: resultStatus,
+    resultStatus: nowResultStatus,
     createdDateTime: dateNow,
   };
   // Item Log Insert
@@ -643,6 +650,12 @@ export const editAbnormalTrackingLogRedis = async (
   await trackingLogDao.update(trackingLogUpdateParams);
 
   // item Log insert
+  const nowProcessState = trackingLogUpdateParams.processState;
+
+  let nowResultStatus = resultStatus;
+  if (nowProcessState === 'CANCELED') {
+    nowResultStatus = 'CANCELED';
+  }
   const itemLogInsertParams: ItemLogInsertParams = {
     itemCode: null,
     facilityCode: null,
@@ -659,7 +672,7 @@ export const editAbnormalTrackingLogRedis = async (
     message: trackingLogUpdateData.description ? trackingLogUpdateData.description : null,
     callId: infoTrackingLogByCallId.callId,
     value: value,
-    resultStatus: resultStatus,
+    resultStatus: nowResultStatus,
     createdDateTime: dateNow,
   };
   // Item Log Insert

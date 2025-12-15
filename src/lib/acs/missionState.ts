@@ -73,7 +73,12 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     let assignTask = (missionStateBody.assign.task as TrackingLogState) || '';
     let assignState = 'PROCESSING' as TrackingLogState;
 
-    if (state === 'AMR_DEPOSIT_COMPLETED' || state === 'AMR_UNASSIGNED' || state === 'MISSION_COMPLETED') {
+    if (
+      state === 'AMR_DEPOSIT_COMPLETED' ||
+      state === 'AMR_UNASSIGNED' ||
+      state === 'MISSION_COMPLETED' ||
+      state === 'TO_COMPLETED'
+    ) {
       assignState = 'COMPLETED';
     } else if (state === 'MISSION_CANCELED') {
       // assignState = 'ABORTED';

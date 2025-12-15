@@ -589,3 +589,12 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 - token
   - auth 정보 추가
+
+- 트래킹 로그
+  - 도킹 완료 기능 문제 개선
+  - WMS NG case 트래킹 로그 반영
+  - 취소 후 후속 처리 트래킹 로그 반영
+  - 트래킹 로그 state 처리 오류 문제 개선
+
+- CALL TYPE 관련
+  - Call Type 미기입 시, 작업 미생성 ( 우선 WMS에 적용 )

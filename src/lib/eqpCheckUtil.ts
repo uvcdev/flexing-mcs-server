@@ -37,19 +37,16 @@ export const useEqpCheckUtil = () => {
       switch (targetTagInfo.TAG_NAME) {
         case 'Call_Request':
           // 서버 연동을 위한 Call_Request 판단
-          console.log(`Changed Call_Request`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
             const facilitySerial = targetTagInfo.EQ_CODE;
             const timezoneValue = process.env.TIME_ZONE || '';
             const targetKey = targetTagInfo.TAGGROUP
               ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
               : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
-            console.log('3');
             const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributesDeep>(
               RedisKeys.InfoFacilityBySerial,
               facilitySerial
             );
-            console.log('4');
             if (
               facilityInfo &&
               // facilityInfo.system === 'WMS' &&
