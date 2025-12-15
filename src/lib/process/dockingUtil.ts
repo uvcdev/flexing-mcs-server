@@ -897,7 +897,7 @@ export const useDockingUtil = () => {
           if (dockingParams.PORT_ID === paramsSerial) {
             const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
               RedisKeys.InfoTrackingLogByCallId,
-              dockingParams.CALL_ID
+              dockingParams.EQP_CALL_ID
             );
             if (!infoTrackingLogByCallId) {
               logging.ACTION_ERROR({
@@ -921,7 +921,7 @@ export const useDockingUtil = () => {
             const trackingLogState = 'PROCESSING';
             const trackingLogProcessState = 'NORMAL';
             const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-              callId: dockingParams.CALL_ID,
+              callId: dockingParams.EQP_CALL_ID,
               subject: trackingLogSubject,
               detail: trackingLogDetail,
               state: trackingLogState,
