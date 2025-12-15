@@ -83,7 +83,9 @@ export const checkMissionOrder = async () => {
           dockDisableValue === false &&
           dockOutPermitValue === false &&
           dockPermitValue === false &&
-          (sortLinkedFacilityInfo?.system === 'WMS' || CallTypeValue === missionOrderMqttInfo.callType)
+          (sortLinkedFacilityInfo?.system === 'WMS' ||
+            missionOrderMqttInfo.mode === 'manual' ||
+            CallTypeValue === missionOrderMqttInfo.callType)
         ) {
           const missionOrderMqttMessage = {
             EQP_CALL_ID: missionOrderMqttInfo.missionOrderCode.slice(-4),
