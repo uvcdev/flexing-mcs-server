@@ -195,6 +195,13 @@ export const checkCallCreate = async () => {
           const callType = await makeCallType(facilitySerial);
           const createDateTime = timestampToDate(timezoneValue);
 
+          if (
+            callType === ''
+            // && facilityInfo?.system === 'WMS'
+          ) {
+            continue;
+          }
+
           const targetEqpCallInfo: EqpCallStats = {
             // ...targetTagInfo,
             EQ_CODE: facilitySerial,
