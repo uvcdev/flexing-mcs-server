@@ -56,6 +56,7 @@ export interface WorkOrderAttributes {
   triggerCallCount: number | null; // 작업 생성 주체가 되는 설비에 대한 Call_Count
   callPriority: boolean; // 우선순위 여부
   cargoType: string; // 설비에서 발생한 Call Type => 없으면 빈 값 혹은 null 값도 가능
+  cmdId: string;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -91,6 +92,7 @@ class WorkOrder extends Model implements WorkOrderAttributes {
   public triggerCallCount!: WorkOrderAttributes['triggerCallCount'];
   public callPriority!: WorkOrderAttributes['callPriority'];
   public cargoType!: WorkOrderAttributes['cargoType'];
+  public cmdId!: WorkOrderAttributes['cmdId'];
   public readonly createdAt!: WorkOrderAttributes['createdAt'];
   public readonly updatedAt!: WorkOrderAttributes['updatedAt'];
   public readonly deletedAt!: WorkOrderAttributes['deletedAt'];
@@ -178,6 +180,9 @@ WorkOrder.init(
     cargoType: {
       type: DataTypes.STRING(20),
     },
+    cmdId: {
+      type: DataTypes.STRING(40),
+    },
   },
   {
     sequelize,
@@ -210,6 +215,7 @@ export interface WorkOrderInsertParams {
   triggerCallCount: number | null;
   callPriority?: boolean;
   cargoType?: string;
+  cmdId?: string | null;
 }
 export interface ImcsWorkOrderInsertParams {
   newItemId?: number | null;
@@ -225,6 +231,7 @@ export interface ImcsWorkOrderInsertParams {
   ALWAYS_CALL_COUNT?: number;
   TRIGGER_CALL_COUNT: number;
   CARGO_TYPE: string;
+  CMD_ID?: string;
 }
 
 export interface WorkOrderCancelByCodeParams {
@@ -257,6 +264,7 @@ export interface WorkOrderSelectListParams {
   callPriority?: boolean | string | null;
   createdAtFrom?: Date | null;
   createdAtTo?: Date | null;
+  cmdId?: string | null;
   limit?: number;
   offset?: number;
   order?: string;
@@ -323,6 +331,7 @@ export interface WorkOrderUpdateParams {
   triggerCallCount?: number | null;
   callPriority?: boolean | null;
   cargoType?: string | null;
+  cmdId?: string | null;
 }
 
 export interface WorkOrderUpdateByCodeParams {
@@ -349,6 +358,7 @@ export interface WorkOrderUpdateByCodeParams {
   triggerCallCount?: number | null;
   callPriority?: boolean | null;
   cargoType?: string | null;
+  cmdId?: string | null;
 }
 
 // delete
@@ -371,6 +381,7 @@ export interface PendingWorkOrderAttributes {
   triggerCallCount?: number;
   isManualMissionOrder?: boolean;
   cargoType?: string;
+  cmdId?: string;
   // mode?: 'AUTO' | 'MANUAL';
 }
 
@@ -419,6 +430,7 @@ export const WorkOrderAttributesInclude = [
   'triggerCallCount',
   'callPriority',
   'cargoType',
+  'cmdId',
   'createdAt',
 ];
 

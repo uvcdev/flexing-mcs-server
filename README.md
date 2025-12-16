@@ -644,3 +644,12 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 - CALL TYPE 관련
   - Call Type 미기입 시, 작업 미생성 ( 우선 WMS에 적용 )
+
+- WorkOrder 관리
+  - cmdId 컬럼 추가
+  ```sql
+  ALTER TABLE public.work_orders ADD cmd_id varchar(40) NULL;
+  ```
+
+- WMS 로직
+  - rePortWorkOrder 로직 추가 - WMS 중복 포트 배정 

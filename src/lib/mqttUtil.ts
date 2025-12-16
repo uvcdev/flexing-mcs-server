@@ -1057,7 +1057,6 @@ export const receiveMqtt = (): void => {
                 sendMqtt('acs/workorder', message);
               }
             } catch (error) {
-              console.log('왜 안되는지 알려줘야지');
               logging.MQTT_ERROR({
                 title: 'mqtt message error from mcs/workorder',
                 topic: messageTopic,

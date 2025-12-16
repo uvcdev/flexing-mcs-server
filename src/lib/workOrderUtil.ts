@@ -56,6 +56,7 @@ export type McsWorkOrderRequestType = {
   // MODE: 'AUTO' | 'MANUAL'; // 수동 자동 여부인데 창고 수동만 MANUAL 사용
   // 추가 ... 11월 19일 이준규 - 콜 타입 없는 경우를 위한 CargoType 추가
   CARGO_TYPE: string;
+  CMD_ID: string | null;
 };
 
 export type McsPendingWorkOrderRequestType = {
@@ -74,6 +75,7 @@ export type McsPendingWorkOrderRequestType = {
   isManualMissionOrder?: boolean;
   // mode?: 'AUTO' | 'MANUAL';
   cargoType: string;
+  cmdId?: string;
 };
 
 export const useWorkOrderUtil = () => {
@@ -104,6 +106,7 @@ export const useWorkOrderUtil = () => {
             ALWAYS_CALL_COUNT: workOrder.alwaysCallCount,
             TRIGGER_CALL_COUNT: workOrder.triggerCallCount,
             CARGO_TYPE: workOrder.cargoType,
+            CMD_ID: workOrder.cmdId || null,
           };
           const message = JSON.stringify(params);
           const messageJson = JSON.parse(message);
