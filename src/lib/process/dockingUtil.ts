@@ -956,7 +956,10 @@ export const useDockingUtil = () => {
       await plcConnectUtil.writeTagValue({
         targetFacility: params.SERIAL_ID,
         tagInfo: [
-          { tagName: 'Dock_Signal_Reset', value: true },
+          // ssb 20251217 도킹 dock_signal_reset 주석이유
+          // ws24에서 dock_disable ON 되면 충전하고 있던 AMR 나와서 대기위치로 감
+          // 이때 포트에서 진출 하는 순간 dock_signal_reset 신호를 켜면 dock_disable 신호가 꺼짐 (충전기가 다시 활성화 됨됨)
+          // { tagName: 'Dock_Signal_Reset', value: true },
           { tagName: 'Dock_AMR_Status', value: false },
           { tagName: 'Dock_Request', value: false },
           { tagName: 'Dock_Out_Request', value: false },

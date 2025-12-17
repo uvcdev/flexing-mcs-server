@@ -1044,7 +1044,8 @@ export const receiveMqtt = (): void => {
                 });
                 if (facilityInfo.system === 'EQP') {
                   // EQP 설비
-                  // 설비 리셋 후 작업 생길 수 있도록 관련된 Redis 값 컨트롤
+                  // 설비 리셋 후 [RecentWorkOrderListByFacilitySerial] workOrder 상태에 따라 작업 생길 수 있도록 관련된 Redis 값 컨트롤
+                  // 트래킹로그 반영
                   // [todo] ljk 20251204
                 } else if (facilityInfo.system === 'WMS') {
                   // WMS 설비
