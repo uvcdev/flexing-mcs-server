@@ -177,6 +177,90 @@ export const initializeSmartConnectorEventsHandlers = async () => {
     }
   });
 
+  // 'Load_Permit' 태그 변경
+  smartConnectorEventEmitter.on('Load_Permit', (payload) => {
+    console.log('[RECEIVED] Event: Load_Permit, Payload:', payload);
+
+    const targetTagInfo: TagValue | undefined = smartConnector.tagMap.get(`${payload.facilityName}.Load_Permit`);
+    if (!targetTagInfo) {
+      console.log(`[Handler] tagmap에서 ${payload.facilityName}.Load_Permit 태그 없음!`);
+      return;
+    }
+    if (payload.old === 'false' && payload.new === 'true') {
+      // todo: Load_Permit 태그의 새로운 값이 '1'일 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 Load_Permit 발생!`);
+      targetTagInfo.value = true;
+      targetTagInfo.prevValue = false;
+      targetTagInfo.timestamp = Date.now();
+      eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
+    } else if (payload.old === 'true' && payload.new === 'false') {
+      // todo: Load_Permit 태그의 새로운 값이 '0'일 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 Load_Permit 꺼짐!`);
+      targetTagInfo.value = false;
+      targetTagInfo.prevValue = true;
+      targetTagInfo.timestamp = Date.now();
+      eqpCheckUtil.eqpTaskStatus(targetTagInfo, false);
+    } else {
+      console.log(`[Handler] ${payload.facilityName}에서 Load_Permit 변경 없음 처리!`);
+    }
+  });
+
+  // 'UnLoad_Permit' 태그 변경
+  smartConnectorEventEmitter.on('UnLoad_Permit', (payload) => {
+    console.log('[RECEIVED] Event: UnLoad_Permit, Payload:', payload);
+
+    const targetTagInfo: TagValue | undefined = smartConnector.tagMap.get(`${payload.facilityName}.UnLoad_Permit`);
+    if (!targetTagInfo) {
+      console.log(`[Handler] tagmap에서 ${payload.facilityName}.UnLoad_Permit 태그 없음!`);
+      return;
+    }
+    if (payload.old === 'false' && payload.new === 'true') {
+      // todo: UnLoad_Permit 태그의 새로운 값이 '1'일 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 UnLoad_Permit 발생!`);
+      targetTagInfo.value = true;
+      targetTagInfo.prevValue = false;
+      targetTagInfo.timestamp = Date.now();
+      eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
+    } else if (payload.old === 'true' && payload.new === 'false') {
+      // todo: UnLoad_Permit 태그의 새로운 값이 '0'일 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 UnLoad_Permit 꺼짐!`);
+      targetTagInfo.value = false;
+      targetTagInfo.prevValue = true;
+      targetTagInfo.timestamp = Date.now();
+      eqpCheckUtil.eqpTaskStatus(targetTagInfo, false);
+    } else {
+      console.log(`[Handler] ${payload.facilityName}에서 UnLoad_Permit 변경 없음 처리!`);
+    }
+  });
+
+  // 'Trans_Signal_Reset' 태그 변경
+  smartConnectorEventEmitter.on('Trans_Signal_Reset', (payload) => {
+    console.log('[RECEIVED] Event: Trans_Signal_Reset, Payload:', payload);
+
+    const targetTagInfo: TagValue | undefined = smartConnector.tagMap.get(`${payload.facilityName}.Trans_Signal_Reset`);
+    if (!targetTagInfo) {
+      console.log(`[Handler] tagmap에서 ${payload.facilityName}.Trans_Signal_Reset 태그 없음!`);
+      return;
+    }
+    if (payload.old === 'false' && payload.new === 'true') {
+      // todo: Trans_Signal_Reset 태그의 새로운 값이 '1'일 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 Trans_Signal_Reset 발생!`);
+      targetTagInfo.value = true;
+      targetTagInfo.prevValue = false;
+      targetTagInfo.timestamp = Date.now();
+      eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
+    } else if (payload.old === 'true' && payload.new === 'false') {
+      // todo: Trans_Signal_Reset 태그의 새로운 값이 '0'일 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 Trans_Signal_Reset 꺼짐!`);
+      targetTagInfo.value = false;
+      targetTagInfo.prevValue = true;
+      targetTagInfo.timestamp = Date.now();
+      eqpCheckUtil.eqpTaskStatus(targetTagInfo, false);
+    } else {
+      console.log(`[Handler] ${payload.facilityName}에서 Trans_Signal_Reset 변경 없음 처리!`);
+    }
+  });
+
   // 'Dock_Out_Permit' 태그 변경
   smartConnectorEventEmitter.on('Dock_Out_Permit', (payload) => {
     console.log('[RECEIVED] Event: Dock_Out_Permit, Payload:', payload);

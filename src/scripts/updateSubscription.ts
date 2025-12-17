@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import { checkbox, Separator } from '@inquirer/prompts';
+import * as dotenv from 'dotenv';
 
+dotenv.config();
 // 📌 JSON 파일 경로
 const filePath = path.resolve(__dirname, '../../plcTagInfo.json');
 

@@ -40,6 +40,7 @@ import { useCallCancelUtil } from './callCancelUtil';
 import { timestampToDate } from '../lib/usefullToolUtil';
 import { initSmartConnectorMqtt } from './smartConnectorMqttUtil';
 import { usePlcConnectUtil } from './plcConnectUtil';
+import { useLiftCommandUtil } from './liftCommandUtil';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -128,6 +129,7 @@ export enum MqttTopics {
   ImcsEqpDockingRequest = 'imcs/docking/eqp/request',
   ImcsEqpDockingOutRequest = 'imcs/docking/eqp/out_request',
   ImcsWcsDockingRequest = 'imcs/docking/wcs/request',
+  McsLiftCommandRequest = 'mcs/lift_command/acs/request',
   EditFacility = 'edit-facility',
   OnCallPriority = 'acs/on_call_priority',
   FacilityStatus = 'facility_status',
@@ -618,6 +620,7 @@ export const receiveMqtt = (): void => {
                 throw error;
               }
             }
+
             if (topicSplit.length === 4 && topicSplit[1] === 'docking' && topicSplit[3] === 'detach') {
               const targetSystem = topicSplit[2];
 
@@ -635,6 +638,60 @@ export const receiveMqtt = (): void => {
                 console.log('logging.ITEM_LOG', error);
               }
             }
+
+            if (topicSplit.length === 4 && topicSplit[1] === 'lift_command' && topicSplit[3] === 'request') {
+              const messageJson = JSON.parse(message);
+              logging.MQTT_LOG({
+                title: 'acs lift_command request',
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                void itemLogDao.insert(messageJson);
+                useLiftCommandUtil().sendAcsLiftCommandRequest(JSON.parse(message));
+              } catch (error) {
+                console.log('logging.ITEM_LOG', error);
+              }
+            }
+
+            if (topicSplit.length === 4 && topicSplit[1] === 'lift_command' && topicSplit[3] === 'complete') {
+              const messageJson = JSON.parse(message);
+              logging.MQTT_LOG({
+                title: 'acs lift_command complete',
+                topic: messageTopic,
+                message: messageJson,
+              });
+              try {
+                void itemLogDao.insert(messageJson);
+                useLiftCommandUtil().sendAcsLiftCommandComplete(JSON.parse(message));
+              } catch (error) {
+                console.log('logging.ITEM_LOG', error);
+                throw error;
+              }
+            }
+
+            if (topicSplit.length === 4 && topicSplit[1] === 'lift_command' && topicSplit[3] === 'reset') {
+              const messageJson = JSON.parse(message);
+              logging.MQTT_LOG({
+                title: 'acs lift_command reset',
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                void itemLogDao.insert(messageJson);
+                // Complete PLC 쓰기
+                const facilitySerial = messageJson.PORT_ID;
+                await plcConnectUtil.writeTagValue({
+                  targetFacility: facilitySerial,
+                  tagInfo: [{ tagName: 'Trans_Signal_Reset', value: true }],
+                });
+              } catch (error) {
+                console.log('logging.ITEM_LOG', error);
+              }
+            }
+
             //작업지시 진행상황
             if (topicSplit[1] === 'work-order') {
               const messageJson = JSON.parse(message);
@@ -919,6 +976,24 @@ export const receiveMqtt = (): void => {
                 console.log('logging.res-cancel-work-order', error);
               }
             }
+            // 차상 시작할 때 load/unload 판단
+            if (topicSplit.length === 4 && topicSplit[1] === 'load' && topicSplit[3] === 'request') {
+              const targetSystem = topicSplit[2];
+
+              const messageJson = JSON.parse(message);
+              logging.MQTT_LOG({
+                title: 'acs docking request',
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                void itemLogDao.insert(messageJson);
+                useDockingUtil().sendAcsDockingRequest(JSON.parse(message));
+              } catch (error) {
+                console.log('logging.ITEM_LOG', error);
+              }
+            }
           }
 
           // mcs에서 오는 메세지 처리
@@ -1106,8 +1181,8 @@ export const separateMqttMessage = (messageJson: MbsMqttMesaage) => {
   };
 };
 
-// 도킹 관련 mqtt 메세지 발송
-export const sendDockingMqtt = (topic: string, message: string): void => {
+// 도킹, 차상 관련 mqtt 메세지 발송
+export const sendDockingAndLiftMqtt = (topic: string, message: string): void => {
   if (mqttConfig.host !== '') {
     // mqtt host가 등록된 경우에만 발송한다.
     try {

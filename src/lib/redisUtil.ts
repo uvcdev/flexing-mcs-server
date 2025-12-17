@@ -70,6 +70,8 @@ export enum RedisKeys {
   DockingOutRequestBySerialId = 'docking_out_request_by_serial_id', // acs로부터 온 도킹요청정보와 imcs가 acs로 보내는 도킹아웃요청응답정보
   DockingCompleteBySerialId = 'docking_complete_by_serial_id', // acs로부터 온 도킹완료정보와 imcs가 acs로 보내는 도킹완료응답정보
   DockingDetachBySerialId = 'docking_detach_by_serial_id', // acs로부터 온 도킹해제정보와 imcs가 acs로 보내는 도킹해제응답정보
+  LiftCommandRequestBySerialId = 'lift_command_request_by_serial_id', // acs로부터 온 lift 요청정보와 mcs가 acs로 보내는 lift 요청응답정보
+  LiftCommandCompleteBySerialId = 'lift_command_complete_by_serial_id', // acs로부터 온 lift 완료정보와 mcs가 acs로 보내는 lift 완료응답정보
   InfoPlcBySerial = 'info_plc_by_serial',
   // InfoRemainCallById = 'info_remain_call_by_id',   // 250916 remove remain
   InfoWorkOrderCountBySerial = 'info_work_order_count_by_serial', // 멀티콜을 위한 현재 작업 중인 작업 개수

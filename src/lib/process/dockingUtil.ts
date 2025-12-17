@@ -5,7 +5,7 @@ import { KepwareWriteParams } from '../../models/kepware/kepware';
 import { parseAsciiToDecWord, TagValue, useKepServerUtil } from '../kepServerUtil';
 import { logging, logToConsoleAndFile } from '../logging';
 import { MqttTopics } from '../mqttUtil';
-import { sendDockingMqtt } from '../mqttUtil';
+import { sendDockingAndLiftMqtt } from '../mqttUtil';
 import { editTrackingLogRedis } from './trackingLog';
 import { TrackingLogRedisAttributes, TrackingLogRedisUpdateParams } from '../../models/common/trackingLog';
 import { FacilityAttributes, FacilityAttributesDeep } from '../../models/operation/facility';
@@ -134,7 +134,7 @@ export const useDockingUtil = () => {
 
       redisUtil.hset(RedisKeys.DockingRequestBySerialId, facilitySerialId, JSON.stringify(dockingResponse));
 
-      sendDockingMqtt(MqttTopics.ImcsEqpDockingRequest, JSON.stringify(dockingResponse));
+      sendDockingAndLiftMqtt(MqttTopics.ImcsEqpDockingRequest, JSON.stringify(dockingResponse));
 
       // TODO: [트래킹로그]도킹허가 응답에 대한 트래킹로그 저장 (도킹허가 초록표시)
       const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
@@ -240,7 +240,7 @@ export const useDockingUtil = () => {
 
       redisUtil.hset(RedisKeys.DockingOutRequestBySerialId, facilitySerialId, JSON.stringify(dockingOutResponse));
 
-      sendDockingMqtt(MqttTopics.ImcsEqpDockingOutRequest, JSON.stringify(dockingOutResponse));
+      sendDockingAndLiftMqtt(MqttTopics.ImcsEqpDockingOutRequest, JSON.stringify(dockingOutResponse));
 
       // TODO: [트래킹로그]도킹허가 응답에 대한 트래킹로그 저장 (도킹허가 초록표시)
       /*
@@ -332,7 +332,7 @@ export const useDockingUtil = () => {
         RESULT_MESSAGE: '도킹 불가',
       };
 
-      sendDockingMqtt(MqttTopics.ImcsEqpDockingRequest, JSON.stringify(dockingResponse));
+      sendDockingAndLiftMqtt(MqttTopics.ImcsEqpDockingRequest, JSON.stringify(dockingResponse));
 
       redisUtil.hset(RedisKeys.DockingRequestBySerialId, facilitySerialId, JSON.stringify(dockingResponse));
 

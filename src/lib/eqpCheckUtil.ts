@@ -1,26 +1,19 @@
-import { AttributeIds } from 'node-opcua-client';
 import { makeCallType, TagValue, useKepServerUtil } from './kepServerUtil';
-import { logging } from './logging';
-import opcuaUtil from './opcuaUtil';
-import { EqpCallStats, useCallRegisterUtil } from './callRegisterUtil';
 import { useCallRemoveUtil } from './callRemoveUtil';
 import { useDockingUtil } from './process/dockingUtil';
 import { useCallCancelUtil } from './callCancelUtil';
-import { useCallTypeUtil } from './callTypeUtil';
 import { useMultiCallRegisterUtil } from './multiCallRegisterUtil';
-import { useCallResponseUtil } from './callResponseUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { useCallPriorityUtil } from './callPriorityUtil';
 import { sendMqtt } from './mqttUtil';
-import { timestampToDate } from '../lib/usefullToolUtil';
 import { FacilityAttributesDeep } from '../models/operation/facility';
-import { initTrackingLogRedis } from './process/trackingLog';
 import {
   RecentCallCountByFacilitySerialAttributes,
   RecentWorkOrderInfoByFacilitySerialAttributes,
   RecentWorkOrderListByFacilitySerialAttributes,
 } from '../models/operation/workOrder';
 import { usePlcConnectUtil } from './plcConnectUtil';
+import { useLiftCommandUtil } from './liftCommandUtil';
 
 export interface EQP_WCS {
   EQP_ID: string;
@@ -272,6 +265,19 @@ export const useEqpCheckUtil = () => {
           await useDockingUtil().dockingComplete(targetTagInfo);
           break;
 
+        case 'Load_Permit':
+        case 'UnLoad_Permit':
+          console.log(`Changed Load_Permit`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          // Load_Permit 포트에 자재를 올려놓을 때 허가 (투입 작업)
+          // unLoad_Permit 포트에서 자재를 제거할 때 허가 (회수 작업)
+          await useLiftCommandUtil().liftStart(targetTagInfo, targetTagInfo.TAG_NAME === 'Load_Permit' ? 'down' : 'up');
+          break;
+
+        case 'Trans_Signal_Reset':
+          console.log(`Changed Trans_Signal_Reset`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          await useLiftCommandUtil().transSignalReset(targetTagInfo);
+          break;
+
         case 'Dock_Out_Permit':
           console.log(`Changed Dock_Out_Permit`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === true) {
@@ -286,7 +292,7 @@ export const useEqpCheckUtil = () => {
 
         case 'Complete':
           console.log(`Changed Complete`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          // await useCallTypeUtil().callTypeResponse(targetTagInfo);
+          // await useLiftCommandUtil().liftCommandComplete(targetTagInfo);
           await plcConnectUtil.writeTagValue({
             targetFacility: targetTagInfo.EQ_CODE,
             tagInfo: [
