@@ -657,3 +657,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - sendMqttWorkOrderList 기능 추가
   - 현재 진행 중인 call 정보들을 나타내는 기능
   - recent_work_order_list_by_facility_serial 정보도 수정 
+
+  ## v3.0.2
+  - approve v3.0.1-ljk
