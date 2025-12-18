@@ -636,27 +636,40 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 버전승인: `v3.0.0-ssb`
 
 ## v3.0.1-ljk
+
 - 트래킹 로그
+
   - 도킹 완료 기능 문제 개선
   - WMS NG case 트래킹 로그 반영
   - 취소 후 후속 처리 트래킹 로그 반영
   - 트래킹 로그 state 처리 오류 문제 개선
 
 - CALL TYPE 관련
+
   - Call Type 미기입 시, 작업 미생성 ( 우선 WMS에 적용 )
 
 - WorkOrder 관리
+
   - cmdId 컬럼 추가
+
   ```sql
   ALTER TABLE public.work_orders ADD cmd_id varchar(40) NULL;
   ```
 
 - WMS 로직
-  - rePortWorkOrder 로직 추가 - WMS 중복 포트 배정 
+
+  - rePortWorkOrder 로직 추가 - WMS 중복 포트 배정
 
 - sendMqttWorkOrderList 기능 추가
-  - 현재 진행 중인 call 정보들을 나타내는 기능
-  - recent_work_order_list_by_facility_serial 정보도 수정 
 
-  ## v3.0.2
-  - approve v3.0.1-ljk
+  - 현재 진행 중인 call 정보들을 나타내는 기능
+  - recent_work_order_list_by_facility_serial 정보도 수정
+
+## v3.0.2
+
+- approve v3.0.1-ljk
+
+## v3.0.2-ssb
+
+- Dock, facility, callCancelResponse 리셋 API 구현
+- Dock_Disable On/Off시 해당 충전기 활성화/비활성화 로직 구현

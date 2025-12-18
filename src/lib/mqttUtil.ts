@@ -927,8 +927,11 @@ export const receiveMqtt = (): void => {
                 console.log('logging.res-cancel-work-order', error);
               }
             }
-            if (topicSplit.length === 3 && topicSplit[1] === 'dock-signal-reset') {
-              const facilitySerial = topicSplit[2];
+
+            // mcs dock-signal-reset 메세지 처리
+            if (topicSplit.length === 2 && topicSplit[1] === 'dock-signal-reset') {
+              const messageJson = JSON.parse(message);
+              const facilitySerial = messageJson.serial;
               if (!facilitySerial || facilitySerial === '') {
                 logging.MQTT_ERROR({
                   title: 'mcs dock-signal-reset',
@@ -938,7 +941,7 @@ export const receiveMqtt = (): void => {
                 });
                 return;
               }
-              const messageJson = JSON.parse(message);
+
               logging.MQTT_LOG({
                 title: 'mcs dock-signal-reset',
                 topic: messageTopic,
@@ -962,33 +965,61 @@ export const receiveMqtt = (): void => {
                 });
               }, 500);
             }
-            if (topicSplit.length === 3 && topicSplit[1] === 'facility-reset') {
-              const facilitySerial = topicSplit[2];
+
+            // mcs call-cancel-response-reset 메세지 처리
+            if (topicSplit.length === 2 && topicSplit[1] === 'call-cancel-response-reset') {
+              const messageJson = JSON.parse(message);
+              const facilitySerial = messageJson.serial;
               if (!facilitySerial || facilitySerial === '') {
                 logging.MQTT_ERROR({
-                  title: 'mcs facility-reset',
+                  title: 'mcs call-cancel-response-reset',
                   topic: messageTopic,
                   message: message,
                   error: new Error('facilitySerial is required'),
                 });
                 return;
               }
+
+              logging.MQTT_LOG({
+                title: `mcs call-cancel-response-reset ${facilitySerial}`,
+                topic: messageTopic,
+                message: messageJson,
+              });
+              await plcConnectUtil.writeTagValue({
+                targetFacility: facilitySerial,
+                tagInfo: [{ tagName: 'Call_Cancel_Response', value: true }],
+              });
+            }
+
+            // mcs call-signal-reset 메세지 처리
+            if (topicSplit.length === 2 && topicSplit[1] === 'call-signal-reset') {
+              const messageJson = JSON.parse(message);
+              const facilitySerial = messageJson.serial;
+              if (!facilitySerial || facilitySerial === '') {
+                logging.MQTT_ERROR({
+                  title: 'mcs call-signal-reset',
+                  topic: messageTopic,
+                  message: message,
+                  error: new Error('facilitySerial is required'),
+                });
+                return;
+              }
+
               const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
-                RedisKeys.InfoFacilityById,
+                RedisKeys.InfoFacilityBySerial,
                 facilitySerial
               );
               if (!facilityInfo) {
                 logging.MQTT_ERROR({
-                  title: 'mcs facility-reset',
+                  title: `mcs call-signal-reset ${facilitySerial}`,
                   topic: messageTopic,
-                  message: message,
+                  message: messageJson,
                   error: new Error('facilityInfo not found'),
                 });
                 return;
               }
-              const messageJson = JSON.parse(message);
               logging.MQTT_LOG({
-                title: 'mcs facility-reset',
+                title: `mcs call-signal-reset ${facilitySerial}`,
                 topic: messageTopic,
                 message: messageJson,
               });
@@ -998,7 +1029,7 @@ export const receiveMqtt = (): void => {
                   { tagName: 'Call_Response', value: false },
                   { tagName: 'Call_Response_Multi_1', value: false },
                   { tagName: 'Call_Response_Multi_2', value: false },
-                  { tagName: 'Call_Cancel_Response', value: false },
+                  { tagName: 'Call_Cancel_Response', value: true },
                   { tagName: 'Call_Robot_Assigned', value: false },
                   { tagName: 'Call_Response_Count', value: '0' },
                 ],
@@ -1008,13 +1039,14 @@ export const receiveMqtt = (): void => {
               if (facilityInfo.isActiveCallTrigger === true) {
                 // 트리거 설비
                 logging.MQTT_LOG({
-                  title: 'mcs facility-reset - active call trigger',
+                  title: `mcs call-signal-reset - active call trigger ${facilitySerial}`,
                   topic: messageTopic,
-                  message: message,
+                  message: messageJson,
                 });
                 if (facilityInfo.system === 'EQP') {
                   // EQP 설비
-                  // 설비 리셋 후 작업 생길 수 있도록 관련된 Redis 값 컨트롤
+                  // 설비 리셋 후 [RecentWorkOrderListByFacilitySerial] workOrder 상태에 따라 작업 생길 수 있도록 관련된 Redis 값 컨트롤
+                  // 트래킹로그 반영
                   // [todo] ljk 20251204
                 } else if (facilityInfo.system === 'WMS') {
                   // WMS 설비
@@ -1024,7 +1056,7 @@ export const receiveMqtt = (): void => {
                 } else {
                   logging.ACTION_ERROR({
                     filename: 'mqttUtil.ts - receiveMqtt',
-                    error: 'mcs facility-reset - active call trigger - system not found',
+                    error: `mcs call-signal-reset - active call trigger ${facilitySerial} - system not found`,
                     params: null,
                     result: false,
                   });
@@ -1033,9 +1065,9 @@ export const receiveMqtt = (): void => {
               } else {
                 // 트리거가 아닌 설비
                 logging.MQTT_LOG({
-                  title: 'mcs facility-reset - not active call trigger',
+                  title: `mcs call-signal-reset - not active call trigger ${facilitySerial}`,
                   topic: messageTopic,
-                  message: message,
+                  message: messageJson,
                 });
               }
             }
