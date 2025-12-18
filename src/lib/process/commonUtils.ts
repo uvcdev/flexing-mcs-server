@@ -1,3 +1,5 @@
+import { TrackingLogSelectInfoByCallIdParams } from './../../models/common/trackingLog';
+import { RecentWorkOrderListByFacilitySerialAttributes } from './../../models/operation/workOrder';
 import { FacilityAttributes } from '../../models/operation/facility';
 import { useKepServerUtil } from '../kepServerUtil';
 import { logging } from '../logging';
@@ -5,6 +7,8 @@ import opcuaUtil from '../opcuaUtil';
 import { usePlcConnectUtil } from '../plcConnectUtil';
 import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { MqttBranchInfoDataFromAcs } from './wmsBranch';
+import { TrackingLogRedisAttributes } from '../../models/common/trackingLog';
+import { MqttTopics, sendMqtt } from '../mqttUtil';
 
 const redisUtil = useRedisUtil();
 
@@ -117,5 +121,44 @@ export const fixEqpData = async () => {
         tagInfo: [{ tagName: 'Call_Cancel_Response', value: false }],
       });
     }
+  }
+};
+
+// 작업 진행 현황 전달 함수 ( MCS - ACS 프론트 )
+export const sendMqttWorkOrderList = async () => {
+  const recentWorkOrderList =
+    (await redisUtil.hgetAllObject<RecentWorkOrderListByFacilitySerialAttributes>(
+      RedisKeys.RecentWorkOrderListByFacilitySerial
+    )) || [];
+
+  for (let i = 0; i < recentWorkOrderList.length; i++) {
+    const facilitySerial = recentWorkOrderList[i].facilitySerial;
+    const workOrderCount = recentWorkOrderList[i].count;
+    const workOrderList = recentWorkOrderList[i].workOrderList;
+
+    const selectedCallIdList = [];
+    if (workOrderCount > 0) {
+      for (let j = 0; j < workOrderList.length; j++) {
+        const callInfo = workOrderList[j];
+        const callId = callInfo.callId;
+
+        const selectedCallIdInfo = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
+          RedisKeys.InfoTrackingLogByCallId,
+          callId
+        );
+
+        const callIdSubject = selectedCallIdInfo?.subject;
+
+        selectedCallIdList.push({
+          callId,
+          subjcet: callIdSubject || 'BEFORE_REQUEST',
+        });
+      }
+    }
+    const recentWorkOrderInfo = {
+      count: selectedCallIdList.length,
+      callList: selectedCallIdList,
+    };
+    sendMqtt(`${MqttTopics.RecentWorkOrderList}/${facilitySerial}`, JSON.stringify(recentWorkOrderInfo));
   }
 };

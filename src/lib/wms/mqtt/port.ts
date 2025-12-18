@@ -1,7 +1,8 @@
+import { WorkOrderUpdateParams } from './../../../models/operation/workOrder';
 import { TrackingLogRedisUpdateParams } from '../../../models/common/trackingLog';
 import { PendingWorkOrderAttributes } from '../../../models/operation/workOrder';
 import { logging } from '../../logging';
-import { separateMqttMessage, MbsMqttMesaage, makeMbsMqttHeader, MbsMqttBody } from '../../mqttUtil';
+import { separateMqttMessage, MbsMqttMesaage, makeMbsMqttHeader, MbsMqttBody, sendMqtt } from '../../mqttUtil';
 import {
   editTrackingLogRedis,
   InitAbnormalTrackingLogParams,
@@ -43,6 +44,11 @@ interface PortPresenceStateListBody {
   PortList: Array<PortPresenceStateInfo>;
 }
 
+// port 배정 중복 처리
+export type rePortCreateWorkOrderParams = {
+  CALL_ID: string;
+};
+
 const portPresenceStatus = async (
   wmsName: string,
   subject: string,
@@ -64,158 +70,220 @@ const portPresenceStatus = async (
   // 예시 : MW01_출발지(WS14)_도착지(WS11)_202509191101290004
   // [창고명]_[출발지]_[도착지]_번호
   // 재고 순환에 대한 트래킹 로그를 기록 하는 것이 맞는가 ?
-  if (separateCallId.length === 4) {
-    const fromFacilityName = separateCallId[1];
-    const toFacilityName = separateCallId[2];
+  const sameWorkOrder = await workOrderDao.selectInfoByCode({ code: callId });
 
-    if (toFacilityName !== '') {
+  // 같은 workOrder 정보가 없는게 정상
+  if (!sameWorkOrder) {
+    if (separateCallId.length === 4) {
+      const fromFacilityName = separateCallId[1];
+      const toFacilityName = separateCallId[2];
+
+      if (toFacilityName !== '') {
+        const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+          callId: callId,
+          fromFacilityName: fromFacilityName,
+          toFacilityName: toFacilityName,
+          type: 'OUT',
+          // type: 'MISSION',
+          isMissionOrder: false,
+          isManualMissionOrder: false,
+          // mode: 'MANUAL',
+          // mode: 'AUTO',
+          callPriority: '99',
+          // ToDO - CALL TYPE 이 없는데 ...
+          // 해당 영역 어떻게 처리 할 지 고민 필요
+          callType: 'NONE',
+          cargoType: '',
+          eqpName: fromFacilityName,
+          portName: toFacilityName,
+          cmdId: cmdId,
+        };
+
+        const toFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+          RedisKeys.InfoFacilityBySerial,
+          toFacilityName
+        );
+
+        if (toFacilityInfo?.isWmsPort === true) {
+          infoPendingWorkOrder.isManualMissionOrder = true;
+        }
+
+        // pending workOrder 레디스 정보 저장
+        // 트래킹 로그 만들기
+        const initAbnormalTrackingLogParams: InitAbnormalTrackingLogParams = {
+          callId: callId,
+          subjcet: 'WORK_ORDER_CREATED',
+          detail: 'WORK_ORDER_CREATED',
+          state: 'PROCESSING',
+          processState: 'NORMAL',
+          callQuantity: 1,
+          startFacility: fromFacilityName,
+          destFacility: toFacilityName,
+          message: `WMS manual mission created CALLID(${callId})`,
+          location: 'WMS',
+          callType: infoPendingWorkOrder.cargoType,
+        };
+        await initAbnormalTrackingLogRedis(initAbnormalTrackingLogParams);
+
+        redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder));
+      }
+      // [창고명]_[출발지]__번호
+      // 도착지가 없이 Port 배정이 나오는 경우 MCS 알람 발생
+      // MCS -> ACS로 알람 전달 예정 이후 사용자 수동 작업 예정 ( 협의 필요 )
+      else if (toFacilityName !== '') {
+      }
+    }
+    // CALL INFO 받아서 생성된 port presence status
+    else {
+      // infoAckInfoCallByCallId 랑 매칭되는 정보 조회
+      // infoAckInfoCallByCallId 말고 RecentCallInfoTaskByCmdId 로도 가능함
+      const infoAckInCallByCallId =
+        (await redisUtil.hgetObject<InfoAckInCallByCallIdBody>(RedisKeys.InfoAckInCallByCallId, callId)) || null;
+
+      // info ACk Info 가 있는 경우
+      // 창고 정상 입고 시나리오
+
+      // info ACK Info 가 없는 경우
+      // 창고 재반입 시나리오
+      if (!infoAckInCallByCallId) {
+        logging.ACTION_ERROR({
+          filename: `port.ts - portPresenceStatus`,
+          error: `[infoAckInCallByCallId] No matching information found for Call ID(${callId})`,
+          params: null,
+          result: false,
+        });
+
+        return;
+      }
+      // CALLINFO 부터 PORTPRESENCESTATUS 까지 Cmd_ID가 동일해야함
+      // 더블 체크
+      if (cmdId !== infoAckInCallByCallId.Cmd_ID) {
+        logging.ACTION_ERROR({
+          filename: `port.ts - portPresenceStatus`,
+          error: `[Cmd_ID] Cmd ID does not match(REDIS : ${infoAckInCallByCallId.Cmd_ID} , MQTT: ${cmdId})`,
+          params: null,
+          result: false,
+        });
+
+        return;
+      }
       const infoPendingWorkOrder: PendingWorkOrderAttributes = {
         callId: callId,
-        fromFacilityName: fromFacilityName,
-        toFacilityName: toFacilityName,
-        type: 'OUT',
-        // type: 'MISSION',
+        fromFacilityName: portId,
+        toFacilityName: infoAckInCallByCallId.Caller,
+        type: 'IN',
         isMissionOrder: false,
-        isManualMissionOrder: false,
-        // mode: 'MANUAL',
-        // mode: 'AUTO',
-        callPriority: '99',
-        // ToDO - CALL TYPE 이 없는데 ...
-        // 해당 영역 어떻게 처리 할 지 고민 필요
-        callType: 'SKID',
-        cargoType: '1234556',
-        eqpName: fromFacilityName,
-        portName: toFacilityName,
+        callPriority: infoAckInCallByCallId.Call_Priority,
+        callType: infoAckInCallByCallId.Call_Type,
+        cargoType: infoAckInCallByCallId.Cargo_Type || '',
+        eqpName: infoAckInCallByCallId.Caller,
+        portName: portId,
+        cmdId: cmdId,
       };
-
-      const toFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        toFacilityName
-      );
-
-      if (toFacilityInfo?.isWmsPort === true) {
-        infoPendingWorkOrder.isManualMissionOrder = true;
-      }
 
       // pending workOrder 레디스 정보 저장
-      // 트래킹 로그 만들기
-      const initAbnormalTrackingLogParams: InitAbnormalTrackingLogParams = {
-        callId: callId,
-        subjcet: 'WORK_ORDER_CREATED',
-        detail: 'WORK_ORDER_CREATED',
-        state: 'PROCESSING',
-        processState: 'NORMAL',
-        callQuantity: 1,
-        startFacility: fromFacilityName,
-        destFacility: toFacilityName,
-        message: `WMS manual mission created CALLID(${callId})`,
-        location: 'WMS',
-        callType: infoPendingWorkOrder.cargoType,
-      };
-      await initAbnormalTrackingLogRedis(initAbnormalTrackingLogParams);
+      const reinboundIfPortAssignedForFacilityCancelByCallId = await redisUtil.hget(
+        RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId,
+        callId
+      );
+      if (reinboundIfPortAssignedForFacilityCancelByCallId) {
+        // infoPendingWorkOrder.callId = callId + '_canceled';
+        infoPendingWorkOrder.callId = callId;
+        infoPendingWorkOrder.fromFacilityName = portId;
+        infoPendingWorkOrder.toFacilityName = null;
+        infoPendingWorkOrder.type = 'MISSION';
+        infoPendingWorkOrder.isMissionOrder = true;
+        infoPendingWorkOrder.callPriority = infoAckInCallByCallId.Call_Priority;
+        infoPendingWorkOrder.callType = infoAckInCallByCallId.Call_Type;
+        infoPendingWorkOrder.portName = null;
+        infoPendingWorkOrder.eqpName = portId;
+        infoPendingWorkOrder.cmdId = cmdId;
+        redisUtil.hdel(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId);
+      }
 
       redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder));
+
+      // infoAckInCallByCallId 정보 삭제
+      // redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
+      deleteInfoAckInCallByCallId(callId);
+
+      // RecentCallInfoTaskByCmdId 정보 삭제
+      deleteRecentCallInfoTaskByCmdId(cmdId);
+
+      // 물류 로그 저장 - 포트 지정 완료
+      const trackingLogSubject = subject;
+      const trackingLogDetail = 'PORT_ASSIGNED';
+      const trackingLogState = 'PROCESSING';
+      const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+        callId: callId,
+        subject: trackingLogSubject,
+        detail: trackingLogDetail,
+        state: trackingLogState,
+        transferId: null,
+        startFacility: portId,
+        destFacility: infoAckInCallByCallId.Caller,
+        assignedRobot: null,
+        value: portId,
+        description: `Call ID ${callId} received ${subject} from WMS(${wmsName}) - Port assigned: ${portId}`,
+      };
+      await editTrackingLogRedis(trackingLogUpdateData, portId, 'SUCCESS', wmsName);
     }
-    // [창고명]_[출발지]__번호
-    // 도착지가 없이 Port 배정이 나오는 경우 MCS 알람 발생
-    // MCS -> ACS로 알람 전달 예정 이후 사용자 수동 작업 예정 ( 협의 필요 )
-    else if (toFacilityName !== '') {
-    }
-  }
-  // CALL INFO 받아서 생성된 port presence status
-  else {
-    // infoAckInfoCallByCallId 랑 매칭되는 정보 조회
-    // infoAckInfoCallByCallId 말고 RecentCallInfoTaskByCmdId 로도 가능함
-    const infoAckInCallByCallId =
-      (await redisUtil.hgetObject<InfoAckInCallByCallIdBody>(RedisKeys.InfoAckInCallByCallId, callId)) || null;
+  } else {
+    const workOrderCmdId = sameWorkOrder.cmdId;
 
-    // info ACk Info 가 있는 경우
-    // 창고 정상 입고 시나리오
-
-    // info ACK Info 가 없는 경우
-    // 창고 재반입 시나리오
-    if (!infoAckInCallByCallId) {
-      logging.ACTION_ERROR({
-        filename: `port.ts - portPresenceStatus`,
-        error: `[infoAckInCallByCallId] No matching information found for Call ID(${callId})`,
-        params: null,
-        result: false,
-      });
-
+    if (cmdId === workOrderCmdId) {
+      // 에러로 빼야할 지 어떻게 할 지 고민 중
+      console.log(`이미 처리된 콜 ID 입니다. callId : ${callId}, cmdId : ${cmdId}`);
       return;
     }
+    // cmdId !== workOrderCmdId
+    // wms 입장에서 가져가라고 재요청하는 로직
+    else {
+      // 2025-12-15 출발, 도착지 정보가 변경되서는 안된다.
 
-    // CALLINFO 부터 PORTPRESENCESTATUS 까지 Cmd_ID가 동일해야함
-    // 더블 체크
-    if (cmdId !== infoAckInCallByCallId.Cmd_ID) {
-      logging.ACTION_ERROR({
-        filename: `port.ts - portPresenceStatus`,
-        error: `[Cmd_ID] Cmd ID does not match(REDIS : ${infoAckInCallByCallId.Cmd_ID} , MQTT: ${cmdId})`,
-        params: null,
-        result: false,
-      });
+      // workOrder 재생성 가능 상태
+      // from 작업 중 취소 = canceled1
+      // amr 할당 전 취소 = forceCanceled
+      const reCreateWorkOrderStates = ['canceled1', 'failed1', 'userCanceled', 'forceCanceled', 'facilityCanceled'];
+      const workOrderState = sameWorkOrder.state;
 
-      return;
+      if (reCreateWorkOrderStates.includes(workOrderState)) {
+        // work 정보 수정
+        const workOrderUpdateParams: WorkOrderUpdateParams = {
+          id: sameWorkOrder.id,
+          state: 'reregistered',
+          fromAmrId: null,
+          cancelDate: null,
+        };
+
+        const updatedResult = await workOrderDao.update(workOrderUpdateParams);
+
+        // reWorkOrder acs에 전송
+        if (updatedResult && updatedResult.updatedCount > 0) {
+          const infoRePortCreateWorkOrder: rePortCreateWorkOrderParams = {
+            CALL_ID: callId,
+          };
+
+          const messageTopic = 'acs/reportworkorder';
+          const message = JSON.stringify(infoRePortCreateWorkOrder);
+          const messageJson = JSON.parse(message);
+
+          try {
+            sendMqtt(messageTopic, message);
+          } catch (err) {
+            logging.MQTT_ERROR({
+              title: 'mqtt message error',
+              topic: messageTopic,
+              message: messageJson,
+              error: err,
+            });
+          }
+        }
+      } else {
+        console.log(`재생성 불가능 상태입니다. callId : ${callId}, state : ${sameWorkOrder.state}`);
+        return;
+      }
     }
-
-    const infoPendingWorkOrder: PendingWorkOrderAttributes = {
-      callId: callId,
-      fromFacilityName: portId,
-      toFacilityName: infoAckInCallByCallId.Caller,
-      type: 'IN',
-      isMissionOrder: false,
-      callPriority: infoAckInCallByCallId.Call_Priority,
-      callType: infoAckInCallByCallId.Call_Type,
-      cargoType: infoAckInCallByCallId.Cargo_Type || '',
-      eqpName: infoAckInCallByCallId.Caller,
-      portName: portId,
-    };
-
-    // pending workOrder 레디스 정보 저장
-
-    const reinboundIfPortAssignedForFacilityCancelByCallId = await redisUtil.hget(
-      RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId,
-      callId
-    );
-    if (reinboundIfPortAssignedForFacilityCancelByCallId) {
-      infoPendingWorkOrder.callId = callId + '_canceled';
-      infoPendingWorkOrder.fromFacilityName = portId;
-      infoPendingWorkOrder.toFacilityName = null;
-      infoPendingWorkOrder.type = 'MISSION';
-      infoPendingWorkOrder.isMissionOrder = true;
-      infoPendingWorkOrder.callPriority = infoAckInCallByCallId.Call_Priority;
-      infoPendingWorkOrder.callType = infoAckInCallByCallId.Call_Type;
-      infoPendingWorkOrder.portName = null;
-      infoPendingWorkOrder.eqpName = portId;
-      redisUtil.hdel(RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId, callId);
-    }
-
-    redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder));
-
-    // infoAckInCallByCallId 정보 삭제
-    // redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, callId)
-    deleteInfoAckInCallByCallId(callId);
-
-    // RecentCallInfoTaskByCmdId 정보 삭제
-    deleteRecentCallInfoTaskByCmdId(cmdId);
-
-    // 물류 로그 저장 - 포트 지정 완료
-    const trackingLogSubject = subject;
-    const trackingLogDetail = 'PORT_ASSIGNED';
-    const trackingLogState = 'PROCESSING';
-    const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-      callId: callId,
-      subject: trackingLogSubject,
-      detail: trackingLogDetail,
-      state: trackingLogState,
-      transferId: null,
-      startFacility: portId,
-      destFacility: infoAckInCallByCallId.Caller,
-      assignedRobot: null,
-      value: portId,
-      description: `Call ID ${callId} received ${subject} from WMS(${wmsName}) - Port assigned: ${portId}`,
-    };
-    await editTrackingLogRedis(trackingLogUpdateData, portId, 'SUCCESS', wmsName);
   }
 };
 

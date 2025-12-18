@@ -136,8 +136,10 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
             // targetCallId와 같은 항목이 있는지 확인
             const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
 
-            if (hasMatchingCallId) {
+            if (hasMatchingCallId && !!workOrderListInfo?.facilitySerial && facilityInfo) {
               workOrderListInfo = {
+                facilitySerial: workOrderListInfo?.facilitySerial,
+                facilityInfo: facilityInfo,
                 count: (workOrderListInfo?.count || 0) - 1,
                 workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
               };
@@ -148,6 +150,8 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
 
           const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
             removeWorkOrderByCallId(callId) ?? {
+              facilitySerial: facilitySerial,
+              facilityInfo: facilityInfo as FacilityAttributes,
               count: 0,
               workOrderList: [],
             };
@@ -187,6 +191,8 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
           }
 
           const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+            facilitySerial: facilitySerial,
+            facilityInfo: facilityInfo as FacilityAttributes,
             count: workOrderListInfo.count,
             workOrderList: workOrderListInfo.workOrderList,
           };

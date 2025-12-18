@@ -48,6 +48,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, WorkOrderInse
       alwaysCallCount: req.body.alwaysCallCount,
       triggerCallCount: req.body.triggerCallCount,
       cargoType: req.body.cargoType,
+      cmdId: req.body.cmdId,
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -99,6 +100,7 @@ router.get(
         itemId: req.query.itemId,
         state: req.query.state,
         isCLosed: req.query.isCLosed,
+        cmdId: req.query.cmdId,
         limit: Number(req.query.limit || 'NaN'),
         offset: Number(req.query.offset || 'NaN'),
         order: req.query.order,
@@ -224,6 +226,7 @@ router.put(
         alwaysCallCount: req.body.alwaysCallCount,
         triggerCallCount: req.body.triggerCallCount,
         cargoType: req.body.cargoType,
+        cmdId: req.body.cmdId,
       };
       logging.REQUEST_PARAM(logFormat);
 

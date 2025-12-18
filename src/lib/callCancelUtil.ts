@@ -412,7 +412,7 @@ export const useCallCancelUtil = () => {
           params: null,
           result: true,
         });
-        return;
+        // return;
       }
 
       if (cancelType === 'EQP_TO_WMS') {
@@ -435,6 +435,8 @@ export const useCallCancelUtil = () => {
 
           const removeBeforeRequestRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
           {
+            facilitySerial: targetCode,
+            facilityInfo: facilityInfo,
             count: notBeforeRequestWorkOrderCount,
             workOrderList: notBeforeRequestWorkOrderList,
           };
@@ -502,6 +504,8 @@ export const useCallCancelUtil = () => {
 
                     if (hasMatchingCallId) {
                       workOrderListInfo = {
+                        facilitySerial: targetCode,
+                        facilityInfo: facilityInfo,
                         count: (workOrderListInfo?.count || 0) - 1,
                         workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
                       };
@@ -512,6 +516,8 @@ export const useCallCancelUtil = () => {
 
                   const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
                     removeWorkOrderByCallId(recentCallInfoCallId) ?? {
+                      facilitySerial: targetCode,
+                      facilityInfo: facilityInfo,
                       count: 0,
                       workOrderList: [],
                     };
@@ -584,6 +590,8 @@ export const useCallCancelUtil = () => {
 
                     if (hasMatchingCallId) {
                       workOrderListInfo = {
+                        facilitySerial: targetCode,
+                        facilityInfo: facilityInfo,
                         count: (workOrderListInfo?.count || 0) - 1,
                         workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
                       };
@@ -594,6 +602,8 @@ export const useCallCancelUtil = () => {
 
                   const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
                     removeWorkOrderByCallId(recentCallInfoCallId) ?? {
+                      facilitySerial: targetCode,
+                      facilityInfo: facilityInfo,
                       count: 0,
                       workOrderList: [],
                     };
@@ -668,6 +678,8 @@ export const useCallCancelUtil = () => {
 
                     if (hasMatchingCallId) {
                       workOrderListInfo = {
+                        facilitySerial: targetCode,
+                        facilityInfo: facilityInfo,
                         count: (workOrderListInfo?.count || 0) - 1,
                         workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
                       };
@@ -678,6 +690,8 @@ export const useCallCancelUtil = () => {
 
                   const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
                     removeWorkOrderByCallId(recentCallInfoCallId) ?? {
+                      facilitySerial: targetCode,
+                      facilityInfo: facilityInfo,
                       count: 0,
                       workOrderList: [],
                     };
@@ -758,6 +772,8 @@ export const useCallCancelUtil = () => {
 
                     if (hasMatchingCallId) {
                       workOrderListInfo = {
+                        facilitySerial: targetCode,
+                        facilityInfo: facilityInfo,
                         count: (workOrderListInfo?.count || 0) - 1,
                         workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
                       };
@@ -768,6 +784,8 @@ export const useCallCancelUtil = () => {
 
                   const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
                     removeWorkOrderByCallId(selectedCallId) ?? {
+                      facilitySerial: targetCode,
+                      facilityInfo: facilityInfo,
                       count: 0,
                       workOrderList: [],
                     };

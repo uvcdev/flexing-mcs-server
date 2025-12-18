@@ -101,6 +101,12 @@ const dao = {
         state: params.state, // '=' 검색
       };
     }
+    if (params.cmdId) {
+      setQuery.where = {
+        ...setQuery.where,
+        cmdId: params.cmdId, // '=' 검색
+      };
+    }
     if (params.createdAtFrom || params.createdAtTo) {
       if (params.createdAtFrom && params.createdAtTo) {
         setQuery.where = {
@@ -347,7 +353,6 @@ const dao = {
   },
   selectInfoByFacilityId(params: WorkOrderSelectInfoByFacilityIdParams): Promise<WorkOrderAttributes | null> {
     return new Promise((resolve, reject) => {
-
       const setQuery: any = {
         state: {
           [Op.in]: [
@@ -447,7 +452,9 @@ const dao = {
         });
     });
   },
-  selectInfoByTriggerCallCount(params: WorkOrderSelectInfoByTriggerCallCountParams): Promise<WorkOrderAttributes | null> {
+  selectInfoByTriggerCallCount(
+    params: WorkOrderSelectInfoByTriggerCallCountParams
+  ): Promise<WorkOrderAttributes | null> {
     return new Promise((resolve, reject) => {
       const setQuery: WorkOrderSelectListQuery = {};
 
