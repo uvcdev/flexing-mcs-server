@@ -673,3 +673,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 - Dock, facility, callCancelResponse 리셋 API 구현
 - Dock_Disable On/Off시 해당 충전기 활성화/비활성화 로직 구현
+
+## v3.0.3
+
+- approve v3.0.2-ssb
