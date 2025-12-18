@@ -63,39 +63,39 @@ export const processMcs = async () => {
     //   return;
     // }
     // const dryrunMode = dryrunSetting.data.mode || 'normal';
-
-    // if (counter % 5 === 0) {
-    //   sendAllHeartbeat(); // wms heartbeat 전송 ( n초마다 실행 )
-    // }
-    // 현재 진행 중인 물류 로그 전송
-    await sendTrackingLogs();
-
-    // WMS 관련 프로세스
-    // 수집한 ack 데이터 처리 ( ACK )
-    await checkReceivedAckCommand();
-
-    // ACK 응답 여부 확인 ( ACK )
-    await checkRemainingAckCommand();
-
-    // Aborted 된 작업 재전송 여부 확인
-    await checkAbortedCommandForRetry();
-
-    // checkCallInfoOnPortTimeout : ACK_CALL_INFO를 받았지만, PORT 배정이 오래동안 안되면 재요청
-    await checkCallInfoOnPortTimeout();
-
-    // 콜 취소 요청 들어 왔을 때 처리 로직
-    // cancel call 재정의
-    // await checkCancelCall();
-
-    // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
-    // 1. 창고(반출) -> 설비(입고) - CALLINFO는 창고 기준 반출만 사용한다.
-    await checkCallInfoForWms();
-    // 2. 창고(반입) -> 설비(반출) - BRANCH_INFO_REQ 는 창고 기준 반입만 사용한다. ( 창고 반입은 모두 미션 결정지 ) - 미션결정지 이동
-    await checkMissionBranchInfoReqForWms();
-    // 3. 창고(반입) -> 설비(반출) - 설비에서 창고로 바로 이동할 작업 지시 생성
-    await checkOutBranchInfoReqForWms();
-    // WMS 관련 프로세스 끝
-
+    /*
+        // if (counter % 5 === 0) {
+        //   sendAllHeartbeat(); // wms heartbeat 전송 ( n초마다 실행 )
+        // }
+        // 현재 진행 중인 물류 로그 전송
+        await sendTrackingLogs();
+    
+        // WMS 관련 프로세스
+        // 수집한 ack 데이터 처리 ( ACK )
+        await checkReceivedAckCommand();
+    
+        // ACK 응답 여부 확인 ( ACK )
+        await checkRemainingAckCommand();
+    
+        // Aborted 된 작업 재전송 여부 확인
+        await checkAbortedCommandForRetry();
+    
+        // checkCallInfoOnPortTimeout : ACK_CALL_INFO를 받았지만, PORT 배정이 오래동안 안되면 재요청
+        await checkCallInfoOnPortTimeout();
+    
+        // 콜 취소 요청 들어 왔을 때 처리 로직
+        // cancel call 재정의
+        // await checkCancelCall();
+    
+        // 작업지시 생성함수 ( beforeCreatedWorkOrderCalls )
+        // 1. 창고(반출) -> 설비(입고) - CALLINFO는 창고 기준 반출만 사용한다.
+        await checkCallInfoForWms();
+        // 2. 창고(반입) -> 설비(반출) - BRANCH_INFO_REQ 는 창고 기준 반입만 사용한다. ( 창고 반입은 모두 미션 결정지 ) - 미션결정지 이동
+        await checkMissionBranchInfoReqForWms();
+        // 3. 창고(반입) -> 설비(반출) - 설비에서 창고로 바로 이동할 작업 지시 생성
+        await checkOutBranchInfoReqForWms();
+        // WMS 관련 프로세스 끝
+    */
     // Call_Request ON 인 경우 실시간 조회해서 작업 생성
     await useCallRegisterUtil().callRegister();
     await checkCallRequestCreate();

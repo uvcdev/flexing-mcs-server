@@ -231,13 +231,13 @@ if (env === 'development') {
       // 설비 정보 동기화
 
       // WMS 정보 동기화
-      syncWithWms();
+      // syncWithWms();
 
       // HeartBeat 생성 함수
       await startHeartbeat();
 
       // WMS 로직
-      // await processMcs();
+      await processMcs();
 
       // =====🔥PLC 관련🔥=====
       // 초기 태그 데이터 초기화

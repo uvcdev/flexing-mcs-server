@@ -577,3 +577,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 ## v2.2.2
 - 버전승인 v2.2.1-cyk
+
+## v2.2.3
+- 버전승인 v2.2.2

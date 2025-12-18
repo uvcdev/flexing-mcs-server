@@ -1,4 +1,4 @@
-FROM node:18.12.1-alpine3.16 as builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ RUN npx tsc
 # RUN pnpm build
 
 # ==== 결과 이미지 생성
-FROM node:18.12.1-alpine3.16 as final
+FROM node:20-alpine AS final
 WORKDIR /app
 # 빌드용 이미지에서 결과 이미지로 복사 (소스코드)
 COPY --from=builder /app/package*.json ./
