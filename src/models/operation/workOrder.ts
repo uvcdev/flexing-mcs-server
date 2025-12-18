@@ -1,6 +1,6 @@
 import { Model, DataTypes, WhereOptions, Order } from 'sequelize';
 import { sequelize } from '../sequelize';
-import { FacilityAttributesDeep } from './facility';
+import { FacilityAttributes, FacilityAttributesDeep } from './facility';
 import { ItemAttributes } from './item';
 import { AmrAttributes } from '../../models/common/amr';
 import { TagValue } from '../../lib/kepServerUtil';
@@ -391,6 +391,8 @@ export interface RecentWorkOrderInfoByFacilitySerialAttributes {
 }
 
 export interface RecentWorkOrderListByFacilitySerialAttributes {
+  facilitySerial: string;
+  facilityInfo: FacilityAttributes;
   count: number;
   workOrderList: Array<RecentWorkOrderInfoByFacilitySerialAttributes>;
 }

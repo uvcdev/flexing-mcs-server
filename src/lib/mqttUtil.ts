@@ -132,6 +132,7 @@ export enum MqttTopics {
   EditFacility = 'edit-facility',
   OnCallPriority = 'acs/on_call_priority',
   FacilityStatus = 'facility_status',
+  RecentWorkOrderList = 'recent_work_order_list',
 }
 
 export interface MbsMqttHeader {

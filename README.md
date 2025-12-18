@@ -653,3 +653,7 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 - WMS 로직
   - rePortWorkOrder 로직 추가 - WMS 중복 포트 배정 
+
+- sendMqttWorkOrderList 기능 추가
+  - 현재 진행 중인 call 정보들을 나타내는 기능
+  - recent_work_order_list_by_facility_serial 정보도 수정 

@@ -110,6 +110,8 @@ export const checkCallRequestCreate = async () => {
           if (!RecentWorkOrderListByFacilityInfo) {
             // 해당 정보가 없을 경우 신규 등록
             const recentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+              facilitySerial: facilitySerial,
+              facilityInfo: facilityInfo,
               count: 1,
               workOrderList: [workOrderInfo],
             };
@@ -125,6 +127,8 @@ export const checkCallRequestCreate = async () => {
               RecentWorkOrderListByFacilityInfo.workOrderList;
             newWorkOrderList.push(workOrderInfo);
             const recentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+              facilitySerial: facilitySerial,
+              facilityInfo: facilityInfo,
               count: newCount,
               workOrderList: newWorkOrderList,
             };

@@ -391,6 +391,10 @@ export const useCallRegisterUtil = () => {
                       count: workOrderListInfo.count,
                       // eslint-disable-next-line prettier/prettier
                       workOrderList: workOrderListInfo.workOrderList,
+                      // eslint-disable-next-line prettier/prettier
+                      facilitySerial: targetCode,
+                      // eslint-disable-next-line prettier/prettier
+                      facilityInfo: facilityInfo,
                     };
 
                     redisUtil.hset(

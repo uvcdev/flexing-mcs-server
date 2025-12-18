@@ -152,6 +152,8 @@ export const useWorkOrderUtil = () => {
           });
 
           const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+            facilitySerial: workOrder.eqpName,
+            facilityInfo: facilityInfo as FacilityAttributes,
             count: workOrderListInfo?.count || 0,
             workOrderList: workOrderList,
           };
