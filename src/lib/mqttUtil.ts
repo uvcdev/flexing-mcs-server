@@ -30,7 +30,7 @@ import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/w
 import { useDockingUtil } from './process/dockingUtil';
 import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
 import { TagValue, useKepServerUtil } from './kepServerUtil';
-import { routeMissionOrderMqttMessage } from './process/commonUtils';
+import { checkCallSignalResetWorkOrder } from './process/commonUtils';
 import { FacilityAttributes } from '../models/operation/facility';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { service as facilityService } from '../service/operation/facilityService';
@@ -1037,31 +1037,7 @@ export const receiveMqtt = (): void => {
               await useCallTypeUtil().callTypeResponseReset(facilitySerial);
 
               if (facilityInfo.isActiveCallTrigger === true) {
-                // 트리거 설비
-                logging.MQTT_LOG({
-                  title: `mcs call-signal-reset - active call trigger ${facilitySerial}`,
-                  topic: messageTopic,
-                  message: messageJson,
-                });
-                if (facilityInfo.system === 'EQP') {
-                  // EQP 설비
-                  // 설비 리셋 후 [RecentWorkOrderListByFacilitySerial] workOrder 상태에 따라 작업 생길 수 있도록 관련된 Redis 값 컨트롤
-                  // 트래킹로그 반영
-                  // [todo] ljk 20251204
-                } else if (facilityInfo.system === 'WMS') {
-                  // WMS 설비
-                  // 설비 리셋 후 작업 생길 수 있도록 관련된 Redis 값 컨트롤
-                  // 설비 리셋 후 작업 생길 수 있도록 관련된 창고 통신 처리
-                  // [todo] ljk 20251204
-                } else {
-                  logging.ACTION_ERROR({
-                    filename: 'mqttUtil.ts - receiveMqtt',
-                    error: `mcs call-signal-reset - active call trigger ${facilitySerial} - system not found`,
-                    params: null,
-                    result: false,
-                  });
-                  return;
-                }
+                await checkCallSignalResetWorkOrder(messageTopic, messageJson, facilityInfo);
               } else {
                 // 트리거가 아닌 설비
                 logging.MQTT_LOG({
