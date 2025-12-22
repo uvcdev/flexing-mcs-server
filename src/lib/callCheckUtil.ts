@@ -15,16 +15,16 @@ const redisUtil = useRedisUtil();
 // Call Request를 보낼 지, 말 지 판단하는 함수
 export const checkCallRequestCreate = async () => {
   // recentCallCountByFacilitySerial : 설비의 CallRequest, Multi1, Multi2 신호 값 on 여부 판단 레디스
-  const recentCallCountByFacilitySerialList =
+  const recentCallRequestByFacilitySerialList =
     (await redisUtil.hgetAllObject<RecentCallCountByFacilitySerialAttributes>(
-      RedisKeys.RecentCallCountByFacilitySerial
+      RedisKeys.RecentCallRequestByFacilitySerial
     )) || [];
 
   // 설비에서 on / off가 있었던 설비들 ( isActiveCallTrigger === true 설비들 ) 반복
-  for (let i = 0, length = recentCallCountByFacilitySerialList.length; i < length; i++) {
-    const recentCallCountByFacilitySerialInfo = recentCallCountByFacilitySerialList[i];
+  for (let i = 0, length = recentCallRequestByFacilitySerialList.length; i < length; i++) {
+    const recentCallRequestByFacilitySerialInfo = recentCallRequestByFacilitySerialList[i];
 
-    const facilitySerial = recentCallCountByFacilitySerialInfo.facilitySerial;
+    const facilitySerial = recentCallRequestByFacilitySerialInfo.facilitySerial;
 
     const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilitySerial);
     if (!facilityInfo) {
@@ -32,9 +32,20 @@ export const checkCallRequestCreate = async () => {
       return;
     }
 
-    const callRequest = recentCallCountByFacilitySerialInfo.callRequest;
-    const callRequestMulti1 = recentCallCountByFacilitySerialInfo.callRequestMulti1;
-    const callRequestMulti2 = recentCallCountByFacilitySerialInfo.callRequestMulti2;
+    const recentCallRequestMulti1ByFacilitySerial =
+      await redisUtil.hgetObject<RecentCallCountByFacilitySerialAttributes>(
+        RedisKeys.RecentCallRequestMulti1ByFacilitySerial,
+        facilitySerial
+      );
+    const recentCallRequestMulti2ByFacilitySerial =
+      await redisUtil.hgetObject<RecentCallCountByFacilitySerialAttributes>(
+        RedisKeys.RecentCallRequestMulti2ByFacilitySerial,
+        facilitySerial
+      );
+
+    const callRequest = recentCallRequestByFacilitySerialInfo.callRequest;
+    const callRequestMulti1 = recentCallRequestMulti1ByFacilitySerial?.callRequestMulti1 || false;
+    const callRequestMulti2 = recentCallRequestMulti2ByFacilitySerial?.callRequestMulti2 || false;
 
     const recentWorkOrderListByFacilitySerial =
       await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
@@ -146,14 +157,14 @@ export const checkCallRequestCreate = async () => {
 
 // Call Request 로 실제 사용하는 함수
 export const checkCallCreate = async () => {
-  const recentCallCountByFacilitySerialList =
+  const recentCallRequestByFacilitySerialList =
     (await redisUtil.hgetAllObject<RecentCallCountByFacilitySerialAttributes>(
-      RedisKeys.RecentCallCountByFacilitySerial
+      RedisKeys.RecentCallRequestByFacilitySerial
     )) || [];
-  for (let i = 0, length = recentCallCountByFacilitySerialList.length; i < length; i++) {
-    const recentCallCountByFacilitySerialInfo = recentCallCountByFacilitySerialList[i];
+  for (let i = 0, length = recentCallRequestByFacilitySerialList.length; i < length; i++) {
+    const recentCallRequestByFacilitySerialInfo = recentCallRequestByFacilitySerialList[i];
 
-    const facilitySerial = recentCallCountByFacilitySerialInfo.facilitySerial;
+    const facilitySerial = recentCallRequestByFacilitySerialInfo.facilitySerial;
 
     const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilitySerial);
     if (!facilityInfo) {
@@ -209,10 +220,10 @@ export const checkCallCreate = async () => {
           const targetEqpCallInfo: EqpCallStats = {
             // ...targetTagInfo,
             EQ_CODE: facilitySerial,
-            TAGGROUP: recentCallCountByFacilitySerialInfo.targetTagInfo.TAGGROUP,
-            CHANNEL: recentCallCountByFacilitySerialInfo.targetTagInfo.CHANNEL,
-            DEVICE: recentCallCountByFacilitySerialInfo.targetTagInfo.DEVICE,
-            DATA_TYPE: recentCallCountByFacilitySerialInfo.targetTagInfo.DATA_TYPE,
+            TAGGROUP: recentCallRequestByFacilitySerialInfo.targetTagInfo.TAGGROUP,
+            CHANNEL: recentCallRequestByFacilitySerialInfo.targetTagInfo.CHANNEL,
+            DEVICE: recentCallRequestByFacilitySerialInfo.targetTagInfo.DEVICE,
+            DATA_TYPE: recentCallRequestByFacilitySerialInfo.targetTagInfo.DATA_TYPE,
             EQP_CALL_ID: '',
             CALL_ID: eqpCallId,
             Call_Type: callType || 'SKID',

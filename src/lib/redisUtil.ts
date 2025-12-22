@@ -83,6 +83,10 @@ export enum RedisKeys {
   InfoCallKey = 'info_call_key', // 서버 재부팅시 기존에 있던 데이터인지 추가해줄 데이터인지 확인하는 정보
   RecentWorkOrderListByFacilitySerial = 'recent_work_order_list_by_facility_serial', // 현재 진행 중인 작업 지시 카운트
   RecentCallCountByFacilitySerial = 'recent_call_count_by_facility_serail', // Call_Request, Mutil Call 1 , Mutil Call 2 on 상태
+  // 콜이 중복으로 켜질 경우 해당 레디스 값이 중복 사용되어 문제 발생함
+  RecentCallRequestByFacilitySerial = 'recent_call_request_by_facility_serail', // Call_Request, Mutil Call 1 , Mutil Call 2 on 상태
+  RecentCallRequestMulti1ByFacilitySerial = 'recent_call_request_multi1_by_facility_serail', // Call_Request, Mutil Call 1 , Mutil Call 2 on 상태
+  RecentCallRequestMulti2ByFacilitySerial = 'recent_call_request_multi2_by_facility_serail', // Call_Request, Mutil Call 1 , Mutil Call 2 on 상태
   // SmartConnector
   PlcRealtimeData = 'plc_realtime_data', // PLC 실시간 데이터
   SmartConnectorWriteTag = 'smart_connector_write_tag', // SmartConnector에 쓰기 요청 후 응답 처리 키

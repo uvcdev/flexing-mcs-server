@@ -53,14 +53,14 @@ export const useEqpCheckUtil = () => {
               // facilityInfo.type === 'in' &&
               facilityInfo.isActiveCallTrigger
             ) {
-              const recentCallCountByFacilitySerialInfo =
+              const recentCallRequestByFacilitySerialInfo =
                 await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestByFacilitySerial,
                   facilitySerial
                 );
-              if (!recentCallCountByFacilitySerialInfo) {
+              if (!recentCallRequestByFacilitySerialInfo) {
                 // 해당 정보가 없을 경우 신규 등록
-                const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                const recentCallRequestByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
                   targetTagInfo: targetTagInfo,
                   facilitySerial: facilitySerial,
                   targetKey: targetKey,
@@ -69,17 +69,17 @@ export const useEqpCheckUtil = () => {
                   callRequestMulti2: false,
                 };
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerialParams)
+                  JSON.stringify(recentCallRequestByFacilitySerialParams)
                 );
               } else {
-                recentCallCountByFacilitySerialInfo.callRequest = true;
+                recentCallRequestByFacilitySerialInfo.callRequest = true;
 
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerialInfo)
+                  JSON.stringify(recentCallRequestByFacilitySerialInfo)
                 );
               }
               const RecentWorkOrderListByFacilityInfo =
@@ -208,33 +208,33 @@ export const useEqpCheckUtil = () => {
               // facilityInfo.type === 'in' &&
               facilityInfo.isActiveCallTrigger
             ) {
-              const recentCallCountByFacilitySerialInfo =
+              const recentCallRequestByFacilitySerialInfo =
                 await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestByFacilitySerial,
                   facilitySerial
                 );
-              if (!recentCallCountByFacilitySerialInfo) {
+              if (!recentCallRequestByFacilitySerialInfo) {
                 // 해당 정보가 없을 경우 신규 등록
-                const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                const recentCallRequestByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
                   targetTagInfo: targetTagInfo,
                   facilitySerial: facilitySerial,
                   targetKey: targetKey,
-                  callRequest: true,
+                  callRequest: false,
                   callRequestMulti1: false,
                   callRequestMulti2: false,
                 };
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerialParams)
+                  JSON.stringify(recentCallRequestByFacilitySerialParams)
                 );
               } else {
-                recentCallCountByFacilitySerialInfo.callRequest = false;
+                recentCallRequestByFacilitySerialInfo.callRequest = false;
 
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerialInfo)
+                  JSON.stringify(recentCallRequestByFacilitySerialInfo)
                 );
               }
             }
@@ -326,33 +326,33 @@ export const useEqpCheckUtil = () => {
                 // facilityInfo.type === 'in' &&
                 facilityInfo.isActiveCallTrigger
               ) {
-                const recentCallCountByFacilitySerialInfo =
+                const recentCallRequestMulti1ByFacilitySerialInfo =
                   await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
-                    RedisKeys.RecentCallCountByFacilitySerial,
+                    RedisKeys.RecentCallRequestMulti1ByFacilitySerial,
                     facilitySerial
                   );
-                if (!recentCallCountByFacilitySerialInfo) {
+                if (!recentCallRequestMulti1ByFacilitySerialInfo) {
                   // 해당 정보가 없을 경우 신규 등록
-                  const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                  const recentCallRequestMulti1ByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
                     targetTagInfo: targetTagInfo,
                     facilitySerial: facilitySerial,
                     targetKey: targetKey,
-                    callRequest: true,
-                    callRequestMulti1: false,
+                    callRequest: false,
+                    callRequestMulti1: true,
                     callRequestMulti2: false,
                   };
                   useRedisUtil().hset(
-                    RedisKeys.RecentCallCountByFacilitySerial,
+                    RedisKeys.RecentCallRequestMulti1ByFacilitySerial,
                     facilitySerial,
-                    JSON.stringify(recentCallCountByFacilitySerialParams)
+                    JSON.stringify(recentCallRequestMulti1ByFacilitySerialParams)
                   );
                 } else {
-                  recentCallCountByFacilitySerialInfo.callRequestMulti1 = true;
+                  recentCallRequestMulti1ByFacilitySerialInfo.callRequestMulti1 = true;
 
                   useRedisUtil().hset(
-                    RedisKeys.RecentCallCountByFacilitySerial,
+                    RedisKeys.RecentCallRequestMulti1ByFacilitySerial,
                     facilitySerial,
-                    JSON.stringify(recentCallCountByFacilitySerialInfo)
+                    JSON.stringify(recentCallRequestMulti1ByFacilitySerialInfo)
                   );
                 }
               }
@@ -376,33 +376,33 @@ export const useEqpCheckUtil = () => {
               // facilityInfo.type === 'in' &&
               facilityInfo.isActiveCallTrigger
             ) {
-              const recentCallCountByFacilitySerialInfo =
+              const recentCallRequestMulti1ByFacilitySerialInfo =
                 await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestMulti1ByFacilitySerial,
                   facilitySerial
                 );
-              if (!recentCallCountByFacilitySerialInfo) {
+              if (!recentCallRequestMulti1ByFacilitySerialInfo) {
                 // 해당 정보가 없을 경우 신규 등록
-                const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                const recentCallRequestMulti1ByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
                   targetTagInfo: targetTagInfo,
                   facilitySerial: facilitySerial,
                   targetKey: targetKey,
-                  callRequest: true,
+                  callRequest: false,
                   callRequestMulti1: false,
                   callRequestMulti2: false,
                 };
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestMulti1ByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerialParams)
+                  JSON.stringify(recentCallRequestMulti1ByFacilitySerialParams)
                 );
               } else {
-                recentCallCountByFacilitySerialInfo.callRequestMulti1 = false;
+                recentCallRequestMulti1ByFacilitySerialInfo.callRequestMulti1 = false;
 
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestMulti1ByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerialInfo)
+                  JSON.stringify(recentCallRequestMulti1ByFacilitySerialInfo)
                 );
               }
             }
@@ -431,33 +431,33 @@ export const useEqpCheckUtil = () => {
                 // facilityInfo.type === 'in' &&
                 facilityInfo.isActiveCallTrigger
               ) {
-                const recentCallCountByFacilitySerialInfo =
+                const recentCallRequestMulti2ByFacilitySerialInfo =
                   await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
-                    RedisKeys.RecentCallCountByFacilitySerial,
+                    RedisKeys.RecentCallRequestMulti2ByFacilitySerial,
                     facilitySerial
                   );
-                if (!recentCallCountByFacilitySerialInfo) {
+                if (!recentCallRequestMulti2ByFacilitySerialInfo) {
                   // 해당 정보가 없을 경우 신규 등록
-                  const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                  const recentCallRequestMulti2ByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
                     targetTagInfo: targetTagInfo,
                     facilitySerial: facilitySerial,
                     targetKey: targetKey,
-                    callRequest: true,
+                    callRequest: false,
                     callRequestMulti1: false,
-                    callRequestMulti2: false,
+                    callRequestMulti2: true,
                   };
                   useRedisUtil().hset(
-                    RedisKeys.RecentCallCountByFacilitySerial,
+                    RedisKeys.RecentCallRequestMulti2ByFacilitySerial,
                     facilitySerial,
-                    JSON.stringify(recentCallCountByFacilitySerialParams)
+                    JSON.stringify(recentCallRequestMulti2ByFacilitySerialParams)
                   );
                 } else {
-                  recentCallCountByFacilitySerialInfo.callRequestMulti2 = true;
+                  recentCallRequestMulti2ByFacilitySerialInfo.callRequestMulti2 = true;
 
                   useRedisUtil().hset(
-                    RedisKeys.RecentCallCountByFacilitySerial,
+                    RedisKeys.RecentCallRequestMulti2ByFacilitySerial,
                     facilitySerial,
-                    JSON.stringify(recentCallCountByFacilitySerialInfo)
+                    JSON.stringify(recentCallRequestMulti2ByFacilitySerialInfo)
                   );
                 }
               }
@@ -481,33 +481,33 @@ export const useEqpCheckUtil = () => {
               // facilityInfo.type === 'in' &&
               facilityInfo.isActiveCallTrigger
             ) {
-              const recentCallCountByFacilitySerialInfo =
+              const recentCallRequestMulti2ByFacilitySerialInfo =
                 await useRedisUtil().hgetObject<RecentCallCountByFacilitySerialAttributes>(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestMulti2ByFacilitySerial,
                   facilitySerial
                 );
-              if (!recentCallCountByFacilitySerialInfo) {
+              if (!recentCallRequestMulti2ByFacilitySerialInfo) {
                 // 해당 정보가 없을 경우 신규 등록
-                const recentCallCountByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
+                const recentCallRequestMulti2ByFacilitySerialParams: RecentCallCountByFacilitySerialAttributes = {
                   targetTagInfo: targetTagInfo,
                   facilitySerial: facilitySerial,
                   targetKey: targetKey,
-                  callRequest: true,
+                  callRequest: false,
                   callRequestMulti1: false,
                   callRequestMulti2: false,
                 };
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestMulti2ByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerialParams)
+                  JSON.stringify(recentCallRequestMulti2ByFacilitySerialParams)
                 );
               } else {
-                recentCallCountByFacilitySerialInfo.callRequestMulti2 = false;
+                recentCallRequestMulti2ByFacilitySerialInfo.callRequestMulti2 = false;
 
                 useRedisUtil().hset(
-                  RedisKeys.RecentCallCountByFacilitySerial,
+                  RedisKeys.RecentCallRequestMulti2ByFacilitySerial,
                   facilitySerial,
-                  JSON.stringify(recentCallCountByFacilitySerialInfo)
+                  JSON.stringify(recentCallRequestMulti2ByFacilitySerialInfo)
                 );
               }
             }
