@@ -277,7 +277,7 @@ export const useSmartConnectorUtils = () => {
    */
   const setTagDataArrayToSmartConnector = async (messages: SendSmartConnectorMqttMessage[]) => {
     for (const message of messages) {
-      const topic = `smartConnector/${message.facilityName}/control/request`;
+      const topic = `smartConnector/control/request`;
       const tagMapValue = smartConnector.tagMap.get(`${message.facilityName}.${message.tag}`);
       if (!tagMapValue) {
         logging.ACTION_ERROR({
@@ -316,7 +316,7 @@ export const useSmartConnectorUtils = () => {
    * });
    */
   const setTagDataToSmartConnector = async (params: WriteDataParams) => {
-    const topic = `smartConnector/${params.targetFacility}/control/request`;
+    const topic = `smartConnector/control/request`;
     const sendMessage: SmartConnectorWriteTag = {
       WRITE_ID: uuidv4(),
       DEVICE_ID: params.targetFacility,

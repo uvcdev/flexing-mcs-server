@@ -84,7 +84,7 @@ const onPlcStateChanged = (facilityName: string, changes: { [key: string]: { old
     const payload: SmartConnectorEventPayload = { ...changes[tag], facilityName, tag };
     // 구체적인 태그 변경 이벤트 발행
     smartConnectorEventEmitter.emit(eventName, payload);
-    console.log('emit eventName', eventName, payload);
+    // console.log('emit eventName', eventName, payload);
   }
 };
 /**
@@ -118,17 +118,16 @@ export const initSmartConnectorMqtt = (client: MqttClient) => {
     const topicSplit = topic.split('/');
     // 주기적으로 받는 PLC 데이터 처리
     if (
-      topicSplit.length === 4 &&
+      topicSplit.length === 3 &&
       topicSplit[0] === 'smartConnector' &&
-      topicSplit[1] === 'facility' &&
-      topicSplit[3] === 'data'
+      topicSplit[2] === 'data'
     ) {
       try {
         const payload = JSON.parse(message.toString());
         const deviceId = payload.DEVICE_ID;
         const tags = payload.TAGS;
 
-        if (deviceId !== topicSplit[2]) {
+        if (deviceId !== topicSplit[1]) {
           logging.MQTT_ERROR({
             title: 'smartConnector Message Error',
             topic,
@@ -213,7 +212,7 @@ export const initSmartConnectorMqtt = (client: MqttClient) => {
           if (writeMessage && writeMessage.COUNT < 3) {
             const sendMessageString = JSON.stringify({ ...writeMessage, COUNT: writeMessage.COUNT + 1 });
             redisUtil.hset(RedisKeys.SmartConnectorWriteTag, writeId, sendMessageString);
-            sendMqttToSmartConnector(`smartConnector/${writeMessage.DEVICE_ID}/control`, sendMessageString);
+            sendMqttToSmartConnector(`smartConnector/control/request`, sendMessageString);
           }
         }
       } catch (err) {
