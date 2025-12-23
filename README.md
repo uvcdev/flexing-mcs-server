@@ -580,3 +580,15 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 ## v2.2.3
 - 버전승인 v2.2.2
+
+## v2.2.3-ssb
+- MQTT 토픽 수정
+```
+smartConnector/facility/{설비이름}/data -> smartConnector/{설비이름}/data
+smartConnector/{설비이름}/control/request -> smartConnector/control/request
+```
+- 제어응답 시 RESULT 데이터 전송 방법 수정
+```
+"RESULT" : true -> "RESULT" : "TRUE"
+"RESULT" : false -> "RESULT" : "FALSE"
+```
