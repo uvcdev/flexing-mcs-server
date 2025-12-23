@@ -206,7 +206,7 @@ export const sendMqttWorkOrderList = async () => {
 
         selectedCallIdList.push({
           callId,
-          subjcet: callIdSubject || 'BEFORE_CALL_REQUEST',
+          subject: callIdSubject || 'BEFORE_CALL_REQUEST',
         });
       }
     }

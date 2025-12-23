@@ -682,3 +682,4 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 
 - Call Request / Call Request Multi 1 / Call Request Multi 2 데이터 처리 방식 변경
 - call-signal-reset 관련 작업 초기화 기능 추가
+- suject 스펠링 오류 수정

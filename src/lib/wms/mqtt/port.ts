@@ -112,7 +112,7 @@ const portPresenceStatus = async (
         // 트래킹 로그 만들기
         const initAbnormalTrackingLogParams: InitAbnormalTrackingLogParams = {
           callId: callId,
-          subjcet: 'WORK_ORDER_CREATED',
+          subject: 'WORK_ORDER_CREATED',
           detail: 'WORK_ORDER_CREATED',
           state: 'PROCESSING',
           processState: 'NORMAL',
@@ -367,7 +367,7 @@ const ackReqPortStateList = async (
           // 트래킹 로그 만들기
           const initAbnormalTrackingLogParams: InitAbnormalTrackingLogParams = {
             callId: portCallId,
-            subjcet: 'WORK_ORDER_CREATED',
+            subject: 'WORK_ORDER_CREATED',
             detail: 'WORK_ORDER_CREATED',
             state: 'PROCESSING',
             processState: 'NORMAL',

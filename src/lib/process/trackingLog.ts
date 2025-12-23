@@ -20,7 +20,7 @@ import { sendMqtt } from '../mqttUtil';
 
 export interface InitAbnormalTrackingLogParams {
   callId: string;
-  subjcet: TrackingLogSubjectType;
+  subject: TrackingLogSubjectType;
   detail: string;
   state: TrackingLogState;
   processState: TrackingLogProcessState;
@@ -182,7 +182,7 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
 
 export const initAbnormalTrackingLogRedis = async (callInfo: InitAbnormalTrackingLogParams) => {
   // Subject = CALL_CREATED
-  const subject: TrackingLogSubjectType = callInfo.subjcet;
+  const subject: TrackingLogSubjectType = callInfo.subject;
   const detail = callInfo.detail;
   const state: TrackingLogState = callInfo.state;
   // 콜 발생 정보 수집
