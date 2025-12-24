@@ -1,4 +1,4 @@
-import { MqttClient } from 'mqtt';
+import mqtt, { MqttClient, IClientOptions } from 'mqtt';
 import { useRedisUtil, RedisKeys } from './redisUtil';
 import { logging } from './logging';
 import { smartConnectorEventEmitter } from '../events/smartConnectorEvents';
@@ -13,6 +13,26 @@ interface SmartConnectorEventPayload {
   old: string | null;
   new: string | null;
 }
+
+type SmartConnectorMqttConfig = {
+  host: string;
+  port: number;
+  topic: string;
+};
+
+const smartConnectorMqttConfig: SmartConnectorMqttConfig = {
+  host: process.env.SMART_CONNECTOR_MQTT_HOST || '',
+  port: Number(process.env.SMART_CONNECTOR_MQTT_PORT || '1883'),
+  topic: process.env.SMART_CONNECTOR_MQTT_TOPIC || 'smartConnector',
+};
+
+const clientId = 'smartConnector_' + Math.random().toString(16).substr(2, 8);
+const options: IClientOptions = {
+  host: smartConnectorMqttConfig.host,
+  port: smartConnectorMqttConfig.port,
+  clientId: clientId,
+};
+const smartConnectorMqttClient = mqtt.connect(options);
 
 /**
  * smartConnector에 메시지를 보낼 때 사용하는 인터페이스
@@ -90,14 +110,14 @@ const onPlcStateChanged = (facilityName: string, changes: { [key: string]: { old
 /**
  * [SmartConnector용] PLC 상태 모니터링 모듈을 초기화하고 MQTT 이벤트를 바인딩.
  */
-export const initSmartConnectorMqtt = (client: MqttClient) => {
+export const initSmartConnectorMqtt = () => {
   // mqttClient 변수에 저장하여 sendMqttToSmartConnector에서 사용할 수 있도록 함
-  mqttClient = client;
+  mqttClient = smartConnectorMqttClient;
 
   const SmartConnector_TOPIC = 'smartConnector/#';
   const redisUtil = useRedisUtil();
   // 1. 토픽 구독
-  client.subscribe(SmartConnector_TOPIC, (err) => {
+  smartConnectorMqttClient.subscribe(SmartConnector_TOPIC, (err) => {
     if (err) {
       logging.MQTT_ERROR({
         title: 'smartConnector Subscribe Error',
@@ -114,14 +134,10 @@ export const initSmartConnectorMqtt = (client: MqttClient) => {
     }
   });
   // 2. 메시지 수신 시 처리할 로직
-  client.on('message', async (topic, message) => {
+  smartConnectorMqttClient.on('message', async (topic, message) => {
     const topicSplit = topic.split('/');
     // 주기적으로 받는 PLC 데이터 처리
-    if (
-      topicSplit.length === 3 &&
-      topicSplit[0] === 'smartConnector' &&
-      topicSplit[2] === 'data'
-    ) {
+    if (topicSplit.length === 3 && topicSplit[0] === 'smartConnector' && topicSplit[2] === 'data') {
       try {
         const payload = JSON.parse(message.toString());
         const deviceId = payload.DEVICE_ID;

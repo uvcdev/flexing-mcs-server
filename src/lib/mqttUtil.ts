@@ -296,7 +296,7 @@ export const receiveMqtt = (): void => {
 
       if (process.env.PLC_CONN_TYPE === 'CONNECTOR') {
         // Smart Connector MQTT 구독
-        initSmartConnectorMqtt(client);
+        initSmartConnectorMqtt();
       }
       // // 전체 구독
       // client.subscribe('#', (err) => {

@@ -36,9 +36,9 @@ interface FacilityData {
 }
 
 const mqttConfig: MqttConfig = {
-  host: process.env.MQTT_HOST || '',
-  port: Number(process.env.MQTT_PORT || '1883'),
-  topic: 'smartConnector/facility',
+  host: process.env.SMART_CONNECTOR_MQTT_HOST || '',
+  port: Number(process.env.SMART_CONNECTOR_MQTT_PORT || '1883'),
+  topic: process.env.SMART_CONNECTOR_MQTT_TOPIC || 'smartConnector',
 };
 
 const clientId = 'init_smart_connector_sync_' + Math.random().toString(16).substr(2, 8);
@@ -133,13 +133,8 @@ const smartConnectorSyncMqtt = async () => {
 
   client.on('message', async (messageTopic, messageOrg) => {
     const topicSplit = messageTopic.split('/');
-    if (
-      topicSplit.length === 4 &&
-      topicSplit[0] === 'smartConnector' &&
-      topicSplit[1] === 'facility' &&
-      topicSplit[3] === 'data'
-    ) {
-      const deviceId = topicSplit[2];
+    if (topicSplit.length === 3 && topicSplit[0] === 'smartConnector' && topicSplit[2] === 'data') {
+      const deviceId = topicSplit[1];
       const facilityData: FacilityData = JSON.parse(messageOrg.toString());
       // console.log('Received tags from smartConnector', deviceId, facilityData);
       if (processedFacilityList.has(deviceId)) {

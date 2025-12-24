@@ -218,7 +218,7 @@ export const useSmartConnectorUtils = () => {
         }
         switch (tagMapValue.DATA_TYPE) {
           case 'Boolean':
-            acc[key] = value === 'true' ? true : false;
+            acc[key] = value === 'true' ? true : value === '1' ? true : false;
             break;
           case 'UInt16':
             acc[key] = Number(value);

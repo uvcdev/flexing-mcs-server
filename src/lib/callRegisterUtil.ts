@@ -49,9 +49,7 @@ export const useCallRegisterUtil = () => {
   const plcConnectUtil = usePlcConnectUtil();
   const callRegister = async () => {
     try {
-      console.log('🚀 ~ callRegister ~ callRegister');
       const callRegisterList = await redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoCallRequestOnBySerial);
-      console.log('🚀 ~ callRegister ~ callRegisterList:', callRegisterList);
       if (!callRegisterList) return;
 
       for (let i = 0, length = callRegisterList.length; i < length; i++) {
@@ -410,12 +408,12 @@ export const useCallRegisterUtil = () => {
                       }
                     }
 
-                    // eslint-disable-next-line prettier/prettier
-                    const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
-                      count: workOrderListInfo.count,
-                      // eslint-disable-next-line prettier/prettier
-                      workOrderList: workOrderListInfo.workOrderList,
-                    };
+                    const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
+                      {
+                        count: workOrderListInfo.count,
+
+                        workOrderList: workOrderListInfo.workOrderList,
+                      };
 
                     redisUtil.hset(
                       RedisKeys.RecentWorkOrderListByFacilitySerial,
