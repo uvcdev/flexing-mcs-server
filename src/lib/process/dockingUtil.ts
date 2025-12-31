@@ -628,19 +628,24 @@ export const useDockingUtil = () => {
             // const CallType = CallIdRedisInfo.Call_Type;
 
             // todo: 250604 Dock_EQ_Status 값 내리기 위해 드라이런용 reset 추가
+            // await plcConnectUtil.writeTagValue({
+            //   targetFacility: paramsSerial,
+            //   tagInfo: [
+            //     { tagName: 'Dock_Signal_Reset', value: true },
+            //   ],
+            // });
+            // setTimeout(() => {
+            //   plcConnectUtil.writeTagValue({
+            //     targetFacility: paramsSerial,
+            //     tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+            //   });
+            // }, 500);
             await plcConnectUtil.writeTagValue({
               targetFacility: paramsSerial,
               tagInfo: [
-                { tagName: 'Dock_Signal_Reset', value: true },
                 { tagName: 'Dock_Request', value: true },
               ],
             });
-            setTimeout(() => {
-              plcConnectUtil.writeTagValue({
-                targetFacility: paramsSerial,
-                tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
-              });
-            }, 500);
             if (dockingParams.PORT_ID === paramsSerial) {
               // [트래킹로그]도킹요청 들어온 것에 대한 트래킹로그 저장
               const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
@@ -684,19 +689,24 @@ export const useDockingUtil = () => {
             // 충전 도킹 요청 PLC 쓰기
             // 도킹 요청 ID/기종 확인 안함
 
+            // await plcConnectUtil.writeTagValue({
+            //   targetFacility: paramsSerial,
+            //   tagInfo: [
+            //     { tagName: 'Dock_Signal_Reset', value: true },
+            //   ],
+            // });
+            // setTimeout(() => {
+            //   plcConnectUtil.writeTagValue({
+            //     targetFacility: paramsSerial,
+            //     tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+            //   });
+            // }, 500);
             await plcConnectUtil.writeTagValue({
               targetFacility: paramsSerial,
               tagInfo: [
-                { tagName: 'Dock_Signal_Reset', value: true },
                 { tagName: 'Dock_Request', value: true },
               ],
             });
-            setTimeout(() => {
-              plcConnectUtil.writeTagValue({
-                targetFacility: paramsSerial,
-                tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
-              });
-            }, 500);
             break;
 
           case EXC_CLS.MANUAL: //수동도킹

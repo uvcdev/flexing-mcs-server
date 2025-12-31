@@ -133,7 +133,11 @@ const smartConnectorSyncMqtt = async () => {
 
   client.on('message', async (messageTopic, messageOrg) => {
     const topicSplit = messageTopic.split('/');
-    if (topicSplit.length === 3 && topicSplit[0] === 'smartConnector' && topicSplit[2] === 'data') {
+    if (
+      topicSplit.length === 3 &&
+      topicSplit[0] === 'smartConnector' &&
+      topicSplit[2] === 'data'
+    ) {
       const deviceId = topicSplit[1];
       const facilityData: FacilityData = JSON.parse(messageOrg.toString());
       // console.log('Received tags from smartConnector', deviceId, facilityData);

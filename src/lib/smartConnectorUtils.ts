@@ -174,7 +174,7 @@ export const useSmartConnectorUtils = () => {
             }
           });
           sendMqtt(`${MqttTopics.PLCStatus}/${facilityName}`, JSON.stringify(data));
-          sendMqtt(`${MqttTopics.FacilityStatus}/${facilityName}`, JSON.stringify(facilityStatus));
+          // sendMqtt(`${MqttTopics.FacilityStatus}/${facilityName}`, JSON.stringify(facilityStatus));
         });
       } catch (error) {
         logging.ACTION_ERROR({

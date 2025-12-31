@@ -619,3 +619,8 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 ```
 
 - SmartConnector용 MQTT Client 분리
+
+## v2.2.4
+- 버전승인 v2.2.3
+- 버전승인 v2.2.3-ssb
+- 현장 수정

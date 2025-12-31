@@ -137,7 +137,11 @@ export const initSmartConnectorMqtt = () => {
   smartConnectorMqttClient.on('message', async (topic, message) => {
     const topicSplit = topic.split('/');
     // 주기적으로 받는 PLC 데이터 처리
-    if (topicSplit.length === 3 && topicSplit[0] === 'smartConnector' && topicSplit[2] === 'data') {
+    if (
+      topicSplit.length === 3 &&
+      topicSplit[0] === 'smartConnector' &&
+      topicSplit[2] === 'data'
+    ) {
       try {
         const payload = JSON.parse(message.toString());
         const deviceId = payload.DEVICE_ID;
