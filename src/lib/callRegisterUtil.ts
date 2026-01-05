@@ -56,8 +56,8 @@ export const useCallRegisterUtil = () => {
         const targetTagInfo = callRegisterList[i];
         const targetCode = targetTagInfo.EQ_CODE;
         const eqpCallId = targetTagInfo.CALL_ID || '';
-        console.log('🚀 ~ callRegister ~ targetCode:', targetCode);
-        console.log('🚀 ~ callRegister ~ eqpCallId:', eqpCallId);
+        // console.log('🚀 ~ callRegister ~ targetCode:', targetCode);
+        // console.log('🚀 ~ callRegister ~ eqpCallId:', eqpCallId);
         if (!targetCode) continue; // 코드 없으면 처리 불가
 
         // remainCall doesn't need callRegister again
@@ -80,11 +80,8 @@ export const useCallRegisterUtil = () => {
         const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
         const callPriorityValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Priority')) as boolean;
         const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
-        const callType = await makeCallType(targetCode);
-        console.log('🚀 ~ callRegister ~ callCountValue:', callCountValue);
-        console.log('🚀 ~ callRegister ~ callPriorityValue:', callPriorityValue);
-        console.log('🚀 ~ callRegister ~ eqAutoValue:', eqAutoValue);
-        console.log('🚀 ~ callRegister ~ callType:', callType);
+        // const callType = await makeCallType(targetCode);
+        const callType = (await plcConnectUtil.getTagValue(targetCode, 'Call_Type')) as string;
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
           targetCode
@@ -211,25 +208,25 @@ export const useCallRegisterUtil = () => {
                     'Call_Count'
                   )) as number;
                   const linkedFacilityCallTypeValue = await makeCallType(linkedFacilityInfo?.serial?.toString());
-                  console.log('🚀 ~ callRegister ~ linkedFacilityEQAutoValue:', linkedFacilityEQAutoValue);
+                  // console.log('🚀 ~ callRegister ~ linkedFacilityEQAutoValue:', linkedFacilityEQAutoValue);
                   if (!linkedFacilityEQAutoValue) continue;
 
-                  console.log('🚀 ~ callRegister ~ linkedFacilityCallRequestValue:', linkedFacilityCallRequestValue);
-                  console.log(
-                    '🚀 ~ callRegister ~ linkedFacilityCallRequestValue type:',
-                    typeof linkedFacilityCallRequestValue
-                  );
-                  console.log('🚀 ~ callRegister ~ linkedFacilityCallResponseValue:', linkedFacilityCallResponseValue);
-                  console.log(
-                    '🚀 ~ callRegister ~ linkedFacilityCallResponseValue type:',
-                    typeof linkedFacilityCallResponseValue
-                  );
-                  console.log('🚀 ~ callRegister ~ linkedFacilityCallTypeValue:', linkedFacilityCallTypeValue);
-                  console.log(
-                    '🚀 ~ callRegister ~ linkedFacilityCallTypeValue type:',
-                    typeof linkedFacilityCallTypeValue
-                  );
-                  console.log('🚀 ~ callRegister ~ callType:', callType);
+                  // console.log('🚀 ~ callRegister ~ linkedFacilityCallRequestValue:', linkedFacilityCallRequestValue);
+                  // console.log(
+                  //   '🚀 ~ callRegister ~ linkedFacilityCallRequestValue type:',
+                  //   typeof linkedFacilityCallRequestValue
+                  // );
+                  // console.log('🚀 ~ callRegister ~ linkedFacilityCallResponseValue:', linkedFacilityCallResponseValue);
+                  // console.log(
+                  //   '🚀 ~ callRegister ~ linkedFacilityCallResponseValue type:',
+                  //   typeof linkedFacilityCallResponseValue
+                  // );
+                  // console.log('🚀 ~ callRegister ~ linkedFacilityCallTypeValue:', linkedFacilityCallTypeValue);
+                  // console.log(
+                  //   '🚀 ~ callRegister ~ linkedFacilityCallTypeValue type:',
+                  //   typeof linkedFacilityCallTypeValue
+                  // );
+                  // console.log('🚀 ~ callRegister ~ callType:', callType);
                   // 반대쪽에 콜 요청 떠 있고 콜 응답 내려가 있는 경우 작업 생성
                   if (
                     linkedFacilityInfo &&
@@ -409,11 +406,11 @@ export const useCallRegisterUtil = () => {
                     }
 
                     const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-                      {
-                        count: workOrderListInfo.count,
+                    {
+                      count: workOrderListInfo.count,
 
-                        workOrderList: workOrderListInfo.workOrderList,
-                      };
+                      workOrderList: workOrderListInfo.workOrderList,
+                    };
 
                     redisUtil.hset(
                       RedisKeys.RecentWorkOrderListByFacilitySerial,

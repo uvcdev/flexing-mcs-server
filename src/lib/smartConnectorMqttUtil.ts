@@ -172,14 +172,21 @@ export const initSmartConnectorMqtt = () => {
 
         const oldState = await redisUtil.hGetPlcAllTags(redisKey);
         const changes: { [key: string]: { old: string | null; new: string } } = {};
+
+        // oldState가 없으면 새 상태를 바로 저장
         if (!oldState) {
           redisUtil.hSetPlcAllTags(redisKey, newState);
         } else {
+          // oldState와 newState를 비교하여 변경된 사항만 저장
           Object.keys(newState).forEach((key) => {
-            if (oldState[key] !== newState[key]) {
-              changes[key] = { old: oldState[key] || null, new: newState[key] };
+            const oldVal = oldState[key];
+            const newVal = String(newState[key]); // 타입을 문자열로 변환
+            if (String(oldVal) !== newVal) {  // 비교할 때도 문자열로 변환
+              changes[key] = { old: oldVal ?? null, new: newVal };
             }
           });
+
+          // 변경된 값이 있으면 상태 업데이트
           if (Object.keys(changes).length > 0) {
             onPlcStateChanged(deviceId, changes);
             redisUtil.hSetPlcAllTags(redisKey, newState);

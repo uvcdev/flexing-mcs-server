@@ -78,24 +78,25 @@ export const useLiftCommandUtil = () => {
       });
       return;
     }
-    if (targetTagInfo.value === false && targetTagInfo.prevValue === true) {
-      const validType = liftCommandType === 'down' ? 'Load_Valid' : 'UnLoad_Valid';
-      await plcConnectUtil.writeTagValue({
-        targetFacility: facilitySerial,
-        tagInfo: [
-          { tagName: validType, value: false },
-          { tagName: 'Complete', value: false },
-        ],
-      });
-      logToConsoleAndFile(`설비가 ${targetTagInfo.TAG_NAME} 허가 0으로 내림`, 'green');
-      logging.KEPWARE_DEBUG({
-        action: 'TAG_READ',
-        tag: targetTagInfo.TAG_NAME,
-        value: JSON.parse(JSON.stringify(targetTagInfo)),
-        message: `설비가 ${targetTagInfo.TAG_NAME} 허가 0으로 내림`,
-      });
-      return;
-    }
+
+    // if (targetTagInfo.value === false && targetTagInfo.prevValue === true) {
+    //   const validType = liftCommandType === 'down' ? 'Load Valid' : 'UnLoad Valid';
+    //   // await plcConnectUtil.writeTagValue({
+    //   //   targetFacility: facilitySerial,
+    //   //   tagInfo: [
+    //   //     { tagName: validType, value: false },
+    //   //     // { tagName: 'Complete', value: false },
+    //   //   ],
+    //   // });
+    //   logToConsoleAndFile(`설비가 ${targetTagInfo.TAG_NAME} 허가 0으로 내림`, 'green');
+    //   logging.KEPWARE_DEBUG({
+    //     action: 'TAG_READ',
+    //     tag: targetTagInfo.TAG_NAME,
+    //     value: JSON.parse(JSON.stringify(targetTagInfo)),
+    //     message: `설비가 ${targetTagInfo.TAG_NAME} 허가 0으로 내림`,
+    //   });
+    //   return;
+    // }
     try {
       const liftCommandRequestInfo = await redisUtil.hgetObject<AcsLiftCommandRequestType>(
         RedisKeys.LiftCommandRequestBySerialId,
@@ -203,7 +204,7 @@ export const useLiftCommandUtil = () => {
         };
         redisUtil.hset(RedisKeys.LiftCommandRequestBySerialId, facilitySerial, JSON.stringify(liftCommandParamsInfo));
 
-        const liftCommandType = liftCommandParamsInfo.LIFT_COMMAND_TYPE === 'lift_up' ? 'UnLoad_Valid' : 'Load_Valid';
+        const liftCommandType = liftCommandParamsInfo.LIFT_COMMAND_TYPE === 'lift_up' ? 'UnLoad Valid' : 'Load Valid';
         await plcConnectUtil.writeTagValue({
           targetFacility: facilitySerial,
           tagInfo: [{ tagName: liftCommandType, value: true }],
@@ -263,40 +264,33 @@ export const useLiftCommandUtil = () => {
         action: 'TAG_READ',
         tag: targetTagInfo.TAG_NAME,
         value: JSON.parse(JSON.stringify(targetTagInfo)),
-        message: `도킹완료 응답이 왔을 때 prevValue가 없는 경우`,
+        message: `리셋 요청했을 때 prevValue가 없는 경우`,
       });
       return;
     }
     if (targetTagInfo.value === false && targetTagInfo.prevValue === true) {
-      // 설비가 도킹완료 0으로 내림
-      logToConsoleAndFile(`설비가 도킹완료 0으로 내림`, 'green');
+      // 설비가 리셋 요청 0으로 내림
+      logToConsoleAndFile(`설비가 리셋 요청 0으로 내림`, 'green');
       logging.KEPWARE_DEBUG({
         action: 'TAG_READ',
         tag: targetTagInfo.TAG_NAME,
         value: JSON.parse(JSON.stringify(targetTagInfo)),
-        message: `설비가 도킹완료 0으로 내림`,
+        message: `설비가 리셋 요청 0으로 내림`,
       });
       return;
     }
 
     try {
       const facilitySerial = targetTagInfo.EQ_CODE;
-      await plcConnectUtil.writeTagValue({
-        targetFacility: facilitySerial,
-        tagInfo: [
-          { tagName: 'Load_Valid', value: false },
-          { tagName: 'UnLoad_Valid', value: false },
-          { tagName: 'Complete', value: false },
-          { tagName: 'Trans_Signal_Reset', value: false },
-
-          // todo: 20251208 테스트용 추가로 추후 삭제 필요
-          { tagName: 'Call_Response', value: false },
-          { tagName: 'Call_Robot_Assigned', value: false },
-          { tagName: 'Dock_AMR_Status', value: false },
-          { tagName: 'Load_Permit', value: false },
-          { tagName: 'UnLoad_Permit', value: false },
-        ],
-      });
+      setTimeout(() => {
+        plcConnectUtil.writeTagValue({
+          targetFacility: facilitySerial,
+          tagInfo: [
+            { tagName: 'Load Valid', value: false },
+            { tagName: 'UnLoad Valid', value: false },
+            { tagName: 'Trans_Signal_Reset', value: false },],
+        });
+      }, 500);
     } catch (error) {
       console.log('🚀 ~ transSignalResetComplete ~ error:', error);
       logging.ACTION_ERROR({

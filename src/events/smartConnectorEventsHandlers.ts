@@ -16,14 +16,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Call_Request 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Call_Request 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Request 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Call_Request 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Request 꺼짐!`);
       targetTagInfo.value = false;
@@ -44,14 +44,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Call_Response 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Call_Response 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Response 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Call_Response 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Response 꺼짐!`);
       targetTagInfo.value = false;
@@ -74,14 +74,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Call_Cancel_Request 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Call_Cancel_Request 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Cancel_Request 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Call_Cancel_Request 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Cancel_Request 꺼짐!`);
       targetTagInfo.value = false;
@@ -102,14 +102,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Dock_Permit 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Dock_Permit 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Dock_Permit 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Dock_Permit 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Dock_Permit 꺼짐!`);
       targetTagInfo.value = false;
@@ -130,14 +130,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Dock_Not_Permit 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Dock_Not_Permit 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Dock_Not_Permit 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Dock_Not_Permit 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Dock_Not_Permit 꺼짐!`);
       targetTagInfo.value = false;
@@ -158,14 +158,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Dock_EQ_Status 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Dock_EQ_Status 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Dock_EQ_Status 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Dock_EQ_Status 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Dock_EQ_Status 꺼짐!`);
       targetTagInfo.value = false;
@@ -186,14 +186,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Load_Permit 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Load_Permit 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Load_Permit 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Load_Permit 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Load_Permit 꺼짐!`);
       targetTagInfo.value = false;
@@ -205,31 +205,31 @@ export const initializeSmartConnectorEventsHandlers = async () => {
     }
   });
 
-  // 'UnLoad_Permit' 태그 변경
-  smartConnectorEventEmitter.on('UnLoad_Permit', (payload) => {
-    console.log('[RECEIVED] Event: UnLoad_Permit, Payload:', payload);
+  // 'Unload_Permit' 태그 변경
+  smartConnectorEventEmitter.on('Unload_Permit', (payload) => {
+    console.log('[RECEIVED] Event: Unload_Permit, Payload:', payload);
 
-    const targetTagInfo: TagValue | undefined = smartConnector.tagMap.get(`${payload.facilityName}.UnLoad_Permit`);
+    const targetTagInfo: TagValue | undefined = smartConnector.tagMap.get(`${payload.facilityName}.Unload_Permit`);
     if (!targetTagInfo) {
-      console.log(`[Handler] tagmap에서 ${payload.facilityName}.UnLoad_Permit 태그 없음!`);
+      console.log(`[Handler] tagmap에서 ${payload.facilityName}.Unload_Permit 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
-      // todo: UnLoad_Permit 태그의 새로운 값이 '1'일 때 로직 실행
-      console.log(`[Handler] ${payload.facilityName}에서 UnLoad_Permit 발생!`);
+    if (payload.old === '0' && payload.new === '1') {
+      // todo: Unload_Permit 태그의 새로운 값이 '1'일 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 Unload_Permit 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
-      // todo: UnLoad_Permit 태그의 새로운 값이 '0'일 때 로직 실행
-      console.log(`[Handler] ${payload.facilityName}에서 UnLoad_Permit 꺼짐!`);
+    } else if (payload.old === '1' && payload.new === '0') {
+      // todo: Unload_Permit 태그의 새로운 값이 '0'일 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 Unload_Permit 꺼짐!`);
       targetTagInfo.value = false;
       targetTagInfo.prevValue = true;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, false);
     } else {
-      console.log(`[Handler] ${payload.facilityName}에서 UnLoad_Permit 변경 없음 처리!`);
+      console.log(`[Handler] ${payload.facilityName}에서 Unload_Permit 변경 없음 처리!`);
     }
   });
 
@@ -242,14 +242,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Trans_Signal_Reset 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Trans_Signal_Reset 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Trans_Signal_Reset 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Trans_Signal_Reset 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Trans_Signal_Reset 꺼짐!`);
       targetTagInfo.value = false;
@@ -270,14 +270,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Dock_Out_Permit 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Dock_Out_Permit 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Dock_Out_Permit 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Dock_Out_Permit 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Dock_Out_Permit 꺼짐!`);
       targetTagInfo.value = false;
@@ -288,24 +288,24 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] ${payload.facilityName}에서 Dock_Out_Permit 변경 없음 처리!`);
     }
   });
-  // 'Call_Type_01' 태그 변경
-  smartConnectorEventEmitter.on('Call_Type_01', (payload) => {
-    console.log('[RECEIVED] Event: Call_Type_01, Payload:', payload);
+  // 'Call_Type' 태그 변경
+  smartConnectorEventEmitter.on('Call_Type', (payload) => {
+    console.log('[RECEIVED] Event: Call_Type, Payload:', payload);
 
-    const targetTagInfo: TagValue | undefined = smartConnector.tagMap.get(`${payload.facilityName}.Call_Type_01`);
+    const targetTagInfo: TagValue | undefined = smartConnector.tagMap.get(`${payload.facilityName}.Call_Type`);
     if (!targetTagInfo) {
-      console.log(`[Handler] tagmap에서 ${payload.facilityName}.Call_Type_01 태그 없음!`);
+      console.log(`[Handler] tagmap에서 ${payload.facilityName}.Call_Type 태그 없음!`);
       return;
     }
     if (payload.old !== '') {
-      // todo: Call_Type_01 태그의 새로운 값이 발생했을 때 로직 실행
-      console.log(`[Handler] ${payload.facilityName}에서 Call_Type_01 값 변경!`);
+      // todo: Call_Type 태그의 새로운 값이 발생했을 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 Call_Type 값 변경!`);
       targetTagInfo.value = payload.new;
       targetTagInfo.prevValue = payload.old;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, payload.new);
     } else {
-      console.log(`[Handler] ${payload.facilityName}에서 Call_Type_01 값 변경 없음 처리!`);
+      console.log(`[Handler] ${payload.facilityName}에서 Call_Type 값 변경 없음 처리!`);
     }
   });
 
@@ -318,14 +318,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Complete 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Complete 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Complete 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Complete 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Complete 꺼짐!`);
       targetTagInfo.value = false;
@@ -348,14 +348,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Call_Request_Multi_1 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Call_Request_Multi_1 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Request_Multi_1 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Call_Request_Multi_1 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Request_Multi_1 꺼짐!`);
       targetTagInfo.value = false;
@@ -378,14 +378,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Call_Request_Multi_2 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Call_Request_Multi_2 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Request_Multi_2 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Call_Request_Multi_2 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Request_Multi_2 꺼짐!`);
       targetTagInfo.value = false;
@@ -406,14 +406,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Call_Priority 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Call_Priority 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Priority 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Call_Priority 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Call_Priority 꺼짐!`);
       targetTagInfo.value = false;
@@ -434,14 +434,14 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] tagmap에서 ${payload.facilityName}.Dock_Disable 태그 없음!`);
       return;
     }
-    if (payload.old === 'false' && payload.new === 'true') {
+    if (payload.old === '0' && payload.new === '1') {
       // todo: Dock_Disable 태그의 새로운 값이 '1'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Dock_Disable 발생!`);
       targetTagInfo.value = true;
       targetTagInfo.prevValue = false;
       targetTagInfo.timestamp = Date.now();
       eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
-    } else if (payload.old === 'true' && payload.new === 'false') {
+    } else if (payload.old === '1' && payload.new === '0') {
       // todo: Dock_Disable 태그의 새로운 값이 '0'일 때 로직 실행
       console.log(`[Handler] ${payload.facilityName}에서 Dock_Disable 꺼짐!`);
       targetTagInfo.value = false;

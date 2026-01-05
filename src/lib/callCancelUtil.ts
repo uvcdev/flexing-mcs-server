@@ -96,6 +96,18 @@ export const useCallCancelUtil = () => {
           message: params,
         });
         sendMqtt(messageTopic, JSON.stringify(params));
+
+        // const recentWorkOrderInfoList =
+        //   (await redisUtil.hgetAllObject<RecentWorkOrderListByFacilitySerialAttributes>(RedisKeys.RecentWorkOrderListByFacilitySerial)) || [];
+        //   if(recentWorkOrderInfoList){
+        //     for(let i = 0; i < recentWorkOrderInfoList.length; i++){
+        //       const recentWorkOrderInfo = recentWorkOrderInfoList[i]
+        //       recentWorkOrderInfo.workOrderList[0].callId
+        //     }
+        //     targetFacility
+        //   }
+        redisUtil.hdel(RedisKeys.RecentWorkOrderListByFacilitySerial, targetCode);
+
       } catch (err) {
         logging.MQTT_ERROR({
           title: 'mqtt message error',
@@ -366,7 +378,7 @@ export const useCallCancelUtil = () => {
         // 이 함수에서는 콜취소응답만 0으로 내리기.
         await plcConnectUtil.writeTagValue({
           targetFacility: targetTagInfo.EQ_CODE,
-          tagInfo: [{ tagName: 'Call_Cancel_Response', value: false }],
+          tagInfo: [{ tagName: 'Call_Cancel_Response', value: false }, { tagName: 'Call_Response', value: false }],
         });
         return;
       }

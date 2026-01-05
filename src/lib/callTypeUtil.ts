@@ -34,33 +34,40 @@ export const useCallTypeUtil = () => {
       if (!targetCode) return;
       // const targetCode = targetTagInfo.EQ_CODE;
 
-      for (let i = 1; i <= 10; i++) {
-        const suffix = i < 10 ? `0${i}` : `${i}`;
-        const readCallType = `Call_Type_${suffix}`;
-        const writeCallType = `Call_Type_Response_${suffix}`;
 
-        // 값 읽기
-        const callTypeValue = (await plcConnectUtil.getTagValue(targetCode, readCallType)) as string;
-        if (typeof callTypeValue === 'string') {
-          const setCallType = callTypeValue.replace(/[\s]/g, '');
-          let callType = '';
-          if (process.env.PLC_CONN_TYPE === 'KEP') {
-            console.log(`setCallType`, setCallType);
-            callType = parseAsciiToDecWord(setCallType).toString();
-            console.log(`callType`, callType);
-            console.log(`callType type`, typeof callType);
-          } else {
-            callType = setCallType;
-            console.log(`callType`, callType);
-            console.log(`callType type`, typeof callType);
-          }
-          // 값 쓰기
-          await plcConnectUtil.writeTagValue({
-            targetFacility: targetCode,
-            tagInfo: [{ tagName: writeCallType, value: callType }],
-          });
-        }
-      }
+      // 값 읽기
+      const callTypeValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Type')) as string;
+      await plcConnectUtil.writeTagValue({
+        targetFacility: targetCode,
+        tagInfo: [{ tagName: 'Call_Type_Response', value: callTypeValue }],
+      });
+      // for (let i = 1; i <= 10; i++) {
+      //   const suffix = i < 10 ? `0${i}` : `${i}`;
+      //   const readCallType = `Call_Type_${suffix}`;
+      //   const writeCallType = `Call_Type_Response_${suffix}`;
+
+      //   // 값 읽기
+      //   const callTypeValue = (await plcConnectUtil.getTagValue(targetCode, readCallType)) as string;
+      //   if (typeof callTypeValue === 'string') {
+      //     const setCallType = callTypeValue.replace(/[\s]/g, '');
+      //     let callType = '';
+      //     if (process.env.PLC_CONN_TYPE === 'KEP') {
+      //       console.log(`setCallType`, setCallType);
+      //       callType = parseAsciiToDecWord(setCallType).toString();
+      //       console.log(`callType`, callType);
+      //       console.log(`callType type`, typeof callType);
+      //     } else {
+      //       callType = setCallType;
+      //       console.log(`callType`, callType);
+      //       console.log(`callType type`, typeof callType);
+      //     }
+      //     // 값 쓰기
+      //     await plcConnectUtil.writeTagValue({
+      //       targetFacility: targetCode,
+      //       tagInfo: [{ tagName: writeCallType, value: callType }],
+      //     });
+      //   }
+      // }
     } catch (error) {
       throw error;
     }
@@ -76,16 +83,17 @@ export const useCallTypeUtil = () => {
       await plcConnectUtil.writeTagValue({
         targetFacility: targetCode,
         tagInfo: [
-          { tagName: 'Call_Type_Response_02', value: value },
-          { tagName: 'Call_Type_Response_03', value: value },
-          { tagName: 'Call_Type_Response_01', value: value },
-          { tagName: 'Call_Type_Response_04', value: value },
-          { tagName: 'Call_Type_Response_05', value: value },
-          { tagName: 'Call_Type_Response_06', value: value },
-          { tagName: 'Call_Type_Response_07', value: value },
-          { tagName: 'Call_Type_Response_08', value: value },
-          { tagName: 'Call_Type_Response_09', value: value },
-          { tagName: 'Call_Type_Response_10', value: value },
+          { tagName: 'Call_Type_Response', value: value },
+          // { tagName: 'Call_Type_Response_01', value: value },
+          // { tagName: 'Call_Type_Response_02', value: value },
+          // { tagName: 'Call_Type_Response_03', value: value },
+          // { tagName: 'Call_Type_Response_04', value: value },
+          // { tagName: 'Call_Type_Response_05', value: value },
+          // { tagName: 'Call_Type_Response_06', value: value },
+          // { tagName: 'Call_Type_Response_07', value: value },
+          // { tagName: 'Call_Type_Response_08', value: value },
+          // { tagName: 'Call_Type_Response_09', value: value },
+          // { tagName: 'Call_Type_Response_10', value: value },
         ],
       });
     } catch (error) {

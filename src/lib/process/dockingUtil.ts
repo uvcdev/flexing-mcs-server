@@ -586,6 +586,7 @@ export const useDockingUtil = () => {
               { tagName: 'Dock_Request_Charge', value: false },
               { tagName: 'Dock_Request_Force', value: false },
               { tagName: 'Dock_AMR_Status', value: false },
+              { tagName: 'Trans_Signal_Reset', value: true },
             ],
           });
           logToConsoleAndFile(`Successfully initialized before retry docking request`, 'green');
@@ -600,46 +601,8 @@ export const useDockingUtil = () => {
           });
           throw error;
         }
-        // 콜타입 입력
-        // if (facility.serial) {
-        //   await useCallTypeUtil().callTypeResponse(facility.serial);
-        // }
-        /*
-        const callType = parseAsciiToDecWord(params.CALL_TYPE);
-        if (callType) {
-          const callTypeString = callType.toString();
-          const callTypeResponseTag = await useKepServerUtil().makeWriteDatas({
-            targetFacility: paramsSerial,
-            tagInfo: [
-              {
-                tagName: 'Call_Type_Response_01',
-                value: callType
-              }
-            ]
-          });
-          await useKepServerUtil().writeTagsValue(callTypeResponseTag);
-        }
-          */
         switch (dockingParams.EXC_CLS) {
           case EXC_CLS.AUTO: //일반도킹
-            // TODO: 도킹 요청 기종 확인(기종은 콜 호출 응답 시, 혹은 도킹요청 하기 전 기록되어있어야함)
-            // const CallId = params.CALL_ID;
-            // const CallIdRedisInfo = await redisUtil.hgetObject<CallIdRedisInfo>(RedisKeys.CallIdRedisInfo, CallId);
-            // const CallType = CallIdRedisInfo.Call_Type;
-
-            // todo: 250604 Dock_EQ_Status 값 내리기 위해 드라이런용 reset 추가
-            // await plcConnectUtil.writeTagValue({
-            //   targetFacility: paramsSerial,
-            //   tagInfo: [
-            //     { tagName: 'Dock_Signal_Reset', value: true },
-            //   ],
-            // });
-            // setTimeout(() => {
-            //   plcConnectUtil.writeTagValue({
-            //     targetFacility: paramsSerial,
-            //     tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
-            //   });
-            // }, 500);
             await plcConnectUtil.writeTagValue({
               targetFacility: paramsSerial,
               tagInfo: [
@@ -716,6 +679,7 @@ export const useDockingUtil = () => {
             await plcConnectUtil.writeTagValue({
               targetFacility: paramsSerial,
               tagInfo: [
+                { tagName: 'Trans_Signal_Reset', value: true },
                 { tagName: 'Dock_Signal_Reset', value: true },
                 { tagName: 'Dock_Request', value: true },
               ],
@@ -724,7 +688,7 @@ export const useDockingUtil = () => {
             setTimeout(() => {
               plcConnectUtil.writeTagValue({
                 targetFacility: paramsSerial,
-                tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+                tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }, { tagName: 'Trans_Signal_Reset', value: false }],
               });
             }, 500);
 

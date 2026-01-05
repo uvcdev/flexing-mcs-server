@@ -40,6 +40,9 @@ export const useCallRemoveUtil = () => {
           { tagName: 'Call_Robot_Assigned', value: false },
           { tagName: 'Call_Response_Count', value: '0' },
           { tagName: 'Dock_Request', value: false },
+          { tagName: 'UnLoad Valid', value: false },
+          { tagName: 'Load Valid', value: false },
+          { tagName: 'Complete', value: false },
         ],
       });
       await useCallTypeUtil().callTypeResponseReset(targetCode);

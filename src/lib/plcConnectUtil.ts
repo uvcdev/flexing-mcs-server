@@ -210,7 +210,7 @@ export const usePlcConnectUtil = () => {
         }
         switch (tagMapValue.DATA_TYPE) {
           case 'Boolean':
-            return data === 'true' ? true : false;
+            return data === 'true' ? true : data === '1' ? true : false;
           case 'UInt16':
             return Number(data);
           case 'String':

@@ -266,16 +266,22 @@ export const useEqpCheckUtil = () => {
           break;
 
         case 'Load_Permit':
-        case 'UnLoad_Permit':
           console.log(`Changed Load_Permit`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           // Load_Permit 포트에 자재를 올려놓을 때 허가 (투입 작업)
-          // unLoad_Permit 포트에서 자재를 제거할 때 허가 (회수 작업)
-          await useLiftCommandUtil().liftStart(targetTagInfo, targetTagInfo.TAG_NAME === 'Load_Permit' ? 'down' : 'up');
+          await useLiftCommandUtil().liftStart(targetTagInfo, 'down');
+          break;
+
+        case 'Unload_Permit':
+          console.log(`Changed Unload_Permit`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          // unload_Permit 포트에서 자재를 제거할 때 허가 (회수 작업)
+          await useLiftCommandUtil().liftStart(targetTagInfo, 'up');
           break;
 
         case 'Trans_Signal_Reset':
           console.log(`Changed Trans_Signal_Reset`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          await useLiftCommandUtil().transSignalReset(targetTagInfo);
+          if (targetTagInfo.value === true) {
+            await useLiftCommandUtil().transSignalReset(targetTagInfo);
+          }
           break;
 
         case 'Dock_Out_Permit':
@@ -293,21 +299,15 @@ export const useEqpCheckUtil = () => {
         case 'Complete':
           console.log(`Changed Complete`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           // await useLiftCommandUtil().liftCommandComplete(targetTagInfo);
-          await plcConnectUtil.writeTagValue({
-            targetFacility: targetTagInfo.EQ_CODE,
-            tagInfo: [
-              { tagName: 'Dock_Request', value: false },
-              // { tagName: 'Dock_Signal_Reset', value: true }],
-              // { tagName: 'Dock_AMR_Status', value: false },
-            ],
-          });
-
-          // setTimeout(() => {
-          // await plcConnectUtil.writeTagValue({
-          //   targetFacility: targetTagInfo.EQ_CODE,
-          //   tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
-          // });
-          // }, 1000);
+          if (targetTagInfo.value === true) {
+            await plcConnectUtil.writeTagValue({
+              targetFacility: targetTagInfo.EQ_CODE,
+              tagInfo: [
+                { tagName: 'Load Valid', value: false },
+                { tagName: 'UnLoad Valid', value: false },
+              ],
+            });
+          }
           break;
 
         case 'Call_Request_Multi_1':
