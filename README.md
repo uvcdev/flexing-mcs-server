@@ -632,3 +632,4 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 
 ## v2.2.6
 - Call Register 에서 call id 없어지는 현상 개선
+- mqttUtil 에서 work-order-cancel 안에 InfoCallRequestOnBySerial set 부분 주석

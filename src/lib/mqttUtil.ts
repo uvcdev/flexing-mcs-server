@@ -781,11 +781,11 @@ export const receiveMqtt = (): void => {
                     reRegister: 'cancel',
                   };
 
-                  await useRedisUtil().hset(
-                    RedisKeys.InfoCallRequestOnBySerial,
-                    triggerFacility,
-                    JSON.stringify(targetTagInfo)
-                  );
+                  // await useRedisUtil().hset(
+                  //   RedisKeys.InfoCallRequestOnBySerial,
+                  //   triggerFacility,
+                  //   JSON.stringify(targetTagInfo)
+                  // );
                 }
               }
 
