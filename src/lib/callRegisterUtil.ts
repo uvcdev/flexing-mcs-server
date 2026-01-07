@@ -55,10 +55,36 @@ export const useCallRegisterUtil = () => {
       for (let i = 0, length = callRegisterList.length; i < length; i++) {
         const targetTagInfo = callRegisterList[i];
         const targetCode = targetTagInfo.EQ_CODE;
-        const eqpCallId = targetTagInfo.CALL_ID || '';
-        // console.log('🚀 ~ callRegister ~ targetCode:', targetCode);
-        // console.log('🚀 ~ callRegister ~ eqpCallId:', eqpCallId);
+        let eqpCallId = targetTagInfo.CALL_ID || '';
         if (!targetCode) continue; // 코드 없으면 처리 불가
+
+        const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
+          RedisKeys.InfoFacilityBySerial,
+          targetCode
+        );
+
+        if (!eqpCallId) {
+          if (facilityInfo?.system === 'EQP') {
+            const recentWorkOrderListByFacilitySerial =
+              await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+                RedisKeys.RecentWorkOrderListByFacilitySerial,
+                targetCode
+              );
+
+            const workOrderCount = recentWorkOrderListByFacilitySerial?.count;
+            const workOrderList = recentWorkOrderListByFacilitySerial?.workOrderList || [];
+
+            for (let i = 0, length = workOrderList.length; i < length; i++) {
+              const workOrderInfo = workOrderList[i];
+
+              if (workOrderInfo.state === 'beforeWorkOrder') {
+                eqpCallId = workOrderInfo.callId;
+              }
+            }
+          } else {
+            // 창고는 beforeWorkOrder 말고도 봐야할 데이터가 많음...
+          }
+        }
 
         // remainCall doesn't need callRegister again
         // 250916 remove reamin
@@ -82,10 +108,10 @@ export const useCallRegisterUtil = () => {
         const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
         // const callType = await makeCallType(targetCode);
         const callType = (await plcConnectUtil.getTagValue(targetCode, 'Call_Type')) as string;
-        const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
-          RedisKeys.InfoFacilityBySerial,
-          targetCode
-        );
+        // const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
+        //   RedisKeys.InfoFacilityBySerial,
+        //   targetCode
+        // );
 
         if (facilityInfo?.mode === 'manual' || !eqAutoValue) {
           continue;

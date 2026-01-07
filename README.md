@@ -629,3 +629,6 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 ## v2.2.5
 - 버전승인 v2.2.4
 - 0105 빌드
+
+## v2.2.6
+- Call Register 에서 call id 없어지는 현상 개선
