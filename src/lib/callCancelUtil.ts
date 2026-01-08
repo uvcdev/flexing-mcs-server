@@ -378,7 +378,7 @@ export const useCallCancelUtil = () => {
         // 이 함수에서는 콜취소응답만 0으로 내리기.
         await plcConnectUtil.writeTagValue({
           targetFacility: targetTagInfo.EQ_CODE,
-          tagInfo: [{ tagName: 'Call_Cancel_Response', value: false }, { tagName: 'Call_Response', value: false }],
+          tagInfo: [{ tagName: 'Call_Cancel_Response', value: false }],
         });
         return;
       }
