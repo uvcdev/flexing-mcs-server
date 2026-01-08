@@ -49,7 +49,8 @@ export const useCallRemoveUtil = () => {
       await useMultiCallRegisterUtil().hsetWithDecrementCount(RedisKeys.InfoWorkOrderCountBySerial, targetCode);
       // 250916 remove remain
       // redisUtil.hdel(RedisKeys.InfoRemainCallById, targetCode);
-      redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
+      // 260108 - 작업 미생선 원인 제거
+      // redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
     } catch (error) {
       console.error('Error in callRemove:', error);
     }

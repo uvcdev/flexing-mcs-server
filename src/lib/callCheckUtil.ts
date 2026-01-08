@@ -6,11 +6,13 @@ import {
 } from '../models/operation/workOrder';
 import { EqpCallStats, useCallRegisterUtil } from './callRegisterUtil';
 import { makeCallType, TagValue } from './kepServerUtil';
+import { usePlcConnectUtil } from './plcConnectUtil';
 import { initTrackingLogRedis } from './process/trackingLog';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from './redisUtil';
 import { timestampToDate } from './usefullToolUtil';
 
 const redisUtil = useRedisUtil();
+const plcConnectUtil = usePlcConnectUtil();
 
 // Call Request를 보낼 지, 말 지 판단하는 함수
 export const checkCallRequestCreate = async () => {
@@ -29,7 +31,7 @@ export const checkCallRequestCreate = async () => {
     const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilitySerial);
     if (!facilityInfo) {
       // 에러처리
-      return;
+      continue;
     }
 
     const callRequest = recentCallCountByFacilitySerialInfo.callRequest;
@@ -52,8 +54,8 @@ export const checkCallRequestCreate = async () => {
       let pendingWorkOrderCount = 0;
       let allWorkOrderCount = recentWorkOrderListByFacilitySerial?.count || 0;
 
-      for (let i = 0; i < allWorkOrderCount; i++) {
-        const workOrderInfo = recentWorkOrderListByFacilitySerial?.workOrderList[i];
+      for (let j = 0; j < allWorkOrderCount; j++) {
+        const workOrderInfo = recentWorkOrderListByFacilitySerial?.workOrderList[j];
 
         // 작업 상태가 To 가 아닌 경우
         if (
@@ -86,15 +88,25 @@ export const checkCallRequestCreate = async () => {
 
     // [ 만들 수 있는 최대 개수 - 진행 중인 작업 개수 (in/out 차이 o) ]
     if (reqWorkOrderCount > 0) {
-      for (let i = 0; i < reqWorkOrderCount; i++) {
+      for (let k = 0; k < reqWorkOrderCount; k++) {
         const timezoneValue = process.env.TIME_ZONE || '';
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
           facilitySerial
         );
         if (facilityInfo && facilityInfo.isActiveCallTrigger) {
+          // 김천은 작업이 먼저 끝난 후에 request가 내려가는 현상이 있기 때문에 조건 추가
+          // Tag 데이터 중 [ Load Valid , UnLoad Valid , Complete ] 중 하나라도 켜져 있는 경우 continue
+          const loadValidValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Load Valid')) as boolean;
+          const unloadValidValue = (await plcConnectUtil.getTagValue(facilitySerial, 'UnLoad Valid')) as boolean;
+          const completeValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Complete')) as boolean;
+
+          // 작업 진행 중인 상태면 스킵
+          if (loadValidValue || unloadValidValue || completeValue) {
+            continue;
+          }
           const eqpCallId = await useCallRegisterUtil().createWorkOrderCode(facilitySerial, facilityInfo, '');
-          if (!eqpCallId) return;
+          if (!eqpCallId) continue;
 
           // check call request create 함수에서는 Request를 쓰기 바로 전 단계를 판단하는 것이라서 beforeRequest 상태 사용
           const workOrderState = 'beforeRequest';
