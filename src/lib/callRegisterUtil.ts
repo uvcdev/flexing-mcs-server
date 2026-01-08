@@ -57,6 +57,7 @@ export const useCallRegisterUtil = () => {
         const targetCode = targetTagInfo.EQ_CODE;
         const eqpCallId = targetTagInfo.CALL_ID || '';
         if (!targetCode) continue; // 코드 없으면 처리 불가
+        if (!eqpCallId) continue;
 
         // remainCall doesn't need callRegister again
         // 250916 remove reamin

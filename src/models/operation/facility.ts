@@ -208,6 +208,7 @@ export interface FacilityInsertParams {
   linkedEqpIds: Array<number>;
   linkedWmsIds: Array<number>;
   cancelType: FacilityAttributes['cancelType'] | null;
+  cancelLinkedEqpIds: Array<number>;
   mode: 'auto' | 'manual' | null;
   description: string | null;
   generatedCallCount: number | null;
@@ -283,6 +284,7 @@ export interface FacilityUpdateParams {
   linkedEqpIds?: Array<number>;
   linkedWmsIds?: Array<number>;
   cancelType?: FacilityAttributes['cancelType'] | null;
+  cancelLinkedEqpIds?: Array<number>;
   mode?: 'auto' | 'manual';
   generatedCallCount?: number;
   isActiveCallTrigger?: boolean;

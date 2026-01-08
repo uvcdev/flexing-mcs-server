@@ -683,3 +683,8 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - Call Request / Call Request Multi 1 / Call Request Multi 2 데이터 처리 방식 변경
 - call-signal-reset 관련 작업 초기화 기능 추가
 - suject 스펠링 오류 수정
+- 설비 관리
+  - cancelLinkedEqpIds : Post , Put 누락 내용 추가
+
+- 공통 로직
+  - SP-BS 연결 로직 ( 작업 취소 관련은 없음 ) 추가

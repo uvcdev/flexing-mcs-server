@@ -30,7 +30,7 @@ import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/w
 import { useDockingUtil } from './process/dockingUtil';
 import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
 import { TagValue, useKepServerUtil } from './kepServerUtil';
-import { checkCallSignalResetWorkOrder } from './process/commonUtils';
+import { checkCallSignalResetWorkOrder, checkSpBsWorkType } from './process/commonUtils';
 import { FacilityAttributes } from '../models/operation/facility';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { service as facilityService } from '../service/operation/facilityService';
@@ -1046,6 +1046,11 @@ export const receiveMqtt = (): void => {
                   message: messageJson,
                 });
               }
+            }
+            // sp-bs 라인 work type 변경
+            if (topicSplit.length === 2 && topicSplit[1] === 'edit-sp-bs-work-type') {
+              const messageJson = JSON.parse(message);
+              await checkSpBsWorkType(messageJson);
             }
           }
 

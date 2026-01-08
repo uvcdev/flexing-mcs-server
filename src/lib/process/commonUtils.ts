@@ -1,8 +1,8 @@
 import { TrackingLogRedisUpdateParams, TrackingLogSelectInfoByCallIdParams } from './../../models/common/trackingLog';
 import { RecentWorkOrderListByFacilitySerialAttributes } from './../../models/operation/workOrder';
-import { FacilityAttributes } from '../../models/operation/facility';
+import { FacilityAttributes, FacilityUpdateParams } from '../../models/operation/facility';
 import { useKepServerUtil } from '../kepServerUtil';
-import { logging } from '../logging';
+import { logging, makeLogFormat, RequestLog } from '../logging';
 import opcuaUtil from '../opcuaUtil';
 import { usePlcConnectUtil } from '../plcConnectUtil';
 import { RedisKeys, useRedisUtil } from '../redisUtil';
@@ -14,6 +14,7 @@ import { EqpCallStats } from '../callTypeUtil';
 import { RemainingAckCommand } from './wmsAck';
 import { InfoAckInCallByCallIdBody } from '../wms/mqtt/call';
 import { CancelCallInfo, checkCancelCallInfo } from './wmsCommon';
+import { service as facilityService } from '../../service/operation/facilityService';
 
 const redisUtil = useRedisUtil();
 
@@ -202,11 +203,11 @@ export const sendMqttWorkOrderList = async () => {
           callId
         );
 
-        const callIdSubject = selectedCallIdInfo?.subject;
+        const callIdDetail = selectedCallIdInfo?.detail;
 
         selectedCallIdList.push({
           callId,
-          subject: callIdSubject || 'BEFORE_CALL_REQUEST',
+          detail: callIdDetail || 'BEFORE_CALL_REQUEST',
         });
       }
     }
@@ -489,5 +490,249 @@ export const checkCallSignalResetWorkOrder = async (
     //     JSON.stringify(recentCallCountByFacilitySerialParams)
     //   );
     // }
+  }
+};
+
+export const checkSpBsWorkType = async (messageJson: any) => {
+  console.log('messageJson', messageJson);
+  const workType: 'EQP' | 'WMS' | '' = messageJson.type || '';
+
+  if (workType === '') {
+    // 에러 처리 추가 필요
+    return;
+  }
+
+  const spInPortFacilitySerialList: string[] = messageJson.spInPortFacilitySerialList || [];
+  const spOutPortFacilitySerialList: string[] = messageJson.spOutPortFacilitySerialList || [];
+  const bsInPortFacilitySerialList: string[] = messageJson.bsInPortFacilitySerialList || [];
+  const bsOutPortFacilitySerialList: string[] = messageJson.bsOutPortFacilitySerialList || [];
+
+  const wmsSpInPortSerial = ['WS11', 'WS13'];
+  const ws11FacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, 'WS11');
+  const ws13FacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, 'WS13');
+
+  const wmsBsInPortSerial = ['WC11'];
+  const wc11FacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, 'WS11');
+
+  if (workType === 'WMS') {
+    // SP
+    for (let i = 0, length = spInPortFacilitySerialList.length; i < length; i++) {
+      const facilitySerial = spInPortFacilitySerialList[i];
+
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        facilitySerial
+      );
+
+      if (!facilityInfo) {
+        continue;
+      }
+
+      const facilityUpdateParams: FacilityUpdateParams = {
+        id: facilityInfo.id,
+        system: 'WMS',
+        linkedEqpIds: [],
+        cancelType: 'EQP_TO_WMS',
+        isActiveCallTrigger: true,
+        cancelLinkedEqpIds: [],
+      };
+      facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
+    }
+
+    for (let i = 0, length = spOutPortFacilitySerialList.length; i < length; i++) {
+      const facilitySerial = spOutPortFacilitySerialList[i];
+
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        facilitySerial
+      );
+
+      if (!facilityInfo) {
+        continue;
+      }
+
+      const facilityUpdateParams: FacilityUpdateParams = {
+        id: facilityInfo.id,
+        system: 'WMS',
+        linkedEqpIds: [Number(ws11FacilityInfo?.id), Number(ws13FacilityInfo?.id)],
+        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        isActiveCallTrigger: true,
+        cancelLinkedEqpIds: [],
+        isMissionOrderCapable: true,
+      };
+      facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
+    }
+
+    // BS
+    for (let i = 0, length = bsInPortFacilitySerialList.length; i < length; i++) {
+      const facilitySerial = bsInPortFacilitySerialList[i];
+
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        facilitySerial
+      );
+
+      if (!facilityInfo) {
+        continue;
+      }
+
+      const facilityUpdateParams: FacilityUpdateParams = {
+        id: facilityInfo.id,
+        system: 'WMS',
+        linkedEqpIds: [],
+        cancelType: 'EQP_TO_WMS',
+        isActiveCallTrigger: true,
+        cancelLinkedEqpIds: [],
+      };
+      facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
+    }
+
+    for (let i = 0, length = bsOutPortFacilitySerialList.length; i < length; i++) {
+      const facilitySerial = bsOutPortFacilitySerialList[i];
+
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        facilitySerial
+      );
+
+      if (!facilityInfo) {
+        continue;
+      }
+
+      const facilityUpdateParams: FacilityUpdateParams = {
+        id: facilityInfo.id,
+        system: 'WMS',
+        linkedEqpIds: [Number(wc11FacilityInfo?.id)],
+        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        isActiveCallTrigger: true,
+        cancelLinkedEqpIds: [],
+        isMissionOrderCapable: true,
+      };
+      facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
+    }
+  }
+  // workType === 'EQP'
+  else {
+    // SP
+    for (let i = 0, length = spInPortFacilitySerialList.length; i < length; i++) {
+      const facilitySerial = spInPortFacilitySerialList[i];
+
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        facilitySerial
+      );
+
+      if (!facilityInfo) {
+        continue;
+      }
+
+      const facilityUpdateParams: FacilityUpdateParams = {
+        id: facilityInfo.id,
+        system: 'EQP',
+        linkedEqpIds: [],
+        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        isActiveCallTrigger: false,
+        cancelLinkedEqpIds: [],
+      };
+      facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
+    }
+
+    for (let i = 0, length = spOutPortFacilitySerialList.length; i < length; i++) {
+      const facilitySerial = spOutPortFacilitySerialList[i];
+
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        facilitySerial
+      );
+
+      if (!facilityInfo) {
+        continue;
+      }
+
+      const facilityUpdateParams: FacilityUpdateParams = {
+        id: facilityInfo.id,
+        system: 'EQP',
+        linkedEqpIds: [],
+        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        isActiveCallTrigger: false,
+        cancelLinkedEqpIds: [],
+        isMissionOrderCapable: false,
+      };
+      facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
+    }
+
+    // BS
+    for (let i = 0, length = bsInPortFacilitySerialList.length; i < length; i++) {
+      const facilitySerial = bsInPortFacilitySerialList[i];
+
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        facilitySerial
+      );
+
+      if (!facilityInfo) {
+        continue;
+      }
+      const linkedSpSerial = facilitySerial.replace(/BS(\d)(\d)/, (match, first, second) => {
+        const newSecond = second === '1' ? '2' : '1';
+        return `SP${first}${newSecond}`; // SP로 변환
+      });
+
+      const linkedfacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        linkedSpSerial
+      );
+
+      if (!linkedfacilityInfo) {
+        continue;
+      }
+
+      const facilityUpdateParams: FacilityUpdateParams = {
+        id: facilityInfo.id,
+        system: 'EQP',
+        linkedEqpIds: [Number(linkedfacilityInfo.id)],
+        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        isActiveCallTrigger: true,
+        cancelLinkedEqpIds: [],
+      };
+      facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
+    }
+
+    for (let i = 0, length = bsOutPortFacilitySerialList.length; i < length; i++) {
+      const facilitySerial = bsOutPortFacilitySerialList[i];
+
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        facilitySerial
+      );
+
+      if (!facilityInfo) {
+        continue;
+      }
+      const linkedSpSerial = facilitySerial.replace(/BS(\d)(\d)/, (match, first, second) => {
+        const newSecond = second === '1' ? '2' : '1';
+        return `SP${first}${newSecond}`; // SP로 변환
+      });
+
+      const linkedfacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        linkedSpSerial
+      );
+
+      if (!linkedfacilityInfo) {
+        continue;
+      }
+
+      const facilityUpdateParams: FacilityUpdateParams = {
+        id: facilityInfo.id,
+        system: 'EQP',
+        linkedEqpIds: [Number(linkedfacilityInfo?.id)],
+        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        isActiveCallTrigger: true,
+        cancelLinkedEqpIds: [],
+        isMissionOrderCapable: false,
+      };
+      facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
+    }
   }
 };
