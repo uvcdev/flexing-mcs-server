@@ -637,7 +637,7 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 ## v2.2.7
 - call cancel 시 call_response off 제거
 
-## v2.2.6-ljk
+## v2.2.7-ljk
 - ACS 작업 취소 시, call response 값 내리기 
   - from 작업은 A,B 설비 모두 값 내리기
   - to 작업은 B 설비 값만 내리기
@@ -645,3 +645,6 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 - 작업 미진행 원인 제거
   - call remove Util 에 InfoCallRequestOnBySerial 내용 주석
   - call Check 과정에서 Load Valid , UnLoad Valid , Complete 감지 추가
+
+## v2.2.8
+- approval v2.2.7-ljk
