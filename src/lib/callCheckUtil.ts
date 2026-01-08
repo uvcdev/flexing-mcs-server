@@ -183,13 +183,13 @@ export const checkCallCreate = async () => {
       recentWorkOrderListByFacilitySerial?.workOrderList.find((workOrder) => workOrder.state === 'beforeWorkOrder') ||
       null;
     if (!beforeWorkOrderInfo) {
-      for (let i = 0; i < filterRecentWorkOrderList.length; i++) {
+      for (let j = 0; j < filterRecentWorkOrderList.length; j++) {
         const timezoneValue = process.env.TIME_ZONE || '';
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
           facilitySerial
         );
-        const eqpCallId = filterRecentWorkOrderList[i].callId;
+        const eqpCallId = filterRecentWorkOrderList[j].callId;
 
         const callRegisterInfoBySerial = await redisUtil.hgetObject<TagValue>(
           RedisKeys.InfoCallRequestOnBySerial,
