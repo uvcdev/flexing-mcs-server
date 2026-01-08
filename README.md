@@ -632,3 +632,8 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 
 ## v2.2.6
 - Call Register 에서 call id 없어지는 현상 개선
+
+## v2.2.6-ljk
+- ACS 작업 취소 시, call response 값 내리기 
+  - from 작업은 A,B 설비 모두 값 내리기
+  - to 작업은 B 설비 값만 내리기

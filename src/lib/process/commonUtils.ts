@@ -1,5 +1,8 @@
 import { FacilityAttributes } from '../../models/operation/facility';
+import { RecentWorkOrderListByFacilitySerialAttributes } from '../../models/operation/workOrder';
+import { useCallTypeUtil } from '../callTypeUtil';
 import { logging } from '../logging';
+import { usePlcConnectUtil } from '../plcConnectUtil';
 import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { MqttBranchInfoDataFromAcs } from './wmsBranch';
 
@@ -87,3 +90,67 @@ export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDa
 
 // EQP 도킹 실행 시키는 함수 ( 파트장님이 원하는 위치로 옮기셔도 될 것 같습니다 ! )
 export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => { };
+
+
+export const acsWorkOrderCancel = async (messageJson: any) => {
+  const plcConnectUtil = usePlcConnectUtil();
+  const workOrderMode = messageJson?.mode;
+  const canceledWorkOrderCallId = messageJson?.code || '';
+  const fromFacilitySerial = messageJson?.FromFacility?.serial || '';
+  const toFacilitySerial = messageJson?.ToFacility?.serial || '';
+
+  const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+    RedisKeys.InfoFacilityById,
+    fromFacilitySerial
+  );
+  let alwaysOnFacility = fromFacilitySerial;
+  let triggerFacility = toFacilitySerial;
+
+  if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
+    alwaysOnFacility = toFacilitySerial;
+    triggerFacility = fromFacilitySerial;
+  }
+
+  const recentWorkOrderListByFacilitySerial = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+    RedisKeys.RecentWorkOrderListByFacilitySerial,
+    triggerFacility
+  );
+
+  const workOrderList = recentWorkOrderListByFacilitySerial?.workOrderList || [];
+
+  const selectedWorkOrderInfo = workOrderList.find((workOrderInfo) => workOrderInfo.callId === canceledWorkOrderCallId);
+  const selectedWorkOrderInfoState = selectedWorkOrderInfo?.state;
+
+  if (selectedWorkOrderInfoState !== 'toWorkOrder') {
+    if (fromFacilitySerial) {
+      await plcConnectUtil.writeTagValue({
+        targetFacility: fromFacilitySerial,
+        tagInfo: [
+          { tagName: 'Call_Response', value: false },
+          { tagName: 'Call_Robot_Assigned', value: false },
+          { tagName: 'Call_Response_Count', value: '0' },
+          { tagName: 'Dock_Request', value: false },
+          { tagName: 'Call_Response_Multi_1', value: false },
+          { tagName: 'Call_Response_Multi_2', value: false },
+          { tagName: 'Call_Cancel_Response', value: false },
+        ],
+      });
+      await useCallTypeUtil().callTypeResponseReset(fromFacilitySerial);
+    }
+  }
+  if (toFacilitySerial) {
+    await plcConnectUtil.writeTagValue({
+      targetFacility: toFacilitySerial,
+      tagInfo: [
+        { tagName: 'Call_Response', value: false },
+        { tagName: 'Call_Robot_Assigned', value: false },
+        { tagName: 'Call_Response_Count', value: '0' },
+        { tagName: 'Dock_Request', value: false },
+        { tagName: 'Call_Response_Multi_1', value: false },
+        { tagName: 'Call_Response_Multi_2', value: false },
+        { tagName: 'Call_Cancel_Response', value: false },
+      ],
+    });
+    await useCallTypeUtil().callTypeResponseReset(toFacilitySerial);
+  }
+};
