@@ -724,73 +724,69 @@ export const useDockingUtil = () => {
       if (usageFacilitylist && usageFacilitylist.length > 0) {
         for (const facility of usageFacilitylist) {
           const paramsSerial = facility.serial || '';
-          // const dockOutPermitValue = (await plcConnectUtil.getTagValue(paramsSerial, 'Dock_Out_Permit')) as boolean;
-          // // dock_out_permit 이 켜있으면 그냥 허가
-          // if (dockOutPermitValue === true) {
-          //   const timezoneValue = process.env.TIME_ZONE || '';
-          //   const tag = useKepServerUtil().getTargetTag(paramsSerial, 'Dock_Out_Permit');
-          //   const targetTagInfo: TagValue = {
-          //     value: true,
-          //     prevValue: '',
-          //     timestamp: Date.now(),
-          //     createTime: timestampToDate(timezoneValue),
-          //     CHANNEL: tag?.CHANNEL || '',
-          //     DEVICE: paramsSerial,
-          //     TAGGROUP: '',
-          //     TAG_NAME: tag?.TAG_NAME || '',
-          //     DATA_TYPE: 'Boolean',
-          //     INPUT_TYPE: 'Bool',
-          //     NODE_ID: tag?.NODE_ID || '',
-          //     EQ_CODE: paramsSerial,
-          //     reRegister: 'Dock_Out_Permit',
-          //   };
-          //   await useDockingUtil().dockingOutStart(targetTagInfo);
-          // } else {
-          // redisUtil.hdel(RedisKeys.DockingRequestBySerialId, params.SERIAL_ID);
-          // redisUtil.hdel(RedisKeys.DockingCompleteBySerialId, params.SERIAL_ID);
-          // redisUtil.hdel(RedisKeys.DockingDetachBySerialId, params.SERIAL_ID);
+          const dockOutPermitValue = (await plcConnectUtil.getTagValue(paramsSerial, 'Dock_Out_Permit')) as boolean;
+          // dock_out_permit 이 켜있으면 그냥 허가
+          if (dockOutPermitValue === true) {
+            const timezoneValue = process.env.TIME_ZONE || '';
+            const tag = useKepServerUtil().getTargetTag(paramsSerial, 'Dock_Out_Permit');
+            const targetTagInfo: TagValue = {
+              value: true,
+              prevValue: '',
+              timestamp: Date.now(),
+              createTime: timestampToDate(timezoneValue),
+              CHANNEL: tag?.CHANNEL || '',
+              DEVICE: paramsSerial,
+              TAGGROUP: '',
+              TAG_NAME: tag?.TAG_NAME || '',
+              DATA_TYPE: 'Boolean',
+              INPUT_TYPE: 'Bool',
+              NODE_ID: tag?.NODE_ID || '',
+              EQ_CODE: paramsSerial,
+              reRegister: 'Dock_Out_Permit',
+            };
+            await useDockingUtil().dockingOutStart(targetTagInfo);
+          } else {
+            // 도킹 아웃 요청 들어온 것에 대한 redis 저장
+            const dockingParamsInfo = {
+              TX_ID: '',
+              TYPE: facility.type,
+              ZONE_ID: '1F',
+              EQP_CALL_ID: dockingParams.EQP_CALL_ID,
+              PORT_ID: facility.serial,
+              CALL_ID: dockingParams.CALL_ID,
+              EXC_CLS: dockingParams.EXC_CLS,
+              WORKER_ID: dockingParams.WORKER_ID,
+              REPORT_ID: dockingParams.REPORT_ID,
+              INSTRUCTION_ID: dockingParams.INSTRUCTION_ID,
+              RESOURCE_ID: dockingParams.RESOURCE_ID,
+              REQUEST_COUNT: dockingParams.REQUEST_COUNT,
+              SERIAL_ID: facility.serial,
+              CALL_TYPE: dockingParams.CALL_TYPE,
+              CALL_FACILITY: dockingParams.CALL_FACILITY,
+              SAME_PIO_SERIAL: dockingParams.SAME_PIO_SERIAL,
+            };
+            redisUtil.hset(RedisKeys.DockingOutRequestBySerialId, paramsSerial, JSON.stringify(dockingParamsInfo));
 
-          // 도킹 아웃 요청 들어온 것에 대한 redis 저장
-          const dockingParamsInfo = {
-            TX_ID: '',
-            TYPE: facility.type,
-            ZONE_ID: '1F',
-            EQP_CALL_ID: dockingParams.EQP_CALL_ID,
-            PORT_ID: facility.serial,
-            CALL_ID: dockingParams.CALL_ID,
-            EXC_CLS: dockingParams.EXC_CLS,
-            WORKER_ID: dockingParams.WORKER_ID,
-            REPORT_ID: dockingParams.REPORT_ID,
-            INSTRUCTION_ID: dockingParams.INSTRUCTION_ID,
-            RESOURCE_ID: dockingParams.RESOURCE_ID,
-            REQUEST_COUNT: dockingParams.REQUEST_COUNT,
-            SERIAL_ID: facility.serial,
-            CALL_TYPE: dockingParams.CALL_TYPE,
-            CALL_FACILITY: dockingParams.CALL_FACILITY,
-            SAME_PIO_SERIAL: dockingParams.SAME_PIO_SERIAL,
-          };
-          redisUtil.hset(RedisKeys.DockingOutRequestBySerialId, paramsSerial, JSON.stringify(dockingParamsInfo));
-
-          await plcConnectUtil.writeTagValue({
-            targetFacility: paramsSerial || '',
-            tagInfo: [{ tagName: 'Dock_Out_Request', value: false }],
-          });
-          // await plcConnectUtil.writeTagValue({
-          //   targetFacility: paramsSerial || '',
-          //   tagInfo: [{ tagName: 'Dock_Signal_Reset', value: true }],
-          // });
-          setTimeout(() => {
-            plcConnectUtil.writeTagValue({
+            await plcConnectUtil.writeTagValue({
               targetFacility: paramsSerial || '',
-              tagInfo: [{ tagName: 'Dock_Out_Request', value: true }],
+              tagInfo: [{ tagName: 'Dock_Out_Request', value: false }],
             });
-            // plcConnectUtil.writeTagValue({
+            // await plcConnectUtil.writeTagValue({
             //   targetFacility: paramsSerial || '',
-            //   tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+            //   tagInfo: [{ tagName: 'Dock_Signal_Reset', value: true }],
             // });
-          }, 500);
+            setTimeout(() => {
+              plcConnectUtil.writeTagValue({
+                targetFacility: paramsSerial || '',
+                tagInfo: [{ tagName: 'Dock_Out_Request', value: true }],
+              });
+              // plcConnectUtil.writeTagValue({
+              //   targetFacility: paramsSerial || '',
+              //   tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+              // });
+            }, 500);
+          }
         }
-        // }
       }
     } catch (error) {
       throw error;

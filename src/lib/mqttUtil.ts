@@ -891,7 +891,7 @@ export const receiveMqtt = (): void => {
 
               try {
                 // Todo[ssb] acs로부터 온 취소 응답 처리 로직 추가
-                useCallCancelUtil().processCancelResponseFromAcs(messageJson);
+                // useCallCancelUtil().processCancelResponseFromAcs(messageJson);
               } catch (error) {
                 console.log('logging.res-cancel-work-order', error);
               }

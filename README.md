@@ -650,4 +650,6 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 - approval v2.2.7-ljk
 
 ## v2.2.9
-- `dockingUtil` 에서 sendDockingOutRequest 에서 Dock_Out_Permit 켜져있으면 허가 켜진것으로 판단하는 로직 주석처리
+- `dockingUtil` 에서 sendDockingOutRequest 에서 Dock_Out_Permit 켜져있으면 허가 켜진것으로 판단하는 로직 적용
+- `callCancelUtil` 에서 RedisKeys.RecentWorkOrderListByFacilitySerial 지우는 로직 추가
+- `mqttUtil` 에서 acs로부터 취소응답 신호 processCancelResponseFromAcs 주석처리 (현재 김천은 의미 없음)
