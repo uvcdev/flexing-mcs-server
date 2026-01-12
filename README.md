@@ -650,4 +650,4 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 - approval v2.2.7-ljk
 
 ## v2.2.9
-- `dockingUtil` 에서 sendDockingOutRequest 에서 Dock_Out_Permit 켜져있으면 허가 켜진것으로 판단
+- `dockingUtil` 에서 sendDockingOutRequest 에서 Dock_Out_Permit 켜져있으면 허가 켜진것으로 판단하는 로직 주석처리
