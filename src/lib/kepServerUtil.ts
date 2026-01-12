@@ -724,6 +724,7 @@ export const useKepServerUtil = () => {
     initTagData,
     updateTagValue,
     makeWriteDatas,
+    getTargetTag,
     getTagMapKey,
     getTagCode,
     findTagInfo,
