@@ -1,7 +1,7 @@
 import { TrackingLogRedisUpdateParams, TrackingLogSelectInfoByCallIdParams } from './../../models/common/trackingLog';
 import { RecentWorkOrderListByFacilitySerialAttributes } from './../../models/operation/workOrder';
 import { FacilityAttributes, FacilityUpdateParams } from '../../models/operation/facility';
-import { useKepServerUtil } from '../kepServerUtil';
+import { makeCallType, useKepServerUtil } from '../kepServerUtil';
 import { logging, makeLogFormat, RequestLog } from '../logging';
 import opcuaUtil from '../opcuaUtil';
 import { usePlcConnectUtil } from '../plcConnectUtil';
@@ -10,13 +10,14 @@ import { MqttBranchInfoDataFromAcs } from './wmsBranch';
 import { TrackingLogRedisAttributes } from '../../models/common/trackingLog';
 import { MqttTopics, sendMqtt } from '../mqttUtil';
 import { editTrackingLogRedis } from './trackingLog';
-import { EqpCallStats } from '../callTypeUtil';
+import { EqpCallStats, useCallTypeUtil } from '../callTypeUtil';
 import { RemainingAckCommand } from './wmsAck';
 import { InfoAckInCallByCallIdBody } from '../wms/mqtt/call';
 import { CancelCallInfo, checkCancelCallInfo } from './wmsCommon';
 import { service as facilityService } from '../../service/operation/facilityService';
 
 const redisUtil = useRedisUtil();
+const plcConnectUtil = usePlcConnectUtil();
 
 export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDataFromAcs) => {
   const mode = messageJson.mode;
@@ -733,6 +734,200 @@ export const checkSpBsWorkType = async (messageJson: any) => {
         isMissionOrderCapable: false,
       };
       facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
+    }
+  }
+};
+
+export const acsWorkOrderCancel = async (messageJson: any) => {
+  const plcConnectUtil = usePlcConnectUtil();
+  const workOrderMode = messageJson?.mode;
+  const canceledWorkOrderCallId = messageJson?.code || '';
+  const fromFacilitySerial = messageJson?.FromFacility?.serial || '';
+  const toFacilitySerial = messageJson?.ToFacility?.serial || '';
+
+  const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+    RedisKeys.InfoFacilityById,
+    fromFacilitySerial
+  );
+  let alwaysOnFacility = fromFacilitySerial;
+  let triggerFacility = toFacilitySerial;
+
+  if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
+    alwaysOnFacility = toFacilitySerial;
+    triggerFacility = fromFacilitySerial;
+  }
+
+  const recentWorkOrderListByFacilitySerial = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+    RedisKeys.RecentWorkOrderListByFacilitySerial,
+    triggerFacility
+  );
+
+  const workOrderList = recentWorkOrderListByFacilitySerial?.workOrderList || [];
+
+  const selectedWorkOrderInfo = workOrderList.find((workOrderInfo) => workOrderInfo.callId === canceledWorkOrderCallId);
+  const selectedWorkOrderInfoState = selectedWorkOrderInfo?.state;
+
+  if (selectedWorkOrderInfoState !== 'toWorkOrder' && selectedWorkOrderInfoState !== 'missionWorkOrder') {
+    if (fromFacilitySerial) {
+      await plcConnectUtil.writeTagValue({
+        targetFacility: fromFacilitySerial,
+        tagInfo: [
+          { tagName: 'Call_Response', value: false },
+          { tagName: 'Call_Robot_Assigned', value: false },
+          { tagName: 'Call_Response_Count', value: '0' },
+          { tagName: 'Dock_Request', value: false },
+          { tagName: 'Call_Response_Multi_1', value: false },
+          { tagName: 'Call_Response_Multi_2', value: false },
+          { tagName: 'Call_Cancel_Response', value: false },
+        ],
+      });
+      await useCallTypeUtil().callTypeResponseReset(fromFacilitySerial);
+    }
+  }
+  if (toFacilitySerial) {
+    await plcConnectUtil.writeTagValue({
+      targetFacility: toFacilitySerial,
+      tagInfo: [
+        { tagName: 'Call_Response', value: false },
+        { tagName: 'Call_Robot_Assigned', value: false },
+        { tagName: 'Call_Response_Count', value: '0' },
+        { tagName: 'Dock_Request', value: false },
+        { tagName: 'Call_Response_Multi_1', value: false },
+        { tagName: 'Call_Response_Multi_2', value: false },
+        { tagName: 'Call_Cancel_Response', value: false },
+      ],
+    });
+    await useCallTypeUtil().callTypeResponseReset(toFacilitySerial);
+  }
+};
+
+export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
+  const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilitySerial);
+
+  if (!facilityInfo) {
+    logging.ACTION_ERROR({
+      filename: `commonUtils.ts - fixMultiCallFacilityStatus`,
+      error: `[facilitySerial] facilitySerial ${facilitySerial} is invalid`,
+      params: null,
+      result: false,
+    });
+    return;
+  }
+
+  // 트리거 설비 중에 in 설비만 사용하는 함수
+  if (facilityInfo.isActiveCallTrigger === false) {
+    return;
+  }
+  if (facilityInfo.type === 'out') {
+    return;
+  }
+
+  const recentWorkOrderListByFacilitySerial = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+    RedisKeys.RecentWorkOrderListByFacilitySerial,
+    facilitySerial
+  );
+  const workOrderCount = recentWorkOrderListByFacilitySerial?.count || 0;
+  const workOrderList = recentWorkOrderListByFacilitySerial?.workOrderList || [];
+
+  if (facilityInfo.system === 'WMS') {
+  }
+  // facilityInfo.system === 'EQP'
+  else {
+    const beforeAssignedAmrWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'workOrder');
+    const fromWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'fromWorkOrder');
+    const toWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'toWorkOrder');
+
+    if (toWorkOrderList.length > 0) {
+      const callType = await makeCallType(facilitySerial);
+      const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
+      const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
+      const callRobotAssignedValue = (await plcConnectUtil.getTagValue(
+        facilitySerial,
+        'Call_Robot_Assigned'
+      )) as boolean;
+      const callResponseCountValue = (await plcConnectUtil.getTagValue(
+        facilitySerial,
+        'Call_Response_Count'
+      )) as number;
+
+      if (callResponseValue === false) {
+        await plcConnectUtil.writeTagValue({
+          targetFacility: facilitySerial,
+          tagInfo: [{ tagName: 'Call_Response', value: true }],
+        });
+      }
+      if (callRobotAssignedValue === false) {
+        await plcConnectUtil.writeTagValue({
+          targetFacility: facilitySerial,
+          tagInfo: [{ tagName: 'Call_Robot_Assigned', value: true }],
+        });
+      }
+      if (callResponseCountValue === 0) {
+        await plcConnectUtil.writeTagValue({
+          targetFacility: facilitySerial,
+          tagInfo: [{ tagName: 'Call_Response_Count', value: callCountValue.toString() }],
+        });
+      }
+      if (callType === '') {
+        await useCallTypeUtil().callTypeResponse(facilitySerial);
+      }
+
+      // await plcConnectUtil.writeTagValue({
+      //   targetFacility: facilitySerial,
+      //   tagInfo: [
+      //     { tagName: 'Call_Response', value: true },
+      //     { tagName: 'Call_Robot_Assigned', value: true },
+      //     { tagName: 'Call_Response_Count', value: callCountValue.toString() },
+      //   ],
+      // });
+    }
+
+    if (toWorkOrderList.length === 0 && (beforeAssignedAmrWorkOrderList.length > 0 || fromWorkOrderList.length > 0)) {
+      const callType = await makeCallType(facilitySerial);
+      const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
+      const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
+      const callRobotAssignedValue = (await plcConnectUtil.getTagValue(
+        facilitySerial,
+        'Call_Robot_Assigned'
+      )) as boolean;
+      const callResponseCountValue = (await plcConnectUtil.getTagValue(
+        facilitySerial,
+        'Call_Response_Count'
+      )) as number;
+
+      if (callResponseValue === false) {
+        await plcConnectUtil.writeTagValue({
+          targetFacility: facilitySerial,
+          tagInfo: [{ tagName: 'Call_Response', value: true }],
+        });
+      }
+      if (callRobotAssignedValue === true) {
+        await plcConnectUtil.writeTagValue({
+          targetFacility: facilitySerial,
+          tagInfo: [{ tagName: 'Call_Robot_Assigned', value: false }],
+        });
+      }
+      if (callResponseCountValue === 0) {
+        await plcConnectUtil.writeTagValue({
+          targetFacility: facilitySerial,
+          tagInfo: [{ tagName: 'Call_Response_Count', value: callCountValue.toString() }],
+        });
+      }
+      if (callType === '') {
+        await useCallTypeUtil().callTypeResponse(facilitySerial);
+      }
+    }
+  }
+};
+
+export const fixMultiCallFacilityStatusList = async () => {
+  const facilityList = (await redisUtil.hgetAllObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial)) || [];
+
+  for (let i = 0; i < facilityList.length; i++) {
+    const facilityInfo = facilityList[i];
+
+    if (facilityInfo.isActiveCallTrigger === true && facilityInfo.type === 'in') {
+      fixMultiCallFacilityStatus(String(facilityInfo?.serial));
     }
   }
 };

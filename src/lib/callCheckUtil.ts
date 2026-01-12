@@ -63,8 +63,8 @@ export const checkCallRequestCreate = async () => {
       let pendingWorkOrderCount = 0;
       let allWorkOrderCount = recentWorkOrderListByFacilitySerial?.count || 0;
 
-      for (let i = 0; i < allWorkOrderCount; i++) {
-        const workOrderInfo = recentWorkOrderListByFacilitySerial?.workOrderList[i];
+      for (let j = 0; j < allWorkOrderCount; j++) {
+        const workOrderInfo = recentWorkOrderListByFacilitySerial?.workOrderList[j];
 
         // 작업 상태가 To 가 아닌 경우
         if (
@@ -97,7 +97,7 @@ export const checkCallRequestCreate = async () => {
 
     // [ 만들 수 있는 최대 개수 - 진행 중인 작업 개수 (in/out 차이 o) ]
     if (reqWorkOrderCount > 0) {
-      for (let i = 0; i < reqWorkOrderCount; i++) {
+      for (let z = 0; z < reqWorkOrderCount; z++) {
         const timezoneValue = process.env.TIME_ZONE || '';
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
@@ -186,13 +186,13 @@ export const checkCallCreate = async () => {
       recentWorkOrderListByFacilitySerial?.workOrderList.find((workOrder) => workOrder.state === 'beforeWorkOrder') ||
       null;
     if (!beforeWorkOrderInfo) {
-      for (let i = 0; i < filterRecentWorkOrderList.length; i++) {
+      for (let j = 0; j < filterRecentWorkOrderList.length; j++) {
         const timezoneValue = process.env.TIME_ZONE || '';
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
           facilitySerial
         );
-        const eqpCallId = filterRecentWorkOrderList[i].callId;
+        const eqpCallId = filterRecentWorkOrderList[j].callId;
 
         const callRegisterInfoBySerial = await redisUtil.hgetObject<TagValue>(
           RedisKeys.InfoCallRequestOnBySerial,

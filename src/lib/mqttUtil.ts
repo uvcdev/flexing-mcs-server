@@ -30,7 +30,7 @@ import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/w
 import { useDockingUtil } from './process/dockingUtil';
 import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
 import { TagValue, useKepServerUtil } from './kepServerUtil';
-import { checkCallSignalResetWorkOrder, checkSpBsWorkType } from './process/commonUtils';
+import { acsWorkOrderCancel, checkCallSignalResetWorkOrder, checkSpBsWorkType } from './process/commonUtils';
 import { FacilityAttributes } from '../models/operation/facility';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { service as facilityService } from '../service/operation/facilityService';
@@ -465,10 +465,10 @@ export const receiveMqtt = (): void => {
               if (state === 'MISSION_COMPLETED') {
                 // todo 250723: workOrder mode 보고 수동이면 패스
                 if (workOrderMode === 'manual') return;
-                await useMultiCallRegisterUtil().hsetWithDecrementCount(
-                  RedisKeys.InfoWorkOrderCountBySerial,
-                  targetFacility
-                );
+                // await useMultiCallRegisterUtil().hsetWithDecrementCount(
+                //   RedisKeys.InfoWorkOrderCountBySerial,
+                //   targetFacility
+                // );
               }
 
               // 작업 취소, 작업 실패 => move to work-order-cancel
@@ -651,94 +651,95 @@ export const receiveMqtt = (): void => {
             //작업지시 cancel 상황
             if (topicSplit[1] === 'work-order-cancel') {
               const messageJson = JSON.parse(message);
-              const workOrderMode = messageJson.mode;
-              const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
-                RedisKeys.InfoFacilityById,
-                messageJson.FromFacility.serial
-              );
-              let alwaysOnFacility = messageJson.FromFacility.serial;
-              let triggerFacility = messageJson.ToFacility.serial;
+              // await acsWorkOrderCancel(messageJson);
+              // const workOrderMode = messageJson.mode;
+              // const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+              //   RedisKeys.InfoFacilityById,
+              //   messageJson.FromFacility.serial
+              // );
+              // let alwaysOnFacility = messageJson.FromFacility.serial;
+              // let triggerFacility = messageJson.ToFacility.serial;
 
-              if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
-                alwaysOnFacility = messageJson.ToFacility.serial;
-                triggerFacility = messageJson.FromFacility.serial;
-              }
+              // if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
+              //   alwaysOnFacility = messageJson.ToFacility.serial;
+              //   triggerFacility = messageJson.FromFacility.serial;
+              // }
 
-              await plcConnectUtil.writeTagValue({
-                targetFacility: alwaysOnFacility,
-                tagInfo: [
-                  { tagName: 'Call_Response', value: false },
-                  { tagName: 'Call_Robot_Assigned', value: false },
-                  { tagName: 'Call_Response_Count', value: '0' },
-                  { tagName: 'Dock_Request', value: false },
-                  { tagName: 'Call_Response_Multi_1', value: false },
-                  { tagName: 'Call_Response_Multi_2', value: false },
-                  { tagName: 'Call_Cancel_Response', value: false },
-                ],
-              });
-              await useCallTypeUtil().callTypeResponseReset(alwaysOnFacility);
-              await plcConnectUtil.writeTagValue({
-                targetFacility: triggerFacility,
-                tagInfo: [
-                  { tagName: 'Call_Response', value: false },
-                  { tagName: 'Call_Robot_Assigned', value: false },
-                  { tagName: 'Call_Response_Count', value: '0' },
-                  { tagName: 'Dock_Request', value: false },
-                  { tagName: 'Call_Response_Multi_1', value: false },
-                  { tagName: 'Call_Response_Multi_2', value: false },
-                  { tagName: 'Call_Cancel_Response', value: false },
-                ],
-              });
-              await useCallTypeUtil().callTypeResponseReset(triggerFacility);
-              if (workOrderMode !== 'manual') {
-                await useMultiCallRegisterUtil().hsetWithDecrementCount(
-                  RedisKeys.InfoWorkOrderCountBySerial,
-                  triggerFacility
-                );
+              // await plcConnectUtil.writeTagValue({
+              //   targetFacility: alwaysOnFacility,
+              //   tagInfo: [
+              //     { tagName: 'Call_Response', value: false },
+              //     { tagName: 'Call_Robot_Assigned', value: false },
+              //     { tagName: 'Call_Response_Count', value: '0' },
+              //     { tagName: 'Dock_Request', value: false },
+              //     { tagName: 'Call_Response_Multi_1', value: false },
+              //     { tagName: 'Call_Response_Multi_2', value: false },
+              //     { tagName: 'Call_Cancel_Response', value: false },
+              //   ],
+              // });
+              // await useCallTypeUtil().callTypeResponseReset(alwaysOnFacility);
+              // await plcConnectUtil.writeTagValue({
+              //   targetFacility: triggerFacility,
+              //   tagInfo: [
+              //     { tagName: 'Call_Response', value: false },
+              //     { tagName: 'Call_Robot_Assigned', value: false },
+              //     { tagName: 'Call_Response_Count', value: '0' },
+              //     { tagName: 'Dock_Request', value: false },
+              //     { tagName: 'Call_Response_Multi_1', value: false },
+              //     { tagName: 'Call_Response_Multi_2', value: false },
+              //     { tagName: 'Call_Cancel_Response', value: false },
+              //   ],
+              // });
+              // await useCallTypeUtil().callTypeResponseReset(triggerFacility);
+              // if (workOrderMode !== 'manual') {
+              //   await useMultiCallRegisterUtil().hsetWithDecrementCount(
+              //     RedisKeys.InfoWorkOrderCountBySerial,
+              //     triggerFacility
+              //   );
 
-                // todo 250805 : ACS에서 취소된 작업 다시 만들 때 멀티콜 판단해서 작업지시 만들어야 하나?
-                // 멀티콜일 때 acs 작업 취소하면 어떻게 되야 하는지 문의 필요
-                const triggerCallRequestValue = (await plcConnectUtil.getTagValue(
-                  triggerFacility,
-                  'Call_Request'
-                )) as boolean;
-                const triggerEQAutoValue = (await plcConnectUtil.getTagValue(triggerFacility, 'EQ_Auto')) as boolean;
-                const alwaysCallRequestValue = (await plcConnectUtil.getTagValue(
-                  alwaysOnFacility,
-                  'Call_Request'
-                )) as boolean;
-                const alwaysEQAutoValue = (await plcConnectUtil.getTagValue(alwaysOnFacility, 'EQ_Auto')) as boolean;
-                if (
-                  triggerCallRequestValue === true &&
-                  alwaysCallRequestValue === true &&
-                  triggerEQAutoValue === true &&
-                  alwaysEQAutoValue === true
-                ) {
-                  const tagInfo = useKepServerUtil().findTagInfo(triggerFacility, 'Call_Request');
-                  const timezoneValue = process.env.TIME_ZONE || '';
-                  const targetTagInfo: TagValue = {
-                    value: true,
-                    prevValue: '',
-                    timestamp: Date.now(),
-                    createTime: timestampToDate(timezoneValue),
-                    CHANNEL: tagInfo?.CHANNEL || '',
-                    DEVICE: triggerFacility,
-                    TAGGROUP: '',
-                    TAG_NAME: 'Call_Request',
-                    DATA_TYPE: 'Boolean',
-                    INPUT_TYPE: 'Bool',
-                    NODE_ID: tagInfo?.NODE_ID || '',
-                    EQ_CODE: triggerFacility,
-                    reRegister: 'cancel',
-                  };
+              //   // todo 250805 : ACS에서 취소된 작업 다시 만들 때 멀티콜 판단해서 작업지시 만들어야 하나?
+              //   // 멀티콜일 때 acs 작업 취소하면 어떻게 되야 하는지 문의 필요
+              //   const triggerCallRequestValue = (await plcConnectUtil.getTagValue(
+              //     triggerFacility,
+              //     'Call_Request'
+              //   )) as boolean;
+              //   const triggerEQAutoValue = (await plcConnectUtil.getTagValue(triggerFacility, 'EQ_Auto')) as boolean;
+              //   const alwaysCallRequestValue = (await plcConnectUtil.getTagValue(
+              //     alwaysOnFacility,
+              //     'Call_Request'
+              //   )) as boolean;
+              //   const alwaysEQAutoValue = (await plcConnectUtil.getTagValue(alwaysOnFacility, 'EQ_Auto')) as boolean;
+              //   if (
+              //     triggerCallRequestValue === true &&
+              //     alwaysCallRequestValue === true &&
+              //     triggerEQAutoValue === true &&
+              //     alwaysEQAutoValue === true
+              //   ) {
+              //     const tagInfo = useKepServerUtil().findTagInfo(triggerFacility, 'Call_Request');
+              //     const timezoneValue = process.env.TIME_ZONE || '';
+              //     const targetTagInfo: TagValue = {
+              //       value: true,
+              //       prevValue: '',
+              //       timestamp: Date.now(),
+              //       createTime: timestampToDate(timezoneValue),
+              //       CHANNEL: tagInfo?.CHANNEL || '',
+              //       DEVICE: triggerFacility,
+              //       TAGGROUP: '',
+              //       TAG_NAME: 'Call_Request',
+              //       DATA_TYPE: 'Boolean',
+              //       INPUT_TYPE: 'Bool',
+              //       NODE_ID: tagInfo?.NODE_ID || '',
+              //       EQ_CODE: triggerFacility,
+              //       reRegister: 'cancel',
+              //     };
 
-                  // await useRedisUtil().hset(
-                  //   RedisKeys.InfoCallRequestOnBySerial,
-                  //   triggerFacility,
-                  //   JSON.stringify(targetTagInfo)
-                  // );
-                }
-              }
+              //     // await useRedisUtil().hset(
+              //     //   RedisKeys.InfoCallRequestOnBySerial,
+              //     //   triggerFacility,
+              //     //   JSON.stringify(targetTagInfo)
+              //     // );
+              //   }
+              // }
 
               logging.MQTT_DEBUG({
                 title: 'imcs message',

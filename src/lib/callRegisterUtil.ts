@@ -134,10 +134,10 @@ export const useCallRegisterUtil = () => {
               // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
               await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
               // 현재 설비에 대한 작업지시 개수 증가
-              await useMultiCallRegisterUtil().hsetWithIncrementCount(
-                RedisKeys.InfoWorkOrderCountBySerial,
-                callInfo.Caller
-              );
+              // await useMultiCallRegisterUtil().hsetWithIncrementCount(
+              //   RedisKeys.InfoWorkOrderCountBySerial,
+              //   callInfo.Caller
+              // );
               await plcConnectUtil.writeTagValue({
                 targetFacility: callInfo.Caller,
                 tagInfo: [
@@ -245,10 +245,10 @@ export const useCallRegisterUtil = () => {
                     // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
                     await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
                     // 작업지시 개수 증가
-                    await useMultiCallRegisterUtil().hsetWithIncrementCount(
-                      RedisKeys.InfoWorkOrderCountBySerial,
-                      targetCode
-                    );
+                    // await useMultiCallRegisterUtil().hsetWithIncrementCount(
+                    //   RedisKeys.InfoWorkOrderCountBySerial,
+                    //   targetCode
+                    // );
                     // 콜 응답 관련 데이터 쓰기
                     await plcConnectUtil.writeTagValue({
                       targetFacility: facilityInfo.serial || '',
@@ -370,10 +370,10 @@ export const useCallRegisterUtil = () => {
                   await redisUtil.hset(RedisKeys.InfoInCallByCallId, eqpCallId, wmsCallInfoString);
                   // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
                   await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
-                  await useMultiCallRegisterUtil().hsetWithIncrementCount(
-                    RedisKeys.InfoWorkOrderCountBySerial,
-                    callInfo.Caller
-                  );
+                  // await useMultiCallRegisterUtil().hsetWithIncrementCount(
+                  //   RedisKeys.InfoWorkOrderCountBySerial,
+                  //   callInfo.Caller
+                  // );
 
                   let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
                     RedisKeys.RecentWorkOrderListByFacilitySerial,

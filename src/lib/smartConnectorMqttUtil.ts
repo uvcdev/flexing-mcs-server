@@ -84,7 +84,7 @@ const onPlcStateChanged = (facilityName: string, changes: { [key: string]: { old
     const payload: SmartConnectorEventPayload = { ...changes[tag], facilityName, tag };
     // 구체적인 태그 변경 이벤트 발행
     smartConnectorEventEmitter.emit(eventName, payload);
-    console.log('emit eventName', eventName, payload);
+    // console.log('emit eventName', eventName, payload);
   }
 };
 /**

@@ -244,10 +244,10 @@ export const useEqpCheckUtil = () => {
         case 'Call_Response':
           console.log(`Changed Call_Response`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           if (targetTagInfo.value === false) {
-            await useMultiCallRegisterUtil().hsetWithDecrementCount(
-              RedisKeys.InfoWorkOrderCountBySerial,
-              targetTagInfo.EQ_CODE
-            );
+            // await useMultiCallRegisterUtil().hsetWithDecrementCount(
+            //   RedisKeys.InfoWorkOrderCountBySerial,
+            //   targetTagInfo.EQ_CODE
+            // );
             // await useCallResponseUtil().callReRegister(targetTagInfo);
           }
           break;

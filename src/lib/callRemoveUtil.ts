@@ -43,7 +43,7 @@ export const useCallRemoveUtil = () => {
         ],
       });
       await useCallTypeUtil().callTypeResponseReset(targetCode);
-      await useMultiCallRegisterUtil().hsetWithDecrementCount(RedisKeys.InfoWorkOrderCountBySerial, targetCode);
+      // await useMultiCallRegisterUtil().hsetWithDecrementCount(RedisKeys.InfoWorkOrderCountBySerial, targetCode);
       // 250916 remove remain
       // redisUtil.hdel(RedisKeys.InfoRemainCallById, targetCode);
       // redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);

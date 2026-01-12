@@ -1,9 +1,11 @@
-import { TrackingLogRedisUpdateParams, TrackingLogState } from '../../models/common/trackingLog';
+import { TrackingLogAttributes, TrackingLogRedisUpdateParams, TrackingLogState } from '../../models/common/trackingLog';
 import { FacilityAttributes } from '../../models/operation/facility';
 import { RecentWorkOrderListByFacilitySerialAttributes } from '../../models/operation/workOrder';
+import { useCallTypeUtil } from '../callTypeUtil';
 import { useKepServerUtil } from '../kepServerUtil';
 import { separateMqttMessage, MbsMqttMesaage } from '../mqttUtil';
-import { useMultiCallRegisterUtil } from '../multiCallRegisterUtil';
+import { usePlcConnectUtil } from '../plcConnectUtil';
+import { fixMultiCallFacilityStatus } from '../process/commonUtils';
 import { editAbnormalTrackingLogRedis, editTrackingLogRedis } from '../process/trackingLog';
 import { sendAckToWms } from '../process/wmsAck';
 import { MqttBranchInfoDataFromAcs } from '../process/wmsBranch';
@@ -59,6 +61,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
   try {
     // console.log('catch acs missionState');
     const kepServerUtil = useKepServerUtil();
+    const plcConnectUtil = usePlcConnectUtil();
     const missionStateBody = messageJson.body as MissionStateBody;
     const state = missionStateBody.state;
 
@@ -116,8 +119,11 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     // workOrder Count down
     const redisUtil = useRedisUtil();
     const facilitySerial = callId.slice(0, 4) ?? '';
+    let recentWorkOrderStatus = '';
 
     if (assignState === 'COMPLETED' || assignState === 'CANCELED') {
+      // 2026-01-09
+      // CANCELED 상태에서 FMS로 취소 하는경우와 작업 취소되는 경우를 별도로 관리 해야 한다면 해당 함수에서 분기 처리 후 적용 필요
       if (facilitySerial && facilitySerial.length > 3) {
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
           RedisKeys.InfoFacilityBySerial,
@@ -132,37 +138,51 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
         if (workOrderListInfo) {
           const removeWorkOrderByCallId = (targetCallId: string) => {
             const workOrderList = workOrderListInfo?.workOrderList || [];
-
             // targetCallId와 같은 항목이 있는지 확인
-            const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
+            // const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
 
-            if (hasMatchingCallId && !!workOrderListInfo?.facilitySerial && facilityInfo) {
+            // if (hasMatchingCallId && !!workOrderListInfo?.facilitySerial && facilityInfo) {
+            //   workOrderListInfo = {
+            //     facilitySerial: workOrderListInfo?.facilitySerial,
+            //     facilityInfo: facilityInfo,
+            //     count: (workOrderListInfo?.count || 0) - 1,
+            //     workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
+            //   };
+            // }
+
+            const matchingWorkOrder = workOrderList.find((item) => item.callId === targetCallId);
+            recentWorkOrderStatus = matchingWorkOrder?.state || '';
+
+            if (matchingWorkOrder && !!workOrderListInfo?.facilitySerial && facilityInfo) {
               workOrderListInfo = {
                 facilitySerial: workOrderListInfo?.facilitySerial,
                 facilityInfo: facilityInfo,
                 count: (workOrderListInfo?.count || 0) - 1,
                 workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
               };
+              return workOrderListInfo;
             }
-
-            return workOrderListInfo;
           };
 
-          const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-            removeWorkOrderByCallId(callId) ?? {
-              facilitySerial: facilitySerial,
-              facilityInfo: facilityInfo as FacilityAttributes,
-              count: 0,
-              workOrderList: [],
-            };
+          // const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
+          //   removeWorkOrderByCallId(callId) ?? {
+          //     facilitySerial: facilitySerial,
+          //     facilityInfo: facilityInfo as FacilityAttributes,
+          //     count: 0,
+          //     workOrderList: [],
+          //   };
 
-          redisUtil.hset(
-            RedisKeys.RecentWorkOrderListByFacilitySerial,
-            facilitySerial,
-            JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
-          );
+          const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes | null =
+            removeWorkOrderByCallId(callId) ?? null;
+
+          if (newRecentWorkOrderListByFacilitySerialParams) {
+            redisUtil.hset(
+              RedisKeys.RecentWorkOrderListByFacilitySerial,
+              facilitySerial,
+              JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+            );
+          }
         }
-        // }
       }
     }
 
@@ -207,24 +227,72 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     }
 
     if (state === 'MISSION_CANCELED') {
-      // // 물류 로그 저장
-      // const trackingLogSubject = 'MISSION_STATE';
-      // const trackingLogDetail = state;
-      // const trackingLogState = assignState;
-      // const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-      //   callId: callId,
-      //   subject: trackingLogSubject,
-      //   detail: trackingLogDetail,
-      //   state: trackingLogState,
-      //   transferId: null,
-      //   startFacility: null,
-      //   destFacility: null,
-      //   assignedRobot: assignAmrName,
-      //   value: assignAmrName,
-      //   description: `AMR(${assignAmrName}) Mission State : ${state}`,
-      // };
-      // await editTrackingLogRedis(trackingLogUpdateData, assignAmrName, 'SUCCESS', 'ACS');
-      // 미션 결정지 정보 삭제하기
+      // response 값 내리기
+      if (assignTask === 'WORK-ORDER-CANCELED') {
+        const canceledWorkOrderCallId = normalCallId || '';
+
+        const trackingLogInfo = await redisUtil.hgetObject<TrackingLogAttributes>(
+          RedisKeys.InfoTrackingLogByCallId,
+          normalCallId
+        );
+
+        const fromFacilitySerial = trackingLogInfo?.startFacility || '';
+        const toFacilitySerial = trackingLogInfo?.destFacility || '';
+
+        const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+          RedisKeys.InfoFacilityById,
+          fromFacilitySerial
+        );
+        const toFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+          RedisKeys.InfoFacilityById,
+          toFacilitySerial
+        );
+
+        let alwaysOnFacility = fromFacilitySerial;
+        let triggerFacility = toFacilitySerial;
+
+        if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
+          alwaysOnFacility = toFacilitySerial;
+          triggerFacility = fromFacilitySerial;
+        }
+
+        if (recentWorkOrderStatus !== 'toWorkOrder' && recentWorkOrderStatus !== 'missionWorkOrder') {
+          if (fromFacilitySerial) {
+            await plcConnectUtil.writeTagValue({
+              targetFacility: fromFacilitySerial,
+              tagInfo: [
+                { tagName: 'Call_Response', value: false },
+                { tagName: 'Call_Robot_Assigned', value: false },
+                { tagName: 'Call_Response_Count', value: '0' },
+                { tagName: 'Dock_Request', value: false },
+                { tagName: 'Call_Response_Multi_1', value: false },
+                { tagName: 'Call_Response_Multi_2', value: false },
+                { tagName: 'Call_Cancel_Response', value: false },
+              ],
+            });
+            await useCallTypeUtil().callTypeResponseReset(fromFacilitySerial);
+          }
+        }
+        if (toFacilitySerial) {
+          if (triggerFacility === toFacilitySerial) {
+            await fixMultiCallFacilityStatus(toFacilitySerial);
+          } else {
+            await plcConnectUtil.writeTagValue({
+              targetFacility: toFacilitySerial,
+              tagInfo: [
+                { tagName: 'Call_Response', value: false },
+                { tagName: 'Call_Robot_Assigned', value: false },
+                { tagName: 'Call_Response_Count', value: '0' },
+                { tagName: 'Dock_Request', value: false },
+                { tagName: 'Call_Response_Multi_1', value: false },
+                { tagName: 'Call_Response_Multi_2', value: false },
+                { tagName: 'Call_Cancel_Response', value: false },
+              ],
+            });
+            await useCallTypeUtil().callTypeResponseReset(toFacilitySerial);
+          }
+        }
+      }
 
       redisUtil.hdel(RedisKeys.InfoMissionOrderByWorkOrderCode, callId);
     } else if (state === 'MISSION_FAILED') {

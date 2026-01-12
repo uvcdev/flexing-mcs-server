@@ -20,7 +20,7 @@ import { useCallResponseUtil } from '../callResponseUtil';
 import { sendCallInfoList, sendReqPortStateList } from './wmsSyncronization';
 import { checkMissionOrder } from '../missionOrderUtil';
 import { checkCallCreate, checkCallRequestCreate } from '../callCheckUtil';
-import { fixEqpData, sendMqttWorkOrderList } from './commonUtils';
+import { fixEqpData, fixMultiCallFacilityStatusList, sendMqttWorkOrderList } from './commonUtils';
 
 const heartbeatIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5;
 const heapUse = () => {
@@ -110,7 +110,12 @@ export const processMcs = async () => {
     await useWorkOrderUtil().createWorkOrder();
 
     // 데이터 보정
-    await fixEqpData();
+    if (counter % 3 === 0) {
+      await fixEqpData();
+
+      // 해당 내용은 수동 작업을 무의미한 상태로 바꿀 수 있기 때문에 주석 처리 ( 미사용 )
+      // await fixMultiCallFacilityStatusList();
+    }
 
     // 작업 현황 데이터 전송 ( MCS -> MQTT )
     await sendMqttWorkOrderList();
