@@ -656,3 +656,6 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 
 ## v2.2.10
 - `dockingUtil` 에서 sendDockingOutRequest 에서 Dock_Out_Permit 켜져있으면 허가 켜진것으로 판단하는 로직 주석처리
+
+## v2.2.11
+- `callCancelUtil` 에서 linked 설비에도 call_response false 값 적용

@@ -365,6 +365,19 @@ export const useCallCancelUtil = () => {
 
     try {
       // 설비가 콜 취소 응답을 받고 콜 취소 요청 태그가 0으로 내려갔을 때
+      const targetCode = targetTagInfo.EQ_CODE;
+
+      // 설비(caller) 설비 데이터 REDIS 조회
+      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, targetCode);
+      if (!facilityInfo) {
+        logging.ACTION_ERROR({
+          filename: `callCancelUtil.ts - callCancel`,
+          error: `${targetCode} 설비정보가 없습니다.`,
+          params: null,
+          result: true,
+        });
+        return;
+      }
       if (targetTagInfo.value === false && targetTagInfo.prevValue === true) {
         logToConsoleAndFile(`설비가 콜 취소 응답을 받고 콜 취소 요청 태그를 0으로 내림.`, 'green');
         logging.KEPWARE_DEBUG({
@@ -376,23 +389,25 @@ export const useCallCancelUtil = () => {
 
         // 콜응답, 콜취소응답, 콜로봇할당, 콜ID, 콜타입 등은 callRemove에서 0으로 내림.
         // 이 함수에서는 콜취소응답만 0으로 내리기.
+        if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 0) {
+          for (let i = 0; i < facilityInfo?.linkedEqpIds.length; i++) {
+            const linkedEqpId = facilityInfo?.linkedEqpIds[i];
+            const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+              RedisKeys.InfoFacilityById,
+              linkedEqpId.toString() || ''
+            );
+            if (linkedFacilityInfo?.serial) {
+              await plcConnectUtil.writeTagValue({
+                targetFacility: linkedFacilityInfo?.serial,
+                tagInfo: [{ tagName: 'Call_Cancel_Response', value: false }],
+              });
+            }
+          }
+        }
+
         await plcConnectUtil.writeTagValue({
           targetFacility: targetTagInfo.EQ_CODE,
           tagInfo: [{ tagName: 'Call_Cancel_Response', value: false }],
-        });
-        return;
-      }
-
-      const targetCode = targetTagInfo.EQ_CODE;
-
-      // 설비(caller) 설비 데이터 REDIS 조회
-      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, targetCode);
-      if (!facilityInfo) {
-        logging.ACTION_ERROR({
-          filename: `callCancelUtil.ts - callCancel`,
-          error: `${targetCode} 설비정보가 없습니다.`,
-          params: null,
-          result: true,
         });
         return;
       }
@@ -871,7 +886,24 @@ export const useCallCancelUtil = () => {
         redisUtil.hdel(RedisKeys.RecentWorkOrderListByFacilitySerial, targetCode);
         await writeCallCancelResponse(targetCode);
         await initResponsePlc(targetCode);
-
+        const targetFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+          RedisKeys.InfoFacilityBySerial,
+          targetCode.toString() || ''
+        );
+        if (targetFacilityInfo?.linkedEqpIds && targetFacilityInfo?.linkedEqpIds.length > 0) {
+          for (let i = 0; i < targetFacilityInfo?.linkedEqpIds.length; i++) {
+            const linkedEqpId = targetFacilityInfo?.linkedEqpIds[i];
+            const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+              RedisKeys.InfoFacilityById,
+              linkedEqpId.toString() || ''
+            );
+            if (linkedFacilityInfo?.serial) {
+              redisUtil.hdel(RedisKeys.RecentWorkOrderListByFacilitySerial, linkedFacilityInfo?.serial);
+              await writeCallCancelResponse(linkedFacilityInfo?.serial);
+              await initResponsePlc(linkedFacilityInfo?.serial);
+            }
+          }
+        }
         return;
       }
 
@@ -926,11 +958,15 @@ export const useCallCancelUtil = () => {
         RedisKeys.InfoFacilityById,
         workOrderInfo.fromFacilityId?.toString() || ''
       );
-      if (firstCancelFacilityInfo) {
-        redisUtil.hdel(RedisKeys.RecentWorkOrderListByFacilitySerial, firstCancelFacilityInfo?.code);
-        logging.ACTION_ERROR({
+      if (firstCancelFacilityInfo && firstCancelFacilityInfo.serial) {
+        redisUtil.hdel(RedisKeys.RecentWorkOrderListByFacilitySerial, firstCancelFacilityInfo.serial);
+        redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, firstCancelFacilityInfo.serial);
+        redisUtil.hdel(RedisKeys.RecentWorkOrderListByFacilitySerial, firstCancelFacilityInfo.serial);
+        await writeCallCancelResponse(firstCancelFacilityInfo.serial);
+        await initResponsePlc(firstCancelFacilityInfo.serial);
+        logging.ACTION_INFO({
           filename: `callCancelUtil.ts - callCancel`,
-          error: `[firstCancelFacilityInfo = ${firstCancelFacilityInfo?.code}]  첫번째 설비 취소`,
+          error: `[firstCancelFacilityInfo = ${firstCancelFacilityInfo?.serial} data = ${firstCancelFacilityInfo}] 첫번째 설비 취소`,
           params: null,
           result: false,
         });
@@ -939,11 +975,15 @@ export const useCallCancelUtil = () => {
         RedisKeys.InfoFacilityById,
         workOrderInfo.toFacilityId?.toString() || ''
       );
-      if (secondCancelFacilityInfo) {
-        redisUtil.hdel(RedisKeys.RecentWorkOrderListByFacilitySerial, secondCancelFacilityInfo?.code);
-        logging.ACTION_ERROR({
+      if (secondCancelFacilityInfo && secondCancelFacilityInfo.serial) {
+        redisUtil.hdel(RedisKeys.RecentWorkOrderListByFacilitySerial, secondCancelFacilityInfo.serial);
+        redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, secondCancelFacilityInfo.serial);
+        redisUtil.hdel(RedisKeys.RecentWorkOrderListByFacilitySerial, secondCancelFacilityInfo.serial);
+        await writeCallCancelResponse(secondCancelFacilityInfo.serial);
+        await initResponsePlc(secondCancelFacilityInfo.serial);
+        logging.ACTION_INFO({
           filename: `callCancelUtil.ts - callCancel`,
-          error: `[secondCancelFacilityInfo = ${secondCancelFacilityInfo?.code}]  두번째 설비 취소`,
+          error: `[secondCancelFacilityInfo = ${secondCancelFacilityInfo?.serial} data = ${secondCancelFacilityInfo}] 두번째 설비 취소`,
           params: null,
           result: false,
         });
