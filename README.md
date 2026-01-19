@@ -621,24 +621,29 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 - SmartConnector용 MQTT Client 분리
 
 ## v2.2.4
+
 - 버전승인 v2.2.3
 - 버전승인 v2.2.3-ssb
 - 현장 수정
 
-
 ## v2.2.5
+
 - 버전승인 v2.2.4
 - 0105 빌드
 
 ## v2.2.6
+
 - Call Register 에서 call id 없어지는 현상 개선
 - mqttUtil 에서 work-order-cancel 안에 InfoCallRequestOnBySerial set 부분 주석
 
 ## v2.2.7
+
 - call cancel 시 call_response off 제거
 
 ## v2.2.7-ljk
-- ACS 작업 취소 시, call response 값 내리기 
+
+- ACS 작업 취소 시, call response 값 내리기
+
   - from 작업은 A,B 설비 모두 값 내리기
   - to 작업은 B 설비 값만 내리기
 
@@ -647,15 +652,23 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
   - call Check 과정에서 Load Valid , UnLoad Valid , Complete 감지 추가
 
 ## v2.2.8
+
 - approval v2.2.7-ljk
 
 ## v2.2.9
+
 - `dockingUtil` 에서 sendDockingOutRequest 에서 Dock_Out_Permit 켜져있으면 허가 켜진것으로 판단하는 로직 적용
 - `callCancelUtil` 에서 RedisKeys.RecentWorkOrderListByFacilitySerial 지우는 로직 추가
 - `mqttUtil` 에서 acs로부터 취소응답 신호 processCancelResponseFromAcs 주석처리 (현재 김천은 의미 없음)
 
 ## v2.2.10
+
 - `dockingUtil` 에서 sendDockingOutRequest 에서 Dock_Out_Permit 켜져있으면 허가 켜진것으로 판단하는 로직 주석처리
 
 ## v2.2.11
+
 - `callCancelUtil` 에서 linked 설비에도 call_response false 값 적용
+
+## v2.2.12
+
+- `dockingUtil` 에서 도킹, 도킹아웃 요청시 delay(500) 추가

@@ -604,6 +604,7 @@ export const useDockingUtil = () => {
         }
         switch (dockingParams.EXC_CLS) {
           case EXC_CLS.AUTO: //일반도킹
+            await plcConnectUtil.delay(500);
             await plcConnectUtil.writeTagValue({
               targetFacility: paramsSerial,
               tagInfo: [{ tagName: 'Dock_Request', value: true }],
@@ -771,20 +772,12 @@ export const useDockingUtil = () => {
             targetFacility: paramsSerial || '',
             tagInfo: [{ tagName: 'Dock_Out_Request', value: false }],
           });
-          // await plcConnectUtil.writeTagValue({
-          //   targetFacility: paramsSerial || '',
-          //   tagInfo: [{ tagName: 'Dock_Signal_Reset', value: true }],
-          // });
-          setTimeout(() => {
-            plcConnectUtil.writeTagValue({
-              targetFacility: paramsSerial || '',
-              tagInfo: [{ tagName: 'Dock_Out_Request', value: true }],
-            });
-            // plcConnectUtil.writeTagValue({
-            //   targetFacility: paramsSerial || '',
-            //   tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
-            // });
-          }, 500);
+
+          await plcConnectUtil.delay(500);
+          await plcConnectUtil.writeTagValue({
+            targetFacility: paramsSerial || '',
+            tagInfo: [{ tagName: 'Dock_Out_Request', value: true }],
+          });
         }
       }
       // }

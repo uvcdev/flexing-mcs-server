@@ -244,6 +244,8 @@ export const usePlcConnectUtil = () => {
     }
   };
 
+  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
   return {
     getPlcConnType,
     initTagData,
@@ -251,5 +253,6 @@ export const usePlcConnectUtil = () => {
     monitorTagData,
     writeTagValue,
     getTagValue,
+    delay,
   };
 };
