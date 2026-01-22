@@ -702,3 +702,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v3.0.4
 
 - approve v3.0.3-ljk
+
+## v3.0.4-ljk
+- mission order 판단 조건에 Dock_Request 정보 추가

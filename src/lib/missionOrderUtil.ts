@@ -72,6 +72,7 @@ export const checkMissionOrder = async () => {
         const dockDisableValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Disable')) as boolean;
         const dockOutPermitValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Out_Permit')) as boolean;
         const dockPermitValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Permit')) as boolean;
+        const dockRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Request')) as boolean;
         const CallTypeValue = await makeCallType(targetCode);
         // 콜 카운트 없어도 되나욤 ?
         if (
@@ -83,6 +84,7 @@ export const checkMissionOrder = async () => {
           dockDisableValue === false &&
           dockOutPermitValue === false &&
           dockPermitValue === false &&
+          dockRequestValue === false &&
           (sortLinkedFacilityInfo?.system === 'WMS' ||
             missionOrderMqttInfo.mode === 'manual' ||
             CallTypeValue === missionOrderMqttInfo.callType)

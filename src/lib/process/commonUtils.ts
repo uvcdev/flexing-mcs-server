@@ -495,7 +495,6 @@ export const checkCallSignalResetWorkOrder = async (
 };
 
 export const checkSpBsWorkType = async (messageJson: any) => {
-  console.log('messageJson', messageJson);
   const workType: 'EQP' | 'WMS' | '' = messageJson.type || '';
 
   if (workType === '') {
