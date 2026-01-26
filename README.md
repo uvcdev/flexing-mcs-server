@@ -672,3 +672,26 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 ## v2.2.12
 
 - `dockingUtil` 에서 도킹, 도킹아웃 요청시 delay(500) 추가
+
+## v2.2.12-lsk
+
+- 메뉴 권한 관리를 위한 `menu-roles` api 추가
+- 로그인 토큰에 `auth` 추가
+
+```sql
+CREATE TABLE public.menu_roles (
+	id serial4 NOT NULL,
+	auth varchar(50) NOT NULL,
+	menu_path varchar(255) NOT NULL,
+	"name" varchar(255) NULL,
+	auth_menu bool NOT NULL,
+	auth_create bool NOT NULL,
+	auth_update bool NOT NULL,
+	auth_delete bool NOT NULL,
+	created_at timestamptz NOT NULL,
+	updated_at timestamptz NOT NULL,
+	deleted_at timestamptz NULL,
+	CONSTRAINT menu_roles_auth_menu_path_key UNIQUE (auth, menu_path),
+	CONSTRAINT menu_roles_pkey PRIMARY KEY (id)
+);
+```

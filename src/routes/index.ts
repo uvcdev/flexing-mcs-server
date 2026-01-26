@@ -19,6 +19,7 @@ import { router as alarmEmailRouter } from './common/alarmEmail';
 import { router as mcsAlarmRouter } from './common/mcsAlarm';
 import { amrRouter } from './common/amr';
 import { router as errorCodeRouter } from './common/errorCode';
+import { router as menuRoleRouter } from './common/menuRole';
 // dashboard
 import { router as dailyStatisticRouter } from './dashboard/dailyStatistic';
 import { router as monthlyStatisticRouter } from './dashboard/monthlyStatistic';
@@ -211,6 +212,7 @@ router.use('/alarm-emails', alarmEmailRouter);
 router.use('/mcs-alarms', mcsAlarmRouter);
 router.use('/amrs', amrRouter);
 router.use('/error-codes', errorCodeRouter);
+router.use('/menu-roles', menuRoleRouter);
 // dashboard
 router.use('/daily-statistics', dailyStatisticRouter);
 router.use('/monthly-statistics', monthlyStatisticRouter);

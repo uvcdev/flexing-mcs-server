@@ -9,7 +9,8 @@ import Setting from './common/setting';
 import AlarmEmail from './common/alarmEmail';
 import McsAlarm from './common/mcsAlarm';
 import Amr from './common/amr';
-import ErrorCode from './common/errorCode'
+import ErrorCode from './common/errorCode';
+import MenuRole from './common/menuRole';
 
 // dashboard
 import DailyStatistic from './dashboard/dailyStatistic';
@@ -42,6 +43,7 @@ const db = {
   McsAlarm,
   Amr,
   ErrorCode,
+  MenuRole,
   /* dashboard */
   DailyStatistic,
   MonthlyStatistic,
