@@ -700,3 +700,8 @@ CREATE TABLE public.menu_roles (
 
 - InfoTrackingLogByCallId redis 삭제 로직 추가
 - InfoWorkOrderCreatedByCallId redis 등록 주석 처리
+
+## v2.2.13
+
+- 버전승인 v2.2.12-lsk
+- 버전승인 v2.2.12-lsk-a
