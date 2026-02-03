@@ -152,6 +152,40 @@ export const isCurrentTimeFasterThanAnyMinutes = (referenceTime: Date, anyMinute
   return timeDifference >= 1000 * 60 * anyMinutes;
 };
 
+// 타임존 시간 문자열을 받는 함수 (AMR에서 받은 값) - 초 단위
+export const isCurrentTimeFasterThanAnySecondsFromTzString = (tzTimeString: string, anySeconds: number) => {
+  const currentTime = dayjs().tz(timezoneValue);
+
+  // "2025.11.26 08:05:06.98" 형식 파싱
+  const [datePart, timePart] = tzTimeString.split(' ');
+  const [year, month, day] = datePart.split('.');
+  const [hour, minute, second] = timePart.split(':');
+
+  // 해당 타임존에서 직접 시간 생성
+  const refTime = dayjs.tz(`${year}-${month}-${day} ${hour}:${minute}:${second}`, timezoneValue);
+
+  const timeDifference = currentTime.diff(refTime);
+
+  return timeDifference >= 1000 * anySeconds;
+};
+
+// 타임존 시간 문자열을 받는 함수 (AMR에서 받은 값)
+export const isCurrentTimeFasterThanAnyMinutesFromTzString = (tzTimeString: string, anyMinutes: number) => {
+  const currentTime = dayjs().tz(timezoneValue);
+
+  // "2025.11.26 08:05:06.98" 형식 파싱
+  const [datePart, timePart] = tzTimeString.split(' ');
+  const [year, month, day] = datePart.split('.');
+  const [hour, minute, second] = timePart.split(':');
+
+  // 해당 타임존에서 직접 시간 생성
+  const refTime = dayjs.tz(`${year}-${month}-${day} ${hour}:${minute}:${second}`, timezoneValue);
+
+  const timeDifference = currentTime.diff(refTime);
+
+  return timeDifference >= 1000 * 60 * anyMinutes;
+};
+
 export const removeAckPrefix = (input: string): string => {
   return input.replace(/^ACK_/, '');
 };

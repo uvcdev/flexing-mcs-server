@@ -695,3 +695,8 @@ CREATE TABLE public.menu_roles (
 	CONSTRAINT menu_roles_pkey PRIMARY KEY (id)
 );
 ```
+
+## v2.2.12-lsk-a
+
+- InfoTrackingLogByCallId redis 삭제 로직 추가
+- InfoWorkOrderCreatedByCallId redis 등록 주석 처리

@@ -15,7 +15,7 @@ import { dao as trackingLogDao } from '../../dao/common/trackingLogDao';
 import { itemLogDao } from '../../dao/timescale/itemLogDao';
 import { logging } from '../logging';
 import { ItemLogInsertParams, ItemLogSubjectType } from '../../models/timescale/itemLog';
-import { formatDetailedDateTime } from '../usefullToolUtil';
+import { formatDetailedDateTime, isCurrentTimeFasterThanAnyMinutesFromTzString } from '../usefullToolUtil';
 import { sendMqtt } from '../mqttUtil';
 
 export interface InitAbnormalTrackingLogParams {
@@ -717,7 +717,12 @@ export const sendTrackingLogs = async () => {
     if (!MQTT_SENDABLE_STATES.includes(trackingLogState)) {
       // sendMqtt(`tracking_log/${trackingLogCallId}`, JSON.stringify(trackingLogByCallIdInfo));
       if (trackingLogCallId !== '') {
-        redisUtil.hdel(RedisKeys.InfoTrackingLogByCallId, trackingLogCallId);
+        // 완료된 작업은 10 분 / 취소된 작업은 1일 트래킹 로그 유지
+        let deletedMinutes = 10;
+        if (trackingLogState === 'CANCELED' || trackingLogState === 'ERROR') deletedMinutes = 1440;
+        if (isCurrentTimeFasterThanAnyMinutesFromTzString(trackingLogByCallIdInfo.updatedDateTime, deletedMinutes)) {
+          redisUtil.hdel(RedisKeys.InfoTrackingLogByCallId, trackingLogCallId);
+        }
       }
     }
   }
