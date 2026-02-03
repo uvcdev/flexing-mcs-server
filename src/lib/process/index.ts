@@ -63,13 +63,13 @@ export const processMcs = async () => {
     //   return;
     // }
     // const dryrunMode = dryrunSetting.data.mode || 'normal';
+    // if (counter % 5 === 0) {
+    //   sendAllHeartbeat(); // wms heartbeat 전송 ( n초마다 실행 )
+    // }
+    // 현재 진행 중인 물류 로그 전송
+    await sendTrackingLogs();
+
     /*
-        // if (counter % 5 === 0) {
-        //   sendAllHeartbeat(); // wms heartbeat 전송 ( n초마다 실행 )
-        // }
-        // 현재 진행 중인 물류 로그 전송
-        await sendTrackingLogs();
-    
         // WMS 관련 프로세스
         // 수집한 ack 데이터 처리 ( ACK )
         await checkReceivedAckCommand();

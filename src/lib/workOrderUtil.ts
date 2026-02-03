@@ -172,7 +172,7 @@ export const useWorkOrderUtil = () => {
 
           // ACS 작업지시 생성 요청 유무 확인용 Redis 저장
           // Todo[ssb] 추후 작업완료되는 시점에 삭제 필요, 혹시나 남아있을지 모르니까 하루 지나면 초기화 시키는 로직 추가
-          redisUtil.hset(RedisKeys.InfoWorkOrderCreatedByCallId, params.CALL_ID, message);
+          // redisUtil.hset(RedisKeys.InfoWorkOrderCreatedByCallId, params.CALL_ID, message);
 
           redisUtil.hdel(RedisKeys.InfoPendingWorkOrderByCallId, params.CALL_ID);
           redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, params.EQP_ID);
@@ -215,7 +215,7 @@ export const useWorkOrderUtil = () => {
         targetObject.averageDuration = targetObject.totalDuration / targetObject.totalCompleted;
       }
       sendStats();
-    } catch (error) { }
+    } catch (error) {}
   };
   const setInitStats = (workOrder: WorkOrderAttributesDeep) => {
     try {
@@ -319,7 +319,7 @@ export const useWorkOrderUtil = () => {
           }
         }
       }
-    } catch (error) { }
+    } catch (error) {}
   };
   const initStats = async () => {
     dailyWorkOrderStats.Facility = {};
