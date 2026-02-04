@@ -173,7 +173,7 @@ export const usePlcConnectUtil = () => {
   const getTagValue = async (targetCode: string, tagName: string): Promise<boolean | number | string | null> => {
     if (!plcConnType) {
       logging.ACTION_ERROR({
-        filename: 'plcConnectUtil.ts-getTagValue',
+        filename: 'plcConnectUtil.ts-getTagValue1',
         params: { plcConnType },
         result: null,
         error: new Error('PLC Connection Type is not set'),
@@ -184,7 +184,7 @@ export const usePlcConnectUtil = () => {
       if (plcConnType === 'KEP') {
         if (!targetCode || !tagName) {
           logging.ACTION_ERROR({
-            filename: 'plcConnectUtil.ts-getTagValue',
+            filename: 'plcConnectUtil.ts-getTagValue2',
             params: { targetCode, tagName },
             result: null,
             error: new Error('Target Code or Tag Name is not set'),
@@ -201,7 +201,7 @@ export const usePlcConnectUtil = () => {
         const tagMapValue = smartConnector.tagMap.get(`${targetCode}.${tagName}`);
         if (!tagMapValue) {
           logging.ACTION_ERROR({
-            filename: 'plcConnectUtil.ts-getTagValue',
+            filename: 'plcConnectUtil.ts-getTagValue3',
             params: { targetCode, tagName },
             result: null,
             error: new Error('Tag value is not found'),
@@ -217,8 +217,8 @@ export const usePlcConnectUtil = () => {
             return data;
           default:
             logging.ACTION_ERROR({
-              filename: 'plcConnectUtil.ts-getTagValue',
-              params: { targetCode, tagName },
+              filename: 'plcConnectUtil.ts-getTagValue4',
+              params: { targetCode, tagName, dataType: tagMapValue.DATA_TYPE, data },
               result: null,
               error: new Error(`Tag data type is not valid: ${tagMapValue.DATA_TYPE}`),
             });
@@ -226,7 +226,7 @@ export const usePlcConnectUtil = () => {
         }
       } else {
         logging.ACTION_ERROR({
-          filename: 'plcConnectUtil.ts-getTagValue',
+          filename: 'plcConnectUtil.ts-getTagValue5',
           params: { plcConnType },
           result: null,
           error: new Error('PLC Connection Type is not valid'),
@@ -235,7 +235,7 @@ export const usePlcConnectUtil = () => {
       }
     } catch (error) {
       logging.ACTION_ERROR({
-        filename: 'plcConnectUtil.ts-getTagValue',
+        filename: 'plcConnectUtil.ts-getTagValue6',
         params: { targetCode, tagName },
         result: null,
         error: new Error('Error getting tag value: ' + (error as Error).message),
