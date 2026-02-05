@@ -705,3 +705,8 @@ CREATE TABLE public.menu_roles (
 
 - 버전승인 v2.2.12-lsk
 - 버전승인 v2.2.12-lsk-a
+
+## v2.2.13-lsk
+
+- `loggin.ts`에서 `ACTION_ERROR`에 error 값으로 `Error` 객체가 들어간 경우도 로그 제대로 저장되도록 변경
+- `plcConnectUtil.getTagValue`의 `ACTION_ERROR` 로그 `file_name`이 구별되도록 변경
