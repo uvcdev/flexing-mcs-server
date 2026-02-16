@@ -368,4 +368,71 @@ export const initializeSmartConnectorEventsHandlers = async () => {
       console.log(`[Handler] ${payload.facilityName}에서 Dock_Disable 변경 없음 처리!`);
     }
   });
+
+  // 'EQ_Operation_Mode' 태그 변경 // number 타입
+  smartConnectorEventEmitter.on('EQ_Operation_Mode', (payload) => {
+    console.log('[RECEIVED] Event: EQ_Operation_Mode, Payload:', payload);
+
+    const targetTagInfo: TagValue | undefined = smartConnector.tagMap.get(`${payload.facilityName}.EQ_Operation_Mode`);
+    if (!targetTagInfo) {
+      console.log(`[Handler] tagmap에서 ${payload.facilityName}.EQ_Operation_Mode 태그 없음!`);
+      return;
+    }
+    if (payload.old !== payload.new) {
+      // todo: EQ_Operation_Mode 태그의 새로운 값이 변경되었을 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 EQ_Operation_Mode 발생!`);
+      targetTagInfo.value = Number(payload.new);
+      targetTagInfo.prevValue = payload.old;
+      targetTagInfo.timestamp = Date.now();
+      eqpCheckUtil.eqpTaskStatus(targetTagInfo, Number(payload.new) !== 0);
+    } else {
+      console.log(`[Handler] ${payload.facilityName}에서 EQ_Operation_Mode 변경 없음 처리!`);
+    }
+  });
+
+  // 'EQ_Auto' 태그 변경
+  smartConnectorEventEmitter.on('EQ_Auto', (payload) => {
+    console.log('[RECEIVED] Event: EQ_Auto, Payload:', payload);
+
+    const targetTagInfo: TagValue | undefined = smartConnector.tagMap.get(`${payload.facilityName}.EQ_Auto`);
+    if (!targetTagInfo) {
+      console.log(`[Handler] tagmap에서 ${payload.facilityName}.EQ_Auto 태그 없음!`);
+      return;
+    }
+    if (payload.old === 'false' && payload.new === 'true') {
+      // todo: EQ_Auto 태그의 새로운 값이 '1'일 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 EQ_Auto 발생!`);
+      targetTagInfo.value = true;
+      targetTagInfo.prevValue = false;
+      targetTagInfo.timestamp = Date.now();
+      eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
+    } else if (payload.old === 'true' && payload.new === 'false') {
+      console.log(`[Handler] ${payload.facilityName}에서 EQ_Auto 꺼짐!`);
+    } else {
+      console.log(`[Handler] ${payload.facilityName}에서 EQ_Auto 변경 없음 처리!`);
+    }
+  });
+
+  // 'EQ_Manual' 태그 변경
+  smartConnectorEventEmitter.on('EQ_Manual', (payload) => {
+    console.log('[RECEIVED] Event: EQ_Manual, Payload:', payload);
+
+    const targetTagInfo: TagValue | undefined = smartConnector.tagMap.get(`${payload.facilityName}.EQ_Manual`);
+    if (!targetTagInfo) {
+      console.log(`[Handler] tagmap에서 ${payload.facilityName}.EQ_Manual 태그 없음!`);
+      return;
+    }
+    if (payload.old === 'false' && payload.new === 'true') {
+      // todo: EQ_Manual 태그의 새로운 값이 '1'일 때 로직 실행
+      console.log(`[Handler] ${payload.facilityName}에서 EQ_Manual 발생!`);
+      targetTagInfo.value = true;
+      targetTagInfo.prevValue = false;
+      targetTagInfo.timestamp = Date.now();
+      eqpCheckUtil.eqpTaskStatus(targetTagInfo, true);
+    } else if (payload.old === 'true' && payload.new === 'false') {
+      console.log(`[Handler] ${payload.facilityName}에서 EQ_Manual 꺼짐!`);
+    } else {
+      console.log(`[Handler] ${payload.facilityName}에서 EQ_Manual 변경 없음 처리!`);
+    }
+  });
 };

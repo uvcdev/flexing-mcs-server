@@ -224,6 +224,7 @@ export const useMultiCallRegisterUtil = () => {
                     linkedFacilityInfo &&
                     linkedFacilityCallRequestValue === true &&
                     linkedFacilityCallResponseValue === false &&
+                    // todo[ssb] 260210 콜 타입 동일 체크 필요
                     linkedFacilityCallTypeValue === callType
                   ) {
                     // 작업지시 예정 레디스 저장

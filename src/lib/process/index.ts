@@ -101,9 +101,9 @@ export const processMcs = async () => {
     // WMS 관련 프로세스 끝
 
     // Call_Request ON 인 경우 실시간 조회해서 작업 생성
-    await useCallRegisterUtil().callRegister();
-    await checkCallRequestCreate();
-    await checkCallCreate();
+    await useCallRegisterUtil().callRegister(); //3
+    await checkCallRequestCreate(); // 1
+    await checkCallCreate(); // 2
     // 모든 설비에서 조회해서 Call_Request 켜져있으면 RedisKeys.InfoCallRequestOnBySerial 에 등록
 
     // pending 된 작업 지시 생성

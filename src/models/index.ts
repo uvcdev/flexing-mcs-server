@@ -9,7 +9,7 @@ import Setting from './common/setting';
 import AlarmEmail from './common/alarmEmail';
 import McsAlarm from './common/mcsAlarm';
 import Amr from './common/amr';
-import ErrorCode from './common/errorCode'
+import ErrorCode from './common/errorCode';
 
 // dashboard
 import DailyStatistic from './dashboard/dailyStatistic';
@@ -27,7 +27,7 @@ import Log from './timescale/log';
 import SystemLog from './timescale/systemLog';
 import CallReserve from './common/callReserve';
 import CallSpec from './common/callSpec';
-
+import PlcDataChangeHistoryLog from './timescale/plcDataChangeHistoryLog';
 export * from './sequelize';
 
 const db = {
@@ -56,6 +56,7 @@ const db = {
   SystemLog,
   CallReserve,
   CallSpec,
+  PlcDataChangeHistoryLog,
 };
 
 export type dbType = typeof db;

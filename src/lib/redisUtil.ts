@@ -90,6 +90,7 @@ export enum RedisKeys {
   // SmartConnector
   PlcRealtimeData = 'plc_realtime_data', // PLC 실시간 데이터
   SmartConnectorWriteTag = 'smart_connector_write_tag', // SmartConnector에 쓰기 요청 후 응답 처리 키
+  TempForCallCancelResponseReset = 'temp_for_call_cancel_response_reset', // to작업중 facility cancel 발생 시 해당 설비의 콜응답 PLC 초기화를 위한 임시키
 }
 export enum RedisSettingKeys {
   // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

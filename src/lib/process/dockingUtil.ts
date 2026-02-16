@@ -965,12 +965,12 @@ export const useDockingUtil = () => {
           { tagName: 'Dock_Out_Request', value: false },
         ],
       });
-      setTimeout(() => {
-        plcConnectUtil.writeTagValue({
-          targetFacility: params.SERIAL_ID,
-          tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
-        });
-      }, 500);
+      // setTimeout(() => {
+      //   plcConnectUtil.writeTagValue({
+      //     targetFacility: params.SERIAL_ID,
+      //     tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+      //   });
+      // }, 500);
       // 도킹 아웃 요청 켜 있으면 꺼주고 레디스 삭제
       const dockingOutRequestInfo = await redisUtil.hgetObject<AcsDockingRequestType>(
         RedisKeys.DockingOutRequestBySerialId,

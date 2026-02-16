@@ -152,7 +152,7 @@ export const useSmartConnectorUtils = () => {
             filename: 'smartConnectorUtils.ts-monitorTagData',
             params: { plcRealtimeData },
             result: null,
-            error: new Error('plcRealtimeData is not found'),
+            error: 'plcRealtimeData is not found',
           });
           throw new Error('plcRealtimeData is not found');
         }
@@ -164,7 +164,7 @@ export const useSmartConnectorUtils = () => {
               filename: 'smartConnectorUtils.ts-monitorTagData',
               params: { facilityName },
               result: null,
-              error: new Error('data is not found for facilityName: ' + facilityName),
+              error: 'data is not found for facilityName: ' + facilityName,
             });
             throw new Error('data is not found for facilityName: ' + facilityName);
           }
@@ -181,7 +181,7 @@ export const useSmartConnectorUtils = () => {
           filename: 'smartConnectorUtils.ts-monitorTagData',
           params: null,
           result: null,
-          error: new Error('Error monitoring smartConnector tag data: ' + (error as Error).message),
+          error: 'Error monitoring smartConnector tag data: ' + (error as Error).message,
         });
       }
 
@@ -212,7 +212,7 @@ export const useSmartConnectorUtils = () => {
             filename: 'smartConnectorUtils.ts-getPlcRealtimeAllTagsDataFromRedis',
             params: { facilityName, key },
             result: null,
-            error: new Error('tagMapValue is not found for key: ' + key),
+            error: 'tagMapValue is not found for key: ' + key,
           });
           return acc;
         }
@@ -231,7 +231,7 @@ export const useSmartConnectorUtils = () => {
               filename: 'smartConnectorUtils.ts-getPlcRealtimeAllTagsDataFromRedis',
               params: { facilityName, key },
               result: null,
-              error: new Error('tagMapValue data type is not valid: ' + tagMapValue.DATA_TYPE),
+              error: 'tagMapValue data type is not valid: ' + tagMapValue.DATA_TYPE,
             });
             break;
         }
@@ -284,7 +284,7 @@ export const useSmartConnectorUtils = () => {
           filename: 'smartConnectorUtils.ts-setTagDataArrayToSmartConnector',
           params: { facilityName: message.facilityName, tag: message.tag },
           result: null,
-          error: new Error('tagMapValue is not found for key: ' + message.tag),
+          error: 'tagMapValue is not found for key: ' + message.tag,
         });
         continue;
       }

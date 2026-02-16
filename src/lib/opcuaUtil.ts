@@ -18,6 +18,7 @@ import { MonitorTag, parseAsciiToDecWord, parseDecWordToAscii, Tag, TagValue, us
 import { useEqpCheckUtil } from './eqpCheckUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { usePlcConnectUtil } from './plcConnectUtil';
+import { FacilityAttributes } from '../models/operation/facility';
 
 const userIdentity: UserIdentityInfoUserName = {
   type: 1,
@@ -207,6 +208,48 @@ export const opcuaUtil = {
           const nodeId = monitoredItem.itemToMonitor.nodeId.value.toString();
           const value = dataValue;
           const targetTagInfo = useKepServerUtil().updateTagValue(nodeId, value);
+          redisUtil.hSetPlcTag(
+            `${RedisKeys.PlcRealtimeData}:${targetTagInfo.EQ_CODE}`,
+            targetTagInfo.TAG_NAME,
+            value.value.value
+          );
+          const snapshotData = await redisUtil.hGetPlcAllTags(`${RedisKeys.PlcRealtimeData}:${targetTagInfo.EQ_CODE}`);
+          if (!snapshotData) {
+            logging.ACTION_ERROR({
+              filename: 'opcuaUtil.registerChangeEvent',
+              params: { targetTagInfo },
+              result: null,
+              error: 'snapshotData is null',
+            });
+            return;
+          }
+          const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+            RedisKeys.InfoFacilityBySerial,
+            targetTagInfo.EQ_CODE
+          );
+          if (!facilityInfo) {
+            logging.ACTION_ERROR({
+              filename: 'opcuaUtil.registerChangeEvent',
+              params: { targetTagInfo },
+              result: null,
+              error: 'facilityInfo is null',
+            });
+            return;
+          }
+          logging.PLC_DATA_CHANGE_HISTORY_LOG.INSERT({
+            ts: new Date(),
+            createdAt: new Date(),
+            facilityCode: facilityInfo.code,
+            facilityName: facilityInfo.serial || '',
+            facilityType: facilityInfo.type,
+            isTriggered: facilityInfo.isActiveCallTrigger || false,
+            tagName: targetTagInfo.TAG_NAME,
+            oldValue: targetTagInfo.prevValue.toString(),
+            newValue: value.value.value.toString(),
+            valueType: targetTagInfo.DATA_TYPE,
+            snapshotData: snapshotData,
+          });
+
           logging.KEPWARE_LOG({
             action: 'TAG_WRITE',
             tag: nodeId,

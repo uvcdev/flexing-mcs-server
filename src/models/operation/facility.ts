@@ -303,6 +303,12 @@ export interface FacilityDeleteParams {
   id?: number;
 }
 
+// update operation mode
+export interface OperationModeUpdateParams {
+  SERIAL: string;
+  OPERATION_MODE: number; // 0: None(normal), 1: Load(supply), 2: Unload(retrieve), 3: Load & Unload(normal)
+}
+
 // include attributes
 export const FacilityAttributesInclude = [
   'id',

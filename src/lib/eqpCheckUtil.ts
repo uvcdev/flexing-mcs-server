@@ -11,9 +11,10 @@ import { useMultiCallRegisterUtil } from './multiCallRegisterUtil';
 import { useCallResponseUtil } from './callResponseUtil';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { useCallPriorityUtil } from './callPriorityUtil';
-import { sendMqtt } from './mqttUtil';
+import { MqttTopics, sendMqtt } from './mqttUtil';
 import { timestampToDate } from '../lib/usefullToolUtil';
 import { FacilityAttributesDeep } from '../models/operation/facility';
+import { service as facilityService } from '../service/operation/facilityService';
 import { initTrackingLogRedis } from './process/trackingLog';
 import {
   RecentCallCountByFacilitySerialAttributes,
@@ -519,26 +520,16 @@ export const useEqpCheckUtil = () => {
           await useCallPriorityUtil().onCallPriority(targetTagInfo);
           break;
 
-        // case 'EQ_Auto':
-        //   console.log(`Changed EQ_Auto`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-        //   if (targetTagInfo.value === true && targetTagInfo.prevValue === false) {
-        //     const eqpModeInfo = {
-        //       EQP_ID: targetTagInfo.EQ_CODE,
-        //       EQP_MODE: 'AUTO',
-        //     }
-        //     sendMqtt('acs/eqp_mode', JSON.stringify(eqpModeInfo));
-        //   }
-        //   break;
-        // case 'EQ_Manual':
-        //   console.log(`Changed EQ_Manual`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-        //   if (targetTagInfo.value === true && targetTagInfo.prevValue === false) {
-        //     const eqpModeInfo = {
-        //       EQP_ID: targetTagInfo.EQ_CODE,
-        //       EQP_MODE: 'MANUAL',
-        //     }
-        //     sendMqtt('acs/eqp_mode', JSON.stringify(eqpModeInfo));
-        //   }
-        //   break;
+        case 'EQ_Auto':
+          console.log(`Changed EQ_Auto`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          sendMqtt(MqttTopics.EqMode, JSON.stringify({ EQP_ID: targetTagInfo.EQ_CODE, EQP_MODE: 'AUTO' }));
+          break;
+
+        case 'EQ_Manual':
+          console.log(`Changed EQ_Manual`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          sendMqtt(MqttTopics.EqMode, JSON.stringify({ EQP_ID: targetTagInfo.EQ_CODE, EQP_MODE: 'MANUAL' }));
+          break;
+
         case 'Dock_Disable':
           if (!targetTagInfo.value && !targetTagInfo.prevValue) break;
           const changed = targetTagInfo.value !== targetTagInfo.prevValue;
@@ -547,8 +538,16 @@ export const useEqpCheckUtil = () => {
               EQP_ID: targetTagInfo.EQ_CODE,
               EQP_MODE: targetTagInfo.value ? 'MANUAL' : 'AUTO',
             };
-            sendMqtt('acs/eqp_mode', JSON.stringify(eqpModeInfo));
+            sendMqtt(MqttTopics.DockDisable, JSON.stringify(eqpModeInfo));
           }
+          break;
+
+        case 'EQ_Operation_Mode':
+          console.log(`Changed EQ_Operation_Mode`, targetTagInfo.EQ_CODE, targetTagInfo.value);
+          await facilityService.editFacilityOperationMode({
+            SERIAL: targetTagInfo.EQ_CODE,
+            OPERATION_MODE: Number(targetTagInfo.value),
+          });
           break;
       }
     } catch (error) {

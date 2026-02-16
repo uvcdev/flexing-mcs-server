@@ -32,7 +32,7 @@ import { router as workOrderRouter } from './operation/workOrder';
 import { router as logRouter } from './timescale/log';
 import { router as systemLogRouter } from './timescale/systemLog';
 import { router as itemLogRouter } from './timescale/itemLog';
-
+import { router as plcDataChangeHistoryLogRouter } from './timescale/plcDataChangeHistoryLog';
 // MBS
 import { router as trackingLogRouter } from './common/trackingLog';
 import { router as kepwareRouter } from './kepware/kepware';
@@ -225,6 +225,7 @@ router.use('/logs', logRouter);
 router.use('/system-logs', systemLogRouter);
 router.use('/item-logs', itemLogRouter);
 router.use('/tracking-logs', trackingLogRouter);
+router.use('/plc-data-change-history-logs', plcDataChangeHistoryLogRouter);
 // kepware
 router.use('/kepware', kepwareRouter);
 // smartConnector

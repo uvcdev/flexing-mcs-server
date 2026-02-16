@@ -9,6 +9,8 @@ import { ItemLogInsertParams } from '../models/timescale/itemLog';
 import fs from 'fs';
 import path from 'path';
 import colors from 'ansi-colors';
+import { PlcDataChangeHistoryLogInsertParams } from '../models/timescale/plcDataChangeHistoryLog';
+import { plcDataChangeHistoryLogDao } from '../dao/timescale/plcDataChangeHistoryLogDao';
 
 export interface LogHeader {
   traceId: string | null; // 외부에서 API를 호출했을때 사용 할 "외부용 추적 키 값" (보통 Front-end에서 생성함)
@@ -785,6 +787,18 @@ export const logging = {
       // 용도: 일반 액션 디버그 로그(REQUEST/RESPONSE가 아닌 경우에 대한 로그)
       const logLevel = 'error';
 
+      const serializedLog = {
+        ...actionLog,
+        error:
+          actionLog.error instanceof Error
+            ? {
+                message: actionLog.error.message,
+                stack: actionLog.error.stack,
+                name: actionLog.error.name,
+              }
+            : actionLog.error,
+      };
+
       void logDao.insert({
         facilityCode: null,
         facilityName: null,
@@ -792,7 +806,7 @@ export const logging = {
         amrName: null,
         logLevel: logLevel,
         function: 'ACTION_ERROR',
-        data: actionLog,
+        data: serializedLog,
       });
     } catch (error) {
       console.log('logging.ACTION_ERROR', error);
@@ -1093,6 +1107,28 @@ export const logging = {
         void itemLogDao.insert(insertParams);
       } catch (error) {
         console.log('logging.ITEM_LOG.ALARM_CLEAR', error);
+      }
+    },
+  },
+  PLC_DATA_CHANGE_HISTORY_LOG: {
+    INSERT: (data: PlcDataChangeHistoryLogInsertParams): void => {
+      try {
+        const insertParams: PlcDataChangeHistoryLogInsertParams = {
+          ts: data.ts,
+          createdAt: data.createdAt,
+          tagName: data.tagName,
+          facilityCode: data.facilityCode,
+          facilityName: data.facilityName,
+          facilityType: data.facilityType,
+          isTriggered: data.isTriggered,
+          oldValue: data.oldValue,
+          newValue: data.newValue,
+          valueType: data.valueType,
+          snapshotData: data.snapshotData,
+        };
+        void plcDataChangeHistoryLogDao.insert(insertParams);
+      } catch (error) {
+        console.log('logging.PLC_DATA_CHANGE_HISTORY_LOG.INSERT', error);
       }
     },
   },

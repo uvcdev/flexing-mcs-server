@@ -176,7 +176,7 @@ export const usePlcConnectUtil = () => {
         filename: 'plcConnectUtil.ts-getTagValue',
         params: { plcConnType },
         result: null,
-        error: new Error('PLC Connection Type is not set'),
+        error: 'PLC Connection Type is not set',
       });
       return null;
     }
@@ -187,7 +187,7 @@ export const usePlcConnectUtil = () => {
             filename: 'plcConnectUtil.ts-getTagValue',
             params: { targetCode, tagName },
             result: null,
-            error: new Error('Target Code or Tag Name is not set'),
+            error: 'Target Code or Tag Name is not set',
           });
           return null;
         }
@@ -204,7 +204,7 @@ export const usePlcConnectUtil = () => {
             filename: 'plcConnectUtil.ts-getTagValue',
             params: { targetCode, tagName },
             result: null,
-            error: new Error('Tag value is not found'),
+            error: 'Tag value is not found',
           });
           return null;
         }
@@ -220,7 +220,7 @@ export const usePlcConnectUtil = () => {
               filename: 'plcConnectUtil.ts-getTagValue',
               params: { targetCode, tagName },
               result: null,
-              error: new Error(`Tag data type is not valid: ${tagMapValue.DATA_TYPE}`),
+              error: `Tag data type is not valid: ${tagMapValue.DATA_TYPE}`,
             });
             return null;
         }
@@ -229,7 +229,7 @@ export const usePlcConnectUtil = () => {
           filename: 'plcConnectUtil.ts-getTagValue',
           params: { plcConnType },
           result: null,
-          error: new Error('PLC Connection Type is not valid'),
+          error: 'PLC Connection Type is not valid',
         });
         return null;
       }
@@ -238,7 +238,7 @@ export const usePlcConnectUtil = () => {
         filename: 'plcConnectUtil.ts-getTagValue',
         params: { targetCode, tagName },
         result: null,
-        error: new Error('Error getting tag value: ' + (error as Error).message),
+        error: 'Error getting tag value: ' + (error as Error).message,
       });
       throw error;
     }

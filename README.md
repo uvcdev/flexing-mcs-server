@@ -684,17 +684,20 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - call-signal-reset 관련 작업 초기화 기능 추가
 - suject 스펠링 오류 수정
 - 설비 관리
+
   - cancelLinkedEqpIds : Post , Put 누락 내용 추가
 
 - 공통 로직
+
   - SP-BS 연결 로직 ( 작업 취소 관련은 없음 ) 추가
   - useMultiCallRegisterUtil 관련 내용 주석 ( 미사용 )
 
-- ACS 작업 취소 시, call response 값 내리기 
+- ACS 작업 취소 시, call response 값 내리기
+
   - from 작업은 A,B 설비 모두 값 내리기
   - to 작업은 B 설비 값만 내리기
   - ACS 작업 취소 중 mqtt 'work-order-cancel' 에서 설비 값 컨트롤하지 않도록 변경
-  - ACS 작업 취소의 모든 내용은 missionState에서 컨트롤 하도록 변경 
+  - ACS 작업 취소의 모든 내용은 missionState에서 컨트롤 하도록 변경
 
 - 버그 수정
   - Call Check util에 for 문 오류 수정
@@ -704,4 +707,12 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - approve v3.0.3-ljk
 
 ## v3.0.4-ljk
+
 - mission order 판단 조건에 Dock_Request 정보 추가
+
+## v3.0.4-ssb
+
+- PLC 데이터 변경이력 추가
+- EQ_Operation_Mode PLC 데이터 추가
+- 설비취소 로직 수정
+- EQ_Auto, EQ_Manual 데이터 변경 시 실행 로직 추가
