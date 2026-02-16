@@ -96,18 +96,18 @@ export type ResponseJson<T> = {
   code: string;
   message: string | null;
   data:
-  | InsertedResult
-  | BulkInsertedOrUpdatedResult
-  | SelectedInfoResult
-  | SelectedAllResult<T>
-  | SelectedListResult<T>
-  | UpdatedResult
-  | DeletedResult
-  | LoggedInResult
-  | FreeStyleResult<T>
-  | UploadResult
-  | DownloadResult
-  | null;
+    | InsertedResult
+    | BulkInsertedOrUpdatedResult
+    | SelectedInfoResult
+    | SelectedAllResult<T>
+    | SelectedListResult<T>
+    | UpdatedResult
+    | DeletedResult
+    | LoggedInResult
+    | FreeStyleResult<T>
+    | UploadResult
+    | DownloadResult
+    | null;
   remark: unknown;
 };
 
@@ -414,6 +414,24 @@ export function getOrderby(order: string | undefined | null): OrderItem[] {
   */
 
   return orderbyList as OrderItem[]; // [['createdAt', 'asc'], ['id', 'desc']]
+}
+
+export function getOrderbyTs(order: string | undefined | null): OrderItem[] {
+  if (!order) {
+    return [['ts', 'DESC']] as OrderItem[]; // 기본 정렬
+  }
+
+  const orderbyList = [];
+  const orderSplit = order.split(',');
+  for (let i = 0; i < orderSplit.length; i += 1) {
+    if (orderSplit[i].indexOf('-') === -1) {
+      orderbyList.push([`ts`, `${orderSplit[i]}`, `ASC`]);
+    } else {
+      orderbyList.push([`ts`, `${orderSplit[i].replace('-', '')}`, `DESC`]);
+    }
+  }
+
+  return orderbyList as OrderItem[];
 }
 
 // 응답 string의 바이트 수를 리턴

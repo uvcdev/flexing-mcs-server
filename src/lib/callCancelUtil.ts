@@ -1,7 +1,7 @@
-/* eslint-disable prettier/prettier */
 import { AttributeIds } from 'node-opcua-client';
 import {
   PendingWorkOrderAttributes,
+  RecentWorkOrderInfoByFacilitySerialAttributes,
   RecentWorkOrderListByFacilitySerialAttributes,
 } from '../models/operation/workOrder';
 import { CancelType, FacilityAttributes, FacilityAttributesDeep } from '../models/operation/facility';
@@ -25,6 +25,7 @@ import { generateUUIDNode } from './hashUtil';
 import { InfoAckInCallByCallIdBody } from './wms/mqtt/call';
 import { count } from 'console';
 import { usePlcConnectUtil } from './plcConnectUtil';
+import { useCallTypeUtil } from './callTypeUtil';
 
 export interface EqpCallStats {
   CALL_ID: string;
@@ -59,6 +60,27 @@ export const useCallCancelUtil = () => {
   const kepServerUtil = useKepServerUtil();
   const redisUtil = useRedisUtil();
   const plcConnectUtil = usePlcConnectUtil();
+
+  // 취소 트래킹로그
+  const writeTrackingLogForCancel = async (targetCode: string, callId: string) => {
+    const trackingLogSubject = 'MISSION_CANCELED';
+    const trackingLogDetail = 'MISSION_CANCELED';
+    const trackingLogState = 'CANCELED';
+    const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+      callId: callId,
+      subject: trackingLogSubject,
+      detail: trackingLogDetail,
+      state: trackingLogState,
+      startFacility: null,
+      transferId: null,
+      destFacility: null,
+      assignedRobot: null,
+      value: targetCode,
+      description: `Call ID ${callId} cancellation successful on EQP ${targetCode}`,
+      processState: 'CANCELED',
+    };
+    await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', targetCode);
+  };
   // ACS에 취소 요청 전달
   const cancelWorkOrderToAcs = async (
     callId: string,
@@ -144,14 +166,24 @@ export const useCallCancelUtil = () => {
   const initResponsePlc = async (targetCode: string) => {
     try {
       // 콜응답, 콜취소응답, 콜로봇할당, 콜ID, 콜타입 등은 callRemove에서 0으로 내림.
+      if (!targetCode) {
+        logging.ACTION_ERROR({
+          filename: `callCancelUtil.ts - initResponsePlc`,
+          error: `targetCode is required`,
+          params: null,
+          result: false,
+        });
+        return;
+      }
       await plcConnectUtil.writeTagValue({
         targetFacility: targetCode,
         tagInfo: [
           { tagName: 'Call_Response', value: false },
           { tagName: 'Call_Robot_Assigned', value: false },
-          { tagName: 'Call_Response_Count', value: '0' }
+          { tagName: 'Call_Response_Count', value: '0' },
         ],
       });
+      await useCallTypeUtil().callTypeResponseReset(targetCode);
     } catch (error) {
       logging.KEPWARE_ERROR({
         action: 'TAG_WRITE',
@@ -249,7 +281,7 @@ export const useCallCancelUtil = () => {
         if (isCaller) {
           // 콜주체일 경우
           // 콜 취소 응답 쓰기(콜주체)
-          await writeCallCancelResponse(eqpId);
+          // await writeCallCancelResponse(eqpId);
           // 링크드 설비 응답 plc 초기화
           if (linkedEqpId) {
             await initResponsePlc(linkedEqpId);
@@ -257,20 +289,32 @@ export const useCallCancelUtil = () => {
         } else {
           // 링크드일 경우
           // 콜 취소 응답 쓰기(링크드)
-          if (linkedEqpId) {
-            await writeCallCancelResponse(linkedEqpId);
-          }
+          // if (linkedEqpId) {
+          //   await writeCallCancelResponse(linkedEqpId);
+          // }
           // 콜주체 설비 응답 plc 초기화
           await initResponsePlc(eqpId);
         }
+        await initRecentWorkOrderListByFacilitySerial(eqpId, params.CALL_ID);
       } else if (params.CANCEL_TYPE === 'EQP_TO_EQP_MISSION') {
         // 취소 타입이 설비to설비 미션O 일 경우
         // 콜 취소 응답 쓰기
-        await writeCallCancelResponse(eqpId);
+        // await writeCallCancelResponse(eqpId);
         // 링크드 설비 응답 plc 초기화
         if (linkedEqpId && facilityInfo.type === 'in') {
           await initResponsePlc(linkedEqpId);
+        } else if (!linkedEqpId && params.IS_CALLER) {
+          await initResponsePlc(eqpId);
+        } else {
+          logging.ACTION_ERROR({
+            filename: `callCancelUtil.ts - processCancelResponseFromAcs`,
+            error: `[cancelResponseType = ${cancelResponseType}] EQP_TO_EQP_MISSION - 링크드 설비 정보가 없고 콜주체가 아닌 경우`,
+            params: null,
+            result: false,
+          });
         }
+        await writeTrackingLogForCancel(eqpId, params.CALL_ID);
+        // await initRecentWorkOrderListByFacilitySerial(eqpId, params.CALL_ID);
       } else if (params.CANCEL_TYPE === 'EQP_TO_WMS') {
         // 취소 타입이 설비to창고 일 경우
         // 여기로 들어올 일 없음. 에러처리
@@ -303,6 +347,21 @@ export const useCallCancelUtil = () => {
         params: null,
         result: false,
       });
+      // TempForCallCancelResponseReset이 있을 경우 redis 삭제
+      const tempForCallCancelResponseReset = await redisUtil.hgetObject<{
+        targetCode: string;
+        callId: string;
+        cancelType: CancelType;
+      }>(RedisKeys.TempForCallCancelResponseReset, params.CALL_ID);
+      if (tempForCallCancelResponseReset) {
+        redisUtil.hdel(RedisKeys.TempForCallCancelResponseReset, params.CALL_ID);
+        logging.ACTION_INFO({
+          filename: `callCancelUtil.ts - processCancelResponseFromAcs`,
+          error: `[cancelResponseType = ${cancelResponseType}] FAIL - TempForCallCancelResponseReset 삭제`,
+          params: null,
+          result: true,
+        });
+      }
     } else if (cancelResponseType === 'MISSION_ORDER') {
       // 취소 응답 타입이 MISSION_ORDER일 경우
       logToConsoleAndFile(
@@ -312,12 +371,26 @@ export const useCallCancelUtil = () => {
 
       if (params.CANCEL_TYPE === 'EQP_TO_EQP_MISSION') {
         // 취소 타입이 설비to설비 미션O 일 경우
-        // 콜 취소 응답 쓰기
-        await writeCallCancelResponse(eqpId);
+        // TempForCallCancelResponseReset이 있을 경우 To 작업중 설비취소인 경우, 해당 값 초기화
+        const tempForCallCancelResponseReset = await redisUtil.hgetObject<{
+          targetCode: string;
+          callId: string;
+          cancelType: CancelType;
+        }>(RedisKeys.TempForCallCancelResponseReset, params.CALL_ID);
+        if (tempForCallCancelResponseReset) {
+          await writeCallCancelResponse(tempForCallCancelResponseReset.targetCode);
+          await initRecentWorkOrderListByFacilitySerial(
+            tempForCallCancelResponseReset.targetCode,
+            tempForCallCancelResponseReset.callId
+          );
+          redisUtil.hdel(RedisKeys.TempForCallCancelResponseReset, params.CALL_ID);
+        }
+
+        await writeTrackingLogForCancel(eqpId, params.CALL_ID);
       } else if (params.CANCEL_TYPE === 'EQP_TO_WMS') {
         // 취소 타입이 설비to창고 일 경우
         // 콜 취소 응답 쓰기
-        await writeCallCancelResponse(eqpId);
+        // await writeCallCancelResponse(eqpId);
       } else {
         // 취소 타입이 정의되지 않은 경우
         logToConsoleAndFile(`[cancelResponseType = ${cancelResponseType}] 취소 타입이 정의되지 않은 경우`, 'red');
@@ -339,6 +412,170 @@ export const useCallCancelUtil = () => {
       });
     }
   };
+
+  const findWorkOrderList = async (targetCode: string): Promise<RecentWorkOrderInfoByFacilitySerialAttributes[]> => {
+    let workOrderList: RecentWorkOrderInfoByFacilitySerialAttributes[] = [];
+    const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, targetCode);
+    if (!facilityInfo) {
+      logging.ACTION_ERROR({
+        filename: `callCancelUtil.ts - findWorkOrderList`,
+        error: `${targetCode} 설비정보가 없습니다.`,
+        params: null,
+        result: true,
+      });
+      return [];
+    }
+    const isCaller = facilityInfo.isActiveCallTrigger === true;
+    // 트리거 설비인 경우
+    if (isCaller) {
+      const recentWorkOrderListByFacilitySerial =
+        await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+          RedisKeys.RecentWorkOrderListByFacilitySerial,
+          targetCode
+        );
+      if (recentWorkOrderListByFacilitySerial && recentWorkOrderListByFacilitySerial.count > 0) {
+        workOrderList = recentWorkOrderListByFacilitySerial.workOrderList || [];
+      }
+    }
+    // 링크드 설비인 경우
+    // 260209 설비측 수정으로 작화에서 설비취소가 사라짐으로 인해 링크드 설비로 들어오는 경우 없음.
+    else {
+      // 여기로 들어올수 없기에 들어오면 에러처리해서 로그 확인
+      logging.ACTION_ERROR({
+        filename: `callCancelUtil.ts - findWorkOrderList`,
+        error: `${targetCode} 링크드 설비로 들어오는 경우 없음.`,
+        params: null,
+        result: true,
+      });
+      const CallResponseValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Response')) as boolean;
+      // 콜응답이 ON이 아니라면 콜취소응답만 써줌.
+      if (CallResponseValue === true) {
+        // 콜응답이 ON이라면 설비 취소 로직 실행
+        const isInType = facilityInfo.type === 'in';
+        const recentWorkOrderListByFacilitySerialList =
+          await redisUtil.hgetAllObject<RecentWorkOrderListByFacilitySerialAttributes>(
+            RedisKeys.RecentWorkOrderListByFacilitySerial
+          );
+        if (recentWorkOrderListByFacilitySerialList && recentWorkOrderListByFacilitySerialList.length > 0) {
+          for (const recentWorkOrderListByFacilitySerial of recentWorkOrderListByFacilitySerialList) {
+            if (
+              recentWorkOrderListByFacilitySerial.count > 0 &&
+              recentWorkOrderListByFacilitySerial.facilityInfo.linkedEqpIds?.includes(facilityInfo.id)
+            ) {
+              for (const workOrder of recentWorkOrderListByFacilitySerial.workOrderList) {
+                const trackingLog = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
+                  RedisKeys.InfoTrackingLogByCallId,
+                  workOrder.callId
+                );
+                if (!trackingLog) {
+                  logging.ACTION_ERROR({
+                    filename: `callCancelUtil.ts - callCancel`,
+                    error: `[callCancel] ${workOrder.callId} 트래킹 로그 정보가 없습니다.`,
+                    params: null,
+                    result: true,
+                  });
+                  continue;
+                }
+                const linkedEqpinTracking = isInType ? trackingLog.destFacility : trackingLog.startFacility;
+                if (linkedEqpinTracking !== targetCode) {
+                  logging.ACTION_ERROR({
+                    filename: `callCancelUtil.ts - callCancel`,
+                    error: `[callCancel] ${workOrder.callId} 트래킹 로그 정보가 없습니다.`,
+                    params: null,
+                    result: true,
+                  });
+                  continue;
+                }
+                // 취소요청이 ON 된 링크드설비가 관련되어있는 작업지시를 찾은 상태
+                // 멀티콜 이슈: 작업지시 상태에 따라 이 설비와 아직도 연관이 있는지 확인해야 함.
+                if (!isInType && workOrder.state === 'toWorkOrder') {
+                  continue;
+                }
+                workOrderList.push(workOrder);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return workOrderList;
+  };
+
+  const changeWorkOrderState = async (targetCode: string, callId: string, state: string) => {
+    let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+      RedisKeys.RecentWorkOrderListByFacilitySerial,
+      targetCode
+    );
+    if (workOrderListInfo) {
+      for (const workOrder of workOrderListInfo.workOrderList) {
+        if (workOrder.callId === callId) {
+          workOrder.state = state;
+          break;
+        }
+      }
+    }
+    redisUtil.hset(RedisKeys.RecentWorkOrderListByFacilitySerial, targetCode, JSON.stringify(workOrderListInfo));
+  };
+
+  const initInfoCallRequestOnBySerial = async (triggerFacilitySerial: string) => {
+    redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, triggerFacilitySerial);
+  };
+
+  const initRecentWorkOrderListByFacilitySerial = async (triggerFacilitySerial: string, callId: string) => {
+    const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+      RedisKeys.InfoFacilityBySerial,
+      triggerFacilitySerial
+    );
+    if (!facilityInfo) {
+      logging.ACTION_ERROR({
+        filename: `callCancelUtil.ts - initRecentWorkOrderListByFacilitySerial`,
+        error: `${triggerFacilitySerial} 설비정보가 없습니다.`,
+        params: null,
+        result: true,
+      });
+      return;
+    }
+
+    let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+      RedisKeys.RecentWorkOrderListByFacilitySerial,
+      triggerFacilitySerial
+    );
+    if (workOrderListInfo) {
+      const removeWorkOrderByCallId = (targetCallId: string) => {
+        const workOrderList = workOrderListInfo?.workOrderList || [];
+
+        // targetCallId와 같은 항목이 있는지 확인
+        const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
+
+        if (hasMatchingCallId && !!workOrderListInfo?.facilitySerial && facilityInfo) {
+          workOrderListInfo = {
+            facilitySerial: workOrderListInfo?.facilitySerial,
+            facilityInfo: facilityInfo,
+            count: (workOrderListInfo?.count || 0) - 1,
+            workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
+          };
+        }
+
+        return workOrderListInfo;
+      };
+
+      const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
+        removeWorkOrderByCallId(callId) ?? {
+          facilitySerial: triggerFacilitySerial,
+          facilityInfo: facilityInfo as FacilityAttributes,
+          count: 0,
+          workOrderList: [],
+        };
+
+      redisUtil.hset(
+        RedisKeys.RecentWorkOrderListByFacilitySerial,
+        triggerFacilitySerial,
+        JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+      );
+    }
+  };
+
   const callCancel = async (targetTagInfo: TagValue) => {
     // prevValue가 없으면 초기 연결시점이므로 무시
     if (targetTagInfo.value !== true && !targetTagInfo.prevValue) {
@@ -386,11 +623,12 @@ export const useCallCancelUtil = () => {
       }
 
       // 취소 타입 확인
-      const cancelType = facilityInfo?.cancelType || 'NON_CANCELLABLE';
-
+      const cancelType = facilityInfo.cancelType || 'NON_CANCELLABLE';
+      const isCaller = facilityInfo.isActiveCallTrigger || false;
       // NON_CANCELLABLE일 경우 해당 설비에서 들어온 취소 요청에 대해서 응답하지 않음
       // NON_CANCELLABLE 콜 Cancel Request 가 올라와 있을 것이고
       if (cancelType === 'NON_CANCELLABLE') {
+        await writeCallCancelResponse(targetCode);
         logToConsoleAndFile(
           `[cancelType = ${cancelType}] NON_CANCELLABLE - 취소 로직 비활성화 - 취소 요청 무시`,
           'green'
@@ -402,17 +640,6 @@ export const useCallCancelUtil = () => {
           result: true,
         });
         return;
-      }
-
-      const callCount = await plcConnectUtil.getTagValue(targetCode, 'Call_Count') as number;
-      if (!callCount) {
-        logging.ACTION_ERROR({
-          filename: `callCancelUtil.ts - callCancel`,
-          error: `${targetCode} 콜 카운트 정보가 없습니다.`,
-          params: null,
-          result: true,
-        });
-        // return;
       }
 
       if (cancelType === 'EQP_TO_WMS') {
@@ -434,12 +661,12 @@ export const useCallCancelUtil = () => {
           const notBeforeRequestWorkOrderCount = notBeforeRequestWorkOrderList.length;
 
           const removeBeforeRequestRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-          {
-            facilitySerial: targetCode,
-            facilityInfo: facilityInfo,
-            count: notBeforeRequestWorkOrderCount,
-            workOrderList: notBeforeRequestWorkOrderList,
-          };
+            {
+              facilitySerial: targetCode,
+              facilityInfo: facilityInfo,
+              count: notBeforeRequestWorkOrderCount,
+              workOrderList: notBeforeRequestWorkOrderList,
+            };
 
           redisUtil.hset(
             RedisKeys.RecentWorkOrderListByFacilitySerial,
@@ -532,7 +759,7 @@ export const useCallCancelUtil = () => {
 
               redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId);
               // redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
-              removableCmdIds.push(cmdId)
+              removableCmdIds.push(cmdId);
             }
           }
           // 1-1 추가 Interval 상태에 있는 정보도 삭제 ( 삭제 해주지 않으면 해당 정보를 다시 요청하게 됨 )
@@ -618,10 +845,9 @@ export const useCallCancelUtil = () => {
 
               redisUtil.hdel(RedisKeys.IntervalCommandForRetryBySubjectCmdId, subjectCmdId);
               // redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
-              removableCmdIds.push(cmdId)
+              removableCmdIds.push(cmdId);
             }
           }
-
 
           // 1-2. Abort로 남아있는 경우 삭제
           const abortCallInfoList =
@@ -706,7 +932,7 @@ export const useCallCancelUtil = () => {
 
               redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId);
               // redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
-              removableCmdIds.push(cmdId)
+              removableCmdIds.push(cmdId);
             }
           }
 
@@ -823,7 +1049,13 @@ export const useCallCancelUtil = () => {
               let workOrderCount = workOrderListInfo?.count || 0;
 
               // state가 'workOrder'인 항목들만 필터링
-              const filterWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'workOrder' || workOrder.state === 'fromWorkOrder' || workOrder.state === 'toWorkOrder') || [];
+              const filterWorkOrderList =
+                workOrderList.filter(
+                  (workOrder) =>
+                    workOrder.state === 'workOrder' ||
+                    workOrder.state === 'fromWorkOrder' ||
+                    workOrder.state === 'toWorkOrder'
+                ) || [];
 
               // 취소할 callId들 저장
               const callIdsToRemove: string[] = [];
@@ -892,273 +1124,252 @@ export const useCallCancelUtil = () => {
         return;
       }
 
-      await writeCallCancelResponse(targetCode);
+      // 취소요청이 ON 된 설비와 관련있는 작업지시 찾기
+      const workOrderList = await findWorkOrderList(targetCode);
 
-      let workOrderInfo = null;
-      if (facilityInfo.isActiveCallTrigger === true) {
-        if (facilityInfo.type === 'in') {
-          workOrderInfo = await workOrderDao.selectInfoByTriggerCallCount({
-            triggerCallCount: callCount,
-            toFacilityId: facilityInfo.id,
-          });
-        } else if (facilityInfo.type === 'out') {
-          workOrderInfo = await workOrderDao.selectInfoByTriggerCallCount({
-            triggerCallCount: callCount,
-            fromFacilityId: facilityInfo.id,
-          });
-        }
-      } else if (facilityInfo.isActiveCallTrigger === false) {
-        if (facilityInfo.type === 'in') {
-          workOrderInfo = await workOrderDao.selectInfoByAlwaysCallCount({
-            alwaysCallCount: callCount,
-            toFacilityId: facilityInfo.id,
-          });
-        } else if (facilityInfo.type === 'out') {
-          workOrderInfo = await workOrderDao.selectInfoByAlwaysCallCount({
-            alwaysCallCount: callCount,
-            fromFacilityId: facilityInfo.id,
-          });
-        }
-      } else {
-        logToConsoleAndFile(`[cancelType = ${cancelType}] 포트 타입 없음`, 'red');
+      // 관련있는 작업지시가 없을 시 콜취소응답만 쓰고 종료
+      if (workOrderList.length === 0) {
+        // 260209 설비측 수정 이후 이 조건문을 타면 안됨
+        // call_request가 떠있어야만 취소 요청이 들어오기 때문이다.
+        // 그러므로 이 조건문으로 들어왔다는 건 call_request가 떠있지 않는 경우인데 설비취소가 눌린것이다.
+        // await writeCallCancelResponse(targetCode);
         logging.ACTION_ERROR({
           filename: `callCancelUtil.ts - callCancel`,
-          error: `[cancelType = ${cancelType}] 포트 타입 없음`,
-          params: null,
-          result: false,
-        });
-        return;
-      }
-
-      // 작업지시가 생겨서 ACS에 전달되기 전에 취소요청이 들어온 경우
-      // ACS에 전달 되기 전이라면 취소요청을 보낼 필요가 없음
-      if (!workOrderInfo) {
-        logToConsoleAndFile(
-          `[cancelType = ${cancelType}] 작업지시가 생겨서 ACS에 전달되기 전에 취소요청이 들어온 경우`,
-          'green'
-        );
-        logging.ACTION_INFO({
-          filename: `callCancelUtil.ts - callCancel`,
-          error: `[cancelType = ${cancelType}, facilityInfo.serial = ${facilityInfo.serial}] 작업지시가 생겨서 ACS에 전달되기 전에 취소요청이 들어온 경우`,
+          error: `${targetCode} call_request가 떠있지 않는데 설비취소가 눌린것이다.`,
           params: null,
           result: true,
         });
+        return;
+      } else {
+        logToConsoleAndFile(`${targetCode}에 진행 중인 작업지시 정보가 있습니다.`, 'green');
+        logToConsoleAndFile(JSON.stringify(workOrderList, null, 2), 'green');
+        logging.KEPWARE_DEBUG({
+          action: 'TAG_READ',
+          tag: `${targetCode}에 진행 중인 작업지시 정보`,
+          value: JSON.parse(JSON.stringify(workOrderList)),
+          message: `진행 중인 작업지시 정보 조회`,
+        });
+      }
 
-        // 250916 remove remain
-        /*
-        const infoRemainCalls = await redisUtil.hgetAllObject<PendingWorkOrderAttributes>(RedisKeys.InfoRemainCallById);
-        if (infoRemainCalls) {
-          for (const infoRemainCall of infoRemainCalls) {
-            if (facilityInfo.serial === infoRemainCall.fromFacilityName || facilityInfo.serial === infoRemainCall.toFacilityName) {
-              logToConsoleAndFile(`[cancelType = ${cancelType}] infoRemainCall.callId = ${infoRemainCall.callId} 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`, "green");
-              logging.ACTION_INFO({
-                filename: `callCancelUtil.ts - callCancel`,
-                error: `[cancelType = ${cancelType}] infoRemainCall.callId = ${infoRemainCall.callId} 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`,
-                params: null,
-                result: true,
-              });
-              redisUtil.hdel(RedisKeys.InfoRemainCallById, infoRemainCall.callId || '');
-            }
-          }
+      for (const workOrder of workOrderList) {
+        const callId = workOrder.callId;
+        const triggerFacilitySerial = callId.slice(0, 4);
+        const workOrderState = workOrder.state;
+
+        // ============================================================================
+        // 작업지시 상태별 콜취소 처리
+        // ============================================================================
+
+        // ──────────────────────────────────────────────────────────────────────────
+        // [1] beforeRequest 상태 처리
+        // - Call Request 감지까지는 했지만 어떠한 요청도 하지 않은 상태
+        // - beforeRequest 상태에서 취소 요청이 들어온 경우는 trigger 설비에서 온 취소요청
+        // - 처리: 콜취소응답만 작성
+        // ──────────────────────────────────────────────────────────────────────────
+        if (workOrderState === 'beforeRequest') {
+          await writeCallCancelResponse(targetCode);
+          await initRecentWorkOrderListByFacilitySerial(targetCode, callId);
+          // 취소 트래킹로그 함수
+          await writeTrackingLogForCancel(targetCode, callId);
         }
-          */
-        const infoRemainCalls = await redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoCallRequestOnBySerial);
-        if (infoRemainCalls) {
-          for (const infoRemainCall of infoRemainCalls) {
-            if (facilityInfo.serial === infoRemainCall.DEVICE) {
-              logToConsoleAndFile(
-                `[cancelType = ${cancelType}] 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`,
-                'green'
+
+        // ──────────────────────────────────────────────────────────────────────────
+        // [2] beforeWorkOrder 상태 처리
+        // - InfoCallRequestOnBySerial까지 생긴 뒤 linkedEqp 기다리는 상태
+        // - 처리: 콜취소응답 작성 + beforeRequest로 상태 변경
+        // ──────────────────────────────────────────────────────────────────────────
+        else if (workOrderState === 'beforeWorkOrder') {
+          await writeCallCancelResponse(targetCode);
+          await initRecentWorkOrderListByFacilitySerial(targetCode, callId);
+          await initInfoCallRequestOnBySerial(targetCode);
+          await writeTrackingLogForCancel(targetCode, callId);
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────
+        // [3] workOrder 상태 처리
+        // - workOrder 생성 후 AMR 할당 전까지 유지되는 상태
+        // - 처리: 콜취소응답 작성 + 연결된 설비의 콜응답 PLC 초기화 + ACS 취소 요청
+        // ──────────────────────────────────────────────────────────────────────────
+        else if (workOrderState === 'workOrder') {
+          let linkedEqp = '';
+
+          // 작업지시 정보 조회
+          const workOrderInfo = await workOrderDao.selectInfoByCode({ code: callId });
+          if (!workOrderInfo) {
+            logging.ACTION_ERROR({
+              filename: `callCancelUtil.ts - callCancel`,
+              error: `[callCancel] ${callId} 작업지시 정보가 없습니다.`,
+              params: null,
+              result: true,
+            });
+            continue;
+          }
+
+          // 콜취소응답 쓰기
+          await writeCallCancelResponse(targetCode);
+
+          // 콜취소설비와 연결된 설비의 콜응답 PLC 초기화
+          if (facilityInfo.type === 'in') {
+            // IN 타입: fromFacility 정보 조회 및 초기화
+            const fromFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+              RedisKeys.InfoFacilityById,
+              workOrderInfo.fromFacilityId?.toString() || ''
+            );
+            await initResponsePlc(fromFacilityInfo?.serial || '');
+            linkedEqp = fromFacilityInfo?.serial || '';
+          } else {
+            // OUT 타입: toFacility 정보 조회 및 초기화
+            // 260209 설비측 수정으로 작화에서 설비취소가 사라짐으로 인해 out타입으로 들어올수 없음.
+            // 여기로 들어올수 없기에 들어오면 에러처리해서 로그 확인
+            logging.ACTION_ERROR({
+              filename: `callCancelUtil.ts - callCancel`,
+              error: `${targetCode} 260209 설비측 수정으로 작화에서 설비취소가 사라짐으로 인해 out타입으로 들어올수 없음.`,
+              params: null,
+              result: true,
+            });
+            continue;
+            // const toFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+            //   RedisKeys.InfoFacilityById,
+            //   workOrderInfo.toFacilityId?.toString() || ''
+            // );
+            // await initResponsePlc(toFacilityInfo?.serial || '');
+            // linkedEqp = toFacilityInfo?.serial || '';
+          }
+
+          // ACS 작업지시 취소 요청
+          await cancelWorkOrderToAcs(callId, cancelType, isCaller, isCaller ? linkedEqp : undefined);
+
+          // RecentWorkOrderListByFacilitySerialAttributes에서 해당 callId 제거
+          await initRecentWorkOrderListByFacilitySerial(triggerFacilitySerial, callId);
+
+          await writeTrackingLogForCancel(targetCode, callId);
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────
+        // [4] fromWorkOrder 상태 처리
+        // - fromWorkOrder 상태에서 취소 요청이 들어온 경우
+        // - 처리: ACS 취소 요청 + 콜취소응답 작성 + 연결된 설비의 콜응답 PLC 초기화
+        // ──────────────────────────────────────────────────────────────────────────
+        else if (workOrderState === 'fromWorkOrder') {
+          let linkedEqp = '';
+
+          // 작업지시 정보 조회
+          const workOrderInfo = await workOrderDao.selectInfoByCode({ code: callId });
+          if (!workOrderInfo) {
+            logging.ACTION_ERROR({
+              filename: `callCancelUtil.ts - callCancel`,
+              error: `[callCancel] ${callId} 작업지시 정보가 없습니다.`,
+              params: null,
+              result: true,
+            });
+            continue;
+          }
+
+          // 콜취소응답 쓰기
+          await writeCallCancelResponse(targetCode);
+          await initRecentWorkOrderListByFacilitySerial(targetCode, callId);
+          // 콜취소설비와 연결된 설비의 콜응답 PLC 초기화
+          if (facilityInfo.type === 'in') {
+            // IN 타입: fromFacility 정보 조회 및 초기화
+            const fromFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+              RedisKeys.InfoFacilityById,
+              workOrderInfo.fromFacilityId?.toString() || ''
+            );
+            // await initResponsePlc(fromFacilityInfo?.serial || '');
+            linkedEqp = fromFacilityInfo?.serial || '';
+          } else {
+            // OUT 타입: toFacility 정보 조회 및 초기화
+            const toFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+              RedisKeys.InfoFacilityById,
+              workOrderInfo.toFacilityId?.toString() || ''
+            );
+            // await initResponsePlc(toFacilityInfo?.serial || '');
+            linkedEqp = toFacilityInfo?.serial || '';
+          }
+
+          // ACS 작업지시 취소 요청
+          // RecentWorkOrderListByFacilitySerialAttributes는 취소요청 응답에 따라 변경됨.
+          // SUCCESS 응답이 오면 초기화.
+          // FAIL 응답이 오면 도킹시작이후므로 missionState의 COMPLETED에 의해 변경됨.
+          await cancelWorkOrderToAcs(callId, cancelType, isCaller, linkedEqp);
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────
+        // [5] toWorkOrder 상태 처리
+        // - toWorkOrder 상태에서 취소 요청이 들어온 경우
+        // - OUT 타입 설비의 경우 무시되어야 함( 해당 콜에 대한 관여는 끝난 상태 )
+        // - IN 타입의 경우
+        //  - cancelType이 EQP_TO_EQP_MISSION일 경우 취소 요청
+        //  - cancelType이 EQP_TO_EQP_NO_MISSION일 경우 취소 요청 보내지 않음(무조건 공급)
+        //  - cancelType이 정의되지 않은 경우 취소 요청
+        // ──────────────────────────────────────────────────────────────────────────
+        else if (workOrderState === 'toWorkOrder') {
+          // 작업지시 정보 조회
+          const workOrderInfo = await workOrderDao.selectInfoByCode({ code: callId });
+          if (!workOrderInfo) {
+            logging.ACTION_ERROR({
+              filename: `callCancelUtil.ts - callCancel`,
+              error: `[callCancel] ${callId} 작업지시 정보가 없습니다.`,
+              params: null,
+              result: true,
+            });
+            continue;
+          }
+
+          if (facilityInfo.type === 'out') {
+            await writeCallCancelResponse(targetCode);
+            continue;
+          } else {
+            if (cancelType === 'EQP_TO_EQP_MISSION') {
+              // ACS 작업지시 취소 요청
+              // RecentWorkOrderListByFacilitySerialAttributes는 취소요청 응답에 따라 변경됨.
+              // SUCCESS 응답이 오면 초기화.
+              // FAIL 응답이 오면 도킹시작이후므로 missionState의 COMPLETED에 의해 변경됨.
+              await cancelWorkOrderToAcs(callId, cancelType, isCaller, undefined);
+              redisUtil.hset(
+                RedisKeys.TempForCallCancelResponseReset,
+                callId,
+                JSON.stringify({
+                  targetCode: targetCode,
+                  callId: callId,
+                  cancelType: cancelType,
+                })
               );
-              logging.ACTION_INFO({
+            } else if (cancelType === 'EQP_TO_EQP_NO_MISSION') {
+              await writeCallCancelResponse(targetCode);
+            } else {
+              logging.ACTION_ERROR({
                 filename: `callCancelUtil.ts - callCancel`,
-                error: `[cancelType = ${cancelType}] 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`,
+                error: `[callCancel] ${callId} 취소 타입이 정의되지 않은 경우`,
                 params: null,
                 result: true,
               });
-              redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, infoRemainCall.DEVICE || '');
+              continue;
             }
           }
         }
 
-        // 작지가 없음에도 작업자가 Call_Cancel_Request 를 올린 경우
-        // Call_Cancel_Response 를 켜서 다음 콜이 생성되도록 해줘야 함
-        await writeCallCancelResponse(targetCode);
-        await initResponsePlc(targetCode);
+        // ──────────────────────────────────────────────────────────────────────────
+        // [6] missionWorkOrder 상태 처리
+        // - 미션오더 상태에서 취소 요청이 들어온 경우 (예: SP12, SC12 등)
+        // - 주의: missionWorkOrder 상태는 어느 설비에서도 취소 불가능
+        // - 처리: 콜취소응답만 작성
+        // ──────────────────────────────────────────────────────────────────────────
+        else if (workOrderState === 'missionWorkOrder') {
+          await writeCallCancelResponse(targetCode);
+        }
 
-        // 만약 취소 타입이 설비-창고라면 포트배정기다리는 레디스에서 찾아서 취소응답써주고 창고콜취소 요청 전달
-        // if (cancelType === 'EQP_TO_WMS') {
-        //   const infoRemainCalls = await redisUtil.hgetAllObject<PendingWorkOrderAttributes>(RedisKeys.InfoRemainCallById);
-        //   if (infoRemainCalls) {
-        //     for (const infoRemainCall of infoRemainCalls) {
-        //       if (facilityInfo.serial === infoRemainCall.fromFacilityName || facilityInfo.serial === infoRemainCall.toFacilityName) {
-        //         logToConsoleAndFile(`[cancelType = ${cancelType}] infoRemainCall.callId = ${infoRemainCall.callId} 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`, "green");
-        //         logging.ACTION_INFO({
-        //           filename: `callCancelUtil.ts - callCancel`,
-        //           error: `[cancelType = ${cancelType}] infoRemainCall.callId = ${infoRemainCall.callId} 작업지시가 ACS에 전달되기 전에 취소요청이 들어온 경우`,
-        //           params: null,
-        //           result: true,
-        //         });
-        //         await writeCallCancelResponse(targetCode);
-        //         redisUtil.hdel(RedisKeys.InfoRemainCallById, infoRemainCall.callId || '');
-        //       }
-        //     }
-        //   }
-        // }
-
-        return;
-      }
-
-      const isCaller = facilityInfo.isActiveCallTrigger === true ? true : false;
-
-      let linkedFacilityInfo = null;
-      if (isCaller) {
-        // 콜주체일 경우
-        // 링크드 설비 정보 조회
-        const linkedfacilityId =
-          facilityInfo.type === 'in' ? workOrderInfo.fromFacilityId : workOrderInfo.toFacilityId || null;
-        linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-          RedisKeys.InfoFacilityById,
-          linkedfacilityId?.toString() || ''
-        );
-        if (!linkedFacilityInfo) {
-          logToConsoleAndFile(`[linkedFacilityId = ${linkedfacilityId}]  링크드 설비 정보 없음`, 'red');
+        // ──────────────────────────────────────────────────────────────────────────
+        // [예외] 정의되지 않은 상태
+        // ──────────────────────────────────────────────────────────────────────────
+        else {
           logging.ACTION_ERROR({
             filename: `callCancelUtil.ts - callCancel`,
-            error: `[linkedFacilityId = ${linkedfacilityId}]  링크드 설비 정보 없음`,
+            error: `[callCancel] ${callId} 작업지시 상태가 없습니다.`,
             params: null,
-            result: false,
+            result: true,
           });
         }
-      } else {
-        // 링크드일 경우
-        // 링크드 설비 정보 조회
-        const linkedfacilityId =
-          facilityInfo.type === 'in' ? workOrderInfo.toFacilityId : workOrderInfo.fromFacilityId || null;
-        linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-          RedisKeys.InfoFacilityById,
-          linkedfacilityId?.toString() || ''
-        );
-        if (!linkedFacilityInfo) {
-          logToConsoleAndFile(`[linkedFacilityId = ${linkedfacilityId}]  링크드 설비 정보 없음`, 'red');
-          logging.ACTION_ERROR({
-            filename: `callCancelUtil.ts - callCancel`,
-            error: `[linkedFacilityId = ${linkedfacilityId}]  링크드 설비 정보 없음`,
-            params: null,
-            result: false,
-          });
-        }
-      }
-
-      // 작업지시 코드 ( 취소 요청 들어온 작업지시 코드 )
-      const callId = workOrderInfo.code;
-      logToConsoleAndFile(`callId is made in callCancelUtil: ${callId}`, 'green');
-
-      // 미션 결정지 있는 설비to설비에서 취소 요청 들어온 경우
-      if (cancelType === 'EQP_TO_EQP_MISSION') {
-        logToConsoleAndFile(`[cancelType = ${cancelType}] EQP_TO_EQP_MISSION - 설비to설비 미션O `, 'green');
-        logging.ACTION_INFO({
-          filename: `callCancelUtil.ts - callCancel`,
-          error: `[cancelType = ${cancelType}] EQP_TO_EQP_MISSION - 설비to설비 미션O `,
-          params: null,
-          result: true,
-        });
-
-        // 공급포트인지 회수포트인지 확인
-        if (facilityInfo.type === 'in') {
-          logToConsoleAndFile(
-            `[cancelType = ${cancelType}] EQP_TO_EQP_MISSION - 설비to설비 미션O - 공급포트 - 작업지시 생성 여부 확인 - 작업지시 생성 됨`,
-            'green'
-          );
-          // 작업지시 생성 되어있으니 ACS에 취소 요청 전달
-          await cancelWorkOrderToAcs(callId, cancelType, isCaller, linkedFacilityInfo?.serial || undefined);
-        } else if (facilityInfo.type === 'out') {
-          logToConsoleAndFile(
-            `[cancelType = ${cancelType}] EQP_TO_EQP_MISSION - 설비to설비 미션O - 회수포트 - 이 로직으로 들어올수 없음`,
-            'red'
-          );
-          // 작업지시 생성 되어있으니 ACS에 취소 요청 전달
-          await cancelWorkOrderToAcs(callId, cancelType, isCaller);
-        } else {
-          logToConsoleAndFile(
-            `[cancelType = ${cancelType}] EQP_TO_EQP_MISSION - 설비to설비 미션O - 포트 타입 없음`,
-            'red'
-          );
-          logging.ACTION_ERROR({
-            filename: `callCancelUtil.ts - callCancel`,
-            error: `[cancelType = ${cancelType}] EQP_TO_EQP_MISSION - 설비to설비 미션O - 포트 타입 없음`,
-            params: null,
-            result: false,
-          });
-          return;
-        }
-
-        // 미션 결정지 없는 설비to설비에서 취소 요청 들어온 경우
-      } else if (cancelType === 'EQP_TO_EQP_NO_MISSION') {
-        logToConsoleAndFile(`[cancelType = ${cancelType}] EQP_TO_EQP_NO_MISSION - 설비to설비 미션X `, 'green');
-        logging.ACTION_INFO({
-          filename: `callCancelUtil.ts - callCancel`,
-          error: `[cancelType = ${cancelType}] EQP_TO_EQP_NO_MISSION - 설비to설비 미션X `,
-          params: null,
-          result: true,
-        });
-        if (facilityInfo.type === 'in') {
-          logToConsoleAndFile(
-            `[cancelType = ${cancelType}] EQP_TO_EQP_NO_MISSION - 설비to설비 미션X - 공급포트 - 작업지시 생성 여부 확인 - 작업지시 생성 됨`,
-            'green'
-          );
-          // 작업지시 생성 되어있으면 ACS에 취소 요청 전달
-          await cancelWorkOrderToAcs(callId, cancelType, isCaller, linkedFacilityInfo?.serial || undefined);
-        } else if (facilityInfo.type === 'out') {
-          logToConsoleAndFile(
-            `[cancelType = ${cancelType}] EQP_TO_EQP_NO_MISSION - 설비to설비 미션X - 회수포트 - 작업지시 생성 여부 확인 - 작업지시 생성 됨`,
-            'green'
-          );
-          // 작업지시 생성 되어있으면 ACS에 취소 요청 전달
-          await cancelWorkOrderToAcs(callId, cancelType, isCaller, linkedFacilityInfo?.serial || undefined);
-        } else {
-          logToConsoleAndFile(
-            `[cancelType = ${cancelType}] EQP_TO_EQP_NO_MISSION - 설비to설비 미션X - 포트 타입 없음`,
-            'red'
-          );
-        }
-
-        // 설비to창고에서 취소 요청 들어온 경우
-      } else if (cancelType === 'EQP_TO_WMS') {
-        logToConsoleAndFile(`[cancelType = ${cancelType}] EQP_TO_WMS - 설비to창고 `, 'green');
-        logging.ACTION_INFO({
-          filename: `callCancelUtil.ts - callCancel`,
-          error: `[cancelType = ${cancelType}] EQP_TO_WMS - 설비to창고 `,
-          params: null,
-          result: true,
-        });
-
-        if (facilityInfo.type === 'in') {
-          logToConsoleAndFile(
-            `[cancelType = ${cancelType}] EQP_TO_WMS - 설비to창고 - 공급포트 - 작업지시 생성 여부 확인 - 작업지시 생성 됨`,
-            'green'
-          );
-          // 작업지시 생성 되어있으면 ACS에 취소 요청 전달
-          await cancelWorkOrderToAcs(callId, cancelType, isCaller, linkedFacilityInfo?.serial || undefined);
-        } else if (facilityInfo.type === 'out') {
-          logToConsoleAndFile(
-            `[cancelType = ${cancelType}] EQP_TO_WMS - 설비to창고 - 회수포트 - 작업지시 생성 여부 확인 - 작업지시 생성 됨`,
-            'green'
-          );
-          // 작업지시 생성 되어있으면 ACS에 취소 요청 전달
-          await cancelWorkOrderToAcs(callId, cancelType, isCaller);
-        } else {
-          logToConsoleAndFile(`[cancelType = ${cancelType}] EQP_TO_WMS - 설비to창고 - 포트 타입 없음`, 'red');
-        }
-      } else {
-        logToConsoleAndFile(`[cancelType = ${cancelType}] Invalid cancel type`, 'red');
-        logging.ACTION_ERROR({
-          filename: `callCancelUtil.ts - callCancel`,
-          error: `[cancelType = ${cancelType}] Invalid cancel type`,
-          params: null,
-          result: false,
-        });
-        return;
       }
     } catch (error) {
       console.error('Error in callRemove:', error);

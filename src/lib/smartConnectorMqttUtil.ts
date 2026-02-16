@@ -7,6 +7,7 @@ import { formatDetailedDateTime } from './usefullToolUtil';
 import { sendSmartConnectorHeartbeat } from './heartbeat/sendHeartbeat';
 import smartConnector from '../models/smartConnector/smartConnector';
 import { wordToAscii } from './smartConnectorUtils';
+import { FacilityAttributes } from '../models/operation/facility';
 interface SmartConnectorEventPayload {
   facilityName: string;
   tag: string;
@@ -42,6 +43,7 @@ const tagsToObject = (deviceId: string, tags: { TAG_ID: string; TAG_VALUE: strin
         result: null,
         error: new Error('tagMapValue is not found for key: ' + tag.TAG_ID),
       });
+      return stateObject;
     }
     switch (tagMapValue?.DATA_TYPE) {
       case 'Boolean':
@@ -73,13 +75,61 @@ const tagsToObject = (deviceId: string, tags: { TAG_ID: string; TAG_VALUE: strin
 /**
  * PLC 상태 변경이 감지되었을 때 이벤트를 발행하는 함수
  */
-const onPlcStateChanged = (facilityName: string, changes: { [key: string]: { old: string | null; new: string } }) => {
+const onPlcStateChanged = async (
+  facilityName: string,
+  changes: { [key: string]: { old: string | null; new: string } }
+) => {
+  const redisUtil = useRedisUtil();
   logging.SYSTEM_LOG({
     title: `[SmartConnector State Change]`,
     message: `Facility: ${facilityName} | Changes: ${JSON.stringify(changes)}`,
   });
+  const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilityName);
+  if (!facilityInfo) {
+    logging.ACTION_ERROR({
+      filename: 'smartConnectorMqttUtil.ts-onPlcStateChanged',
+      params: { facilityName, changes },
+      result: null,
+      error: 'facilityInfo is null',
+    });
+    return;
+  }
   // 변경된 모든 태그에 대해 각각 이벤트를 발생시킴
   for (const tag in changes) {
+    const tagMapValue = smartConnector.tagMap.get(`${facilityName}.${tag}`);
+    if (!tagMapValue) {
+      logging.ACTION_ERROR({
+        filename: 'smartConnectorMqttUtil.ts-onPlcStateChanged',
+        params: { facilityName, tag },
+        result: null,
+        error: 'tagMapValue is not found for key: ' + tag,
+      });
+      return;
+    }
+    redisUtil.hSetPlcTag(`${RedisKeys.PlcRealtimeData}:${facilityName}`, tag, changes[tag].new || '');
+    const snapshotData = await redisUtil.hGetPlcAllTags(`${RedisKeys.PlcRealtimeData}:${facilityName}`);
+    if (!snapshotData) {
+      logging.ACTION_ERROR({
+        filename: 'smartConnectorMqttUtil.ts-onPlcStateChanged',
+        params: { facilityName, tag },
+        result: null,
+        error: 'snapshotData is null',
+      });
+      return;
+    }
+    logging.PLC_DATA_CHANGE_HISTORY_LOG.INSERT({
+      ts: new Date(),
+      createdAt: new Date(),
+      facilityCode: facilityInfo.code,
+      facilityName: facilityInfo.serial || '',
+      facilityType: facilityInfo.type,
+      isTriggered: facilityInfo.isActiveCallTrigger || false,
+      tagName: tag,
+      oldValue: changes[tag].old,
+      newValue: changes[tag].new,
+      valueType: tagMapValue.DATA_TYPE,
+      snapshotData: snapshotData,
+    });
     const eventName = tag; // 이벤트 이름 생성 (예: "Call_Request")
     const payload: SmartConnectorEventPayload = { ...changes[tag], facilityName, tag };
     // 구체적인 태그 변경 이벤트 발행
@@ -133,7 +183,7 @@ export const initSmartConnectorMqtt = (client: MqttClient) => {
             title: 'smartConnector Message Error',
             topic,
             message: message.toString(),
-            error: new Error('deviceId is not match'),
+            error: 'deviceId is not match',
           });
           return;
         }
@@ -143,7 +193,7 @@ export const initSmartConnectorMqtt = (client: MqttClient) => {
             title: 'smartConnector Message Error',
             topic,
             message: message.toString(),
-            error: new Error('deviceId or tags is null'),
+            error: 'deviceId or tags is null',
           });
           return;
         }
@@ -151,6 +201,15 @@ export const initSmartConnectorMqtt = (client: MqttClient) => {
         const newState = tagsToObject(deviceId, tags);
         const redisKey = `${RedisKeys.PlcRealtimeData}:${deviceId}`;
 
+        if (Object.keys(newState).length === 0) {
+          logging.MQTT_ERROR({
+            title: 'smartConnector Message Error',
+            topic,
+            message: message.toString(),
+            error: 'newState is empty',
+          });
+          return;
+        }
         const oldState = await redisUtil.hGetPlcAllTags(redisKey);
         const changes: { [key: string]: { old: string | null; new: string } } = {};
         if (!oldState) {
@@ -162,7 +221,7 @@ export const initSmartConnectorMqtt = (client: MqttClient) => {
             }
           });
           if (Object.keys(changes).length > 0) {
-            onPlcStateChanged(deviceId, changes);
+            await onPlcStateChanged(deviceId, changes);
             redisUtil.hSetPlcAllTags(redisKey, newState);
           }
         }
@@ -205,7 +264,7 @@ export const initSmartConnectorMqtt = (client: MqttClient) => {
               title: 'smartConnector Write Result Error',
               topic,
               message: message.toString(),
-              error: new Error('writeMessage is null'),
+              error: 'writeMessage is null',
             });
             return;
           }
@@ -241,7 +300,7 @@ export const sendMqttToSmartConnector = (topic: string, message: string) => {
       title: 'smartConnector MQTT Client Not Initialized',
       topic,
       message: 'mqttClient is null. Please initialize first.',
-      error: new Error('mqttClient is null'),
+      error: 'mqttClient is null',
     });
     return;
   }

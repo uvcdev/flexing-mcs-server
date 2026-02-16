@@ -92,7 +92,12 @@ const smartConnectorSyncMqtt = async () => {
     return tagName.includes('EQ_Code') || tagName.includes('Call_Type');
   };
   const isDEC = (tagName: string): boolean => {
-    return tagName.includes('Call_Time') || tagName.includes('Count') || tagName.includes('Station_Product_Status');
+    return (
+      tagName.includes('Call_Time') ||
+      tagName.includes('Count') ||
+      tagName.includes('Station_Product_Status') ||
+      tagName.includes('EQ_Operation_Mode')
+    );
   };
   const generateFinalTagJson = async (facilityData: FacilityData): Promise<Tag[]> => {
     const tags: Tag[] = [];

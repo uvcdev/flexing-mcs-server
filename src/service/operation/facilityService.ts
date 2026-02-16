@@ -16,6 +16,7 @@ import {
   FacilitySelectInfoParams,
   FacilitySelectListParams,
   FacilityUpdateParams,
+  OperationModeUpdateParams,
 } from '../../models/operation/facility';
 // import { FacilityUserJoinInsertParams } from '../../models/operation/facilityUserJoin';
 import { dao as facilityDao } from '../../dao/operation/facilityDao';
@@ -251,8 +252,7 @@ const service = {
         result: 'facility writeAllRedis success',
       });
 
-      return { insertedId: facilityList.rows.length }
-
+      return { insertedId: facilityList.rows.length };
     } catch (err) {
       logging.ACTION_ERROR({
         filename: 'facilityService.ts',
@@ -295,7 +295,7 @@ const service = {
         result: 'facility writeSingleRedis success',
       });
 
-      return { insertedId: facilityId }
+      return { insertedId: facilityId };
     } catch (err) {
       logging.ACTION_ERROR({
         filename: 'facilityService.ts',
@@ -319,9 +319,9 @@ const service = {
           result: null,
           error: false,
         });
-        return
+        return;
       }
-      const facilityInfo = await facilityDao.selectSerial({ serial: params.serial })
+      const facilityInfo = await facilityDao.selectSerial({ serial: params.serial });
 
       if (!facilityInfo) {
         logging.ACTION_ERROR({
@@ -330,18 +330,47 @@ const service = {
           result: null,
           error: false,
         });
-        return
+        return;
       }
 
       const updateParams = {
         id: facilityInfo.id,
-        mode: params.mode
-      }
+        mode: params.mode,
+      };
 
       await facilityDao.update(updateParams);
       if (updateParams.id) {
         void this.writeSingleRedis(facilityInfo.id);
       }
+    } catch (err) {
+      return new Promise((resolve, reject) => {
+        reject(err);
+      });
+    }
+  },
+
+  async editFacilityOperationMode(params: OperationModeUpdateParams) {
+    try {
+      if (!params.SERIAL || params.OPERATION_MODE === undefined || params.OPERATION_MODE === null) {
+        logging.ACTION_ERROR({
+          filename: `facilityService.ts - editFacilityOperationMode`,
+          params: `Serial(${params.SERIAL}) 또는 OperationMode(${params.OPERATION_MODE}) 값이 올바르지 않습니다.`,
+          result: null,
+          error: false,
+        });
+        return;
+      }
+      const facilityInfo = await facilityDao.selectSerial({ serial: params.SERIAL });
+      if (!facilityInfo) {
+        logging.ACTION_ERROR({
+          filename: `facilityService.ts - editFacilityOperationMode`,
+          params: `Serial(${params.SERIAL})에 해당하는 설비 정보를 찾을 수 없습니다.`,
+          result: null,
+          error: false,
+        });
+        return;
+      }
+      sendMqtt(MqttTopics.EqOperationMode, JSON.stringify(params));
     } catch (err) {
       return new Promise((resolve, reject) => {
         reject(err);

@@ -9,9 +9,11 @@ import { makeCallType, TagValue } from './kepServerUtil';
 import { initTrackingLogRedis } from './process/trackingLog';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from './redisUtil';
 import { timestampToDate } from './usefullToolUtil';
+import { usePlcConnectUtil } from './plcConnectUtil';
+import { logging } from './logging';
 
 const redisUtil = useRedisUtil();
-
+const plcConnectUtil = usePlcConnectUtil();
 // Call Request를 보낼 지, 말 지 판단하는 함수
 export const checkCallRequestCreate = async () => {
   // recentCallCountByFacilitySerial : 설비의 CallRequest, Multi1, Multi2 신호 값 on 여부 판단 레디스
@@ -31,7 +33,17 @@ export const checkCallRequestCreate = async () => {
       // 에러처리
       return;
     }
-
+    const callCancelRequestValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Cancel_Request')) as boolean;
+    if (callCancelRequestValue) {
+      console.log(`${facilitySerial} Call_Cancel_Request 태그가 켜져있어서 콜 생성을 중단합니다.`);
+      logging.ACTION_ERROR({
+        filename: `callCheckUtil.ts - checkCallRequestCreate`,
+        error: `${facilitySerial} Call_Cancel_Request 태그가 켜져있어서 콜 생성을 중단합니다.`,
+        params: null,
+        result: true,
+      });
+      return;
+    }
     const recentCallRequestMulti1ByFacilitySerial =
       await redisUtil.hgetObject<RecentCallCountByFacilitySerialAttributes>(
         RedisKeys.RecentCallRequestMulti1ByFacilitySerial,

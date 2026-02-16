@@ -100,17 +100,16 @@ export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDa
 };
 
 // EQP 도킹 실행 시키는 함수 ( 파트장님이 원하는 위치로 옮기셔도 될 것 같습니다 ! )
-export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => { };
+export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => {};
 
 // 데이터 보정 함수
 export const fixEqpData = async () => {
   const plcConnectUtil = usePlcConnectUtil();
-  const facilityList = (await redisUtil.hgetAllObject<FacilityAttributes>(RedisKeys.InfoFacilityById)) || [];
+  // const facilityList = (await redisUtil.hgetAllObject<FacilityAttributes>(RedisKeys.InfoFacilityById)) || [];
+  const facilityList = await redisUtil.keys(`${RedisKeys.PlcRealtimeData}:*`);
 
   for (let i = 0; i < facilityList.length; i++) {
-    const facilityInfo = facilityList[i];
-    const facilitySerial = facilityInfo.serial;
-
+    const facilitySerial = facilityList[i].split(':')[1];
     if (!facilitySerial) {
       continue;
     }

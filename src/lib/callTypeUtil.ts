@@ -76,9 +76,9 @@ export const useCallTypeUtil = () => {
       await plcConnectUtil.writeTagValue({
         targetFacility: targetCode,
         tagInfo: [
+          { tagName: 'Call_Type_Response_01', value: value },
           { tagName: 'Call_Type_Response_02', value: value },
           { tagName: 'Call_Type_Response_03', value: value },
-          { tagName: 'Call_Type_Response_01', value: value },
           { tagName: 'Call_Type_Response_04', value: value },
           { tagName: 'Call_Type_Response_05', value: value },
           { tagName: 'Call_Type_Response_06', value: value },

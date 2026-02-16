@@ -123,6 +123,9 @@ const service = {
           try {
             const remove = await logSequelize.query(`SELECT remove_retention_policy('logs');`);
             const removeItemLog = await logSequelize.query(`SELECT remove_retention_policy('item_logs');`);
+            const removePlcDataChangeHistoryLog = await logSequelize.query(
+              `SELECT remove_retention_policy('plc_data_change_history_logs');`
+            );
           } catch (err) {
             const add = await logSequelize.query(
               `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
@@ -134,8 +137,12 @@ const service = {
           const add = await logSequelize.query(
             `SELECT add_retention_policy('logs', INTERVAL '${logPeriod.mcsLog} days');`
           );
+
           const addItemLog = await logSequelize.query(
             `SELECT add_retention_policy('item_logs', INTERVAL '${logPeriod.mcsLog} days');`
+          );
+          const addPlcDataChangeHistoryLog = await logSequelize.query(
+            `SELECT add_retention_policy('plc_data_change_history_logs', INTERVAL '${logPeriod.mcsLog} days');`
           );
         } catch (err) {
           // 에러 응답값 세팅

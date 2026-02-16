@@ -1,6 +1,6 @@
 {
   "name": "flexing-mcs-server",
-  "version": "3.0.4-ljk",
+  "version": "3.0.4-ssb",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -98,5 +98,10 @@
     "prettier": "3.3.2",
     "ts-node": "10.9.1",
     "tsc-watch": "^6.0.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "chokidar": "4.0.3"
+    }
   }
 }

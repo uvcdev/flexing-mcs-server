@@ -133,6 +133,9 @@ export enum MqttTopics {
   OnCallPriority = 'acs/on_call_priority',
   FacilityStatus = 'facility_status',
   RecentWorkOrderList = 'recent_work_order_list',
+  EqOperationMode = 'acs/eq_operation_mode',
+  EqMode = 'acs/eq_mode',
+  DockDisable = 'acs/dock_disable',
 }
 
 export interface MbsMqttHeader {
@@ -993,7 +996,7 @@ export const receiveMqtt = (): void => {
             }
 
             // mcs call-signal-reset 메세지 처리
-            if (topicSplit.length === 2 && topicSplit[1] === 'call-signal-reset') {
+            if (topicSplit.length === 3 && topicSplit[1] === 'call-signal-reset') {
               const messageJson = JSON.parse(message);
               const facilitySerial = messageJson.serial;
               if (!facilitySerial || facilitySerial === '') {
