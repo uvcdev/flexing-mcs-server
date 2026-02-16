@@ -716,3 +716,8 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - EQ_Operation_Mode PLC 데이터 추가
 - 설비취소 로직 수정
 - EQ_Auto, EQ_Manual 데이터 변경 시 실행 로직 추가
+
+## v3.0.5
+
+- approve v3.0.4-ljk
+- approve v3.0.4-ssb
