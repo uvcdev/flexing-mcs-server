@@ -713,6 +713,48 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v3.0.4-ssb
 
 - PLC 데이터 변경이력 추가
+
+```sql
+CREATE TABLE public.plc_data_change_history_logs (
+    ts timestamptz NOT NULL,
+    facility_code text NOT NULL,
+    facility_name text NOT NULL,
+    facility_type text NULL,
+    is_triggered bool NOT NULL,
+    tag_name text NOT NULL,
+    old_value text NULL,
+    new_value text NULL,
+    value_type text NULL,
+    snapshot_data jsonb NULL,
+    created_at timestamptz DEFAULT now() NULL,
+    id bigint GENERATED ALWAYS AS IDENTITY,
+    CONSTRAINT plc_data_change_history_log_pk
+        PRIMARY KEY (facility_name, tag_name, ts)
+);
+```
+
+```sql
+SELECT create_hypertable(
+    'plc_data_change_history_logs',
+    'ts'
+);
+```
+
+```sql
+CREATE INDEX idx_plc_change_facility_ts
+  ON public.plc_data_change_history_logs (facility_name, ts DESC);
+
+CREATE UNIQUE INDEX idx_plc_change_id_ts
+  ON public.plc_data_change_history_logs (id, ts);
+
+CREATE INDEX idx_plc_change_tag_ts
+  ON public.plc_data_change_history_logs (tag_name, ts DESC);
+
+CREATE INDEX plc_data_change_history_logs_ts_idx
+  ON public.plc_data_change_history_logs (ts DESC);
+
+```
+
 - EQ_Operation_Mode PLC 데이터 추가
 - 설비취소 로직 수정
 - EQ_Auto, EQ_Manual 데이터 변경 시 실행 로직 추가
