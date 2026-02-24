@@ -763,3 +763,7 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 
 - approve v3.0.4-ljk
 - approve v3.0.4-ssb
+
+## v3.0.5-mbs
+
+- ADD error process with offline PLC data
