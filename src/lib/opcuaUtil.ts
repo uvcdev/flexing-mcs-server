@@ -207,6 +207,16 @@ export const opcuaUtil = {
           const redisUtil = useRedisUtil();
           const nodeId = monitoredItem.itemToMonitor.nodeId.value.toString();
           const value = dataValue;
+          if (value.statusCode.isBad()) {
+            logging.KEPWARE_ERROR({
+              action: 'ERROR',
+              tag: nodeId.toString(),
+              value: null,
+              message: `Error, changed tag, but plc status is offline `,
+              error: '',
+            });
+            return;
+          }
           const targetTagInfo = useKepServerUtil().updateTagValue(nodeId, value);
           redisUtil.hSetPlcTag(
             `${RedisKeys.PlcRealtimeData}:${targetTagInfo.EQ_CODE}`,
