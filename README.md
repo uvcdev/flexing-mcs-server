@@ -767,3 +767,4 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 ## v3.0.5-mbs
 
 - ADD error process with offline PLC data
+- ADD error process, into null data by plc tag
