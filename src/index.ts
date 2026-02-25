@@ -292,6 +292,21 @@ global.process.on('uncaughtException', (err) => {
   gracefulShutdown('uncaughtException');
 });
 global.process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Promise Rejection:', reason);
-  gracefulShutdown('unhandledRejection');
+  console.error('🚨 Unhandled Rejection at:', promise);
+  console.error('🚨 Reason:', reason);
+
+  const error =
+    reason instanceof Error
+      ? reason
+      : new Error(typeof reason === 'string' ? reason : JSON.stringify(reason));
+
+  logging.SYSTEM_ERROR(
+    {
+      title: 'Unhandled Rejection',
+      message: {
+        reason,
+      },
+    },
+    error
+  );
 });

@@ -221,7 +221,7 @@ export const opcuaUtil = {
           redisUtil.hSetPlcTag(
             `${RedisKeys.PlcRealtimeData}:${targetTagInfo.EQ_CODE}`,
             targetTagInfo.TAG_NAME,
-            value.value.value
+            value.value.value ?? ''
           );
           const snapshotData = await redisUtil.hGetPlcAllTags(`${RedisKeys.PlcRealtimeData}:${targetTagInfo.EQ_CODE}`);
           if (!snapshotData) {
@@ -254,8 +254,8 @@ export const opcuaUtil = {
             facilityType: facilityInfo.type,
             isTriggered: facilityInfo.isActiveCallTrigger || false,
             tagName: targetTagInfo.TAG_NAME,
-            oldValue: targetTagInfo.prevValue.toString(),
-            newValue: value.value.value.toString(),
+            oldValue: targetTagInfo.prevValue?.toString() ?? '',
+            newValue: value.value.value.toString() ?? '',
             valueType: targetTagInfo.DATA_TYPE,
             snapshotData: snapshotData,
           });
