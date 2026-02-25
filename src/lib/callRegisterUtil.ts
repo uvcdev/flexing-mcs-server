@@ -214,9 +214,9 @@ export const useCallRegisterUtil = () => {
                     linkedFacilityInfo &&
                     linkedFacilityCallRequestValue === true &&
                     // todo: 20250908 for dryrun test (SC <-> CS/CR)
-                    linkedFacilityCallResponseValue === false &&
+                    linkedFacilityCallResponseValue === false
                     // todo[ssb] 260210 콜 타입 동일 체크 필요
-                    linkedFacilityCallTypeValue === callType
+                    // linkedFacilityCallTypeValue === callType
                   ) {
                     // const eqpCallId =
                     //   (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
@@ -390,15 +390,15 @@ export const useCallRegisterUtil = () => {
 
                     // eslint-disable-next-line prettier/prettier
                     const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-                      {
-                        count: workOrderListInfo.count,
-                        // eslint-disable-next-line prettier/prettier
-                        workOrderList: workOrderListInfo.workOrderList,
-                        // eslint-disable-next-line prettier/prettier
-                        facilitySerial: targetCode,
-                        // eslint-disable-next-line prettier/prettier
-                        facilityInfo: facilityInfo,
-                      };
+                    {
+                      count: workOrderListInfo.count,
+                      // eslint-disable-next-line prettier/prettier
+                      workOrderList: workOrderListInfo.workOrderList,
+                      // eslint-disable-next-line prettier/prettier
+                      facilitySerial: targetCode,
+                      // eslint-disable-next-line prettier/prettier
+                      facilityInfo: facilityInfo,
+                    };
 
                     redisUtil.hset(
                       RedisKeys.RecentWorkOrderListByFacilitySerial,
