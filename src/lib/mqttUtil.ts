@@ -1096,11 +1096,11 @@ export const receiveMqtt = (): void => {
             if (wmsList.includes(systemTopic) && subTopic === 'HEARTBEAT') {
               checkConnectionWmsHeartbeat(systemTopic, messageJson);
 
-              logging.MQTT_LOG({
-                title: 'wms heartbeat',
-                topic: messageTopic,
-                message: messageJson,
-              });
+              // logging.MQTT_LOG({
+              //   title: 'wms heartbeat',
+              //   topic: messageTopic,
+              //   message: messageJson,
+              // });
             }
           } else if (mbsTopicSplit.length === 3) {
             const logicTopic = mbsTopicSplit[2];
