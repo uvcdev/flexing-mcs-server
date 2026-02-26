@@ -522,12 +522,16 @@ export const useEqpCheckUtil = () => {
 
         case 'EQ_Auto':
           console.log(`Changed EQ_Auto`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          sendMqtt(MqttTopics.EqMode, JSON.stringify({ EQP_ID: targetTagInfo.EQ_CODE, EQP_MODE: 'AUTO' }));
+          if (targetTagInfo.value === true) {
+            sendMqtt(MqttTopics.EqMode, JSON.stringify({ EQP_ID: targetTagInfo.EQ_CODE, EQP_MODE: 'AUTO' }));
+          }
           break;
 
         case 'EQ_Manual':
           console.log(`Changed EQ_Manual`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          sendMqtt(MqttTopics.EqMode, JSON.stringify({ EQP_ID: targetTagInfo.EQ_CODE, EQP_MODE: 'MANUAL' }));
+          if (targetTagInfo.value === true) {
+            sendMqtt(MqttTopics.EqMode, JSON.stringify({ EQP_ID: targetTagInfo.EQ_CODE, EQP_MODE: 'MANUAL' }));
+          }
           break;
 
         case 'Dock_Disable':
