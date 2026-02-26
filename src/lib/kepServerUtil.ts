@@ -447,6 +447,16 @@ export const useKepServerUtil = () => {
           const dataValues = await session.read(readValueIdOptions);
 
           dataValues.forEach((dataValue, index) => {
+            if (dataValue.statusCode.isBad()) {
+              logging.KEPWARE_ERROR({
+                action: 'TAG_READ',
+                tag: null,
+                value: null,
+                message: `Error reading value from kepServerUtil.monitorTagData`,
+                error: dataValue.statusCode.toString() + ' ' + dataValue.value.value,
+              });
+              return;
+            }
             const inputType = tagValue[index].inputType;
             if (inputType === 'ASCII') {
               tagValue[index].value = parseDecWordToAscii(dataValue.value.value);
