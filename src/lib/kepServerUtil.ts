@@ -281,17 +281,31 @@ export const useKepServerUtil = () => {
       }
     } catch (error) {
       logToConsoleAndFile(`Error making write datas from kepServerUtil.writeSimpleTagValue: ${error}`, 'red');
-      throw error;
+      logging.KEPWARE_ERROR({
+        action: 'TAG_WRITE',
+        tag: null,
+        value: null,
+        message: `Error making write datas from kepServerUtil.writeSimpleTagValue`,
+        error: error,
+      });
+      return;
     }
   };
 
   // 태그 쓰는 함수
-  const writeTagValue = async (tag: WriteValueOptions): Promise<StatusCode> => {
+  const writeTagValue = async (tag: WriteValueOptions): Promise<StatusCode | null> => {
     try {
       const session = opcuaUtil.session;
 
       if (!session) {
-        throw new Error('OPC UA 세션이 존재하지 않습니다.');
+        logging.KEPWARE_ERROR({
+          action: 'TAG_WRITE',
+          tag: null,
+          value: null,
+          message: `Error writing value to node: ${tag}. Error: OPC UA 세션이 존재하지 않습니다.`,
+          error: new Error('OPC UA 세션이 존재하지 않습니다.'),
+        });
+        return null;
       }
 
       const [statusCode] = await session.write([tag]); // 단건도 배열로 전달해야 함
@@ -313,7 +327,7 @@ export const useKepServerUtil = () => {
         message: `Error writing value from kepServerUtil.writeTagValue`,
         error: error,
       });
-      throw error;
+      return null;
     }
   };
 
@@ -324,7 +338,14 @@ export const useKepServerUtil = () => {
       let statusCodes: StatusCode[] = [];
 
       if (!session) {
-        throw new Error('OPC UA 세션이 존재하지 않습니다.');
+        logging.KEPWARE_ERROR({
+          action: 'TAG_WRITE',
+          tag: null,
+          value: null,
+          message: `Error writing value to node: ${data}. Error: OPC UA 세션이 존재하지 않습니다.`,
+          error: new Error('OPC UA 세션이 존재하지 않습니다.'),
+        });
+        return [];
       }
       if (session) {
         // 태그 값 쓰기
@@ -347,7 +368,7 @@ export const useKepServerUtil = () => {
         message: `Error writing value from kepServerUtil.writeTagsValue`,
         error: error,
       });
-      throw error;
+      return [];
     }
   };
 
@@ -377,7 +398,7 @@ export const useKepServerUtil = () => {
         message: `Error reading value from kepServerUtil.readTagsValue`,
         error: error,
       });
-      throw error;
+      return [];
     }
   };
 
@@ -496,7 +517,7 @@ export const useKepServerUtil = () => {
         message: `Error reading value from kepServerUtil.heartbeat`,
         error: error,
       });
-      throw error;
+      return null;
     }
   };
 
@@ -666,7 +687,14 @@ export const useKepServerUtil = () => {
       return writeDatas;
     } catch (error) {
       logToConsoleAndFile(`Error making write datas from kepServerUtil.makeWriteDatas: ${error}`, 'red');
-      throw error;
+      logging.KEPWARE_ERROR({
+        action: 'TAG_WRITE',
+        tag: null,
+        value: null,
+        message: `Error making write datas from kepServerUtil.makeWriteDatas`,
+        error: error,
+      });
+      return [];
     }
   };
 

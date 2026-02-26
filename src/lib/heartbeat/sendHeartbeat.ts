@@ -65,6 +65,15 @@ const sendKepwareHeartbeat = async () => {
 
       redisUtil.hset(RedisKeys.Heartbeat, 'KEPWARE', JSON.stringify(heartbeatData));
     }
+  } else {
+    logging.KEPWARE_ERROR({
+      action: 'TAG_READ',
+      tag: null,
+      value: null,
+      message: `Error reading kepware heartbeat`,
+      error: new Error('Error reading kepware heartbeat'),
+    });
+    return;
   }
 };
 
