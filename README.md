@@ -774,3 +774,7 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 - kepware read, write 에러 시 처리 로직 수정
 - 로깅 일부 제거
 - eqpCheckUtil.ts, EQ_Auto, EQ_Manual off 시 무시, on일 때만 처리하도록 수정
+
+## v3.1.0
+
+- approve v3.0.5-ssb
