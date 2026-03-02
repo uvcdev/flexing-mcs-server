@@ -100,7 +100,7 @@ export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDa
 };
 
 // EQP 도킹 실행 시키는 함수 ( 파트장님이 원하는 위치로 옮기셔도 될 것 같습니다 ! )
-export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => {};
+export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => { };
 
 // 데이터 보정 함수
 export const fixEqpData = async () => {
@@ -881,6 +881,41 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
     }
 
     if (toWorkOrderList.length === 0 && (beforeAssignedAmrWorkOrderList.length > 0 || fromWorkOrderList.length > 0)) {
+      const callType = await makeCallType(facilitySerial);
+      const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
+      const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
+      const callRobotAssignedValue = (await plcConnectUtil.getTagValue(
+        facilitySerial,
+        'Call_Robot_Assigned'
+      )) as boolean;
+      const callResponseCountValue = (await plcConnectUtil.getTagValue(
+        facilitySerial,
+        'Call_Response_Count'
+      )) as number;
+
+      if (callResponseValue === false) {
+        await plcConnectUtil.writeTagValue({
+          targetFacility: facilitySerial,
+          tagInfo: [{ tagName: 'Call_Response', value: true }],
+        });
+      }
+      if (callRobotAssignedValue === true) {
+        await plcConnectUtil.writeTagValue({
+          targetFacility: facilitySerial,
+          tagInfo: [{ tagName: 'Call_Robot_Assigned', value: false }],
+        });
+      }
+      if (callResponseCountValue === 0) {
+        await plcConnectUtil.writeTagValue({
+          targetFacility: facilitySerial,
+          tagInfo: [{ tagName: 'Call_Response_Count', value: callCountValue.toString() }],
+        });
+      }
+      if (callType === '') {
+        await useCallTypeUtil().callTypeResponse(facilitySerial);
+      }
+    }
+    if (toWorkOrderList.length === 0 && beforeAssignedAmrWorkOrderList.length === 0 && fromWorkOrderList.length === 0) {
       const callType = await makeCallType(facilitySerial);
       const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
       const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
