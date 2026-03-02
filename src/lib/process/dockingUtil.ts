@@ -137,9 +137,11 @@ export const useDockingUtil = () => {
       sendDockingMqtt(MqttTopics.ImcsEqpDockingRequest, JSON.stringify(dockingResponse));
 
       // TODO: [트래킹로그]도킹허가 응답에 대한 트래킹로그 저장 (도킹허가 초록표시)
+      const trackingLogCallId = dockingRequestInfo.CALL_ID.split('$')[0] || '';
+
       const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
         RedisKeys.InfoTrackingLogByCallId,
-        dockingRequestInfo.CALL_ID
+        trackingLogCallId
       );
       if (!infoTrackingLogByCallId) {
         logging.ACTION_ERROR({
@@ -645,10 +647,11 @@ export const useDockingUtil = () => {
               });
             }, 500);
             if (dockingParams.PORT_ID === paramsSerial) {
+              const trackingLogCallId = dockingParams.CALL_ID.split('$')[0] || '';
               // [트래킹로그]도킹요청 들어온 것에 대한 트래킹로그 저장
               const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
                 RedisKeys.InfoTrackingLogByCallId,
-                dockingParams.CALL_ID
+                trackingLogCallId
               );
               if (!infoTrackingLogByCallId) {
                 logging.ACTION_ERROR({
@@ -895,9 +898,11 @@ export const useDockingUtil = () => {
 
           // [트래킹로그]도킹완료에 대한 트래킹로그 저장
           if (dockingParams.PORT_ID === paramsSerial) {
+            const trackingLogCallId = dockingParams.EQP_CALL_ID.split('$')[0] || '';
+
             const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
               RedisKeys.InfoTrackingLogByCallId,
-              dockingParams.EQP_CALL_ID
+              trackingLogCallId
             );
             if (!infoTrackingLogByCallId) {
               logging.ACTION_ERROR({

@@ -778,3 +778,7 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 ## v3.1.0
 
 - approve v3.0.5-ssb
+
+## v3.1.0-ljk
+- 취소 작업 이후 후속작업의 트래킹 로그 미기록 문제 해결
+  - Dock Req / Permit / Complete
