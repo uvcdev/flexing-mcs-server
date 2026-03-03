@@ -38,6 +38,7 @@ router.post(
             targetFacility: req.body[i].targetFacility,
             tagName: req.body[i].tagName,
             value: req.body[i].value,
+            userId: tokenUser?.id || null,
           };
           if (!params.targetFacility || !params.tagName || !params.value) {
             const err = new ErrorClass(
@@ -55,7 +56,6 @@ router.post(
           paramsList.push(params);
         }
         logging.REQUEST_PARAM(logFormat);
-
         // 비즈니스 로직 호출
         result = await kepwareService.write(paramsList, logFormat);
       } else if (plcConnType === 'CONNECTOR') {

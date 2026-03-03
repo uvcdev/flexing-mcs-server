@@ -5,6 +5,8 @@ import { useKepServerUtil } from '../../lib/kepServerUtil';
 import { AttributeIds, StatusCode, WriteValueOptions } from 'node-opcua-client';
 import { opcuaUtil } from '../../lib/opcuaUtil';
 import { parseAsciiToDecWord } from '../../lib/kepServerUtil';
+import { RedisKeys, useRedisUtil } from '../../lib/redisUtil';
+import { FacilityAttributes } from '../../models/operation/facility';
 const service = {
   parseValue(value: string, dataType: string): boolean | number | string {
     switch (dataType) {
@@ -33,6 +35,29 @@ const service = {
     try {
       const writeDatas: WriteValueOptions[] = [];
       const tagMap = opcuaUtil.tagMap;
+      const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        paramsList[0].targetFacility
+      );
+      if (!facilityInfo) {
+        logging.ACTION_ERROR({
+          filename: 'kepwareService.ts-write',
+          params: paramsList,
+          result: null,
+          error: 'facilityInfo is null',
+        });
+        return [];
+      }
+      const snapshotData = await useRedisUtil().hGetPlcAllTags(`${RedisKeys.PlcRealtimeData}:${facilityInfo.serial || ''}`);
+      if (!snapshotData) {
+        logging.ACTION_ERROR({
+          filename: 'kepwareService.ts-write',
+          params: paramsList,
+          result: null,
+          error: 'snapshotData is null',
+        });
+        return [];
+      }
       for (let i = 0, length = paramsList.length; i < length; i++) {
         const params: KepwareWriteParams = paramsList[i];
         const tagMapValue = tagMap.get(`${params.targetFacility}.${params.tagName}`);
@@ -49,6 +74,20 @@ const service = {
                 value: this.parseValue(params.value, tagMapValue.DATA_TYPE),
               },
             },
+          });
+          logging.PLC_DATA_CHANGE_HISTORY_LOG.INSERT({
+            ts: new Date(),
+            createdAt: new Date(),
+            facilityCode: facilityInfo.code,
+            facilityName: facilityInfo.serial || '',
+            facilityType: facilityInfo.type,
+            isTriggered: facilityInfo.isActiveCallTrigger || false,
+            tagName: params.tagName,
+            oldValue: tagMapValue.prevValue?.toString() ?? '',
+            newValue: params.value,
+            valueType: tagMapValue.DATA_TYPE,
+            snapshotData: snapshotData,
+            userId: params.userId || null,
           });
         }
       }

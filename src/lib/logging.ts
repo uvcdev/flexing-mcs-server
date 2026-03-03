@@ -792,10 +792,10 @@ export const logging = {
         error:
           actionLog.error instanceof Error
             ? {
-                message: actionLog.error.message,
-                stack: actionLog.error.stack,
-                name: actionLog.error.name,
-              }
+              message: actionLog.error.message,
+              stack: actionLog.error.stack,
+              name: actionLog.error.name,
+            }
             : actionLog.error,
       };
 
@@ -1125,6 +1125,7 @@ export const logging = {
           newValue: data.newValue,
           valueType: data.valueType,
           snapshotData: data.snapshotData,
+          userId: data.userId,
         };
         void plcDataChangeHistoryLogDao.insert(insertParams);
       } catch (error) {

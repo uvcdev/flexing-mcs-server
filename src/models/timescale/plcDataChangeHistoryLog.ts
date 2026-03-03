@@ -13,6 +13,7 @@ export interface PlcDataChangeHistoryLogAttributes {
   newValue: string | null; // 새로운 값
   valueType: string | null; // 값 타입
   snapshotData: Record<string, number | string | boolean | null> | null; // 스냅샷데이터
+  userId: number | null; // 사용자 아이디
   createdAt: Date; // 생성 시간
 }
 
@@ -28,6 +29,7 @@ class PlcDataChangeHistoryLog extends Model implements PlcDataChangeHistoryLogAt
   public newValue!: PlcDataChangeHistoryLogAttributes['newValue'];
   public valueType!: PlcDataChangeHistoryLogAttributes['valueType'];
   public snapshotData!: PlcDataChangeHistoryLogAttributes['snapshotData'];
+  public userId!: PlcDataChangeHistoryLogAttributes['userId'];
   public readonly createdAt!: PlcDataChangeHistoryLogAttributes['createdAt'];
 }
 
@@ -86,6 +88,10 @@ PlcDataChangeHistoryLog.init(
       allowNull: false,
       field: 'created_at',
     },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   },
   {
     sequelize: logSequelize,
@@ -106,6 +112,7 @@ export interface PlcDataChangeHistoryLogInsertParams {
   newValue: string | null;
   valueType: string | null;
   snapshotData: Record<string, number | string | boolean | null> | null;
+  userId: number | null;
   createdAt: Date;
 }
 // facilityName, tagName들은 다중 선택하여 조회가 가능

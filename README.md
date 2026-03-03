@@ -805,3 +805,10 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 
 ## v3.1.3
 - approve v3.1.2-ssb
+
+## v3.1.3-ssb
+- PLC 데이터 변경이력 수정
+  - user_id 컬럼 추가
+  ```sql
+    ALTER TABLE public.plc_data_change_history_logs ADD COLUMN user_id int;
+  ```

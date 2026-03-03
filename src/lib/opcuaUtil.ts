@@ -258,6 +258,7 @@ export const opcuaUtil = {
             newValue: value.value.value.toString() ?? '',
             valueType: targetTagInfo.DATA_TYPE,
             snapshotData: snapshotData,
+            userId: null,
           });
 
           logging.KEPWARE_LOG({

@@ -129,6 +129,7 @@ const onPlcStateChanged = async (
       newValue: changes[tag].new,
       valueType: tagMapValue.DATA_TYPE,
       snapshotData: snapshotData,
+      userId: null,
     });
     const eventName = tag; // 이벤트 이름 생성 (예: "Call_Request")
     const payload: SmartConnectorEventPayload = { ...changes[tag], facilityName, tag };
