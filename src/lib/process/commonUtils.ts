@@ -928,10 +928,10 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
         'Call_Response_Count'
       )) as number;
 
-      if (callResponseValue === false) {
+      if (callResponseValue === true) {
         await plcConnectUtil.writeTagValue({
           targetFacility: facilitySerial,
-          tagInfo: [{ tagName: 'Call_Response', value: true }],
+          tagInfo: [{ tagName: 'Call_Response', value: false }],
         });
       }
       if (callRobotAssignedValue === true) {
@@ -940,14 +940,14 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
           tagInfo: [{ tagName: 'Call_Robot_Assigned', value: false }],
         });
       }
-      if (callResponseCountValue === 0) {
+      if (callResponseCountValue !== 0) {
         await plcConnectUtil.writeTagValue({
           targetFacility: facilitySerial,
-          tagInfo: [{ tagName: 'Call_Response_Count', value: callCountValue.toString() }],
+          tagInfo: [{ tagName: 'Call_Response_Count', value: 0 }],
         });
       }
-      if (callType === '') {
-        await useCallTypeUtil().callTypeResponse(facilitySerial);
+      if (callType !== '') {
+        await useCallTypeUtil().callTypeResponseReset(facilitySerial);
       }
     }
   }

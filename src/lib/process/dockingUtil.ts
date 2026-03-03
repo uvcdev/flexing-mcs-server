@@ -164,7 +164,7 @@ export const useDockingUtil = () => {
       const trackingLogState = 'PROCESSING';
       const trackingLogProcessState = 'NORMAL';
       const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-        callId: dockingRequestInfo.CALL_ID,
+        callId: trackingLogCallId,
         subject: trackingLogSubject,
         detail: trackingLogDetail,
         state: trackingLogState,
@@ -174,7 +174,7 @@ export const useDockingUtil = () => {
         assignedRobot: null,
         value: dockingRequestInfo.SERIAL_ID,
         description: `Call ID ${infoTrackingLogByCallId.callId} sent ${trackingLogSubject} to ACS(${dockingRequestInfo.SERIAL_ID})`,
-        processState: trackingLogProcessState,
+        // processState: trackingLogProcessState,
       };
       await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', dockingRequestInfo.SERIAL_ID);
     } catch (error) {
@@ -669,7 +669,7 @@ export const useDockingUtil = () => {
               const trackingLogState = 'PROCESSING';
               const trackingLogProcessState = 'NORMAL';
               const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-                callId: infoTrackingLogByCallId.callId,
+                callId: trackingLogCallId,
                 subject: trackingLogSubject,
                 detail: trackingLogDetail,
                 state: trackingLogState,
@@ -679,7 +679,7 @@ export const useDockingUtil = () => {
                 assignedRobot: null,
                 value: paramsSerial,
                 description: `Call ID ${infoTrackingLogByCallId.callId} received ${trackingLogSubject} from ACS(${paramsSerial}) `,
-                processState: trackingLogProcessState,
+                // processState: trackingLogProcessState,
               };
               await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', paramsSerial);
             }
@@ -936,7 +936,7 @@ export const useDockingUtil = () => {
               assignedRobot: null,
               value: dockingParams.PORT_ID,
               description: `Call ID ${dockingParams.CALL_ID} received ${trackingLogSubject} from ACS(${dockingParams.PORT_ID})`,
-              processState: trackingLogProcessState,
+              // processState: trackingLogProcessState,
             };
             await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', dockingParams.PORT_ID);
           }
