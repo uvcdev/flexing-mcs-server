@@ -119,7 +119,10 @@ export const checkMissionOrder = async () => {
             // call_response 작성
             await plcConnectUtil.writeTagValue({
               targetFacility: sortLinkedFacilityInfo.serial || '',
-              tagInfo: [{ tagName: 'Call_Response', value: true }],
+              tagInfo: [
+                { tagName: 'Call_Response', value: true },
+                { tagName: 'Call_Response_Count', value: String(callCountValue) }
+              ],
             });
 
             await useCallTypeUtil().callTypeResponse(sortLinkedFacilityInfo.serial || '');

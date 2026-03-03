@@ -798,3 +798,6 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 ## v3.1.2
 - approve v3.1.1-ljk
 - remove DockDisable - missionOrderUtil.ts
+
+## v3.1.2-ssb
+- 미션 결정지에서 To 들어갈 때, Count Response 쓰도록 수정
