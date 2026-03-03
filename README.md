@@ -794,3 +794,7 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 ## v3.1.1-ljk
 - 미션결정지에서 결정지 선택 시, 트래킹 로그 추가
   - MISSION_DECIDED
+
+## v3.1.2
+- approve v3.1.1-ljk
+- remove DockDisable - missionOrderUtil.ts

@@ -71,7 +71,7 @@ export const checkMissionOrder = async () => {
         const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
         const dockEqStatusValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_EQ_Status')) as boolean;
         const callResponseValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Response')) as boolean;
-        const dockDisableValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Disable')) as boolean;
+        // const dockDisableValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Disable')) as boolean;
         const dockOutPermitValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Out_Permit')) as boolean;
         const dockPermitValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Permit')) as boolean;
         const dockRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Request')) as boolean;
@@ -83,7 +83,7 @@ export const checkMissionOrder = async () => {
           // callCountValue > 0 &&
           dockEqStatusValue === false &&
           callResponseValue === false &&
-          dockDisableValue === false &&
+          // dockDisableValue === false &&
           dockOutPermitValue === false &&
           dockPermitValue === false &&
           dockRequestValue === false &&
