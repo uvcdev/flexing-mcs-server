@@ -59,6 +59,7 @@ export type TrackingLogSubjectType =
   | 'TO_DOCKING_COMPLETED'
   | 'FROM_START'
   | 'FROM_COMPLETED'
+  | 'MISSION_DECIDED'
   | 'MISSION_START'
   | 'MISSION_CANCELED'
   | 'MISSION_COMPLETED'

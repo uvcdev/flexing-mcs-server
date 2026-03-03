@@ -6,6 +6,8 @@ import { MqttBranchInfoDataFromAcs } from './process/wmsBranch';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from './redisUtil';
 import { useCallTypeUtil } from './callTypeUtil';
 import { usePlcConnectUtil } from './plcConnectUtil';
+import { TrackingLogRedisUpdateParams } from '../models/common/trackingLog';
+import { editTrackingLogRedis } from './process/trackingLog';
 
 export const checkMissionOrder = async () => {
   const redisUtil = useRedisUtil();
@@ -122,6 +124,30 @@ export const checkMissionOrder = async () => {
 
             await useCallTypeUtil().callTypeResponse(sortLinkedFacilityInfo.serial || '');
             redisUtil.hdel(RedisKeys.InfoMissionOrderByWorkOrderCode, mqttCallId);
+
+            // 트래킹 로그에 To 도착지 변경
+            // 물류 로그 저장
+            if (mqttCallId.split('_').length !== 4) {
+              const trackingLogSubject = 'MISSION_DECIDED';
+              const trackingLogDetail = 'MISSION_DECIDED';
+              const trackingLogState = 'PROCESSING';
+              const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+                callId: mqttCallId,
+                subject: trackingLogSubject,
+                detail: trackingLogDetail,
+                state: trackingLogState,
+                transferId: null,
+                startFacility: null,
+                destFacility: sortLinkedFacilityInfo.serial,
+                assignedRobot: null,
+                value: sortLinkedFacilityInfo.serial || '',
+                description: `Mission Decided : ${sortLinkedFacilityInfo.serial}`,
+                missionDestination: null,
+              };
+
+              await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', 'ACS');
+            }
+
             break;
           }
         }

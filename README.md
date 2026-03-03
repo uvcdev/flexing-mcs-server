@@ -790,3 +790,7 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 - approve v3.1.0-ljk
 - Update response workOrder cancel - Facility
 - Update Docking trackingLog
+
+## v3.1.1-ljk
+- 미션결정지에서 결정지 선택 시, 트래킹 로그 추가
+  - MISSION_DECIDED

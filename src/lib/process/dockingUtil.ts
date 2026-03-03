@@ -118,7 +118,7 @@ export const useDockingUtil = () => {
       );
       if (!dockingRequestInfo) {
         logging.ACTION_ERROR({
-          filename: `src/lib/process/dockingUtil.ts`,
+          filename: `src/lib/process/dockingUtil.ts-dockingStart`,
           params: targetTagInfo,
           result: 'No docking request record',
           error: 'No docking request record',
@@ -145,7 +145,7 @@ export const useDockingUtil = () => {
       );
       if (!infoTrackingLogByCallId) {
         logging.ACTION_ERROR({
-          filename: `src/lib/process/dockingUtil.ts`,
+          filename: `src/lib/process/dockingUtil.ts-dockingStart`,
           params: dockingRequestInfo,
           result: 'No infoTrackingLogByCallId record',
           error: 'No infoTrackingLogByCallId record',
@@ -226,7 +226,7 @@ export const useDockingUtil = () => {
       if (!dockingOutRequestInfo) {
         console.log('🚀 ~ dockingStart ~ dockingOutRequestInfo:', dockingOutRequestInfo);
         logging.ACTION_ERROR({
-          filename: `src/lib/process/dockingUtil.ts`,
+          filename: `src/lib/process/dockingUtil.ts-dockingOutStart`,
           params: targetTagInfo,
           result: 'No docking out request record',
           error: 'No docking out request record',
@@ -320,7 +320,7 @@ export const useDockingUtil = () => {
       );
       if (!dockingRequestInfo) {
         logging.ACTION_ERROR({
-          filename: `src/lib/process/dockingUtil.ts`,
+          filename: `src/lib/process/dockingUtil.ts-dockingFaild`,
           params: targetTagInfo,
           result: 'No docking request record',
           error: 'No docking request record',
@@ -351,7 +351,7 @@ export const useDockingUtil = () => {
       );
       if (!infoTrackingLogByCallId) {
         logging.ACTION_ERROR({
-          filename: `src/lib/process/dockingUtil.ts`,
+          filename: `src/lib/process/dockingUtil.ts-dockingFaild`,
           params: dockingRequestInfo,
           result: 'No infoTrackingLogByCallId record',
           error: 'No infoTrackingLogByCallId record',
@@ -362,7 +362,7 @@ export const useDockingUtil = () => {
       const amrInfo = await redisUtil.hgetObject<AmrAttributes>(RedisKeys.InfoAmr, dockingRequestInfo.WORKER_ID);
       if (!amrInfo) {
         logging.ACTION_ERROR({
-          filename: `src/lib/process/dockingUtil.ts`,
+          filename: `src/lib/process/dockingUtil.ts-dockingFaild`,
           params: dockingRequestInfo,
           result: 'No amrInfo record',
           error: 'No amrInfo record',
@@ -442,7 +442,7 @@ export const useDockingUtil = () => {
       );
       if (!dockingRequestInfo) {
         logging.ACTION_ERROR({
-          filename: `src/lib/process/dockingUtil.ts`,
+          filename: `src/lib/process/dockingUtil.ts-dockingComplete`,
           params: targetTagInfo,
           result: 'No docking request record',
           error: 'No docking request record',
@@ -488,7 +488,7 @@ export const useDockingUtil = () => {
       if (dockingRequestInfo.RESULT === 'True' && dockingCompleteInfo) {
         if (!dockingCompleteInfo) {
           logging.ACTION_ERROR({
-            filename: `src/lib/process/dockingUtil.ts`,
+            filename: `src/lib/process/dockingUtil.ts-dockingComplete`,
             params: targetTagInfo,
             result: 'No docking complete record',
             error: 'No docking complete record',
@@ -545,7 +545,7 @@ export const useDockingUtil = () => {
     const facilityInfoList = await redisUtil.hgetAllObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityById);
     if (!facilityInfoList) {
       logging.ACTION_ERROR({
-        filename: 'dockingUtil.ts',
+        filename: 'dockingUtil.ts-dockingComplete',
         error: 'redis에 info_facility 데이터가 없습니다.',
         params: null,
         result: false,
@@ -598,7 +598,7 @@ export const useDockingUtil = () => {
           logToConsoleAndFile(`Error initializing before retry docking request: ${error}`, 'red');
           // 로깅
           logging.ACTION_ERROR({
-            filename: `src/lib/process/dockingUtil.ts`,
+            filename: `src/lib/process/dockingUtil.ts-dockingRequest`,
             params: dockingParamsInfo,
             result: 'fail docking request',
             error: error,
@@ -655,7 +655,7 @@ export const useDockingUtil = () => {
               );
               if (!infoTrackingLogByCallId) {
                 logging.ACTION_ERROR({
-                  filename: `src/lib/process/dockingUtil.ts`,
+                  filename: `src/lib/process/dockingUtil.ts-sendAcsDockingRequest`,
                   params: dockingParams,
                   result: 'No infoTrackingLogByCallId record',
                   error: 'No infoTrackingLogByCallId record',
@@ -743,7 +743,7 @@ export const useDockingUtil = () => {
       const facilityInfoList = await redisUtil.hgetAllObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityById);
       if (!facilityInfoList) {
         logging.ACTION_ERROR({
-          filename: 'dockingUtil.ts',
+          filename: 'dockingUtil.ts-sendAcsDockingRequest',
           error: 'redis에 info_facility 데이터가 없습니다.',
           params: null,
           result: false,
@@ -869,7 +869,7 @@ export const useDockingUtil = () => {
       const facilityInfoList = await redisUtil.hgetAllObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityById);
       if (!facilityInfoList) {
         logging.ACTION_ERROR({
-          filename: 'dockingUtil.ts',
+          filename: 'dockingUtil.ts-sendAcsDockingOutRequest',
           error: 'redis에 info_facility 데이터가 없습니다.',
           params: null,
           result: false,
@@ -906,7 +906,7 @@ export const useDockingUtil = () => {
             );
             if (!infoTrackingLogByCallId) {
               logging.ACTION_ERROR({
-                filename: `src/lib/process/dockingUtil.ts`,
+                filename: `src/lib/process/dockingUtil.ts-sendAcsDockingComplete`,
                 params: dockingParams,
                 result: 'No infoTrackingLogByCallId record',
                 error: 'No infoTrackingLogByCallId record',
@@ -983,7 +983,7 @@ export const useDockingUtil = () => {
       );
       if (!dockingOutRequestInfo) {
         logging.ACTION_ERROR({
-          filename: `src/lib/process/dockingUtil.ts`,
+          filename: `src/lib/process/dockingUtil.ts-sendAcsDockingDetach`,
           params: params,
           result: 'No dockingOutRequestInfo record',
           error: 'No dockingOutRequestInfo record',
