@@ -801,3 +801,7 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 
 ## v3.1.2-ssb
 - 미션 결정지에서 To 들어갈 때, Count Response 쓰도록 수정
+- modified trackinglog.EQP_CALL_ID in docking complete - dockingUtil.ts
+
+## v3.1.3
+- approve v3.1.2-ssb

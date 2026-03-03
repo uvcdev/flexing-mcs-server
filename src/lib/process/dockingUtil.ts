@@ -926,7 +926,7 @@ export const useDockingUtil = () => {
             const trackingLogState = 'PROCESSING';
             const trackingLogProcessState = 'NORMAL';
             const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-              callId: dockingParams.EQP_CALL_ID,
+              callId: trackingLogCallId,
               subject: trackingLogSubject,
               detail: trackingLogDetail,
               state: trackingLogState,
