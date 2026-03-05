@@ -727,6 +727,7 @@ CREATE TABLE public.plc_data_change_history_logs (
     value_type text NULL,
     snapshot_data jsonb NULL,
     created_at timestamptz DEFAULT now() NULL,
+    user_id int NULL,
     id bigint GENERATED ALWAYS AS IDENTITY,
     CONSTRAINT plc_data_change_history_log_pk
         PRIMARY KEY (facility_name, tag_name, ts)
@@ -812,3 +813,10 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
   ```sql
     ALTER TABLE public.plc_data_change_history_logs ADD COLUMN user_id int;
   ```
+
+## v3.1.4
+- approve 3.1.3-ssb
+- update
+  - readme.md
+  - missionOrderUtil - fix trackingLog Call Id
+  - callCancelUtil - fix call cancel response

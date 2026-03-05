@@ -135,7 +135,7 @@ export const checkMissionOrder = async () => {
               const trackingLogDetail = 'MISSION_DECIDED';
               const trackingLogState = 'PROCESSING';
               const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-                callId: mqttCallId,
+                callId: mqttCallId.split('$')[0] || '',
                 subject: trackingLogSubject,
                 detail: trackingLogDetail,
                 state: trackingLogState,

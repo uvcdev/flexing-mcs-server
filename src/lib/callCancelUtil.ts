@@ -661,12 +661,12 @@ export const useCallCancelUtil = () => {
           const notBeforeRequestWorkOrderCount = notBeforeRequestWorkOrderList.length;
 
           const removeBeforeRequestRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-            {
-              facilitySerial: targetCode,
-              facilityInfo: facilityInfo,
-              count: notBeforeRequestWorkOrderCount,
-              workOrderList: notBeforeRequestWorkOrderList,
-            };
+          {
+            facilitySerial: targetCode,
+            facilityInfo: facilityInfo,
+            count: notBeforeRequestWorkOrderCount,
+            workOrderList: notBeforeRequestWorkOrderList,
+          };
 
           redisUtil.hset(
             RedisKeys.RecentWorkOrderListByFacilitySerial,
@@ -1132,7 +1132,7 @@ export const useCallCancelUtil = () => {
         // 260209 설비측 수정 이후 이 조건문을 타면 안됨
         // call_request가 떠있어야만 취소 요청이 들어오기 때문이다.
         // 그러므로 이 조건문으로 들어왔다는 건 call_request가 떠있지 않는 경우인데 설비취소가 눌린것이다.
-        // await writeCallCancelResponse(targetCode);
+        await writeCallCancelResponse(targetCode);
         logging.ACTION_ERROR({
           filename: `callCancelUtil.ts - callCancel`,
           error: `${targetCode} call_request가 떠있지 않는데 설비취소가 눌린것이다.`,
