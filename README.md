@@ -820,3 +820,6 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
   - readme.md
   - missionOrderUtil - fix trackingLog Call Id
   - callCancelUtil - fix call cancel response
+
+## v3.1.4-ljk
+- ACS 작업 취소 시, WMS Response 제어 로직 수정

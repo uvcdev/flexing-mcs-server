@@ -827,15 +827,80 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
   const workOrderCount = recentWorkOrderListByFacilitySerial?.count || 0;
   const workOrderList = recentWorkOrderListByFacilitySerial?.workOrderList || [];
 
-  if (facilityInfo.system === 'WMS') {
-  }
-  // facilityInfo.system === 'EQP'
-  else {
-    const beforeAssignedAmrWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'workOrder');
-    const fromWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'fromWorkOrder');
-    const toWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'toWorkOrder');
+  const beforeAssignedAmrWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'workOrder');
+  const fromWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'fromWorkOrder');
+  const toWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'toWorkOrder');
 
-    if (toWorkOrderList.length > 0) {
+  if (toWorkOrderList.length > 0) {
+    const callType = await makeCallType(facilitySerial);
+    const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
+    const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
+    const callRobotAssignedValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Robot_Assigned')) as boolean;
+    const callResponseCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response_Count')) as number;
+
+    if (callResponseValue === false) {
+      await plcConnectUtil.writeTagValue({
+        targetFacility: facilitySerial,
+        tagInfo: [{ tagName: 'Call_Response', value: true }],
+      });
+    }
+    if (callRobotAssignedValue === false) {
+      await plcConnectUtil.writeTagValue({
+        targetFacility: facilitySerial,
+        tagInfo: [{ tagName: 'Call_Robot_Assigned', value: true }],
+      });
+    }
+    if (callResponseCountValue === 0) {
+      await plcConnectUtil.writeTagValue({
+        targetFacility: facilitySerial,
+        tagInfo: [{ tagName: 'Call_Response_Count', value: callCountValue.toString() }],
+      });
+    }
+    if (callType === '') {
+      await useCallTypeUtil().callTypeResponse(facilitySerial);
+    }
+
+    // await plcConnectUtil.writeTagValue({
+    //   targetFacility: facilitySerial,
+    //   tagInfo: [
+    //     { tagName: 'Call_Response', value: true },
+    //     { tagName: 'Call_Robot_Assigned', value: true },
+    //     { tagName: 'Call_Response_Count', value: callCountValue.toString() },
+    //   ],
+    // });
+  }
+
+  if (toWorkOrderList.length === 0 && (beforeAssignedAmrWorkOrderList.length > 0 || fromWorkOrderList.length > 0)) {
+    const callType = await makeCallType(facilitySerial);
+    const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
+    const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
+    const callRobotAssignedValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Robot_Assigned')) as boolean;
+    const callResponseCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response_Count')) as number;
+
+    if (callResponseValue === false) {
+      await plcConnectUtil.writeTagValue({
+        targetFacility: facilitySerial,
+        tagInfo: [{ tagName: 'Call_Response', value: true }],
+      });
+    }
+    if (callRobotAssignedValue === true) {
+      await plcConnectUtil.writeTagValue({
+        targetFacility: facilitySerial,
+        tagInfo: [{ tagName: 'Call_Robot_Assigned', value: false }],
+      });
+    }
+    if (callResponseCountValue === 0) {
+      await plcConnectUtil.writeTagValue({
+        targetFacility: facilitySerial,
+        tagInfo: [{ tagName: 'Call_Response_Count', value: callCountValue.toString() }],
+      });
+    }
+    if (callType === '') {
+      await useCallTypeUtil().callTypeResponse(facilitySerial);
+    }
+  }
+  if (facilityInfo.system === 'EQP') {
+    if (toWorkOrderList.length === 0 && beforeAssignedAmrWorkOrderList.length === 0 && fromWorkOrderList.length === 0) {
       const callType = await makeCallType(facilitySerial);
       const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
       const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
@@ -848,39 +913,39 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
         'Call_Response_Count'
       )) as number;
 
-      if (callResponseValue === false) {
+      if (callResponseValue === true) {
         await plcConnectUtil.writeTagValue({
           targetFacility: facilitySerial,
-          tagInfo: [{ tagName: 'Call_Response', value: true }],
+          tagInfo: [{ tagName: 'Call_Response', value: false }],
         });
       }
-      if (callRobotAssignedValue === false) {
+      if (callRobotAssignedValue === true) {
         await plcConnectUtil.writeTagValue({
           targetFacility: facilitySerial,
-          tagInfo: [{ tagName: 'Call_Robot_Assigned', value: true }],
+          tagInfo: [{ tagName: 'Call_Robot_Assigned', value: false }],
         });
       }
-      if (callResponseCountValue === 0) {
+      if (callResponseCountValue !== 0) {
         await plcConnectUtil.writeTagValue({
           targetFacility: facilitySerial,
-          tagInfo: [{ tagName: 'Call_Response_Count', value: callCountValue.toString() }],
+          tagInfo: [{ tagName: 'Call_Response_Count', value: 0 }],
         });
       }
-      if (callType === '') {
-        await useCallTypeUtil().callTypeResponse(facilitySerial);
+      if (callType !== '') {
+        await useCallTypeUtil().callTypeResponseReset(facilitySerial);
       }
-
-      // await plcConnectUtil.writeTagValue({
-      //   targetFacility: facilitySerial,
-      //   tagInfo: [
-      //     { tagName: 'Call_Response', value: true },
-      //     { tagName: 'Call_Robot_Assigned', value: true },
-      //     { tagName: 'Call_Response_Count', value: callCountValue.toString() },
-      //   ],
-      // });
     }
+  } else if (facilityInfo.system === 'WMS') {
+    // 진행 중인 CALL_INFO 개수 파악
+    const ackCallInfoList = await redisUtil.hgetAllObject<InfoAckInCallByCallIdBody>(RedisKeys.InfoAckInCallByCallId);
+    const selectedAckCallInfoList = ackCallInfoList?.filter((callInfo) => callInfo.Caller === facilitySerial) || [];
 
-    if (toWorkOrderList.length === 0 && (beforeAssignedAmrWorkOrderList.length > 0 || fromWorkOrderList.length > 0)) {
+    if (
+      toWorkOrderList.length === 0 &&
+      beforeAssignedAmrWorkOrderList.length === 0 &&
+      fromWorkOrderList.length === 0 &&
+      selectedAckCallInfoList.length > 0
+    ) {
       const callType = await makeCallType(facilitySerial);
       const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
       const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
@@ -915,7 +980,13 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
         await useCallTypeUtil().callTypeResponse(facilitySerial);
       }
     }
-    if (toWorkOrderList.length === 0 && beforeAssignedAmrWorkOrderList.length === 0 && fromWorkOrderList.length === 0) {
+    // 전부다 없을 때, 모든 값 내리기
+    if (
+      toWorkOrderList.length === 0 &&
+      beforeAssignedAmrWorkOrderList.length === 0 &&
+      fromWorkOrderList.length === 0 &&
+      selectedAckCallInfoList.length === 0
+    ) {
       const callType = await makeCallType(facilitySerial);
       const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
       const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
