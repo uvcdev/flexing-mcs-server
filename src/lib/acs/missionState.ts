@@ -38,6 +38,10 @@ export interface MissionStateBody {
   mission: string;
   state: MissionStateType;
   missionDestination?: string;
+  workState?: string;
+  mode?: 'auto' | 'manual' | '';
+  fromFacilitySerial?: string;
+  toFacilitySerial?: string;
   assign: {
     robot: string;
     task: string;
@@ -230,14 +234,18 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
       // response 값 내리기
       if (assignTask === 'WORK-ORDER-CANCELED') {
         const canceledWorkOrderCallId = normalCallId || '';
+        const workState = missionStateBody.workState || '';
+        const workMode = missionStateBody.mode || '';
+        const fromFacilitySerial = missionStateBody.fromFacilitySerial || '';
+        const toFacilitySerial = missionStateBody.toFacilitySerial || '';
 
-        const trackingLogInfo = await redisUtil.hgetObject<TrackingLogAttributes>(
-          RedisKeys.InfoTrackingLogByCallId,
-          normalCallId
-        );
+        // const trackingLogInfo = await redisUtil.hgetObject<TrackingLogAttributes>(
+        //   RedisKeys.InfoTrackingLogByCallId,
+        //   normalCallId
+        // );
 
-        const fromFacilitySerial = trackingLogInfo?.startFacility || '';
-        const toFacilitySerial = trackingLogInfo?.destFacility || '';
+        // const fromFacilitySerial = trackingLogInfo?.startFacility || '';
+        // const toFacilitySerial = trackingLogInfo?.destFacility || '';
 
         const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
           RedisKeys.InfoFacilityById,
@@ -254,6 +262,12 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
         if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
           alwaysOnFacility = toFacilitySerial;
           triggerFacility = fromFacilitySerial;
+        }
+        let cancelWorkOrderStatus = '';
+        if (workMode === 'manual') {
+          cancelWorkOrderStatus = workState;
+        } else {
+          cancelWorkOrderStatus = recentWorkOrderStatus;
         }
 
         if (recentWorkOrderStatus !== 'toWorkOrder' && recentWorkOrderStatus !== 'missionWorkOrder') {

@@ -823,3 +823,4 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 
 ## v3.1.4-ljk
 - ACS 작업 취소 시, WMS Response 제어 로직 수정
+- ACS 수동 작업 취소 시, 설비 상태 반영 로직 수정
