@@ -248,18 +248,22 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
         // const toFacilitySerial = trackingLogInfo?.destFacility || '';
 
         const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
-          RedisKeys.InfoFacilityById,
+          RedisKeys.InfoFacilityBySerial,
           fromFacilitySerial
         );
         const toFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
-          RedisKeys.InfoFacilityById,
+          RedisKeys.InfoFacilityBySerial,
           toFacilitySerial
         );
 
         let alwaysOnFacility = fromFacilitySerial;
         let triggerFacility = toFacilitySerial;
 
-        if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
+        // if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
+        //   alwaysOnFacility = toFacilitySerial;
+        //   triggerFacility = fromFacilitySerial;
+        // }
+        if (fromFacilityInfo?.isActiveCallTrigger) {
           alwaysOnFacility = toFacilitySerial;
           triggerFacility = fromFacilitySerial;
         }
@@ -270,40 +274,79 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
           cancelWorkOrderStatus = recentWorkOrderStatus;
         }
 
-        if (recentWorkOrderStatus !== 'toWorkOrder' && recentWorkOrderStatus !== 'missionWorkOrder') {
-          if (fromFacilitySerial) {
-            await plcConnectUtil.writeTagValue({
-              targetFacility: fromFacilitySerial,
-              tagInfo: [
-                { tagName: 'Call_Response', value: false },
-                { tagName: 'Call_Robot_Assigned', value: false },
-                { tagName: 'Call_Response_Count', value: '0' },
-                { tagName: 'Dock_Request', value: false },
-                { tagName: 'Call_Response_Multi_1', value: false },
-                { tagName: 'Call_Response_Multi_2', value: false },
-                { tagName: 'Call_Cancel_Response', value: false },
-              ],
-            });
-            await useCallTypeUtil().callTypeResponseReset(fromFacilitySerial);
+        if (fromFacilityInfo?.isActiveCallTrigger === false && toFacilityInfo?.isActiveCallTrigger === false) {
+          if (cancelWorkOrderStatus === 'fromWorkOrder') {
+            if (fromFacilitySerial) {
+              await plcConnectUtil.writeTagValue({
+                targetFacility: fromFacilitySerial,
+                tagInfo: [
+                  { tagName: 'Call_Response', value: false },
+                  { tagName: 'Call_Robot_Assigned', value: false },
+                  { tagName: 'Call_Response_Count', value: '0' },
+                  { tagName: 'Dock_Request', value: false },
+                  { tagName: 'Call_Response_Multi_1', value: false },
+                  { tagName: 'Call_Response_Multi_2', value: false },
+                  { tagName: 'Call_Cancel_Response', value: false },
+                ],
+              });
+              await useCallTypeUtil().callTypeResponseReset(fromFacilitySerial);
+            }
           }
+          else if (cancelWorkOrderStatus === 'toWorkOrder') {
+            if (toFacilitySerial) {
+              await plcConnectUtil.writeTagValue({
+                targetFacility: toFacilitySerial,
+                tagInfo: [
+                  { tagName: 'Call_Response', value: false },
+                  { tagName: 'Call_Robot_Assigned', value: false },
+                  { tagName: 'Call_Response_Count', value: '0' },
+                  { tagName: 'Dock_Request', value: false },
+                  { tagName: 'Call_Response_Multi_1', value: false },
+                  { tagName: 'Call_Response_Multi_2', value: false },
+                  { tagName: 'Call_Cancel_Response', value: false },
+                ],
+              });
+              await useCallTypeUtil().callTypeResponseReset(toFacilitySerial);
+            }
+          }
+
         }
-        if (toFacilitySerial) {
-          if (triggerFacility === toFacilitySerial) {
-            await fixMultiCallFacilityStatus(toFacilitySerial);
-          } else {
-            await plcConnectUtil.writeTagValue({
-              targetFacility: toFacilitySerial,
-              tagInfo: [
-                { tagName: 'Call_Response', value: false },
-                { tagName: 'Call_Robot_Assigned', value: false },
-                { tagName: 'Call_Response_Count', value: '0' },
-                { tagName: 'Dock_Request', value: false },
-                { tagName: 'Call_Response_Multi_1', value: false },
-                { tagName: 'Call_Response_Multi_2', value: false },
-                { tagName: 'Call_Cancel_Response', value: false },
-              ],
-            });
-            await useCallTypeUtil().callTypeResponseReset(toFacilitySerial);
+        else {
+          if (cancelWorkOrderStatus !== 'toWorkOrder' && cancelWorkOrderStatus !== 'missionWorkOrder') {
+            if (fromFacilitySerial) {
+              await plcConnectUtil.writeTagValue({
+                targetFacility: fromFacilitySerial,
+                tagInfo: [
+                  { tagName: 'Call_Response', value: false },
+                  { tagName: 'Call_Robot_Assigned', value: false },
+                  { tagName: 'Call_Response_Count', value: '0' },
+                  { tagName: 'Dock_Request', value: false },
+                  { tagName: 'Call_Response_Multi_1', value: false },
+                  { tagName: 'Call_Response_Multi_2', value: false },
+                  { tagName: 'Call_Cancel_Response', value: false },
+                ],
+              });
+              await useCallTypeUtil().callTypeResponseReset(fromFacilitySerial);
+            }
+          }
+          if (toFacilitySerial) {
+            if (triggerFacility === toFacilitySerial) {
+              await fixMultiCallFacilityStatus(toFacilitySerial);
+            } else {
+              await plcConnectUtil.writeTagValue({
+                targetFacility: toFacilitySerial,
+                tagInfo: [
+                  { tagName: 'Call_Response', value: false },
+                  { tagName: 'Call_Robot_Assigned', value: false },
+                  { tagName: 'Call_Response_Count', value: '0' },
+                  { tagName: 'Dock_Request', value: false },
+                  { tagName: 'Call_Response_Multi_1', value: false },
+                  { tagName: 'Call_Response_Multi_2', value: false },
+                  { tagName: 'Call_Cancel_Response', value: false },
+                ],
+              });
+              await useCallTypeUtil().callTypeResponseReset(toFacilitySerial);
+            }
           }
         }
       }
