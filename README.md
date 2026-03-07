@@ -831,3 +831,7 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 ## v3.1.5-mbs
 - delete (write 'call_response' process) when 'AMR_ARRIVED'
 - modified (callType -> cargoType) in callInfo Cargo_Type when call create
+
+## v3.1.5-ssb
+- 사용하지 않는 redis 주석처리
+  - RedisKeys.InfoChangedTagById

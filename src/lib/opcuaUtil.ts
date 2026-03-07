@@ -267,7 +267,8 @@ export const opcuaUtil = {
             value: value.value.value,
             message: `changing value from opcuaUtil.registerChangeEvent`,
           });
-          redisUtil.hset(RedisKeys.InfoChangedTagById, nodeId, JSON.stringify(targetTagInfo));
+          // 260306 더이상 사용하지 않는 데이터이므로 주석처리
+          // redisUtil.hset(RedisKeys.InfoChangedTagById, nodeId, JSON.stringify(targetTagInfo));
           if (targetTagInfo) {
             this.eqpCheckUtil.eqpTaskStatus(targetTagInfo, value.value.value);
           }
