@@ -827,3 +827,7 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 
 ## v3.1.5
 - approve 3.1.4-ljk
+
+## v3.1.5-mbs
+- delete (write 'call_response' process) when 'AMR_ARRIVED'
+- modified (callType -> cargoType) in callInfo Cargo_Type when call create

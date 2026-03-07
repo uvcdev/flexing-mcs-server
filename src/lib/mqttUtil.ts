@@ -459,7 +459,7 @@ export const receiveMqtt = (): void => {
                   targetFacility: messageJson.facilitySerial,
                   tagInfo: [
                     { tagName: 'Call_Robot_Assigned', value: true },
-                    { tagName: 'Call_Response', value: true },
+                    // { tagName: 'Call_Response', value: true },
                   ],
                 });
               }

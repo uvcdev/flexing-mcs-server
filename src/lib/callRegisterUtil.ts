@@ -81,6 +81,7 @@ export const useCallRegisterUtil = () => {
         const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
         const callRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request')) as boolean;
         const callType = targetTagInfo.Call_Type;
+        const cargoType = targetTagInfo.Cargo_Type;
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
           targetCode
@@ -96,7 +97,7 @@ export const useCallRegisterUtil = () => {
             EQP_CALL_ID: String(callCountValue), // 뒤의 4자리
             CALL_ID: '', // 작업지시코드
             Call_Type: callType || 'SKID',
-            Cargo_Type: callType || '',
+            Cargo_Type: cargoType || '',
             Caller: targetCode, // 앞의 4자리
             Call_Quantity: 1,
             Call_Priority: callPriorityValue ? '99' : '1',
