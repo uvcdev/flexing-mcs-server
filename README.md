@@ -835,3 +835,7 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 ## v3.1.5-ssb
 - 사용하지 않는 redis 주석처리
   - RedisKeys.InfoChangedTagById
+
+## v3.1.6
+- approve 3.1.5-mbs
+- approve 3.1.5-ssb  
