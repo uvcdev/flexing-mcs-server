@@ -842,3 +842,6 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 
 ## v3.1.6-ljk
 - sp-bs 연결 로직 수정
+
+## v3.1.7
+- approve 3.1.6-ljk
