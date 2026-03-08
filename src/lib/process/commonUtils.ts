@@ -501,110 +501,102 @@ export const checkSpBsWorkType = async (messageJson: any) => {
     return;
   }
 
-  const spInPortFacilitySerialList: string[] = messageJson.spInPortFacilitySerialList || [];
-  const spOutPortFacilitySerialList: string[] = messageJson.spOutPortFacilitySerialList || [];
-  const bsInPortFacilitySerialList: string[] = messageJson.bsInPortFacilitySerialList || [];
-  const bsOutPortFacilitySerialList: string[] = messageJson.bsOutPortFacilitySerialList || [];
+  const facilityList = await redisUtil.hgetAllObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial);
 
-  const wmsSpInPortSerial = ['WS11', 'WS13'];
-  const ws11FacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, 'WS11');
-  const ws13FacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, 'WS13');
+  const spInPortFacilityList =
+    facilityList?.filter((facility) => facility.serial?.toUpperCase().startsWith('SP') && facility.type === 'in') || [];
+  const spOutPortFacilityList =
+    facilityList?.filter((facility) => facility.serial?.toUpperCase().startsWith('SP') && facility.type === 'out') ||
+    [];
+  const bsInPortFacilityList =
+    facilityList?.filter((facility) => facility.serial?.toUpperCase().startsWith('BS') && facility.type === 'in') || [];
+  const bsOutPortFacilityList =
+    facilityList?.filter((facility) => facility.serial?.toUpperCase().startsWith('BS') && facility.type === 'out') ||
+    [];
 
-  const wmsBsInPortSerial = ['WC11'];
-  const wc11FacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, 'WS11');
+  const wsInPortFacilityList =
+    facilityList?.filter((facility) => facility.serial?.toUpperCase().startsWith('WS') && facility.type === 'in') || [];
+  const wsOutPortFacilityList =
+    facilityList?.filter((facility) => facility.serial?.toUpperCase().startsWith('WS') && facility.type === 'out') ||
+    [];
+  const wcInPortFacilityList =
+    facilityList?.filter((facility) => facility.serial?.toUpperCase().startsWith('WC') && facility.type === 'in') || [];
+  const wcOutPortFacilityList =
+    facilityList?.filter((facility) => facility.serial?.toUpperCase().startsWith('WC') && facility.type === 'out') ||
+    [];
 
   if (workType === 'WMS') {
     // SP
-    for (let i = 0, length = spInPortFacilitySerialList.length; i < length; i++) {
-      const facilitySerial = spInPortFacilitySerialList[i];
+    for (let i = 0, length = spInPortFacilityList.length; i < length; i++) {
+      const spInfacilityInfo = spInPortFacilityList[i];
 
-      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        facilitySerial
-      );
-
-      if (!facilityInfo) {
+      if (!spInfacilityInfo) {
         continue;
       }
 
+      const wcOutFacilityIds = wcOutPortFacilityList.map((facility) => facility.id);
+
       const facilityUpdateParams: FacilityUpdateParams = {
-        id: facilityInfo.id,
+        id: spInfacilityInfo.id,
         system: 'WMS',
-        linkedEqpIds: [],
+        isMissionOrderCapable: false,
+        linkedEqpIds: wcOutFacilityIds,
         cancelType: 'EQP_TO_WMS',
         isActiveCallTrigger: true,
-        cancelLinkedEqpIds: [],
       };
       facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
     }
 
-    for (let i = 0, length = spOutPortFacilitySerialList.length; i < length; i++) {
-      const facilitySerial = spOutPortFacilitySerialList[i];
+    for (let i = 0, length = spOutPortFacilityList.length; i < length; i++) {
+      const spOutfacilityInfo = spOutPortFacilityList[i];
 
-      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        facilitySerial
-      );
-
-      if (!facilityInfo) {
+      if (!spOutfacilityInfo) {
         continue;
       }
-
+      const wsInFacilityIds = wsInPortFacilityList.map((facility) => facility.id);
       const facilityUpdateParams: FacilityUpdateParams = {
-        id: facilityInfo.id,
+        id: spOutfacilityInfo.id,
         system: 'WMS',
-        linkedEqpIds: [Number(ws11FacilityInfo?.id), Number(ws13FacilityInfo?.id)],
-        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        linkedEqpIds: wsInFacilityIds,
+        cancelType: 'NON_CANCELLABLE',
         isActiveCallTrigger: true,
-        cancelLinkedEqpIds: [],
         isMissionOrderCapable: true,
       };
       facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
     }
 
     // BS
-    for (let i = 0, length = bsInPortFacilitySerialList.length; i < length; i++) {
-      const facilitySerial = bsInPortFacilitySerialList[i];
+    for (let i = 0, length = bsInPortFacilityList.length; i < length; i++) {
+      const bsInfacilityInfo = bsInPortFacilityList[i];
 
-      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        facilitySerial
-      );
-
-      if (!facilityInfo) {
+      if (!bsInfacilityInfo) {
         continue;
       }
-
+      const wsOutFacilityIds = wsOutPortFacilityList.map((facility) => facility.id);
       const facilityUpdateParams: FacilityUpdateParams = {
-        id: facilityInfo.id,
+        id: bsInfacilityInfo.id,
         system: 'WMS',
-        linkedEqpIds: [],
+        linkedEqpIds: wsOutFacilityIds,
         cancelType: 'EQP_TO_WMS',
         isActiveCallTrigger: true,
-        cancelLinkedEqpIds: [],
       };
       facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
     }
 
-    for (let i = 0, length = bsOutPortFacilitySerialList.length; i < length; i++) {
-      const facilitySerial = bsOutPortFacilitySerialList[i];
+    for (let i = 0, length = bsOutPortFacilityList.length; i < length; i++) {
+      const bsOutfacilityInfo = bsOutPortFacilityList[i];
 
-      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        facilitySerial
-      );
-
-      if (!facilityInfo) {
+      if (!bsOutfacilityInfo) {
         continue;
       }
 
+      const wcInFacilityIds = wcInPortFacilityList.map((facility) => facility.id);
       const facilityUpdateParams: FacilityUpdateParams = {
-        id: facilityInfo.id,
+        id: bsOutfacilityInfo.id,
         system: 'WMS',
-        linkedEqpIds: [Number(wc11FacilityInfo?.id)],
-        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        linkedEqpIds: wcInFacilityIds,
+        cancelType: 'NON_CANCELLABLE',
         isActiveCallTrigger: true,
-        cancelLinkedEqpIds: [],
         isMissionOrderCapable: true,
       };
       facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
@@ -613,122 +605,77 @@ export const checkSpBsWorkType = async (messageJson: any) => {
   // workType === 'EQP'
   else {
     // SP
-    for (let i = 0, length = spInPortFacilitySerialList.length; i < length; i++) {
-      const facilitySerial = spInPortFacilitySerialList[i];
+    for (let i = 0, length = spInPortFacilityList.length; i < length; i++) {
+      const spInfacilityInfo = spInPortFacilityList[i];
 
-      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        facilitySerial
-      );
-
-      if (!facilityInfo) {
+      if (!spInfacilityInfo) {
         continue;
       }
 
       const facilityUpdateParams: FacilityUpdateParams = {
-        id: facilityInfo.id,
+        id: spInfacilityInfo.id,
         system: 'EQP',
         linkedEqpIds: [],
-        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        cancelType: 'NON_CANCELLABLE',
         isActiveCallTrigger: false,
-        cancelLinkedEqpIds: [],
+        isMissionOrderCapable: false,
       };
       facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
     }
 
-    for (let i = 0, length = spOutPortFacilitySerialList.length; i < length; i++) {
-      const facilitySerial = spOutPortFacilitySerialList[i];
+    for (let i = 0, length = spOutPortFacilityList.length; i < length; i++) {
+      const spOutfacilityInfo = spOutPortFacilityList[i];
 
-      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        facilitySerial
-      );
-
-      if (!facilityInfo) {
+      if (!spOutfacilityInfo) {
         continue;
       }
 
       const facilityUpdateParams: FacilityUpdateParams = {
-        id: facilityInfo.id,
+        id: spOutfacilityInfo.id,
         system: 'EQP',
         linkedEqpIds: [],
-        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        cancelType: 'NON_CANCELLABLE',
         isActiveCallTrigger: false,
-        cancelLinkedEqpIds: [],
         isMissionOrderCapable: false,
       };
       facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
     }
 
     // BS
-    for (let i = 0, length = bsInPortFacilitySerialList.length; i < length; i++) {
-      const facilitySerial = bsInPortFacilitySerialList[i];
+    for (let i = 0, length = bsInPortFacilityList.length; i < length; i++) {
+      const bsInfacilityInfo = bsInPortFacilityList[i];
 
-      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        facilitySerial
-      );
-
-      if (!facilityInfo) {
+      if (!bsInfacilityInfo) {
         continue;
       }
-      const linkedSpSerial = facilitySerial.replace(/BS(\d)(\d)/, (match, first, second) => {
-        const newSecond = second === '1' ? '2' : '1';
-        return `SP${first}${newSecond}`; // SP로 변환
-      });
-
-      const linkedfacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        linkedSpSerial
-      );
-
-      if (!linkedfacilityInfo) {
-        continue;
-      }
+      const spOutFacilityIds = spOutPortFacilityList.map((facility) => facility.id);
 
       const facilityUpdateParams: FacilityUpdateParams = {
-        id: facilityInfo.id,
+        id: bsInfacilityInfo.id,
         system: 'EQP',
-        linkedEqpIds: [Number(linkedfacilityInfo.id)],
-        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        linkedEqpIds: spOutFacilityIds,
+        cancelType: 'NON_CANCELLABLE',
         isActiveCallTrigger: true,
-        cancelLinkedEqpIds: [],
+        isMissionOrderCapable: false,
       };
       facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
     }
 
-    for (let i = 0, length = bsOutPortFacilitySerialList.length; i < length; i++) {
-      const facilitySerial = bsOutPortFacilitySerialList[i];
+    for (let i = 0, length = bsOutPortFacilityList.length; i < length; i++) {
+      const bsOutfacilityInfo = bsOutPortFacilityList[i];
 
-      const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        facilitySerial
-      );
-
-      if (!facilityInfo) {
+      if (!bsOutfacilityInfo) {
         continue;
       }
-      const linkedSpSerial = facilitySerial.replace(/BS(\d)(\d)/, (match, first, second) => {
-        const newSecond = second === '1' ? '2' : '1';
-        return `SP${first}${newSecond}`; // SP로 변환
-      });
 
-      const linkedfacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-        RedisKeys.InfoFacilityBySerial,
-        linkedSpSerial
-      );
-
-      if (!linkedfacilityInfo) {
-        continue;
-      }
+      const spInFacilityIds = spInPortFacilityList.map((facility) => facility.id);
 
       const facilityUpdateParams: FacilityUpdateParams = {
-        id: facilityInfo.id,
+        id: bsOutfacilityInfo.id,
         system: 'EQP',
-        linkedEqpIds: [Number(linkedfacilityInfo?.id)],
-        cancelType: 'EQP_TO_EQP_NO_MISSION',
+        linkedEqpIds: spInFacilityIds,
+        cancelType: 'NON_CANCELLABLE',
         isActiveCallTrigger: true,
-        cancelLinkedEqpIds: [],
         isMissionOrderCapable: false,
       };
       facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
