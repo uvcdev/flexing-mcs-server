@@ -553,8 +553,31 @@ export const useDockingUtil = () => {
       return;
     }
     const usageFacilitylist = facilityInfoList.filter(
-      (facility) => dockingParams.PORT_ID === facility.serial || dockingParams.SAME_PIO_SERIAL === facility.serial
+      (facility) => dockingParams.PORT_ID === facility.serial
     );
+    const samePioFacilitylist = facilityInfoList.filter(
+      (facility) => dockingParams.SAME_PIO_SERIAL === facility.serial
+    );
+    if (samePioFacilitylist && samePioFacilitylist.length > 0) {
+      for (const facility of samePioFacilitylist) {
+        await plcConnectUtil.writeTagValue({
+          targetFacility: facility.serial || '',
+          tagInfo: [
+            { tagName: 'Dock_Request', value: false },
+            { tagName: 'Dock_Request_Charge', value: false },
+            { tagName: 'Dock_Request_Force', value: false },
+            { tagName: 'Dock_AMR_Status', value: false },
+            { tagName: 'Dock_Signal_Reset', value: true },
+          ],
+        });
+        setTimeout(() => {
+          plcConnectUtil.writeTagValue({
+            targetFacility: facility.serial || '',
+            tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+          });
+        }, 500);
+      }
+    }
     if (usageFacilitylist && usageFacilitylist.length > 0) {
       for (const facility of usageFacilitylist) {
         const paramsSerial = facility.serial || '';

@@ -856,7 +856,7 @@ export const receiveMqtt = (): void => {
                   targetFacility: messageJson.IN_SERIAL,
                   tagInfo: [
                     { tagName: 'Dock_Request', value: false },
-                    { tagName: 'Dock_Out_Request', value: true },
+                    // { tagName: 'Dock_Out_Request', value: true },
                     { tagName: 'Dock_AMR_Status', value: false },
                     { tagName: 'Dock_Signal_Reset', value: true },
                   ],
@@ -867,10 +867,10 @@ export const receiveMqtt = (): void => {
                     tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
                   });
                 }, 500);
-                await plcConnectUtil.writeTagValue({
-                  targetFacility: messageJson.IN_SERIAL,
-                  tagInfo: [{ tagName: 'Dock_Out_Request', value: false }],
-                });
+                // await plcConnectUtil.writeTagValue({
+                //   targetFacility: messageJson.IN_SERIAL,
+                //   tagInfo: [{ tagName: 'Dock_Out_Request', value: false }],
+                // });
 
                 // BS12 값 write
                 await plcConnectUtil.writeTagValue({
