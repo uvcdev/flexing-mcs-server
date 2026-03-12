@@ -845,3 +845,14 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 
 ## v3.1.7
 - approve 3.1.6-ljk
+
+## v3.1.7-ljk
+- 도커 원격 배포 설정
+
+## v3.1.7-ssb
+- 도킹요청 전 도킹신호 초기화(공급/회수 동일 포트만 적용)
+
+## v3.1.8
+- approve 3.1.7-ljk
+- approve 3.1.7-ssb  
+
