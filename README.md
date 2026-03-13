@@ -866,3 +866,6 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
   - alarm 관련 callid 수정
   - ack 관련 callid 수정
   - 창고 알람 등록 중 error 등급만 mqtt 호출하도록 변경
+
+## v3.1.9
+- approve 3.1.8-ljk
