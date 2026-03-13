@@ -856,3 +856,7 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 - approve 3.1.7-ljk
 - approve 3.1.7-ssb  
 
+
+## v3.18-ljk
+- sp-bs 연결로직 수정
+  - wms 관련 정보 삭제 및 CALL_CANCEL

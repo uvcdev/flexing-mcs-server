@@ -15,6 +15,7 @@ import { RemainingAckCommand } from './wmsAck';
 import { InfoAckInCallByCallIdBody } from '../wms/mqtt/call';
 import { CancelCallInfo, checkCancelCallInfo } from './wmsCommon';
 import { service as facilityService } from '../../service/operation/facilityService';
+import { generateUUIDNode } from '../hashUtil';
 
 const redisUtil = useRedisUtil();
 const plcConnectUtil = usePlcConnectUtil();
@@ -604,6 +605,59 @@ export const checkSpBsWorkType = async (messageJson: any) => {
   }
   // workType === 'EQP'
   else {
+    // SP - BS
+    // 진행 중인 작업 SP는 삭제
+    // 창고 관련 Call_Info 정보랑 Remain,Abort 정보를 삭제 해줘야함
+
+    // WMS 관련 redis 전부 삭제
+    redisUtil.del(RedisKeys.ReceivedAckCommandBySubjectCmdId);
+    redisUtil.del(RedisKeys.RemainingAckCommandBySubjectCmdId);
+    redisUtil.del(RedisKeys.IntervalCommandForRetryBySubjectCmdId);
+    redisUtil.del(RedisKeys.AbortedCommandForRetryBySubjectCmdId);
+
+    // 진행 중인 CALL_INFO 정보 모두 CANCEL
+    const infoCallInfoList =
+      (await redisUtil.hgetAllObject<InfoAckInCallByCallIdBody>(RedisKeys.InfoAckInCallByCallId)) || [];
+
+    for (let i = 0, length = infoCallInfoList.length; i < length; i++) {
+      const infoCallInfo = infoCallInfoList[i];
+      const selectedCallId = infoCallInfo.CALL_ID;
+
+      const newCancelCallInfoData: CancelCallInfo = {
+        Call_ID: selectedCallId,
+        Call_Quantity: Number(infoCallInfo.Call_Quantity) || 1,
+        systemName: `${process.env.MQTT_WMS_TOPIC || 'MW01'}`,
+      };
+
+      if (!newCancelCallInfoData.Cmd_ID || newCancelCallInfoData.Cmd_ID === '') {
+        newCancelCallInfoData.Cmd_ID = generateUUIDNode();
+      }
+
+      await checkCancelCallInfo(newCancelCallInfoData);
+
+      // 진행 중인 CALL 정보는 해당 단계에서 지우지 않고 ACK_CANCEL_CALL_INFO 단계에서 처리한다.
+
+      if (selectedCallId) {
+        const trackingLogSubject = 'MISSION_CANCELED';
+        const trackingLogDetail = 'MISSION_CANCELED';
+        const trackingLogState = 'CANCELED';
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: selectedCallId,
+          subject: trackingLogSubject,
+          detail: trackingLogDetail,
+          state: trackingLogState,
+          startFacility: null,
+          transferId: null,
+          destFacility: null,
+          assignedRobot: null,
+          value: null,
+          description: `Call ID ${selectedCallId} cancelled due to mode change from Warehouse to Equipment`,
+          processState: 'CANCELED',
+        };
+        await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', 'ACS');
+      }
+    }
+
     // SP
     for (let i = 0, length = spInPortFacilityList.length; i < length; i++) {
       const spInfacilityInfo = spInPortFacilityList[i];
@@ -621,6 +675,28 @@ export const checkSpBsWorkType = async (messageJson: any) => {
         isMissionOrderCapable: false,
       };
       facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
+
+      // sp in 설비 콜 관련 정보 삭제
+      const facilitySerial = spInfacilityInfo.serial || '';
+
+      const facilityRecentWorkOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+        RedisKeys.RecentWorkOrderListByFacilitySerial,
+        facilitySerial
+      );
+
+      if (facilityRecentWorkOrderListInfo) {
+        const resetFacilityRecentWorkOrderListInfo = {
+          ...facilityRecentWorkOrderListInfo,
+          workOrderList: [],
+          count: 0,
+        };
+
+        redisUtil.hset(
+          RedisKeys.RecentWorkOrderListByFacilitySerial,
+          facilitySerial,
+          JSON.stringify(resetFacilityRecentWorkOrderListInfo)
+        );
+      }
     }
 
     for (let i = 0, length = spOutPortFacilityList.length; i < length; i++) {
@@ -639,6 +715,27 @@ export const checkSpBsWorkType = async (messageJson: any) => {
         isMissionOrderCapable: false,
       };
       facilityService.edit(facilityUpdateParams, makeLogFormat({} as RequestLog));
+
+      // sp in 설비 콜 관련 정보 삭제
+      const facilitySerial = spOutfacilityInfo.serial || '';
+
+      const facilityRecentWorkOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+        RedisKeys.RecentWorkOrderListByFacilitySerial,
+        facilitySerial
+      );
+
+      if (facilityRecentWorkOrderListInfo) {
+        const resetFacilityRecentWorkOrderListInfo = {
+          ...facilityRecentWorkOrderListInfo,
+          workOrderList: [],
+          count: 0,
+        };
+        redisUtil.hset(
+          RedisKeys.RecentWorkOrderListByFacilitySerial,
+          facilitySerial,
+          JSON.stringify(resetFacilityRecentWorkOrderListInfo)
+        );
+      }
     }
 
     // BS
