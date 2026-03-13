@@ -453,7 +453,7 @@ const basicAckForInterfaceTest = async (ackCommand: ReceivedAckCommand, subtopic
   sendMbsMqtt(systemTopic, mqttHeader, mqttBody, ackCommand.systemName);
 
   // 해당 로그에 대한 Item 로깅 추가
-  if (trackingAckSubtopicList.includes(subtopic)) {
+  if (trackingAckSubtopicList.includes(subtopic) && callId !== '') {
     const trackingLogSubject = newSubtopic;
     const trackingLogDetail = newSubtopic;
     const trackingLogState = 'PROCESSING';

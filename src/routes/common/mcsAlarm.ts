@@ -34,7 +34,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, McsAlarmInser
   try {
     const params: McsAlarmInsertParams = {
       code: req.body.code,
-      alarmFrom: req.body.alarmFrom,
+      errorFrom: req.body.errorFrom,
       errorCode: req.body.errorCode,
       target: req.body.target,
       level: req.body.level,

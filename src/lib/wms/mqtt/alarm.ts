@@ -28,7 +28,8 @@ const alarmReport = async (wmsName: string, suject: string, messageMessage: MbsM
   const alarmText = alarmMessageBody.AlarmText;
   const level = 'error';
 
-  const callId: string = 'TODO ALARM CALL ID';
+  // const callId: string = 'TODO ALARM CALL ID';
+  const callId: string = '';
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 
   // 트래킹 로그랑 연결하기 위해서는 transferId 정보 필요
@@ -55,7 +56,8 @@ const alarmClear = (wmsName: string, suject: string, messageMessage: MbsMqttMesa
   const alarmId = alarmMessageBody.AlarmID;
   const transferId = alarmMessageBody.TransferID;
 
-  const callId: string = 'TODO ALARM CALL ID';
+  // const callId: string = 'TODO ALARM CALL ID';
+  const callId: string = '';
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 
   // 트래킹 로그랑 연결하기 위해서는 transferId 정보 필요

@@ -4,7 +4,7 @@ import { sequelize } from '../sequelize';
 export interface McsAlarmAttributes {
   id: number;
   code: string;
-  alarmFrom: AlarmFromType;
+  errorFrom: ErrorFromType;
   errorCode: string;
   target: string | null;
   level: McsAlarmLevel;
@@ -19,17 +19,17 @@ export type McsAlarmLevel = 'info' | 'warning' | 'error';
 
 export type McsAlarmState = 'registered' | 'confirmed' | 'completed';
 
-export type AlarmFromType =
-  'WMS' |           // 창고 관련 에러
-  'FAC' |      // 설비 관련 에러
-  'MCS' |           // MCS 서버 관련 에러
-  'ACS' |           // ACS 서버 관련 에러
-  'ETC';            // 이외의 에러
+export type ErrorFromType =
+  | 'WMS' // 창고 관련 에러
+  | 'FAC' // 설비 관련 에러
+  | 'MCS' // MCS 서버 관련 에러
+  | 'ACS' // ACS 서버 관련 에러
+  | 'ETC'; // 이외의 에러
 
 class McsAlarm extends Model implements McsAlarmAttributes {
   public readonly id!: McsAlarmAttributes['id'];
   public code!: McsAlarmAttributes['code'];
-  public alarmFrom!: McsAlarmAttributes['alarmFrom'];
+  public errorFrom!: McsAlarmAttributes['errorFrom'];
   public errorCode!: McsAlarmAttributes['errorCode'];
   public target!: McsAlarmAttributes['target'];
   public level!: McsAlarmAttributes['level'];
@@ -41,8 +41,8 @@ class McsAlarm extends Model implements McsAlarmAttributes {
 }
 
 export const McsAlarmDefaultValue = {
-  alarmFrom: 'ETC',
-  alarmLevel: 'error'
+  errorFrom: 'ETC',
+  level: 'warning',
 };
 
 McsAlarm.init(
@@ -58,7 +58,7 @@ McsAlarm.init(
     },
     errorFrom: {
       type: DataTypes.STRING(20),
-      defaultValue: McsAlarmDefaultValue.alarmFrom
+      defaultValue: McsAlarmDefaultValue.errorFrom,
     },
     errorCode: {
       type: DataTypes.STRING(50),
@@ -68,6 +68,7 @@ McsAlarm.init(
     },
     level: {
       type: DataTypes.STRING(20),
+      defaultValue: McsAlarmDefaultValue.level,
     },
     state: {
       type: DataTypes.STRING(10),
@@ -90,7 +91,7 @@ McsAlarm.init(
 // insert
 export interface McsAlarmInsertParams {
   code: string;
-  alarmFrom: McsAlarmAttributes['alarmFrom'];
+  errorFrom: McsAlarmAttributes['errorFrom'];
   errorCode: string;
   target: string | null;
   level: McsAlarmAttributes['level'];

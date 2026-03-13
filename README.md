@@ -860,3 +860,9 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 ## v3.18-ljk
 - sp-bs 연결로직 수정
   - wms 관련 정보 삭제 및 CALL_CANCEL
+- 알람 관리 관련 정보 수정
+  - 컬럼명 연결 오류 수정 ( alarmFrom -> errorFrom )
+- 창고 관련 수정사항
+  - alarm 관련 callid 수정
+  - ack 관련 callid 수정
+  - 창고 알람 등록 중 error 등급만 mqtt 호출하도록 변경
