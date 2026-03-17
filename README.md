@@ -872,3 +872,11 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 
 ## v3.1.11
 - sync Images
+
+## v3.1.11-ssb
+- 콜 생성 시 콜타입 체크 주석처리(창고 미운영)
+- 콜타입 버그 수정
+- 미션오더 검사 시 조건 주정
+
+## v3.2.0
+- approve 3.1.11-ssb

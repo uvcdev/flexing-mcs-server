@@ -86,10 +86,11 @@ export const checkMissionOrder = async () => {
           // dockDisableValue === false &&
           dockOutPermitValue === false &&
           dockPermitValue === false &&
-          dockRequestValue === false &&
-          (sortLinkedFacilityInfo?.system === 'WMS' ||
-            missionOrderMqttInfo.mode === 'manual' ||
-            CallTypeValue === missionOrderMqttInfo.callType)
+          dockRequestValue === false
+          // &&
+          // (sortLinkedFacilityInfo?.system === 'WMS' ||
+          //   missionOrderMqttInfo.mode === 'manual' ||
+          //   CallTypeValue === missionOrderMqttInfo.callType)
         ) {
           const missionOrderMqttMessage = {
             EQP_CALL_ID: missionOrderMqttInfo.missionOrderCode.slice(-4),
@@ -105,7 +106,6 @@ export const checkMissionOrder = async () => {
             TAG_ID: '',
             CALL_PRIORITY: missionOrderMqttInfo.callPriority,
           };
-
           // if (plcInfoToJson.Call_Request && linkedFacilityInfo) {
           if (sortLinkedFacilityInfo) {
             // 링크된 설비 콜이 떠 있는 경우 작업 생성

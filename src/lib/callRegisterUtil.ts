@@ -121,7 +121,7 @@ export const useCallRegisterUtil = () => {
                 isMissionOrder: true,
                 callPriority: callInfo.Call_Priority || '',
                 callType: callInfo.Call_Type || 'SKID',
-                cargoType: callInfo.Call_Type || '',
+                cargoType: callInfo.Cargo_Type || '',
                 portName: null,
                 eqpName: callInfo.Caller,
                 triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
@@ -231,7 +231,7 @@ export const useCallRegisterUtil = () => {
                       isMissionOrder: false,
                       callPriority: callInfo.Call_Priority,
                       callType: callInfo.Call_Type || 'SKID',
-                      cargoType: callInfo.Call_Type || '',
+                      cargoType: callInfo.Cargo_Type || '',
                       fromFacilityName:
                         (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
                       toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,

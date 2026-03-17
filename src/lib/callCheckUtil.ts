@@ -35,7 +35,6 @@ export const checkCallRequestCreate = async () => {
     }
     const callCancelRequestValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Cancel_Request')) as boolean;
     if (callCancelRequestValue) {
-      console.log(`${facilitySerial} Call_Cancel_Request 태그가 켜져있어서 콜 생성을 중단합니다.`);
       logging.ACTION_ERROR({
         filename: `callCheckUtil.ts - checkCallRequestCreate`,
         error: `${facilitySerial} Call_Cancel_Request 태그가 켜져있어서 콜 생성을 중단합니다.`,
@@ -222,12 +221,13 @@ export const checkCallCreate = async () => {
           const callType = await makeCallType(facilitySerial);
           const createDateTime = timestampToDate(timezoneValue);
 
-          if (
-            callType === ''
-            // && facilityInfo?.system === 'WMS'
-          ) {
-            continue;
-          }
+          // todo[ssb] 260228 ignore callType
+          // if (
+          //   callType === ''
+          //   // && facilityInfo?.system === 'WMS'
+          // ) {
+          //   continue;
+          // }
 
           const targetEqpCallInfo: EqpCallStats = {
             // ...targetTagInfo,
