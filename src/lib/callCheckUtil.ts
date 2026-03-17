@@ -166,7 +166,7 @@ export const checkCallCreate = async () => {
     const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilitySerial);
     if (!facilityInfo) {
       // 에러처리
-      return;
+      continue;
     }
 
     const recentWorkOrderListByFacilitySerial =
