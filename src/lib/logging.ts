@@ -785,6 +785,18 @@ export const logging = {
       // 용도: 일반 액션 디버그 로그(REQUEST/RESPONSE가 아닌 경우에 대한 로그)
       const logLevel = 'error';
 
+      const serializedLog = {
+        ...actionLog,
+        error:
+          actionLog.error instanceof Error
+            ? {
+                message: actionLog.error.message,
+                stack: actionLog.error.stack,
+                name: actionLog.error.name,
+              }
+            : actionLog.error,
+      };
+
       void logDao.insert({
         facilityCode: null,
         facilityName: null,
@@ -792,7 +804,7 @@ export const logging = {
         amrName: null,
         logLevel: logLevel,
         function: 'ACTION_ERROR',
-        data: actionLog,
+        data: serializedLog,
       });
     } catch (error) {
       console.log('logging.ACTION_ERROR', error);
