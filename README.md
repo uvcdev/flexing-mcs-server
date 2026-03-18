@@ -160,12 +160,10 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 ## v0.2.0-ljk
 
 - HEARTBEAT 로직 추가
-
   - 주기적으로 서버 가동 상태를 확인하는 HEARTBEAT 로직 추가
   - WMS Heartbeat 정보 수집 로직 추가 <span style="color:red"> - 동기화 로직은 추후 개발 예정 </span>
 
 - 기본 구조 추가
-
   - MBS MQTT 관련하여 구독, 메세지 수신, 메시지 송신 로직 추가
 
 - ACK 기능 추가
@@ -189,7 +187,6 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 ## v0.2.1-ljk
 
 - trackingLog 테이블 추가
-
   - 기존에 timescale에서 작성하려는 의도와 다르게 빈번한 업데이트 때문에 RDB 에서 생성으로 변경
   - CRUD 기능 생성
 
@@ -225,12 +222,10 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
 ## v0.2.2-ljk
 
 - 설비 입고, 창고 출고 로직 마무리
-
   - TOPIC: PORT 관련 로직 추가
   - CALLINFO 코드 오류 수정
 
 - Tracking Log
-
   - 물류 로그 기본 로직 구현
   - Tracking Log 테이블 수정
 
@@ -269,6 +264,7 @@ ALTER TABLE public.facilities ADD linked_eqp_ids _int4 NULL;
   ```sql
     ALTER TABLE public.facilities ADD cancel_type varchar(30) NULL;
   ```
+
   - mode 컬럼 추가
   ```sql
    ALTER TABLE public.facilities ADD "mode" varchar(20) DEFAULT 'auto' NULL;
@@ -365,7 +361,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - Tracking Log 메세지 정보 추가
 
 - Tracking Log 컬럼 추가
-
   - missionDestination 컬럼, processState 컬럼
 
   ```sql
@@ -374,7 +369,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   ```
 
 - Tracking Log 도킹 관련 내용 수정
-
   - 도킹 관련 Tracking Log 누락 내용들 수정 완료 ( 도킹 요청 , 허가, 완료 )
   - 도킹 관련 Tracking Log 재수정
   - ACS 작업 취소에 대한 처리 로직 추가
@@ -394,7 +388,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - WMS 쪽 토픽 변경 ( MCS -> MS01)
 - rollback MCS Topci ( MS01 -> MCS )
 - ACK_CALL_INFO - hcack = 51 / 52 응답 내용 수정
-
   - hcack = 52 재고 없음 실행 예정은 사용하지 않고 hcack=51 : 재고 없음 실행 불가만 사용한다. 이유: 재고가 언제 들어오는 지는 창고도 알 수 없음
   - hcack = 51 도 재고 없음 실행 불가지만, 해당 응답이 온 경우에는 로깅 후, 몇 분 뒤에 해당 정보 그대로 (cmdId 만 변경) 재 요청한다.
 
@@ -442,7 +435,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 ## v1.0.8-ljk
 
 - MCS 동기화 로직
-
   - ACK_REQ_PORT_STATE_LIST 기능 추가
   - ACK_REQ_CALL_INFO_LIST 기능 개선
   - edit syncronization Logic - PORT , CALL
@@ -452,16 +444,13 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   - edit syncronization Logic - CALL ( CALL_INFO 호출 부 재수정 )
 
 - 재고 없음 로직
-
   - 재고 없음 발생 시, 트래킹 로그 물류 상태에 `재고 없음 표시`
 
 - 창고 취소 로직
-
   - process / index 에 창고 취소 로직 주석 처리
   - call cancel util에 창고 부분 내용 수정
 
 - Dock_Disable 처리 로직
-
   - Dock Disable 신호 감지 처리
 
 - 창고 로직 중 취소로직 내용 수정
@@ -473,7 +462,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 미션 결정지에서 Dock_Disable === False 인 경우에만 진입 가능
 
 - 트래킹 로그 문제 수정
-
   - ABORTED 상태는 다시 조회 가능하도록
   - ACS 작업 취소를 CANCELED 상태로 재변경
   - ACK_CALL_INFO에서 출발지 정보 기입되는 버그수정
@@ -518,7 +506,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
 - 2차 이후 국내 수정 진행 사항
 
 - 콜 생성 방식 변경
-
   - callCheckUtil.ts
     - 콜 발생 데이터에 따라, Call Request 생성 여부 판별
   - callRegisterUtil.ts
@@ -527,7 +514,6 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
     - Request 발생, 처리 로직 변경
 
 - 설비 관리 컬럼 추가
-
   - is_wms_port => wms 포트에 위치하는 설비들만 true ( ex WS11 ) MBS 프로젝트만 사용
 
   ```sql
@@ -535,28 +521,23 @@ ALTER TABLE public.work_orders ADD trigger_call_count int4 NULL;
   ```
 
 - 창고 수동 작업을 처리하기 위해 workOrder Type 데이터 수정
-
   - PendingWorkOrderAttributes 수정
   - McsWorkOrderRequestType 수정
 
 - ACS 작업 취소 시, 미션 결정지 Redis 데이터삭제
 - 창고 취소 로직 버그 수정 ( 확정본 )
 - 미션 결정지 로직 수정 ( 미션 포인트와 연동 )
-
   - IS_MANUAL_MISSION_ORDER 적용
 
 - WMS 동기화
-
   - CALL_LIST 미 호출 예상 부분 수정
   - 창고 수동 작업 지시 누락 내용 추가
 
 - 콜 생성 방식 버그 수정
-
   - SP11 라인 관련 버그 수정 ( Redis 상 동일 CALL 정보 2개 생성 )
   - SP12 라인 관련 버그 수정 ( Tracking Log 상 2배수 생성 )
 
 - 트래킹 로그에 미션 결정지 내용 추가
-
   - 미션 결정지 내용 추가
 
 - WorkOrder 테이블에 CargoType 컬럼 추가
@@ -643,7 +624,6 @@ smartConnector/{설비이름}/control/request -> smartConnector/control/request
 ## v2.2.7-ljk
 
 - ACS 작업 취소 시, call response 값 내리기
-
   - from 작업은 A,B 설비 모두 값 내리기
   - to 작업은 B 설비 값만 내리기
 
@@ -710,3 +690,8 @@ CREATE TABLE public.menu_roles (
 
 - `loggin.ts`에서 `ACTION_ERROR`에 error 값으로 `Error` 객체가 들어간 경우도 로그 제대로 저장되도록 변경
 - `plcConnectUtil.getTagValue`의 `ACTION_ERROR` 로그 `file_name`이 구별되도록 변경
+
+## v2.2.14
+
+- 버전승인 v2.2.13-lsk
+- 도커 빌드 파일 수정
