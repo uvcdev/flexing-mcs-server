@@ -221,13 +221,12 @@ export const checkCallCreate = async () => {
           const callType = await makeCallType(facilitySerial);
           const createDateTime = timestampToDate(timezoneValue);
 
-          // todo[ssb] 260228 ignore callType
-          // if (
-          //   callType === ''
-          //   // && facilityInfo?.system === 'WMS'
-          // ) {
-          //   continue;
-          // }
+          // 260319 콜타입을 가지고 있지않아도 콜 인정을 해준다.
+          // system:WMS in 인 경우 콜타입을 가지고 있지 않으면 콜 인정X
+          if (facilityInfo?.system === 'WMS' && facilityInfo?.type === 'in' && callType === '') {
+            console.log(`${facilitySerial} 콜타입을 가지고 있지 않으면 콜 인정X`);
+            continue;
+          }
 
           const targetEqpCallInfo: EqpCallStats = {
             // ...targetTagInfo,

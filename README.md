@@ -880,3 +880,10 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 
 ## v3.2.0
 - approve 3.1.11-ssb
+
+## v3.2.0-ssb
+- 콜 타입 매칭 설비 여부 기능 추가
+```sql
+ALTER TABLE public.facilities
+ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
+```

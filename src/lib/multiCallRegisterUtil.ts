@@ -223,9 +223,14 @@ export const useMultiCallRegisterUtil = () => {
                   if (
                     linkedFacilityInfo &&
                     linkedFacilityCallRequestValue === true &&
-                    linkedFacilityCallResponseValue === false
-                    // todo[ssb] 260210 콜 타입 동일 체크 필요
-                    // linkedFacilityCallTypeValue === callType
+                    linkedFacilityCallResponseValue === false &&
+                    // 콜타입 동일 체크 필요
+                    // 20260319 콜타입매칭 여부 컬럼 추가로 수정
+                    // facilityInfo의 isCheckCallType 컬럼이 true 인 경우 콜타입 매칭 체크 필요, false인 경우 콜타입 매칭 체크 필요 없음
+                    // facilityInfo.isCheckCallType이 TRUE면 linkedFacilityCallTypeValue === callType도 TRUE여야함
+                    // facilityInfo.isCheckCallType이 FALSE면 linkedFacilityCallTypeValue === callType는 TRUE이든 FALSE이든 상관없음
+                    (facilityInfo.isCheckCallType === true && linkedFacilityCallTypeValue === callType) ||
+                    (facilityInfo.isCheckCallType === false)
                   ) {
                     // 작업지시 예정 레디스 저장
                     redisUtil.hset(
