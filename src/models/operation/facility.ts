@@ -17,6 +17,7 @@ export interface FacilityAttributes {
   floor: string | null;
   active: boolean | null;
   alwaysFill: boolean | null;
+  isCheckCallType: boolean;
   description: string | null;
   isMissionOrderCapable: boolean | null;
   linkedEqpIds: Array<number> | null;
@@ -64,6 +65,7 @@ class Facility extends Model implements FacilityAttributes {
   public floor!: FacilityAttributes['floor'];
   public active!: FacilityAttributes['active'];
   public alwaysFill!: FacilityAttributes['alwaysFill'];
+  public isCheckCallType!: FacilityAttributes['isCheckCallType'];
   public description!: FacilityAttributes['description'];
   public isMissionOrderCapable!: FacilityAttributes['isMissionOrderCapable'];
   public linkedEqpIds!: FacilityAttributes['linkedEqpIds'];
@@ -131,6 +133,10 @@ Facility.init(
     active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
+    },
+    isCheckCallType: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
     alwaysFill: {
       type: DataTypes.BOOLEAN,
@@ -203,6 +209,7 @@ export interface FacilityInsertParams {
   port: number | null;
   floor: string | null;
   active: boolean;
+  isCheckCallType: boolean;
   alwaysFill: boolean;
   isMissionOrderCapable: boolean;
   linkedEqpIds: Array<number>;
@@ -232,6 +239,7 @@ export interface FacilitySelectListParams {
   port?: number | null;
   floor?: string | null;
   active?: boolean | null;
+  isCheckCallType?: boolean | null;
   alwaysFill?: boolean | null;
   mode?: 'auto' | 'manual' | null;
   limit?: number;
@@ -278,6 +286,7 @@ export interface FacilityUpdateParams {
   port?: string | null;
   floor?: string | null;
   active?: boolean;
+  isCheckCallType?: boolean;
   alwaysFill?: boolean;
   description?: string | null;
   isMissionOrderCapable?: boolean;
@@ -323,6 +332,7 @@ export const FacilityAttributesInclude = [
   'port',
   'floor',
   'active',
+  'isCheckCallType',
   'alwaysFill',
   'description',
   'isMissionOrderCapable',

@@ -109,6 +109,12 @@ const dao = {
         active: params.active, // '=' 검색
       };
     }
+    if (params.isCheckCallType) {
+      setQuery.where = {
+        ...setQuery.where,
+        isCheckCallType: params.isCheckCallType, // '=' 검색
+      };
+    }
     if (params.mode) {
       setQuery.where = {
         ...setQuery.where,
