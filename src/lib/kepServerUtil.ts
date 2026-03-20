@@ -196,10 +196,178 @@ const isFacilityStatusTag = (tagName: string): boolean => {
   );
 };
 const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) || 5;
+const normalMonitorConcurrency = Number(process.env.KEP_MONITOR_CONCURRENCY || 4);
+const cooldownRetryIntervalMs = Number(process.env.KEP_MONITOR_COOLDOWN_MS || 30000);
+
 
 export const useKepServerUtil = () => {
   const redisUtil = useRedisUtil();
   const site = process.env.SITE || 'MBS';
+  const cooldownUntilByKey = new Map<string, number>();
+  let isCooldownWorkerStarted = false;
+
+  // worker 동시성 제한 유틸: 슬롯이 끝나는 즉시 다음 작업을 투입한다.
+  const runWithConcurrency = async <T>(
+    items: T[],
+    limit: number,
+    worker: (item: T) => Promise<void>
+  ): Promise<void> => {
+    const executing = new Set<Promise<void>>();
+
+    for (const item of items) {
+      const p = Promise.resolve().then(() => worker(item));
+      executing.add(p);
+      p.finally(() => executing.delete(p));
+
+      if (executing.size >= limit) {
+        await Promise.race(executing);
+      }
+    }
+
+    await Promise.all(executing);
+  };
+
+  const processFacilityReadAndPublish = async (
+    session: { read: (nodesToRead: ReadValueIdOptions[]) => Promise<DataValue[]> },
+    key: string,
+    value: MonitorTag,
+    source: 'NORMAL' | 'COOLDOWN'
+  ): Promise<boolean> => {
+    const facilityStartTime = Date.now();
+    const result: Record<string, any> = {};
+    const facilityStatus: Record<string, boolean> = {};
+    const readValueIdOptions = value.readValueIdOptions;
+    const tagValue = value.tagValue;
+
+    const readStartTime = Date.now();
+    const dataValues = await session.read(readValueIdOptions);
+    const readElapsed = Date.now() - readStartTime;
+
+    const transformStartTime = Date.now();
+    let hasBadStatus = false;
+    dataValues.forEach((dataValue: DataValue, index: number) => {
+      if (dataValue.statusCode.isBad()) {
+        hasBadStatus = true;
+        return;
+      }
+      const inputType = tagValue[index].inputType;
+      if (inputType === 'ASCII') {
+        tagValue[index].value = parseDecWordToAscii(dataValue.value.value);
+      } else {
+        tagValue[index].value = dataValue.value.value;
+        if (isFacilityStatusTag(tagValue[index].key)) {
+          facilityStatus[tagValue[index].key] = dataValue.value.value as boolean;
+        }
+      }
+      result[tagValue[index].key] = tagValue[index].value;
+    });
+    const transformElapsed = Date.now() - transformStartTime;
+
+    const redisKey = `${RedisKeys.PlcRealtimeData}:${key}`;
+    const publishStartTime = Date.now();
+    redisUtil.hSetPlcAllTags(redisKey, result);
+    sendMqtt(`${MqttTopics.FacilityStatus}/${key}`, JSON.stringify(facilityStatus));
+    sendMqtt(`${MqttTopics.PLCStatus}/${key}`, JSON.stringify(result));
+    const publishElapsed = Date.now() - publishStartTime;
+    const facilityElapsed = Date.now() - facilityStartTime;
+
+    return hasBadStatus;
+  };
+
+  // targetCode(EQ_CODE) 기준으로 KEP Device system tag(_System._Error) NodeId를 만든다.
+  const getDeviceSystemErrorNodeId = (targetCode: string): string | null => {
+    const targetTag = getTargetTag(targetCode, 'Call_Request');
+    if (!targetTag) return null;
+    return `ns=2;s=${targetTag.CHANNEL}.${targetTag.DEVICE}._System._Error`;
+  };
+
+  const startCooldownWorker = () => {
+    if (isCooldownWorkerStarted) return;
+    isCooldownWorkerStarted = true;
+
+    // 일반 루프와 분리해서 30초마다 쿨다운 대상을 health-check로 일괄 확인한다.
+    setInterval(async () => {
+      try {
+        let session = opcuaUtil.session;
+        if (!session) {
+          await opcuaUtil.createSession();
+          session = opcuaUtil.session;
+        }
+        if (!session) return;
+        const currentSession = session;
+
+        const now = Date.now();
+        const dueEntries = Array.from(opcuaUtil.allTagNodeIds.entries()).filter(([key]) => {
+          const cooldownUntil = cooldownUntilByKey.get(key);
+          return cooldownUntil !== undefined && cooldownUntil <= now;
+        });
+        const retryEntries = dueEntries;
+
+        if (retryEntries.length === 0) return;
+
+        const healthCheckTargets = retryEntries
+          .map(([key]) => {
+            const nodeId = getDeviceSystemErrorNodeId(key);
+            return nodeId ? { key, nodeId } : null;
+          })
+          .filter((item): item is { key: string; nodeId: string } => item !== null);
+
+        // system tag 경로를 못 만든 장비는 보수적으로 쿨다운 유지
+        if (healthCheckTargets.length !== retryEntries.length) {
+          for (const [key] of retryEntries) {
+            const found = healthCheckTargets.find((item) => item.key === key);
+            if (found) continue;
+            const nextRetry = Date.now() + cooldownRetryIntervalMs;
+            cooldownUntilByKey.set(key, nextRetry);
+          }
+        }
+
+        if (healthCheckTargets.length === 0) return;
+
+        const healthNodesToRead: ReadValueIdOptions[] = healthCheckTargets.map((item) => ({
+          nodeId: item.nodeId,
+          attributeId: AttributeIds.Value,
+        }));
+        const healthReadStartTime = Date.now();
+        const healthDataValues = await currentSession.read(healthNodesToRead);
+        const healthReadElapsed = Date.now() - healthReadStartTime;
+
+        healthDataValues.forEach((dataValue: DataValue, index: number) => {
+          const target = healthCheckTargets[index];
+          if (!target) return;
+          const key = target.key;
+          if (dataValue.statusCode.isBad()) {
+            const nextRetry = Date.now() + cooldownRetryIntervalMs;
+            cooldownUntilByKey.set(key, nextRetry);
+            return;
+          }
+
+          const isError = Boolean(dataValue.value.value);
+          if (!isError) {
+            cooldownUntilByKey.delete(key);
+            logging.KEPWARE_LOG({
+              action: 'TAG_READ',
+              tag: key,
+              value: 'COOLDOWN->NORMAL',
+              message: `${key} COOLDOWN -> NORMAL / system tag recovered`,
+              error: null,
+            });
+            return;
+          }
+
+          const nextRetry = Date.now() + cooldownRetryIntervalMs;
+          cooldownUntilByKey.set(key, nextRetry);
+        });
+      } catch (error) {
+        logging.MQTT_ERROR({
+          title: 'Error reading value from kepServerUtil.startCooldownWorker',
+          topic: `${MqttTopics.PLCStatus}`,
+          message: null,
+          error: error,
+        });
+      }
+    }, cooldownRetryIntervalMs);
+  };
   // 필요한 태그 값들 읽어서 tagMap 업데이트 함수
   const updateTagMapValues = async (targetKey: string, targetCode: string, tagNames: string[]) => {
     if (!targetKey || !targetCode) {
@@ -404,6 +572,8 @@ export const useKepServerUtil = () => {
 
   // 전체 노드 읽는 함수
   const monitorTagData = async () => {
+    startCooldownWorker();
+
     while (true) {
       const startTime = Date.now();
       let session = opcuaUtil.session;
@@ -413,77 +583,35 @@ export const useKepServerUtil = () => {
           session = opcuaUtil.session;
         }
         if (!session) continue; // 세션이 없으면 다시 루프
-        const safeSession = session; // 별도 변수에 할당
+        const currentSession = session;
+        const normalEntries = Array.from(opcuaUtil.allTagNodeIds.entries()).filter(
+          ([key]) => !cooldownUntilByKey.has(key)
+        );
 
-        // await Promise.all(
-        //   Array.from(opcuaUtil.allTagNodeIds.entries()).map(async ([key, value]) => {
-        //     const result: Record<string, any> = {};
-        //     const dataValues = await safeSession.read(value.readValueIdOptions);
-
-        //     dataValues.forEach((dataValue, index) => {
-        //       const inputType = value.tagValue[index].inputType;
-        //       value.tagValue[index].value =
-        //         inputType === "ASCII"
-        //           ? parseDecWordToAscii(dataValue.value.value)
-        //           : dataValue.value.value;
-
-        //       result[value.tagValue[index].key] = value.tagValue[index].value;
-        //     });
-
-        //     await redisUtil.hset(
-        //       RedisKeys.InfoPlcBySerial,
-        //       key.split('.').pop()?.toString() || '',
-        //       JSON.stringify(result)
-        //     );
-        //     sendMqtt(`${MqttTopics.KepwareStatus}/${key}`, JSON.stringify(result));
-        //   })
-        // );
-        for (const [key, value] of opcuaUtil.allTagNodeIds.entries()) {
-          const result: Record<string, any> = {};
-          const facilityStatus: Record<string, boolean> = {};
-          const readValueIdOptions = value.readValueIdOptions;
-          const tagValue = value.tagValue;
-
-          const dataValues = await session.read(readValueIdOptions);
-
-          dataValues.forEach((dataValue, index) => {
-            if (dataValue.statusCode.isBad()) {
-              // logging.KEPWARE_ERROR({
-              //   action: 'TAG_READ',
-              //   tag: null,
-              //   value: null,
-              //   message: `Error reading value from kepServerUtil.monitorTagData`,
-              //   error: dataValue.statusCode.toString() + ' ' + dataValue.value.value,
-              // });
-              return;
+        await runWithConcurrency(normalEntries, normalMonitorConcurrency, async ([key, value]) => {
+          try {
+            const hasBad = await processFacilityReadAndPublish(currentSession, key, value, 'NORMAL');
+            // success인데 느린 경우는 제외하지 않고, bad 상태에서만 쿨다운 그룹으로 보낸다.
+            if (hasBad) {
+              const nextRetry = Date.now() + cooldownRetryIntervalMs;
+              cooldownUntilByKey.set(key, nextRetry);
+              logging.KEPWARE_ERROR({
+                action: 'ERROR',
+                tag: key,
+                value: 'NORMAL->COOLDOWN',
+                message: `${key} NORMAL -> COOLDOWN / reason=bad / retryAt=${new Date(nextRetry).toISOString()}`,
+                error: null,
+              });
             }
-            const inputType = tagValue[index].inputType;
-            if (inputType === 'ASCII') {
-              tagValue[index].value = parseDecWordToAscii(dataValue.value.value);
-              // tagValue[index].value = 12532
-            } else {
-              tagValue[index].value = dataValue.value.value;
-              if (isFacilityStatusTag(tagValue[index].key)) {
-                facilityStatus[tagValue[index].key] = dataValue.value.value as boolean;
-              }
-              // if (tagValue[index].value === null) {
-              //   return;
-              // }
-            }
-            result[tagValue[index].key] = tagValue[index].value;
-          });
-
-          // MQTT로 결과 전송
-          // await redisUtil.hset(
-          //   RedisKeys.InfoPlcBySerial,
-          //   key.split('.').pop()?.toString() || '',
-          //   JSON.stringify(result)
-          // );
-          const redisKey = `${RedisKeys.PlcRealtimeData}:${key}`;
-          redisUtil.hSetPlcAllTags(redisKey, result);
-          sendMqtt(`${MqttTopics.FacilityStatus}/${key}`, JSON.stringify(facilityStatus));
-          sendMqtt(`${MqttTopics.PLCStatus}/${key}`, JSON.stringify(result));
-        }
+          } catch (error) {
+            logging.MQTT_ERROR({
+              title: 'Error reading value from kepServerUtil.monitorTagData.facility',
+              topic: `${MqttTopics.PLCStatus}/${key}`,
+              message: null,
+              error: error,
+            });
+          }
+        });
       } catch (error) {
         logging.MQTT_ERROR({
           title: 'Error reading value from kepServerUtil.monitorTagData',
