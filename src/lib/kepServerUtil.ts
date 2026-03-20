@@ -185,7 +185,8 @@ export const makeCallType = async (value: string): Promise<string> => {
       callType += tag;
     }
   }
-  callType = callType.replace(/[\s]/g, '');
+  // callType = callType.replace(/[\s]/g, '');
+  callType = callType.trimEnd();
 
   return callType;
 };

@@ -42,7 +42,8 @@ export const useCallTypeUtil = () => {
         // 값 읽기
         const callTypeValue = (await plcConnectUtil.getTagValue(targetCode, readCallType)) as string;
         if (typeof callTypeValue === 'string') {
-          const setCallType = callTypeValue.replace(/[\s]/g, '');
+          // const setCallType = callTypeValue.replace(/[\s]/g, '');
+          const setCallType = callTypeValue.trimEnd();
           let callType = '';
           if (process.env.PLC_CONN_TYPE === 'KEP') {
             console.log(`setCallType`, setCallType);
