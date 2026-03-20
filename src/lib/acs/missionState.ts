@@ -274,7 +274,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
           cancelWorkOrderStatus = recentWorkOrderStatus;
         }
 
-        if (fromFacilityInfo?.isActiveCallTrigger === false && toFacilityInfo?.isActiveCallTrigger === false) {
+        if (!fromFacilityInfo || (fromFacilityInfo?.isActiveCallTrigger === false && toFacilityInfo?.isActiveCallTrigger === false)) {
           if (cancelWorkOrderStatus === 'fromWorkOrder') {
             if (fromFacilitySerial) {
               await plcConnectUtil.writeTagValue({

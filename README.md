@@ -890,3 +890,4 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 - PLC 장치 off시 모니터링 항목 제외
 - callType 공백 허용 
 - fixData 버그 수정
+- 수동 to 작업 시 콜응답 데이터 초기화 로직 수정
