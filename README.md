@@ -887,3 +887,6 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 ALTER TABLE public.facilities
 ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ```
+- PLC 장치 off시 모니터링 항목 제외
+- callType 공백 허용 
+- fixData 버그 수정
