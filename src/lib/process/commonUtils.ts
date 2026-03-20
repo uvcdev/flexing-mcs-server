@@ -16,10 +16,11 @@ import { InfoAckInCallByCallIdBody } from '../wms/mqtt/call';
 import { CancelCallInfo, checkCancelCallInfo } from './wmsCommon';
 import { service as facilityService } from '../../service/operation/facilityService';
 import { generateUUIDNode } from '../hashUtil';
+import { useSmartConnectorUtils } from '../smartConnectorUtils';
 
 const redisUtil = useRedisUtil();
 const plcConnectUtil = usePlcConnectUtil();
-
+const smartConnectorUtils = useSmartConnectorUtils();
 export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDataFromAcs) => {
   const mode = messageJson.mode;
 
@@ -116,12 +117,8 @@ export const fixEqpData = async () => {
     }
 
     // Call_Cancel_Response 데이터 보정
-    const callCancelRequestValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Cancel_Request')) as boolean;
-    const callCancelResponseValue = (await plcConnectUtil.getTagValue(
-      facilitySerial,
-      'Call_Cancel_Response'
-    )) as boolean;
-
+    const callCancelRequestValue = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Cancel_Request') === 'true' ? true : false;
+    const callCancelResponseValue = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Cancel_Response') === 'true' ? true : false;
     if (callCancelRequestValue === false && callCancelResponseValue === true) {
       await plcConnectUtil.writeTagValue({
         targetFacility: facilitySerial,
@@ -130,22 +127,10 @@ export const fixEqpData = async () => {
     }
 
     // Call_Response_Multi_1 , Call_Response_Multi_2 데이터 보정
-    const callRequestMulti1Value = (await plcConnectUtil.getTagValue(
-      facilitySerial,
-      'Call_Request_Multi_1'
-    )) as boolean;
-    const callRequestMulti2Value = (await plcConnectUtil.getTagValue(
-      facilitySerial,
-      'Call_Request_Multi_2'
-    )) as boolean;
-    const callResponseMulti1Value = (await plcConnectUtil.getTagValue(
-      facilitySerial,
-      'Call_Response_Multi_1'
-    )) as boolean;
-    const callResponseMulti2Value = (await plcConnectUtil.getTagValue(
-      facilitySerial,
-      'Call_Response_Multi_2'
-    )) as boolean;
+    const callRequestMulti1Value = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Request_Multi_1') === 'true' ? true : false;
+    const callRequestMulti2Value = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Request_Multi_2') === 'true' ? true : false;
+    const callResponseMulti1Value = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Response_Multi_1') === 'true' ? true : false;
+    const callResponseMulti2Value = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Response_Multi_2') === 'true' ? true : false;
 
     // REQ 가 꺼져있는데 RES가 켜져있으면 RES를 끈다.
     // multi 1
