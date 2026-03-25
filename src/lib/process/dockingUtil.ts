@@ -922,6 +922,23 @@ export const useDockingUtil = () => {
         tagInfo: [{ tagName: 'Dock_AMR_Status', value: true }],
       });
 
+      // BS 공급 부 Docking_Status : 1
+      const usageFacilitylist = facilityInfoList.filter(
+        (facility) => dockingParams.PORT_ID === facility.serial || dockingParams.SAME_PIO_SERIAL === facility.serial
+      );
+      if (usageFacilitylist && usageFacilitylist.length > 1) {
+        for (const facilityInfo of usageFacilitylist) {
+          if (facilityInfo.type === 'in') {
+            // Docking_Status PLC 쓰기
+            console.log("??", facilityInfo.serial, 'Docking_Status')
+            await plcConnectUtil.writeTagValue({
+              targetFacility: facilityInfo.serial || '',
+              tagInfo: [{ tagName: 'Docking_Status', value: '1' }],
+            });
+          }
+        }
+      }
+
       // [트래킹로그]도킹완료에 대한 트래킹로그 저장
       if (dockingParams.PORT_ID === paramsSerial) {
         const trackingLogCallId = dockingParams.EQP_CALL_ID.split('$')[0] || '';
@@ -965,22 +982,6 @@ export const useDockingUtil = () => {
           // processState: trackingLogProcessState,
         };
         await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', dockingParams.PORT_ID);
-      }
-
-      // BS 공급 부 Docking_Status : 1
-      const usageFacilitylist = facilityInfoList.filter(
-        (facility) => dockingParams.PORT_ID === facility.serial || dockingParams.SAME_PIO_SERIAL === facility.serial
-      );
-      if (usageFacilitylist && usageFacilitylist.length > 1) {
-        for (const facilityInfo of usageFacilitylist) {
-          if (facilityInfo.type === 'in') {
-            // Docking_Status PLC 쓰기
-            await plcConnectUtil.writeTagValue({
-              targetFacility: facilityInfo.serial || '',
-              tagInfo: [{ tagName: 'Docking_Status', value: '1' }],
-            });
-          }
-        }
       }
     } catch (error) {
       throw error;
