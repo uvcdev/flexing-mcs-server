@@ -901,3 +901,10 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## v3.2.2
 - approve v3.2.1-ssb
 
+## v3.2.2-ljk
+- WMS 로직
+  - wms 동기화 subject 문제 해결
+  - 창고 수동 작업 생성 시, 도착지 정보가 없는 경우에는 WS11 미션 작업으로 재고순환
+
+- BSA 신규 로직
+  - BSA 라인에 도킹 시, Docking_Status 값 on / off

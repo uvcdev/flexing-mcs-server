@@ -1118,14 +1118,15 @@ export const wmsCall = async (wmsName: string, messageJson: MbsMqttMesaage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
+  const trimEndSubject = subject.trimEnd();
   console.log('wmsName 콜 들어올 때', wmsName);
-  if (subject === 'CALL_REQUEST') {
+  if (trimEndSubject === 'CALL_REQUEST') {
     await callRequest(wmsName, subject, messageJson);
-  } else if (subject === 'ACK_CALL_INFO') {
+  } else if (trimEndSubject === 'ACK_CALL_INFO') {
     await ackCallInfo(wmsName, subject, messageBody as ackCallInfoBody);
-  } else if (subject === 'ACK_CANCEL_CALL_INFO') {
+  } else if (trimEndSubject === 'ACK_CANCEL_CALL_INFO') {
     await ackCancelCallInfo(wmsName, subject, messageBody as AckCancelCallInfoBody);
-  } else if (subject === 'ACK_REQ_CALL_INFO_LIST') {
+  } else if (trimEndSubject === 'ACK_REQ_CALL_INFO_LIST') {
     await ackReqCallInfoList(wmsName, subject, messageBody as AckReqCallInfoListBody);
   }
 };

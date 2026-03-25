@@ -71,6 +71,7 @@ export interface AcsDockingDetachType {
   WORKER_ID: string;
   RESOURCE_ID: string;
   SERIAL_ID: string;
+  SAME_PIO_SERIAL: string;
 }
 
 export interface AcsDockingDetachResponse extends AcsDockingDetachType {
@@ -552,9 +553,7 @@ export const useDockingUtil = () => {
       });
       return;
     }
-    const usageFacilitylist = facilityInfoList.filter(
-      (facility) => dockingParams.PORT_ID === facility.serial
-    );
+    const usageFacilitylist = facilityInfoList.filter((facility) => dockingParams.PORT_ID === facility.serial);
     const samePioFacilitylist = facilityInfoList.filter(
       (facility) => dockingParams.SAME_PIO_SERIAL === facility.serial
     );
@@ -893,75 +892,93 @@ export const useDockingUtil = () => {
       if (!facilityInfoList) {
         logging.ACTION_ERROR({
           filename: 'dockingUtil.ts-sendAcsDockingOutRequest',
+          error: 'redis에 info_facility_list 데이터가 없습니다.',
+          params: null,
+          result: false,
+        });
+        return;
+      }
+      const dockingFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        dockingParams.PORT_ID
+      );
+      if (!dockingFacilityInfo) {
+        logging.ACTION_ERROR({
+          filename: 'dockingUtil.ts-sendAcsDockingOutRequest',
           error: 'redis에 info_facility 데이터가 없습니다.',
           params: null,
           result: false,
         });
         return;
       }
-      // if (dockingParams.PORT_ID === 'BS11') {
-      //   dockingParams.SAME_PIO_SERIAL = 'BS12';
-      // } else if (dockingParams.PORT_ID === 'BS12') {
-      //   dockingParams.SAME_PIO_SERIAL = 'BS11';
-      // }
+
+      // 도킹 완료 신호는, 해당 설비에만 진행한다.
+      const paramsSerial = dockingFacilityInfo.serial || '';
+      redisUtil.hset(RedisKeys.DockingCompleteBySerialId, paramsSerial, JSON.stringify(dockingParams));
+
+      // Dock_AMR_Status PLC 쓰기
+      await plcConnectUtil.writeTagValue({
+        targetFacility: paramsSerial,
+        tagInfo: [{ tagName: 'Dock_AMR_Status', value: true }],
+      });
+
+      // [트래킹로그]도킹완료에 대한 트래킹로그 저장
+      if (dockingParams.PORT_ID === paramsSerial) {
+        const trackingLogCallId = dockingParams.EQP_CALL_ID.split('$')[0] || '';
+
+        const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
+          RedisKeys.InfoTrackingLogByCallId,
+          trackingLogCallId
+        );
+        if (!infoTrackingLogByCallId) {
+          logging.ACTION_ERROR({
+            filename: `src/lib/process/dockingUtil.ts-sendAcsDockingComplete`,
+            params: dockingParams,
+            result: 'No infoTrackingLogByCallId record',
+            error: 'No infoTrackingLogByCallId record',
+          });
+          return;
+        }
+
+        // const trackingLogSubject =
+        //   infoTrackingLogByCallId.startFacility === dockingParams.PORT_ID
+        //     ? 'FROM_DOCKING_COMPLETED'
+        //     : 'TO_DOCKING_COMPLETED';
+        const trackingLogSubject = 'AMR_ARRIVED';
+        const trackingLogDetail =
+          infoTrackingLogByCallId.startFacility === dockingParams.PORT_ID
+            ? 'FROM_DOCKING_COMPLETED'
+            : 'TO_DOCKING_COMPLETED';
+        const trackingLogState = 'PROCESSING';
+        const trackingLogProcessState = 'NORMAL';
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: trackingLogCallId,
+          subject: trackingLogSubject,
+          detail: trackingLogDetail,
+          state: trackingLogState,
+          transferId: null,
+          startFacility: null,
+          destFacility: null,
+          assignedRobot: null,
+          value: dockingParams.PORT_ID,
+          description: `Call ID ${dockingParams.CALL_ID} received ${trackingLogSubject} from ACS(${dockingParams.PORT_ID})`,
+          // processState: trackingLogProcessState,
+        };
+        await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', dockingParams.PORT_ID);
+      }
+
+      // BS 공급 부 Docking_Status : 1
       const usageFacilitylist = facilityInfoList.filter(
         (facility) => dockingParams.PORT_ID === facility.serial || dockingParams.SAME_PIO_SERIAL === facility.serial
       );
-      if (usageFacilitylist && usageFacilitylist.length > 0) {
-        for (const facility of usageFacilitylist) {
-          const paramsSerial = facility.serial || '';
-
-          redisUtil.hset(RedisKeys.DockingCompleteBySerialId, paramsSerial, JSON.stringify(dockingParams));
-
-          // Dock_AMR_Status PLC 쓰기
-          await plcConnectUtil.writeTagValue({
-            targetFacility: paramsSerial,
-            tagInfo: [{ tagName: 'Dock_AMR_Status', value: true }],
-          });
-
-          // [트래킹로그]도킹완료에 대한 트래킹로그 저장
-          if (dockingParams.PORT_ID === paramsSerial) {
-            const trackingLogCallId = dockingParams.EQP_CALL_ID.split('$')[0] || '';
-
-            const infoTrackingLogByCallId = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
-              RedisKeys.InfoTrackingLogByCallId,
-              trackingLogCallId
-            );
-            if (!infoTrackingLogByCallId) {
-              logging.ACTION_ERROR({
-                filename: `src/lib/process/dockingUtil.ts-sendAcsDockingComplete`,
-                params: dockingParams,
-                result: 'No infoTrackingLogByCallId record',
-                error: 'No infoTrackingLogByCallId record',
-              });
-              return;
-            }
-
-            // const trackingLogSubject =
-            //   infoTrackingLogByCallId.startFacility === dockingParams.PORT_ID
-            //     ? 'FROM_DOCKING_COMPLETED'
-            //     : 'TO_DOCKING_COMPLETED';
-            const trackingLogSubject = 'AMR_ARRIVED';
-            const trackingLogDetail =
-              infoTrackingLogByCallId.startFacility === dockingParams.PORT_ID
-                ? 'FROM_DOCKING_COMPLETED'
-                : 'TO_DOCKING_COMPLETED';
-            const trackingLogState = 'PROCESSING';
-            const trackingLogProcessState = 'NORMAL';
-            const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-              callId: trackingLogCallId,
-              subject: trackingLogSubject,
-              detail: trackingLogDetail,
-              state: trackingLogState,
-              transferId: null,
-              startFacility: null,
-              destFacility: null,
-              assignedRobot: null,
-              value: dockingParams.PORT_ID,
-              description: `Call ID ${dockingParams.CALL_ID} received ${trackingLogSubject} from ACS(${dockingParams.PORT_ID})`,
-              // processState: trackingLogProcessState,
-            };
-            await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', dockingParams.PORT_ID);
+      if (usageFacilitylist && usageFacilitylist.length > 1) {
+        for (const facilityInfo of usageFacilitylist) {
+          if (facilityInfo.type === 'in') {
+            // Docking_Status PLC 쓰기
+            await plcConnectUtil.writeTagValue({
+              targetFacility: facilityInfo.serial || '',
+              tagInfo: [{ tagName: 'Docking_Status', value: '1' }],
+            });
           }
         }
       }
@@ -999,6 +1016,34 @@ export const useDockingUtil = () => {
       //     tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
       //   });
       // }, 500);
+
+      // BS 공급 부, docking_Status : 0
+      const facilityInfoList = await redisUtil.hgetAllObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityById);
+      if (!facilityInfoList) {
+        logging.ACTION_ERROR({
+          filename: 'dockingUtil.ts-sendAcsDockingOutRequest',
+          error: 'redis에 info_facility_list 데이터가 없습니다.',
+          params: null,
+          result: false,
+        });
+        return;
+      }
+
+      const usageFacilitylist = facilityInfoList.filter(
+        (facility) => params.SERIAL_ID === facility.serial || params.SAME_PIO_SERIAL === facility.serial
+      );
+      if (usageFacilitylist && usageFacilitylist.length > 1) {
+        for (const facilityInfo of usageFacilitylist) {
+          if (facilityInfo.type === 'in') {
+            // Docking_Status PLC 쓰기
+            await plcConnectUtil.writeTagValue({
+              targetFacility: facilityInfo.serial || '',
+              tagInfo: [{ tagName: 'Docking_Status', value: '0' }],
+            });
+          }
+        }
+      }
+
       // 도킹 아웃 요청 켜 있으면 꺼주고 레디스 삭제
       const dockingOutRequestInfo = await redisUtil.hgetObject<AcsDockingRequestType>(
         RedisKeys.DockingOutRequestBySerialId,

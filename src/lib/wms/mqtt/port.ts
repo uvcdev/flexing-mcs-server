@@ -76,62 +76,62 @@ const portPresenceStatus = async (
   if (!sameWorkOrder) {
     if (separateCallId.length === 4) {
       const fromFacilityName = separateCallId[1];
-      const toFacilityName = separateCallId[2];
-
-      if (toFacilityName !== '') {
-        const infoPendingWorkOrder: PendingWorkOrderAttributes = {
-          callId: callId,
-          fromFacilityName: fromFacilityName,
-          toFacilityName: toFacilityName,
-          type: 'OUT',
-          // type: 'MISSION',
-          isMissionOrder: false,
-          isManualMissionOrder: false,
-          // mode: 'MANUAL',
-          // mode: 'AUTO',
-          callPriority: '99',
-          // ToDO - CALL TYPE 이 없는데 ...
-          // 해당 영역 어떻게 처리 할 지 고민 필요
-          callType: 'NONE',
-          cargoType: '',
-          eqpName: fromFacilityName,
-          portName: toFacilityName,
-          cmdId: cmdId,
-        };
-
-        const toFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
-          RedisKeys.InfoFacilityBySerial,
-          toFacilityName
-        );
-
-        if (toFacilityInfo?.isWmsPort === true) {
-          infoPendingWorkOrder.isManualMissionOrder = true;
-        }
-
-        // pending workOrder 레디스 정보 저장
-        // 트래킹 로그 만들기
-        const initAbnormalTrackingLogParams: InitAbnormalTrackingLogParams = {
-          callId: callId,
-          subject: 'WORK_ORDER_CREATED',
-          detail: 'WORK_ORDER_CREATED',
-          state: 'PROCESSING',
-          processState: 'NORMAL',
-          callQuantity: 1,
-          startFacility: fromFacilityName,
-          destFacility: toFacilityName,
-          message: `WMS manual mission created CALLID(${callId})`,
-          location: 'WMS',
-          callType: infoPendingWorkOrder.cargoType,
-        };
-        await initAbnormalTrackingLogRedis(initAbnormalTrackingLogParams);
-
-        redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder));
-      }
+      let toFacilityName = separateCallId[2] || '';
       // [창고명]_[출발지]__번호
       // 도착지가 없이 Port 배정이 나오는 경우 MCS 알람 발생
       // MCS -> ACS로 알람 전달 예정 이후 사용자 수동 작업 예정 ( 협의 필요 )
-      else if (toFacilityName !== '') {
+      // 260321 -> 도착지가 정해지지 않은 경우에는 WS11 미션 작업으로 생성한다.
+
+      if (toFacilityName === '') {
+        toFacilityName = 'WS11';
       }
+      const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+        callId: callId,
+        fromFacilityName: fromFacilityName,
+        toFacilityName: toFacilityName,
+        type: 'OUT',
+        // type: 'MISSION',
+        isMissionOrder: false,
+        isManualMissionOrder: false,
+        // mode: 'MANUAL',
+        // mode: 'AUTO',
+        callPriority: '99',
+        // ToDO - CALL TYPE 이 없는데 ...
+        // 해당 영역 어떻게 처리 할 지 고민 필요
+        callType: 'NONE',
+        cargoType: '',
+        eqpName: fromFacilityName,
+        portName: toFacilityName,
+        cmdId: cmdId,
+      };
+
+      const toFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        toFacilityName
+      );
+
+      if (toFacilityInfo?.isWmsPort === true) {
+        infoPendingWorkOrder.isManualMissionOrder = true;
+      }
+
+      // pending workOrder 레디스 정보 저장
+      // 트래킹 로그 만들기
+      const initAbnormalTrackingLogParams: InitAbnormalTrackingLogParams = {
+        callId: callId,
+        subject: 'WORK_ORDER_CREATED',
+        detail: 'WORK_ORDER_CREATED',
+        state: 'PROCESSING',
+        processState: 'NORMAL',
+        callQuantity: 1,
+        startFacility: fromFacilityName,
+        destFacility: toFacilityName,
+        message: `WMS manual mission created CALLID(${callId})`,
+        location: 'WMS',
+        callType: infoPendingWorkOrder.cargoType,
+      };
+      await initAbnormalTrackingLogRedis(initAbnormalTrackingLogParams);
+
+      redisUtil.hset(RedisKeys.InfoPendingWorkOrderByCallId, callId, JSON.stringify(infoPendingWorkOrder));
     }
     // CALL INFO 받아서 생성된 port presence status
     else {
@@ -497,10 +497,10 @@ export const wmsPort = (wmsName: string, messageJson: MbsMqttMesaage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
-
-  if (subject === 'PORT_PRESENCE_STATUS') {
+  const trimEndSubject = subject.trimEnd();
+  if (trimEndSubject === 'PORT_PRESENCE_STATUS') {
     portPresenceStatus(wmsName, subject, messageJson, messageBody as PortPresenceStatusBody);
-  } else if (subject === 'ACK_REQ_PORT_STATE_LIST') {
+  } else if (trimEndSubject === 'ACK_REQ_PORT_STATE_LIST') {
     ackReqPortStateList(wmsName, subject, messageJson, messageBody as PortPresenceStateListBody);
   }
 };
