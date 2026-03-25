@@ -911,3 +911,9 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 ## v3.2.3
 - approve v3.2.3
+
+## v3.2.3-ssb
+- docking_status dock_out_permit 허가 시 0으로 변하도록 수정
+
+## v3.2.4
+- approve v3.2.3-ssb
