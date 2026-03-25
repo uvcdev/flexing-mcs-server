@@ -908,3 +908,6 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - BSA 신규 로직
   - BSA 라인에 도킹 시, Docking_Status 값 on / off
+
+## v3.2.3
+- approve v3.2.3
