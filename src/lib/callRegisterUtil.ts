@@ -221,8 +221,8 @@ export const useCallRegisterUtil = () => {
                     // facilityInfo의 isCheckCallType 컬럼이 true 인 경우 콜타입 매칭 체크 필요, false인 경우 콜타입 매칭 체크 필요 없음
                     // facilityInfo.isCheckCallType이 TRUE면 linkedFacilityCallTypeValue === callType도 TRUE여야함
                     // facilityInfo.isCheckCallType이 FALSE면 linkedFacilityCallTypeValue === callType는 TRUE이든 FALSE이든 상관없음
-                    (facilityInfo.isCheckCallType === true && linkedFacilityCallTypeValue === callType) ||
-                    (facilityInfo.isCheckCallType === false)
+                    ((facilityInfo.isCheckCallType === true && linkedFacilityCallTypeValue === callType) ||
+                      (facilityInfo.isCheckCallType === false))
                   ) {
                     // const eqpCallId =
                     //   (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';

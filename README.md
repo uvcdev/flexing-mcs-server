@@ -894,3 +894,10 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 ## v3.2.1
 - approve v3.2.0-ssb
+
+## v3.2.1-ssb
+- 콜타임 매칭 로직 수정 
+
+## v3.2.2
+- approve v3.2.1-ssb
+
