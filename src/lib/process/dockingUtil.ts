@@ -235,6 +235,32 @@ export const useDockingUtil = () => {
         return;
       }
 
+      // BS 공급 부, docking_Status : 0
+      const facilityInfoList = await redisUtil.hgetAllObject<FacilityAttributesDeep>(RedisKeys.InfoFacilityById);
+      if (!facilityInfoList) {
+        logging.ACTION_ERROR({
+          filename: 'dockingUtil.ts-dockingOutStart',
+          error: 'redis에 info_facility_list 데이터가 없습니다.',
+          params: null,
+          result: false,
+        });
+        return;
+      }
+
+      const usageFacilitylist = facilityInfoList.filter(
+        (facility) => dockingOutRequestInfo.SERIAL_ID === facility.serial || dockingOutRequestInfo.SAME_PIO_SERIAL === facility.serial
+      );
+      if (usageFacilitylist && usageFacilitylist.length > 1) {
+        for (const facilityInfo of usageFacilitylist) {
+          if (facilityInfo.type === 'in') {
+            // Docking_Status PLC 쓰기
+            await plcConnectUtil.writeTagValue({
+              targetFacility: facilityInfo.serial || '',
+              tagInfo: [{ tagName: 'Docking_Status', value: '0' }],
+            });
+          }
+        }
+      }
       const dockingOutResponse: AcsDockingRequestResponse = {
         ...dockingOutRequestInfo,
         RESULT: 'True',
@@ -567,6 +593,7 @@ export const useDockingUtil = () => {
             { tagName: 'Dock_Request_Force', value: false },
             { tagName: 'Dock_AMR_Status', value: false },
             { tagName: 'Dock_Signal_Reset', value: true },
+            { tagName: 'Docking_Status', value: '0' },
           ],
         });
         setTimeout(() => {
@@ -613,6 +640,7 @@ export const useDockingUtil = () => {
               { tagName: 'Dock_Request_Charge', value: false },
               { tagName: 'Dock_Request_Force', value: false },
               { tagName: 'Dock_AMR_Status', value: false },
+              { tagName: 'Docking_Status', value: '0' },
             ],
           });
           logToConsoleAndFile(`Successfully initialized before retry docking request`, 'green');

@@ -960,6 +960,7 @@ export const receiveMqtt = (): void => {
                   { tagName: 'Dock_Request_Charge', value: false },
                   { tagName: 'Dock_Request_Force', value: false },
                   { tagName: 'Dock_Out_Request', value: false },
+                  { tagName: 'Docking_Status', value: '0' },
                 ],
               });
               setTimeout(() => {
