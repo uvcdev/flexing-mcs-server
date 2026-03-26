@@ -69,7 +69,10 @@ export const checkMissionOrder = async () => {
         const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
         const callRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request')) as boolean;
         const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
-        const dockEqStatusValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_EQ_Status')) as boolean;
+        // 2026.03.27 기준 ) 설비 쪽 데이터가 아닌, AMR 쪽 데이터로 판단 하는 것으로 수정 요청
+        // 요청자 : 손새진 책임 매니저님, 성기동 책임 매니저님
+        // const dockEqStatusValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_EQ_Status')) as boolean;
+        const dockAmrStatusValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_AMR_Status')) as boolean;
         const callResponseValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Response')) as boolean;
         // const dockDisableValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Disable')) as boolean;
         const dockOutPermitValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Out_Permit')) as boolean;
@@ -81,7 +84,8 @@ export const checkMissionOrder = async () => {
           eqAutoValue === true &&
           callRequestValue === true &&
           // callCountValue > 0 &&
-          dockEqStatusValue === false &&
+          // dockEqStatusValue === false &&
+          dockAmrStatusValue === false &&
           callResponseValue === false &&
           // dockDisableValue === false &&
           dockOutPermitValue === false &&
@@ -121,7 +125,7 @@ export const checkMissionOrder = async () => {
               targetFacility: sortLinkedFacilityInfo.serial || '',
               tagInfo: [
                 { tagName: 'Call_Response', value: true },
-                { tagName: 'Call_Response_Count', value: String(callCountValue) }
+                { tagName: 'Call_Response_Count', value: String(callCountValue) },
               ],
             });
 

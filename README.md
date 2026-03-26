@@ -917,3 +917,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 ## v3.2.4
 - approve v3.2.3-ssb
+
+## v3.2.4-ljk
+- 미션 결정지 로직
+  - Dock_EQ_Status가 아닌 Dock_AMR_Status 값을 보는 것으로 변경
