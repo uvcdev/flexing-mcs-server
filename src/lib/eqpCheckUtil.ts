@@ -288,14 +288,14 @@ export const useEqpCheckUtil = () => {
         case 'Complete':
           console.log(`Changed Complete`, targetTagInfo.EQ_CODE, targetTagInfo.value);
           // await useCallTypeUtil().callTypeResponse(targetTagInfo);
-          await plcConnectUtil.writeTagValue({
-            targetFacility: targetTagInfo.EQ_CODE,
-            tagInfo: [
-              { tagName: 'Dock_Request', value: false },
-              // { tagName: 'Dock_Signal_Reset', value: true }],
-              // { tagName: 'Dock_AMR_Status', value: false },
-            ],
-          });
+          // await plcConnectUtil.writeTagValue({
+          //   targetFacility: targetTagInfo.EQ_CODE,
+          //   tagInfo: [
+          // { tagName: 'Dock_Request', value: false },
+          // { tagName: 'Dock_Signal_Reset', value: true }],
+          // { tagName: 'Dock_AMR_Status', value: false },
+          //   ],
+          // });
 
           // setTimeout(() => {
           // await plcConnectUtil.writeTagValue({
