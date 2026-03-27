@@ -917,3 +917,9 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 ## v3.2.4
 - approve v3.2.3-ssb
+
+## v3.2.4-ssb
+- 도킹요청 중 MCS 재시작 시 도킹요청 사라지는 버그 수정
+
+## v3.2.5
+- approve v3.2.4-ssb
