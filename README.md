@@ -931,3 +931,6 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - Call_Register 로직
   - 먼저 생긴 콜이 먼저 처리될 수 있게 상단에 sort 추가
+
+## v3.2.6
+- approve v3.2.5-ljk
