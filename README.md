@@ -924,6 +924,10 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## v3.2.5
 - approve v3.2.4-ssb
 
-## v3.2.4-ljk
+## v3.2.5-ljk
 - 미션 결정지 로직
   - Dock_EQ_Status가 아닌 Dock_AMR_Status 값을 보는 것으로 변경
+  - mcsModeValue => mcs상 수동이면 제외
+
+- Call_Register 로직
+  - 먼저 생긴 콜이 먼저 처리될 수 있게 상단에 sort 추가

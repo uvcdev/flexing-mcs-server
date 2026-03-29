@@ -52,8 +52,11 @@ export const useCallRegisterUtil = () => {
       const callRegisterList = await redisUtil.hgetAllObject<EqpCallStats>(RedisKeys.InfoCallRequestOnBySerial);
       if (!callRegisterList) return;
 
-      for (let i = 0, length = callRegisterList.length; i < length; i++) {
-        const targetTagInfo = callRegisterList[i];
+      const sortedCallRegisterList = callRegisterList.sort(
+        (a, b) => new Date(a.CREATE_TIME ?? 0).getTime() - new Date(b.CREATE_TIME ?? 0).getTime()
+      );
+      for (let i = 0, length = sortedCallRegisterList.length; i < length; i++) {
+        const targetTagInfo = sortedCallRegisterList[i];
         const targetCode = targetTagInfo.EQ_CODE;
         const eqpCallId = targetTagInfo.CALL_ID || '';
         if (!targetCode) continue; // 코드 없으면 처리 불가
@@ -222,7 +225,7 @@ export const useCallRegisterUtil = () => {
                     // facilityInfo.isCheckCallType이 TRUE면 linkedFacilityCallTypeValue === callType도 TRUE여야함
                     // facilityInfo.isCheckCallType이 FALSE면 linkedFacilityCallTypeValue === callType는 TRUE이든 FALSE이든 상관없음
                     ((facilityInfo.isCheckCallType === true && linkedFacilityCallTypeValue === callType) ||
-                      (facilityInfo.isCheckCallType === false))
+                      facilityInfo.isCheckCallType === false)
                   ) {
                     // const eqpCallId =
                     //   (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
@@ -394,7 +397,6 @@ export const useCallRegisterUtil = () => {
                       }
                     }
 
-                    // eslint-disable-next-line prettier/prettier
                     const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
                     {
                       count: workOrderListInfo.count,

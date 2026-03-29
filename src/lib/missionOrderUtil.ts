@@ -66,6 +66,8 @@ export const checkMissionOrder = async () => {
 
         const targetCode = sortLinkedFacilityInfo?.serial;
         if (!targetCode) continue;
+        // MCS 상, 수동 상태면 안보내야함
+        const mcsModeValue = sortLinkedFacilityInfo?.mode || 'auto';
         const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
         const callRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request')) as boolean;
         const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
@@ -81,6 +83,7 @@ export const checkMissionOrder = async () => {
         const CallTypeValue = await makeCallType(targetCode);
         // 콜 카운트 없어도 되나욤 ?
         if (
+          mcsModeValue === 'auto' &&
           eqAutoValue === true &&
           callRequestValue === true &&
           // callCountValue > 0 &&
