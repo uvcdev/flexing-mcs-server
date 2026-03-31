@@ -781,33 +781,41 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
 - approve v3.0.5-ssb
 
 ## v3.1.0-ljk
+
 - 취소 작업 이후 후속작업의 트래킹 로그 미기록 문제 해결
+
   - Dock Req / Permit / Complete
 
 - ACS 취소 작업 이후 설비값 반영
-  - 트리거 설비의 설비 값 
+  - 트리거 설비의 설비 값
 
 ## v3.1.1
+
 - approve v3.1.0-ljk
 - Update response workOrder cancel - Facility
 - Update Docking trackingLog
 
 ## v3.1.1-ljk
+
 - 미션결정지에서 결정지 선택 시, 트래킹 로그 추가
   - MISSION_DECIDED
 
 ## v3.1.2
+
 - approve v3.1.1-ljk
 - remove DockDisable - missionOrderUtil.ts
 
 ## v3.1.2-ssb
+
 - 미션 결정지에서 To 들어갈 때, Count Response 쓰도록 수정
 - modified trackinglog.EQP_CALL_ID in docking complete - dockingUtil.ts
 
 ## v3.1.3
+
 - approve v3.1.2-ssb
 
 ## v3.1.3-ssb
+
 - PLC 데이터 변경이력 수정
   - user_id 컬럼 추가
   ```sql
@@ -815,6 +823,7 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
   ```
 
 ## v3.1.4
+
 - approve 3.1.3-ssb
 - update
   - readme.md
@@ -822,42 +831,52 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
   - callCancelUtil - fix call cancel response
 
 ## v3.1.4-ljk
+
 - ACS 작업 취소 시, WMS Response 제어 로직 수정
 - ACS 수동 작업 취소 시, 설비 상태 반영 로직 수정
 
 ## v3.1.5
+
 - approve 3.1.4-ljk
 
 ## v3.1.5-mbs
+
 - delete (write 'call_response' process) when 'AMR_ARRIVED'
 - modified (callType -> cargoType) in callInfo Cargo_Type when call create
 
 ## v3.1.5-ssb
+
 - 사용하지 않는 redis 주석처리
   - RedisKeys.InfoChangedTagById
 
 ## v3.1.6
+
 - approve 3.1.5-mbs
-- approve 3.1.5-ssb  
+- approve 3.1.5-ssb
 
 ## v3.1.6-ljk
+
 - sp-bs 연결 로직 수정
 
 ## v3.1.7
+
 - approve 3.1.6-ljk
 
 ## v3.1.7-ljk
+
 - 도커 원격 배포 설정
 
 ## v3.1.7-ssb
+
 - 도킹요청 전 도킹신호 초기화(공급/회수 동일 포트만 적용)
 
 ## v3.1.8
-- approve 3.1.7-ljk
-- approve 3.1.7-ssb  
 
+- approve 3.1.7-ljk
+- approve 3.1.7-ssb
 
 ## v3.18-ljk
+
 - sp-bs 연결로직 수정
   - wms 관련 정보 삭제 및 CALL_CANCEL
 - 알람 관리 관련 정보 수정
@@ -868,41 +887,53 @@ CREATE INDEX plc_data_change_history_logs_ts_idx
   - 창고 알람 등록 중 error 등급만 mqtt 호출하도록 변경
 
 ## v3.1.9
+
 - approve 3.1.8-ljk
 
 ## v3.1.11
+
 - sync Images
 
 ## v3.1.11-ssb
+
 - 콜 생성 시 콜타입 체크 주석처리(창고 미운영)
 - 콜타입 버그 수정
 - 미션오더 검사 시 조건 주정
 
 ## v3.2.0
+
 - approve 3.1.11-ssb
 
 ## v3.2.0-ssb
+
 - 콜 타입 매칭 설비 여부 기능 추가
+
 ```sql
 ALTER TABLE public.facilities
 ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ```
+
 - PLC 장치 off시 모니터링 항목 제외
-- callType 공백 허용 
+- callType 공백 허용
 - fixData 버그 수정
 - 수동 to 작업 시 콜응답 데이터 초기화 로직 수정
 
 ## v3.2.1
+
 - approve v3.2.0-ssb
 
 ## v3.2.1-ssb
-- 콜타임 매칭 로직 수정 
+
+- 콜타임 매칭 로직 수정
 
 ## v3.2.2
+
 - approve v3.2.1-ssb
 
 ## v3.2.2-ljk
+
 - WMS 로직
+
   - wms 동기화 subject 문제 해결
   - 창고 수동 작업 생성 시, 도착지 정보가 없는 경우에는 WS11 미션 작업으로 재고순환
 
@@ -910,22 +941,29 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - BSA 라인에 도킹 시, Docking_Status 값 on / off
 
 ## v3.2.3
+
 - approve v3.2.3
 
 ## v3.2.3-ssb
+
 - docking_status dock_out_permit 허가 시 0으로 변하도록 수정
 
 ## v3.2.4
+
 - approve v3.2.3-ssb
 
 ## v3.2.4-ssb
+
 - 도킹요청 중 MCS 재시작 시 도킹요청 사라지는 버그 수정
 
 ## v3.2.5
+
 - approve v3.2.4-ssb
 
 ## v3.2.5-ljk
+
 - 미션 결정지 로직
+
   - Dock_EQ_Status가 아닌 Dock_AMR_Status 값을 보는 것으로 변경
   - mcsModeValue => mcs상 수동이면 제외
 
@@ -933,4 +971,9 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - 먼저 생긴 콜이 먼저 처리될 수 있게 상단에 sort 추가
 
 ## v3.2.6
+
 - approve v3.2.5-ljk
+
+## v3.2.6-ssb
+
+- SC,SP,BS 배출 콜취소 로직 활성화
