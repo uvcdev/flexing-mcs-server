@@ -304,7 +304,7 @@ export const useCallCancelUtil = () => {
         if (linkedEqpId && facilityInfo.type === 'in') {
           await initResponsePlc(linkedEqpId);
         } else if (!linkedEqpId && params.IS_CALLER) {
-          await initResponsePlc(eqpId);
+          // await initResponsePlc(eqpId);
         } else {
           logging.ACTION_ERROR({
             filename: `callCancelUtil.ts - processCancelResponseFromAcs`,
@@ -661,12 +661,12 @@ export const useCallCancelUtil = () => {
           const notBeforeRequestWorkOrderCount = notBeforeRequestWorkOrderList.length;
 
           const removeBeforeRequestRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-          {
-            facilitySerial: targetCode,
-            facilityInfo: facilityInfo,
-            count: notBeforeRequestWorkOrderCount,
-            workOrderList: notBeforeRequestWorkOrderList,
-          };
+            {
+              facilitySerial: targetCode,
+              facilityInfo: facilityInfo,
+              count: notBeforeRequestWorkOrderCount,
+              workOrderList: notBeforeRequestWorkOrderList,
+            };
 
           redisUtil.hset(
             RedisKeys.RecentWorkOrderListByFacilitySerial,
@@ -1143,7 +1143,7 @@ export const useCallCancelUtil = () => {
       } else {
         logToConsoleAndFile(`${targetCode}에 진행 중인 작업지시 정보가 있습니다.`, 'green');
         logToConsoleAndFile(JSON.stringify(workOrderList, null, 2), 'green');
-        logging.KEPWARE_DEBUG({
+        logging.KEPWARE_LOG({
           action: 'TAG_READ',
           tag: `${targetCode}에 진행 중인 작업지시 정보`,
           value: JSON.parse(JSON.stringify(workOrderList)),
@@ -1220,14 +1220,15 @@ export const useCallCancelUtil = () => {
           } else {
             // OUT 타입: toFacility 정보 조회 및 초기화
             // 260209 설비측 수정으로 작화에서 설비취소가 사라짐으로 인해 out타입으로 들어올수 없음.
+            // 260331 모비스 측 요청으로 배출취소가 들어올 수 있음.
             // 여기로 들어올수 없기에 들어오면 에러처리해서 로그 확인
             logging.ACTION_ERROR({
               filename: `callCancelUtil.ts - callCancel`,
-              error: `${targetCode} 260209 설비측 수정으로 작화에서 설비취소가 사라짐으로 인해 out타입으로 들어올수 없음.`,
+              error: `${targetCode} 260209 설비측 수정으로 작화에서 설비취소가 사라짐으로 인해 out타입으로 들어올수 없음. 260331 모비스 측 요청으로 배출취소가 들어올 수 있음.`,
               params: null,
               result: true,
             });
-            continue;
+            // continue;
             // const toFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
             //   RedisKeys.InfoFacilityById,
             //   workOrderInfo.toFacilityId?.toString() || ''
