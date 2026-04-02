@@ -282,6 +282,20 @@ export const useKepServerUtil = () => {
     return `ns=2;s=${targetTag.CHANNEL}.${targetTag.DEVICE}._System._Error`;
   };
 
+  const isDeviceError = async (targetCode: string): Promise<boolean> => {
+    try {
+      let session = opcuaUtil.session;
+      if (!session) return true;
+      const nodeId = getDeviceSystemErrorNodeId(targetCode);
+      if (!nodeId) return true;
+      const dataValues = await session.read([{ nodeId, attributeId: AttributeIds.Value }]);
+      if (dataValues[0].statusCode.isBad()) return true;
+      return Boolean(dataValues[0].value.value);
+    } catch (error) {
+      return true;
+    }
+  };
+
   const startCooldownWorker = () => {
     if (isCooldownWorkerStarted) return;
     isCooldownWorkerStarted = true;
@@ -896,5 +910,6 @@ export const useKepServerUtil = () => {
     findTagInfo,
     getTargetKey,
     updateTagMapValues,
+    isDeviceError,
   };
 };

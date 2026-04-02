@@ -5,7 +5,7 @@ import {
   RecentWorkOrderListByFacilitySerialAttributes,
 } from '../models/operation/workOrder';
 import { EqpCallStats, useCallRegisterUtil } from './callRegisterUtil';
-import { makeCallType, TagValue } from './kepServerUtil';
+import { makeCallType, TagValue, useKepServerUtil } from './kepServerUtil';
 import { initTrackingLogRedis } from './process/trackingLog';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from './redisUtil';
 import { timestampToDate } from './usefullToolUtil';
@@ -14,6 +14,7 @@ import { logging } from './logging';
 
 const redisUtil = useRedisUtil();
 const plcConnectUtil = usePlcConnectUtil();
+const kepServerUtil = useKepServerUtil();
 // Call Request를 보낼 지, 말 지 판단하는 함수
 export const checkCallRequestCreate = async () => {
   // recentCallCountByFacilitySerial : 설비의 CallRequest, Multi1, Multi2 신호 값 on 여부 판단 레디스
@@ -33,6 +34,8 @@ export const checkCallRequestCreate = async () => {
       // 에러처리
       return;
     }
+    const isError = await kepServerUtil.isDeviceError(facilitySerial);
+    if (isError) continue;
     const callCancelRequestValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Cancel_Request')) as boolean;
     if (callCancelRequestValue) {
       logging.ACTION_ERROR({
