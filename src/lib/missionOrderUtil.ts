@@ -1,5 +1,5 @@
 import { FacilityAttributes } from '../models/operation/facility';
-import { makeCallType } from './kepServerUtil';
+import { makeCallType, useKepServerUtil } from './kepServerUtil';
 import { sendMqtt } from './mqttUtil';
 import { routeMissionOrderMqttMessage } from './process/commonUtils';
 import { MqttBranchInfoDataFromAcs } from './process/wmsBranch';
@@ -12,6 +12,7 @@ import { editTrackingLogRedis } from './process/trackingLog';
 export const checkMissionOrder = async () => {
   const redisUtil = useRedisUtil();
   const plcConnectUtil = usePlcConnectUtil();
+  const kepServerUtil = useKepServerUtil();
   const missionOrderList =
     (await redisUtil.hgetAllObject<MqttBranchInfoDataFromAcs>(RedisKeys.InfoMissionOrderByWorkOrderCode)) || [];
 
@@ -68,6 +69,10 @@ export const checkMissionOrder = async () => {
         if (!targetCode) continue;
         // MCS 상, 수동 상태면 안보내야함
         const mcsModeValue = sortLinkedFacilityInfo?.mode || 'auto';
+
+        const isError = await kepServerUtil.isDeviceError(targetCode);
+        if (isError) continue;
+
         const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
         const callRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request')) as boolean;
         const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;

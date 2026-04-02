@@ -78,6 +78,10 @@ export const useCallRegisterUtil = () => {
         // }
         // if (nextCallInfo === true) continue;
 
+        // PLC offline 체크 - _System._Error 태그로 설비 에러 여부 확인
+        const isError = await kepServerUtil.isDeviceError(targetCode);
+        if (isError) continue;
+
         // 필요한 태그 값들 가져오기
         const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
         const callPriorityValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Priority')) as boolean;
@@ -193,6 +197,9 @@ export const useCallRegisterUtil = () => {
                   if (!linkedFacilityInfo?.serial || linkedFacilityInfo?.mode === 'manual') {
                     continue;
                   }
+                  // PLC offline 체크 - _System._Error 태그로 설비 에러 여부 확인
+                  const isError = await kepServerUtil.isDeviceError(linkedFacilityInfo.serial);
+                  if (isError) continue;
 
                   const linkedFacilityCallRequestValue = (await plcConnectUtil.getTagValue(
                     linkedFacilityInfo.serial,
@@ -398,15 +405,15 @@ export const useCallRegisterUtil = () => {
                     }
 
                     const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-                    {
-                      count: workOrderListInfo.count,
-                      // eslint-disable-next-line prettier/prettier
-                      workOrderList: workOrderListInfo.workOrderList,
-                      // eslint-disable-next-line prettier/prettier
-                      facilitySerial: targetCode,
-                      // eslint-disable-next-line prettier/prettier
-                      facilityInfo: facilityInfo,
-                    };
+                      {
+                        count: workOrderListInfo.count,
+                        // eslint-disable-next-line prettier/prettier
+                        workOrderList: workOrderListInfo.workOrderList,
+                        // eslint-disable-next-line prettier/prettier
+                        facilitySerial: targetCode,
+                        // eslint-disable-next-line prettier/prettier
+                        facilityInfo: facilityInfo,
+                      };
 
                     redisUtil.hset(
                       RedisKeys.RecentWorkOrderListByFacilitySerial,
