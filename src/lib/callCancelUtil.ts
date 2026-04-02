@@ -286,6 +286,7 @@ export const useCallCancelUtil = () => {
           if (linkedEqpId) {
             await initResponsePlc(linkedEqpId);
           }
+          await writeTrackingLogForCancel(eqpId, params.CALL_ID);
         } else {
           // 링크드일 경우
           // 콜 취소 응답 쓰기(링크드)
