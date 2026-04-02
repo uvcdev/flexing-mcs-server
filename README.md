@@ -977,3 +977,9 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## v3.2.6-ssb
 
 - SC,SP,BS 배출 콜취소 로직 활성화
+- 배출부 일반 취소타입 트래킹 로그 추가
+- kepware 데이터 읽기 전 offline PLC 체크
+
+## v3.2.7
+
+- approve v3.2.6-ssb
