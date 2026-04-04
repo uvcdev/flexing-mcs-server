@@ -1,6 +1,7 @@
 import { WmsCommandSetting } from '../../models/common/setting';
 import { EqpCallStats } from '../callRemoveUtil';
 import { generateUUIDNode } from '../hashUtil';
+import { makeCallType } from '../kepServerUtil';
 import { logging } from '../logging';
 import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from '../mqttUtil';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
@@ -141,6 +142,14 @@ export const checkAbortedCommandForRetry = async () => {
     if (isCurrentTimeFasterThanAnyMinutesFromTzString(abortedCommandForRetryInfo.createdTime, retryWaitTimeMinutes)) {
       const abortedCommandForRetryKey = abortedCommandForRetryInfo.subjectCmdId;
       const newMqttHeader = makeMbsMqttHeader(abortedCommandForRetryInfo.messageSubject);
+      // 260404 - abort Call 재전송 시, - calltype 변경
+      const newMqttBody = abortedCommandForRetryInfo.message.body;
+      if (newMqttHeader.subject.includes('CALL_INFO')) {
+        const callType = await makeCallType(newMqttBody.Caller || '');
+
+        newMqttBody.Call_Type = callType;
+        newMqttBody.Cargo_Type = callType;
+      }
       // 해당 내용 MQTT 재전송
       sendMbsMqtt(
         abortedCommandForRetryInfo.messageTopic,

@@ -320,6 +320,8 @@ export interface TrackingLogRedisUpdateParams {
   missionDestination?: TrackingLogAttributes['missionDestination'];
   processState?: TrackingLogAttributes['processState'];
   location?: string;
+  // 26.04.04
+  callType?: TrackingLogAttributes['callType'];
 }
 /* 인터페이스 정의 끝 */
 
