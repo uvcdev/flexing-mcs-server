@@ -175,7 +175,11 @@ export const useCallRegisterUtil = () => {
               await editTrackingLogRedis(trackingLogUpdateMissionData, undefined, 'SUCCESS', callInfo.Caller);
             } else {
               // ======= to 작업지시 =======
-              if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 0) {
+              if (
+                facilityInfo?.linkedEqpIds &&
+                facilityInfo?.linkedEqpIds.length > 0 &&
+                facilityInfo.system === 'EQP'
+              ) {
                 // 설비 - 설비로직
                 const linkedEqpList = await Promise.all(
                   facilityInfo.linkedEqpIds.map((id) =>
@@ -405,15 +409,15 @@ export const useCallRegisterUtil = () => {
                     }
 
                     const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-                      {
-                        count: workOrderListInfo.count,
-                        // eslint-disable-next-line prettier/prettier
-                        workOrderList: workOrderListInfo.workOrderList,
-                        // eslint-disable-next-line prettier/prettier
-                        facilitySerial: targetCode,
-                        // eslint-disable-next-line prettier/prettier
-                        facilityInfo: facilityInfo,
-                      };
+                    {
+                      count: workOrderListInfo.count,
+                      // eslint-disable-next-line prettier/prettier
+                      workOrderList: workOrderListInfo.workOrderList,
+                      // eslint-disable-next-line prettier/prettier
+                      facilitySerial: targetCode,
+                      // eslint-disable-next-line prettier/prettier
+                      facilityInfo: facilityInfo,
+                    };
 
                     redisUtil.hset(
                       RedisKeys.RecentWorkOrderListByFacilitySerial,

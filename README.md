@@ -988,3 +988,6 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 - SP-BS 로직 수정
   - SP/BS 공급에 linked_EQP 수정
   - SP/BS 취소 유형 변경
+
+- call register util
+  - 작업 생성 시, wms에 linkedEQP 있어도 가능하게 수정
