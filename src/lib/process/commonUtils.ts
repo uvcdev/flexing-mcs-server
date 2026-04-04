@@ -117,8 +117,14 @@ export const fixEqpData = async () => {
     }
 
     // Call_Cancel_Response 데이터 보정
-    const callCancelRequestValue = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Cancel_Request') === 'true' ? true : false;
-    const callCancelResponseValue = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Cancel_Response') === 'true' ? true : false;
+    const callCancelRequestValue =
+      (await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Cancel_Request')) === 'true'
+        ? true
+        : false;
+    const callCancelResponseValue =
+      (await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Cancel_Response')) === 'true'
+        ? true
+        : false;
     if (callCancelRequestValue === false && callCancelResponseValue === true) {
       await plcConnectUtil.writeTagValue({
         targetFacility: facilitySerial,
@@ -127,10 +133,22 @@ export const fixEqpData = async () => {
     }
 
     // Call_Response_Multi_1 , Call_Response_Multi_2 데이터 보정
-    const callRequestMulti1Value = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Request_Multi_1') === 'true' ? true : false;
-    const callRequestMulti2Value = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Request_Multi_2') === 'true' ? true : false;
-    const callResponseMulti1Value = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Response_Multi_1') === 'true' ? true : false;
-    const callResponseMulti2Value = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Response_Multi_2') === 'true' ? true : false;
+    const callRequestMulti1Value =
+      (await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Request_Multi_1')) === 'true'
+        ? true
+        : false;
+    const callRequestMulti2Value =
+      (await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Request_Multi_2')) === 'true'
+        ? true
+        : false;
+    const callResponseMulti1Value =
+      (await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Response_Multi_1')) === 'true'
+        ? true
+        : false;
+    const callResponseMulti2Value =
+      (await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(facilitySerial, 'Call_Response_Multi_2')) === 'true'
+        ? true
+        : false;
 
     // REQ 가 꺼져있는데 RES가 켜져있으면 RES를 끈다.
     // multi 1
@@ -526,7 +544,7 @@ export const checkSpBsWorkType = async (messageJson: any) => {
         id: spInfacilityInfo.id,
         system: 'WMS',
         isMissionOrderCapable: false,
-        linkedEqpIds: wcOutFacilityIds,
+        linkedEqpIds: [],
         cancelType: 'EQP_TO_WMS',
         isActiveCallTrigger: true,
       };
@@ -544,7 +562,7 @@ export const checkSpBsWorkType = async (messageJson: any) => {
         id: spOutfacilityInfo.id,
         system: 'WMS',
         linkedEqpIds: wsInFacilityIds,
-        cancelType: 'NON_CANCELLABLE',
+        cancelType: 'EQP_TO_EQP_NO_MISSION',
         isActiveCallTrigger: true,
         isMissionOrderCapable: true,
       };
@@ -562,7 +580,7 @@ export const checkSpBsWorkType = async (messageJson: any) => {
       const facilityUpdateParams: FacilityUpdateParams = {
         id: bsInfacilityInfo.id,
         system: 'WMS',
-        linkedEqpIds: wsOutFacilityIds,
+        linkedEqpIds: [],
         cancelType: 'EQP_TO_WMS',
         isActiveCallTrigger: true,
       };
@@ -581,7 +599,7 @@ export const checkSpBsWorkType = async (messageJson: any) => {
         id: bsOutfacilityInfo.id,
         system: 'WMS',
         linkedEqpIds: wcInFacilityIds,
-        cancelType: 'NON_CANCELLABLE',
+        cancelType: 'EQP_TO_EQP_NO_MISSION',
         isActiveCallTrigger: true,
         isMissionOrderCapable: true,
       };

@@ -983,3 +983,8 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## v3.2.7
 
 - approve v3.2.6-ssb
+
+## v3.2.7-ljk
+- SP-BS 로직 수정
+  - SP/BS 공급에 linked_EQP 수정
+  - SP/BS 취소 유형 변경
