@@ -993,3 +993,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - 작업 생성 시, wms에 linkedEQP 있어도 가능하게 수정
 
 - abort 재시도 시, callType 재기입
+
+## v3.2.9
+
+- approve v3.2.8-ljk
