@@ -88,6 +88,8 @@ export const useCallRegisterUtil = () => {
         const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
         const callRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request')) as boolean;
         const callType = targetTagInfo.Call_Type;
+        const newCallType = await makeCallType(targetCode);
+        const newCargoType = newCallType;
         const cargoType = targetTagInfo.Cargo_Type;
         const facilityInfo = await redisUtil.hgetObject<FacilityAttributesDeep>(
           RedisKeys.InfoFacilityBySerial,
@@ -103,8 +105,8 @@ export const useCallRegisterUtil = () => {
           const callInfo: EqpCallStats = {
             EQP_CALL_ID: String(callCountValue), // 뒤의 4자리
             CALL_ID: '', // 작업지시코드
-            Call_Type: callType || 'SKID',
-            Cargo_Type: cargoType || '',
+            Call_Type: newCallType || 'SKID',
+            Cargo_Type: newCargoType || '',
             Caller: targetCode, // 앞의 4자리
             Call_Quantity: 1,
             Call_Priority: callPriorityValue ? '99' : '1',
@@ -127,8 +129,8 @@ export const useCallRegisterUtil = () => {
                 type: 'MISSION',
                 isMissionOrder: true,
                 callPriority: callInfo.Call_Priority || '',
-                callType: callInfo.Call_Type || 'SKID',
-                cargoType: callInfo.Cargo_Type || '',
+                callType: newCallType || 'SKID',
+                cargoType: newCallType || '',
                 portName: null,
                 eqpName: callInfo.Caller,
                 triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
@@ -235,7 +237,7 @@ export const useCallRegisterUtil = () => {
                     // facilityInfo의 isCheckCallType 컬럼이 true 인 경우 콜타입 매칭 체크 필요, false인 경우 콜타입 매칭 체크 필요 없음
                     // facilityInfo.isCheckCallType이 TRUE면 linkedFacilityCallTypeValue === callType도 TRUE여야함
                     // facilityInfo.isCheckCallType이 FALSE면 linkedFacilityCallTypeValue === callType는 TRUE이든 FALSE이든 상관없음
-                    ((facilityInfo.isCheckCallType === true && linkedFacilityCallTypeValue === callType) ||
+                    ((facilityInfo.isCheckCallType === true && linkedFacilityCallTypeValue === newCallType) ||
                       facilityInfo.isCheckCallType === false)
                   ) {
                     // const eqpCallId =
@@ -249,8 +251,8 @@ export const useCallRegisterUtil = () => {
                       type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
                       isMissionOrder: false,
                       callPriority: callInfo.Call_Priority,
-                      callType: callInfo.Call_Type || 'SKID',
-                      cargoType: callInfo.Cargo_Type || '',
+                      callType: newCallType || 'SKID',
+                      cargoType: newCargoType || '',
                       fromFacilityName:
                         (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
                       toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,
@@ -325,7 +327,7 @@ export const useCallRegisterUtil = () => {
                       'SUCCESS',
                       linkedFacilityInfo?.serial?.toString()
                     );
-                    console.log(`Call request sent to EQP from EQP. TYPE: ${callType}, CallID: ${callCountValue}`);
+                    console.log(`Call request sent to EQP from EQP. TYPE: ${newCallType}, CallID: ${callCountValue}`);
                     break;
                   }
                   /////////// 250916 remove remain
@@ -388,6 +390,9 @@ export const useCallRegisterUtil = () => {
                   // await initTrackingLogRedis(callInfo);
                   const wmsCallInfoString = JSON.stringify(callInfo);
 
+                  if (newCallType === '') {
+                    continue;
+                  }
                   await redisUtil.hset(RedisKeys.InfoInCallByCallId, eqpCallId, wmsCallInfoString);
                   // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
                   await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
@@ -409,15 +414,15 @@ export const useCallRegisterUtil = () => {
                     }
 
                     const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-                    {
-                      count: workOrderListInfo.count,
-                      // eslint-disable-next-line prettier/prettier
-                      workOrderList: workOrderListInfo.workOrderList,
-                      // eslint-disable-next-line prettier/prettier
-                      facilitySerial: targetCode,
-                      // eslint-disable-next-line prettier/prettier
-                      facilityInfo: facilityInfo,
-                    };
+                      {
+                        count: workOrderListInfo.count,
+                        // eslint-disable-next-line prettier/prettier
+                        workOrderList: workOrderListInfo.workOrderList,
+                        // eslint-disable-next-line prettier/prettier
+                        facilitySerial: targetCode,
+                        // eslint-disable-next-line prettier/prettier
+                        facilityInfo: facilityInfo,
+                      };
 
                     redisUtil.hset(
                       RedisKeys.RecentWorkOrderListByFacilitySerial,
