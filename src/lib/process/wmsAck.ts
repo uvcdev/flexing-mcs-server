@@ -335,6 +335,30 @@ export const checkRemainingAckCommand = async () => {
         remainingAckCommand.message.body,
         remainingAckCommand.systemName
       );
+
+      // tracking log 기록
+      if (remainingAckCommand.message.header.subject.includes('CALL_INFO')) {
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: remainingAckCommand.message.body.Call_ID,
+          subject: 'CALL_INFO',
+          detail: 'CALL_INFO',
+          state: 'PROCESSING',
+          startFacility: remainingAckCommand.message.body.Caller,
+          destFacility: null,
+          transferId: null,
+          assignedRobot: null,
+          value: null,
+          description: `[ACK Retry] Facility ${remainingAckCommand.message.body?.Caller} - Call_ID: ${remainingAckCommand.message.body?.Call_ID}`,
+          plcName: null,
+          portName: null,
+        };
+        await editTrackingLogRedis(
+          trackingLogUpdateData,
+          remainingAckCommand.message.body.Call_ID.slice(-4),
+          'SUCCESS',
+          remainingAckCommand.message.body.Caller
+        );
+      }
     }
   }
 };
@@ -376,7 +400,30 @@ export const checkIntervalRemainingAckCommand = async () => {
         intervalAckCommand.message.body,
         intervalAckCommand.systemName
       );
-
+      if (intervalAckCommand.message.header.subject.includes('CALL_INFO')) {
+        const trackingLogSubject = 'CALL_INFO';
+        const trackingLogDetail = 'CALL_INFO';
+        const trackingLogState = 'PROCESSING';
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: intervalAckCommand.message.body.Call_ID,
+          subject: trackingLogSubject,
+          detail: trackingLogDetail,
+          state: trackingLogState,
+          startFacility: null,
+          destFacility: intervalAckCommand.message.body.Caller,
+          assignedRobot: null,
+          value: null,
+          description: `[ACK Retry] Facility ${intervalAckCommand.message.body?.Caller} - Call_ID: ${intervalAckCommand.message.body?.Call_ID}`,
+          plcName: null,
+          portName: null,
+        };
+        await editTrackingLogRedis(
+          trackingLogUpdateData,
+          intervalAckCommand.message.body.Call_ID.slice(-4),
+          'SUCCESS',
+          intervalAckCommand.message.body.Caller
+        );
+      }
       deleteIntervalAckCommand(intervalAckCommandKey);
     }
   }

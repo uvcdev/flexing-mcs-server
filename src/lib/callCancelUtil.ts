@@ -662,12 +662,12 @@ export const useCallCancelUtil = () => {
           const notBeforeRequestWorkOrderCount = notBeforeRequestWorkOrderList.length;
 
           const removeBeforeRequestRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-            {
-              facilitySerial: targetCode,
-              facilityInfo: facilityInfo,
-              count: notBeforeRequestWorkOrderCount,
-              workOrderList: notBeforeRequestWorkOrderList,
-            };
+          {
+            facilitySerial: targetCode,
+            facilityInfo: facilityInfo,
+            count: notBeforeRequestWorkOrderCount,
+            workOrderList: notBeforeRequestWorkOrderList,
+          };
 
           redisUtil.hset(
             RedisKeys.RecentWorkOrderListByFacilitySerial,
@@ -931,7 +931,7 @@ export const useCallCancelUtil = () => {
                 }
               }
 
-              redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId);
+              redisUtil.hdel(RedisKeys.AbortedCommandForRetryBySubjectCmdId, subjectCmdId);
               // redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
               removableCmdIds.push(cmdId);
             }

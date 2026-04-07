@@ -1,4 +1,5 @@
 import { WmsCommandSetting } from '../../models/common/setting';
+import { TrackingLogRedisUpdateParams } from '../../models/common/trackingLog';
 import { EqpCallStats } from '../callRemoveUtil';
 import { generateUUIDNode } from '../hashUtil';
 import { makeCallType } from '../kepServerUtil';
@@ -11,6 +12,7 @@ import {
   isCurrentTimeFasterThanAnyMinutesFromTzString,
 } from '../usefullToolUtil';
 import { InfoAckInCallByCallIdBody } from '../wms/mqtt/call';
+import { editTrackingLogRedis } from './trackingLog';
 import { setRemainingAckCommand } from './wmsAck';
 import { CallInfoBody } from './wmsCallInfo';
 
@@ -162,17 +164,40 @@ export const checkAbortedCommandForRetry = async () => {
         body: abortedCommandForRetryInfo.message.body,
       });
       if (newMqttHeader.subject.includes('CALL_INFO')) {
-        const recentCallInfoTaskByCmdIdParams: RecentCallInfo = {
-          cmdId: abortedCommandForRetryInfo.subjectCmdId,
-          callId: abortedCommandForRetryInfo.message.body.Call_ID,
-          caller: abortedCommandForRetryInfo.message.body.Caller,
-          port: null,
-          callType: abortedCommandForRetryInfo.message.body.Call_Type,
-          callPriority: abortedCommandForRetryInfo.message.body.Call_Priority,
-          callQuantity: abortedCommandForRetryInfo.message.body.Call_Quantity,
-          transferId: null,
-        };
+        // const recentCallInfoTaskByCmdIdParams: RecentCallInfo = {
+        //   cmdId: abortedCommandForRetryInfo.subjectCmdId,
+        //   callId: abortedCommandForRetryInfo.message.body.Call_ID,
+        //   caller: abortedCommandForRetryInfo.message.body.Caller,
+        //   port: null,
+        //   callType: abortedCommandForRetryInfo.message.body.Call_Type,
+        //   callPriority: abortedCommandForRetryInfo.message.body.Call_Priority,
+        //   callQuantity: abortedCommandForRetryInfo.message.body.Call_Quantity,
+        //   transferId: null,
+        // };
         // setRecentCallInfoTaskByCmdId(recentCallInfoTaskByCmdIdParams);
+
+        const trackingLogSubject = 'CALL_INFO';
+        const trackingLogDetail = 'CALL_INFO';
+        const trackingLogState = 'PROCESSING';
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: abortedCommandForRetryInfo.message.body.Call_ID,
+          subject: trackingLogSubject,
+          detail: trackingLogDetail,
+          state: trackingLogState,
+          startFacility: null,
+          destFacility: abortedCommandForRetryInfo.message.body.Caller,
+          assignedRobot: null,
+          value: null,
+          description: `[Abort Retry] Facility ${abortedCommandForRetryInfo.message.body?.Caller} - Call_ID: ${abortedCommandForRetryInfo.message.body?.Call_ID}`,
+          plcName: null,
+          portName: null,
+        };
+        await editTrackingLogRedis(
+          trackingLogUpdateData,
+          abortedCommandForRetryInfo.message.body.Call_ID.slice(-4),
+          'SUCCESS',
+          abortedCommandForRetryInfo.message.body.Caller
+        );
       }
       // 해당 내용 REDIS 삭제
       deleteAbortedCommandForRetry(abortedCommandForRetryKey);

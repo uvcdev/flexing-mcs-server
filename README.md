@@ -1005,3 +1005,11 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - Dock Detach 시 Dock_Request false 로 바꾸는 로직 주석처리
 - callRegister 로직에서 콜타입 새로 읽고 비교하도록 수정
+
+
+## v3.2.9-ljk
+- Call Cancel
+  - WMS ABORT 콜 취소 로직 개선
+
+- Tracking Log
+  - Abort 재시도 및 ACK 재시도 시, tracking log 등록
