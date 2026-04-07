@@ -248,7 +248,9 @@ export const useDockingUtil = () => {
       }
 
       const usageFacilitylist = facilityInfoList.filter(
-        (facility) => dockingOutRequestInfo.SERIAL_ID === facility.serial || dockingOutRequestInfo.SAME_PIO_SERIAL === facility.serial
+        (facility) =>
+          dockingOutRequestInfo.SERIAL_ID === facility.serial ||
+          dockingOutRequestInfo.SAME_PIO_SERIAL === facility.serial
       );
       if (usageFacilitylist && usageFacilitylist.length > 1) {
         for (const facilityInfo of usageFacilitylist) {
@@ -958,7 +960,7 @@ export const useDockingUtil = () => {
         for (const facilityInfo of usageFacilitylist) {
           if (facilityInfo.type === 'in') {
             // Docking_Status PLC 쓰기
-            console.log("??", facilityInfo.serial, 'Docking_Status')
+            console.log('??', facilityInfo.serial, 'Docking_Status');
             await plcConnectUtil.writeTagValue({
               targetFacility: facilityInfo.serial || '',
               tagInfo: [{ tagName: 'Docking_Status', value: '1' }],
@@ -1035,7 +1037,7 @@ export const useDockingUtil = () => {
           // 이때 포트에서 진출 하는 순간 dock_signal_reset 신호를 켜면 dock_disable 신호가 꺼짐 (충전기가 다시 활성화 됨됨)
           // { tagName: 'Dock_Signal_Reset', value: true },
           { tagName: 'Dock_AMR_Status', value: false },
-          { tagName: 'Dock_Request', value: false },
+          // { tagName: 'Dock_Request', value: false },
           { tagName: 'Dock_Out_Request', value: false },
         ],
       });
