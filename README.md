@@ -1013,3 +1013,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - Tracking Log
   - Abort 재시도 및 ACK 재시도 시, tracking log 등록
+
+## v3.2.10
+- approve v3.2.9-ssb
+- approve v3.2.9-ljk
