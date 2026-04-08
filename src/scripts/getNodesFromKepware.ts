@@ -358,11 +358,13 @@ const opcuaClient = {
       logToConsoleAndFile('after_reconnection', 'red');
     });
 
+    // @ts-ignore
     this.client.on('disconnected', () => {
       logToConsoleAndFile('Disconnected from OPC UA server!', 'yellow');
     });
 
-    this.client.on('error', (err) => {
+    // @ts-ignore
+    this.client.on('error', (err: any) => {
       logToConsoleAndFile(`Connection error: ${err.message}`, 'red');
     });
 

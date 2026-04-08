@@ -695,3 +695,7 @@ CREATE TABLE public.menu_roles (
 
 - 버전승인 v2.2.13-lsk
 - 도커 빌드 파일 수정
+
+## v2.2.15
+
+- kepserver 타입 에러 무시 처리

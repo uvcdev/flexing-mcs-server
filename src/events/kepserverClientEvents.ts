@@ -60,12 +60,14 @@ export function registerClientEvents(client: OPCUAClient): void {
   });
 
   // 클라이언트가 서버에서 연결이 끊겼을 때 호출
+  // @ts-ignore
   client.on("disconnected", () => {
     logToConsoleAndFile("Disconnected from OPC UA server!", "yellow");
   });
 
   // 클라이언트에서 오류가 발생했을 때 호출
-  client.on("error", (err) => {
+  // @ts-ignore
+  client.on("error", (err: any) => {
     logToConsoleAndFile(`Connection error: ${err.message}`, "red");
   });
 
