@@ -200,12 +200,13 @@ export const usePlcConnectUtil = () => {
         // tagMap에서 데이터 타입을 보고 해당 데이터 타입으로 반환해야함
         const tagMapValue = smartConnector.tagMap.get(`${targetCode}.${tagName}`);
         if (!tagMapValue) {
-          logging.ACTION_ERROR({
-            filename: 'plcConnectUtil.ts-getTagValue3',
-            params: { targetCode, tagName },
-            result: null,
-            error: new Error('Tag value is not found'),
-          });
+          // TODO: 임시 주석.
+          // logging.ACTION_ERROR({
+          //   filename: 'plcConnectUtil.ts-getTagValue3',
+          //   params: { targetCode, tagName },
+          //   result: null,
+          //   error: new Error('Tag value is not found'),
+          // });
           return null;
         }
         switch (tagMapValue.DATA_TYPE) {
