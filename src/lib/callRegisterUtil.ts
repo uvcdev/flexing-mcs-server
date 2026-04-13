@@ -80,7 +80,8 @@ export const useCallRegisterUtil = () => {
 
         // PLC offline 체크 - _System._Error 태그로 설비 에러 여부 확인
         const isError = await kepServerUtil.isDeviceError(targetCode);
-        if (isError) continue;
+        const plcConnType = process.env.PLC_CONN_TYPE || '';
+        if (isError && plcConnType === 'KEP') continue;
 
         // 필요한 태그 값들 가져오기
         const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
@@ -205,7 +206,8 @@ export const useCallRegisterUtil = () => {
                   }
                   // PLC offline 체크 - _System._Error 태그로 설비 에러 여부 확인
                   const isError = await kepServerUtil.isDeviceError(linkedFacilityInfo.serial);
-                  if (isError) continue;
+                  const plcConnType = process.env.PLC_CONN_TYPE || '';
+                  if (isError && plcConnType === 'KEPWARE') continue;
 
                   const linkedFacilityCallRequestValue = (await plcConnectUtil.getTagValue(
                     linkedFacilityInfo.serial,
@@ -416,11 +418,11 @@ export const useCallRegisterUtil = () => {
                     const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
                       {
                         count: workOrderListInfo.count,
-                        // eslint-disable-next-line prettier/prettier
+
                         workOrderList: workOrderListInfo.workOrderList,
-                        // eslint-disable-next-line prettier/prettier
+
                         facilitySerial: targetCode,
-                        // eslint-disable-next-line prettier/prettier
+
                         facilityInfo: facilityInfo,
                       };
 
