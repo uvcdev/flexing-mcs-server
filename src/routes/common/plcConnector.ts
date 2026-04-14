@@ -15,6 +15,7 @@ import { PlcWriteParams } from '../../models/common/plcConnector';
 import { KepwareWriteParams } from '../../models/kepware/kepware';
 import { service as kepwareService } from '../../service/kepware/kepwareService';
 import { SendSmartConnectorMqttMessage, useSmartConnectorUtils } from '../../lib/smartConnectorUtils';
+import { simulatePlcResponse } from '../../lib/virtualPlcSimulator';
 const router = express.Router();
 
 const TABLE_NAME = 'plcConnector'; // 이벤트 히스토리를 위한 테이블 명
@@ -58,6 +59,11 @@ router.post(
 
         // 비즈니스 로직 호출
         result = await kepwareService.write(paramsList, logFormat);
+
+        // 가상설비 PLC 응답
+        for (const params of paramsList) {
+          void simulatePlcResponse(params.targetFacility, [{ tagName: params.tagName, value: params.value }]);
+        }
       } else if (plcConnType === 'CONNECTOR') {
         const paramsList: Array<SendSmartConnectorMqttMessage> = [];
         for (let i = 0, length = req.body.length; i < length; i++) {
@@ -82,6 +88,11 @@ router.post(
           paramsList.push(params);
         }
         logging.REQUEST_PARAM(logFormat);
+
+        // 가상설비 PLC 응답(setTagDataArrayToSmartConnector가 value를 변환하므로 먼저 호출)
+        for (const params of paramsList) {
+          void simulatePlcResponse(params.facilityName, [{ tagName: params.tag, value: params.value }]);
+        }
 
         // 비즈니스 로직 호출
         result = await useSmartConnectorUtils().setTagDataArrayToSmartConnector(paramsList);

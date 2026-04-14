@@ -699,3 +699,11 @@ CREATE TABLE public.menu_roles (
 ## v2.2.15
 
 - kepserver 타입 에러 무시 처리
+
+## v2.2.16
+
+- makeCallType에서 멀티 콜타입 사이트에서만 콜 타입 합치도록 변경
+- 설비에 가상 설비 유무 컬럼 추가
+- writeTagValue에서 가상 설비인 경우 PLC 처리 로직을 대신 실행하는 로직 추가
+- 도킹 시 trans_signal_reset 하고 일정 시간 뒤에 dock_request 하는 것이 아니라 trans_signal_reset이 다시 꺼지고 나서 dock_request 하도록 수정
+- plc 값 수동 변경 시 가상 설비인 경우 바로 응답처리 되도록 로직 추가

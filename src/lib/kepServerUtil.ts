@@ -170,24 +170,26 @@ export const parseHexWordToAscii = (value: number): string => {
 // call_type 함축 함수
 export const makeCallType = async (value: string): Promise<string> => {
   const plcConnectUtil = usePlcConnectUtil();
-  // if (value < 0 || value > 0xFFFF) {
-  //   throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
-  // }
-
-  let callType = '';
+  const site = process.env.SITE || 'MBS';
 
   const targetCode = value;
 
-  for (let i = 1; i <= 10; i++) {
-    const suffix = i < 10 ? `0${i}` : `${i}`;
-    const tag = (await plcConnectUtil.getTagValue(targetCode, `Call_Type_${suffix}`)) as string;
-    if (tag) {
-      callType += tag;
+  // MBS: 멀티 워드 태그(Call_Type_01 ~ 10)를 이어붙여서 Call_Type 문자열 생성
+  // 그 외 사이트(UNT 등): 단일 태그(Call_Type)에서 바로 읽음
+  if (site === 'MBS') {
+    let callType = '';
+    for (let i = 1; i <= 10; i++) {
+      const suffix = i < 10 ? `0${i}` : `${i}`;
+      const tag = (await plcConnectUtil.getTagValue(targetCode, `Call_Type_${suffix}`)) as string;
+      if (tag) {
+        callType += tag;
+      }
     }
+    return callType.replace(/[\s]/g, '');
+  } else {
+    const callType = (await plcConnectUtil.getTagValue(targetCode, 'Call_Type')) as string;
+    return callType?.replace(/[\s]/g, '') || '';
   }
-  callType = callType.replace(/[\s]/g, '');
-
-  return callType;
 };
 
 const isFacilityStatusTag = (tagName: string): boolean => {

@@ -54,6 +54,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, FacilityInser
       isActiveCallTrigger: req.body.isActiveCallTrigger,
       priority: req.body.priority,
       isWmsPort: req.body.isWmsPort,
+      isVirtual: req.body.isVirtual ?? false,
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -220,6 +221,7 @@ router.put(
         generatedCallCount: req.body.generatedCallCount,
         isActiveCallTrigger: req.body.isActiveCallTrigger,
         priority: req.body.priority,
+        isVirtual: req.body.isVirtual,
       };
       logging.REQUEST_PARAM(logFormat);
 

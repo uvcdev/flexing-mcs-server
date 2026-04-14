@@ -5,6 +5,7 @@ import { SendSmartConnectorMqttMessage, useSmartConnectorUtils } from './smartCo
 import { initializeSmartConnectorEventsHandlers } from '../events/smartConnectorEventsHandlers';
 import { logging } from './logging';
 import smartConnector from '../models/smartConnector/smartConnector';
+import { simulatePlcResponse } from './virtualPlcSimulator';
 
 export interface PlcWriteDataParams {
   targetFacility: string;
@@ -161,6 +162,9 @@ export const usePlcConnectUtil = () => {
       });
       throw error;
     }
+
+    // 가상설비인 경우 PLC 후속 응답 시뮬레이션
+    void simulatePlcResponse(params.targetFacility, params.tagInfo);
   };
 
   /**

@@ -28,6 +28,7 @@ export interface FacilityAttributes {
   isActiveCallTrigger: boolean | null;
   priority: number;
   isWmsPort: boolean | null; // MBS 는 EQP | WMS
+  isVirtual: boolean | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -75,6 +76,7 @@ class Facility extends Model implements FacilityAttributes {
   public isActiveCallTrigger!: FacilityAttributes['isActiveCallTrigger'];
   public priority!: FacilityAttributes['priority'];
   public isWmsPort!: FacilityAttributes['isWmsPort'];
+  public isVirtual!: FacilityAttributes['isVirtual'];
   public readonly createdAt!: FacilityAttributes['createdAt'];
   public readonly updatedAt!: FacilityAttributes['updatedAt'];
   public readonly deletedAt!: FacilityAttributes['deletedAt'];
@@ -179,6 +181,10 @@ Facility.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    isVirtual: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     sequelize,
@@ -214,6 +220,7 @@ export interface FacilityInsertParams {
   isActiveCallTrigger: boolean;
   priority: number | null;
   isWmsPort: string | null; // EQP | WMS
+  isVirtual: boolean;
 }
 
 // selectList
@@ -288,6 +295,7 @@ export interface FacilityUpdateParams {
   isActiveCallTrigger?: boolean;
   priority?: number;
   isWmsPort?: string | null; // EQP | WMS
+  isVirtual?: boolean;
 }
 
 // update state
@@ -326,6 +334,7 @@ export const FacilityAttributesInclude = [
   'isActiveCallTrigger',
   'priority',
   'isWmsPort',
+  'isVirtual',
   'createdAt',
 ];
 

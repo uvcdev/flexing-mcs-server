@@ -13,6 +13,7 @@ import { AmrAttributes } from '../../models/common/amr';
 import { useCallTypeUtil } from '../callTypeUtil';
 import { usePlcConnectUtil } from '../plcConnectUtil';
 import { timestampToDate } from '../usefullToolUtil';
+import { smartConnectorEventEmitter } from '../../events/smartConnectorEvents';
 
 enum EXC_CLS {
   AUTO = 'AUTO',
@@ -604,7 +605,27 @@ export const useDockingUtil = () => {
         }
         switch (dockingParams.EXC_CLS) {
           case EXC_CLS.AUTO: //일반도킹
-            await plcConnectUtil.delay(500);
+            // await plcConnectUtil.delay(500);
+            // Trans_Signal_Reset이 설비에서 false로 내려올 때까지 대기 (타임아웃 5초)
+            await new Promise<void>((resolve, reject) => {
+              const TIMEOUT_MS = 5000;
+              const timeout = setTimeout(() => {
+                smartConnectorEventEmitter.off('Trans_Signal_Reset', handler);
+                logToConsoleAndFile(`Trans_Signal_Reset 응답 타임아웃 (${TIMEOUT_MS}ms) - ${paramsSerial}`, 'red');
+                reject(new Error(`Trans_Signal_Reset 응답 타임아웃 (${TIMEOUT_MS}ms) - ${paramsSerial}`));
+              }, TIMEOUT_MS);
+
+              const handler = (payload: { facilityName: string; old: string; new: string }) => {
+                if (payload.facilityName === paramsSerial && payload.old === '1' && payload.new === '0') {
+                  clearTimeout(timeout);
+                  smartConnectorEventEmitter.off('Trans_Signal_Reset', handler);
+                  logToConsoleAndFile(`Trans_Signal_Reset 응답 수신 - ${paramsSerial}`, 'green');
+                  resolve();
+                }
+              };
+              smartConnectorEventEmitter.on('Trans_Signal_Reset', handler);
+            });
+
             await plcConnectUtil.writeTagValue({
               targetFacility: paramsSerial,
               tagInfo: [{ tagName: 'Dock_Request', value: true }],
