@@ -35,7 +35,8 @@ export const checkCallRequestCreate = async () => {
       return;
     }
     const isError = await kepServerUtil.isDeviceError(facilitySerial);
-    if (isError) continue;
+    const plcConnType = process.env.PLC_CONN_TYPE || '';
+    if (isError && plcConnType === 'KEP') continue;
     const callCancelRequestValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Cancel_Request')) as boolean;
     if (callCancelRequestValue) {
       logging.ACTION_ERROR({

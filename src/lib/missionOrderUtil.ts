@@ -71,7 +71,8 @@ export const checkMissionOrder = async () => {
         const mcsModeValue = sortLinkedFacilityInfo?.mode || 'auto';
 
         const isError = await kepServerUtil.isDeviceError(targetCode);
-        if (isError) continue;
+        const plcConnType = process.env.PLC_CONN_TYPE || '';
+        if (isError && plcConnType === 'KEP') continue;
 
         const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
         const callRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request')) as boolean;
