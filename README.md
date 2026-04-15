@@ -707,3 +707,7 @@ CREATE TABLE public.menu_roles (
 - writeTagValue에서 가상 설비인 경우 PLC 처리 로직을 대신 실행하는 로직 추가
 - 도킹 시 trans_signal_reset 하고 일정 시간 뒤에 dock_request 하는 것이 아니라 trans_signal_reset이 다시 꺼지고 나서 dock_request 하도록 수정
 - plc 값 수동 변경 시 가상 설비인 경우 바로 응답처리 되도록 로직 추가
+
+## v2.2.17
+
+- acsWorkOrderCancel에서 멀티 콜 응답을 지정 사이트에서만 찾도록 변경

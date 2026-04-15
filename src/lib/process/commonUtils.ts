@@ -121,6 +121,14 @@ export const acsWorkOrderCancel = async (messageJson: any) => {
   const selectedWorkOrderInfo = workOrderList.find((workOrderInfo) => workOrderInfo.callId === canceledWorkOrderCallId);
   const selectedWorkOrderInfoState = selectedWorkOrderInfo?.state;
 
+  const isMbs = (process.env.SITE && process.env.SITE === 'MBS');
+  const multiCallResetTags = isMbs
+    ? [
+        { tagName: 'Call_Response_Multi_1', value: false },
+        { tagName: 'Call_Response_Multi_2', value: false },
+      ]
+    : [];
+
   if (selectedWorkOrderInfoState !== 'toWorkOrder') {
     if (fromFacilitySerial) {
       await plcConnectUtil.writeTagValue({
@@ -130,8 +138,7 @@ export const acsWorkOrderCancel = async (messageJson: any) => {
           { tagName: 'Call_Robot_Assigned', value: false },
           { tagName: 'Call_Response_Count', value: '0' },
           { tagName: 'Dock_Request', value: false },
-          { tagName: 'Call_Response_Multi_1', value: false },
-          { tagName: 'Call_Response_Multi_2', value: false },
+          ...multiCallResetTags,
           { tagName: 'Call_Cancel_Response', value: false },
         ],
       });
@@ -146,8 +153,7 @@ export const acsWorkOrderCancel = async (messageJson: any) => {
         { tagName: 'Call_Robot_Assigned', value: false },
         { tagName: 'Call_Response_Count', value: '0' },
         { tagName: 'Dock_Request', value: false },
-        { tagName: 'Call_Response_Multi_1', value: false },
-        { tagName: 'Call_Response_Multi_2', value: false },
+        ...multiCallResetTags,
         { tagName: 'Call_Cancel_Response', value: false },
       ],
     });
