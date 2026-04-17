@@ -13,7 +13,7 @@ import { editTrackingLogRedis } from './trackingLog';
 import { EqpCallStats, useCallTypeUtil } from '../callTypeUtil';
 import { RemainingAckCommand } from './wmsAck';
 import { InfoAckInCallByCallIdBody } from '../wms/mqtt/call';
-import { CancelCallInfo, checkCancelCallInfo } from './wmsCommon';
+import { AbortedCommandForRetryInfo, CancelCallInfo, checkCancelCallInfo, RecentCallInfo } from './wmsCommon';
 import { service as facilityService } from '../../service/operation/facilityService';
 import { generateUUIDNode } from '../hashUtil';
 import { useSmartConnectorUtils } from '../smartConnectorUtils';
@@ -102,7 +102,7 @@ export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDa
 };
 
 // EQP 도킹 실행 시키는 함수 ( 파트장님이 원하는 위치로 옮기셔도 될 것 같습니다 ! )
-export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => { };
+export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => {};
 
 // 데이터 보정 함수
 export const fixEqpData = async () => {
@@ -256,6 +256,250 @@ export const checkCallSignalResetWorkOrder = async (
     return;
   }
   // SP IN and BS IN 라인 공급
+  // 임시 주석
+  // if (facilityInfo.system === 'WMS' && facilityInfo.type === 'in') {
+  //   // WMS 설비
+  //   // 설비 리셋 후 작업 생길 수 있도록 관련된 Redis 값 컨트롤
+  //   // 설비 리셋 후 작업 생길 수 있도록 관련된 창고 통신 처리
+  //   // 1. 진행 중인 work order list 조회
+  //   const recentWorkOrderList = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+  //     RedisKeys.RecentWorkOrderListByFacilitySerial,
+  //     facilitySerial
+  //   );
+  //   const removableCmdIds: string[] = [];
+  //   // console.log('recentWorkOrderList', recentWorkOrderList);
+  //   const recentWorkOrderCount = recentWorkOrderList?.count || 0;
+  //   // 2. work order 상태 별 처리
+  //   for (let i = 0; i < recentWorkOrderCount; i++) {
+  //     const recentWorkOrderInfo = recentWorkOrderList?.workOrderList[i];
+
+  //     const selectedCallId = recentWorkOrderInfo?.callId;
+
+  //     if (selectedCallId) {
+  //       if (recentWorkOrderInfo.state !== 'beforeRequest') {
+  //         const trackingLogSubject = 'MISSION_CANCELED';
+  //         const trackingLogDetail = 'MISSION_CANCELED';
+  //         const trackingLogState = 'CANCELED';
+  //         const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+  //           callId: selectedCallId,
+  //           subject: trackingLogSubject,
+  //           detail: trackingLogDetail,
+  //           state: trackingLogState,
+  //           startFacility: null,
+  //           transferId: null,
+  //           destFacility: null,
+  //           assignedRobot: null,
+  //           value: 'ACS',
+  //           description: `Work reset by ACS - Call ID ${selectedCallId} cancelled on EQP ${facilitySerial}`,
+  //           processState: 'CANCELED',
+  //         };
+  //         await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', facilitySerial);
+  //       }
+
+  //       // 2-1. before request
+  //       // before request 관련 레디스 값 삭제
+  //       // before request 데이터는 해당 창고에 CALL을 전송하지도 않고, CALL 판단 이전이기에 트래킹 로그도 기록하지 않음.
+
+  //       // 2-2. before work order
+  //       // Call Info를 요청한 상태인지 확인 후 Cancel_Call_Info 요청 후 삭제
+  //       // if (recentWorkOrderInfo.state === 'beforeWorkOrder') {
+  //       //   // 1) CALL_INFO 조차 보내기 이전 상태 InfoCallRequestOnBySerial 에 담겨져 있는 상태
+  //       //   const infoCallRequestOnBySerial = await redisUtil.hgetObject<EqpCallStats>(
+  //       //     RedisKeys.InfoCallRequestOnBySerial,
+  //       //     facilitySerial
+  //       //   );
+
+  //       //   if (infoCallRequestOnBySerial) {
+  //       //     redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, facilitySerial);
+  //       //   }
+  //       //   // 2) CALL_INFO 를 보냈으나 ACK_CALL_INFO 를 받지 못 한 상태
+  //       //   // 2-1) RemainingAckCommandBySubjectCmdId 에 머물러 있는 상태
+  //       //   const RemainingAckCommandList = await redisUtil.hgetAllObject<RemainingAckCommand>(
+  //       //     RedisKeys.RemainingAckCommandBySubjectCmdId
+  //       //   );
+  //       //   const remainingAckCommandInfo = RemainingAckCommandList?.find(
+  //       //     (command) => command?.message?.body?.Call_ID === selectedCallId
+  //       //   );
+
+  //       //   if (remainingAckCommandInfo) {
+  //       //     redisUtil.hdel(
+  //       //       RedisKeys.RemainingAckCommandBySubjectCmdId,
+  //       //       remainingAckCommandInfo?.subjectCmdId.toString()
+  //       //     );
+
+  //       //     if (remainingAckCommandInfo?.message?.body?.Cmd_ID) {
+  //       //       redisUtil.hdel(
+  //       //         RedisKeys.RecentCallInfoTaskByCmdId,
+  //       //         remainingAckCommandInfo?.message?.body?.Cmd_ID.toString()
+  //       //       );
+  //       //     }
+  //       //   }
+
+  //       //   // 2-2) IntervalCommandForRetryBySubjectCmdId 로 빠진 상태
+  //       //   const intervalCommandForRetryList = await redisUtil.hgetAllObject<RemainingAckCommand>(
+  //       //     RedisKeys.IntervalCommandForRetryBySubjectCmdId
+  //       //   );
+  //       //   const intervalCommandForRetryInfo = intervalCommandForRetryList?.find(
+  //       //     (command) => command?.message?.body?.Call_ID === selectedCallId
+  //       //   );
+
+  //       //   if (intervalCommandForRetryInfo) {
+  //       //     redisUtil.hdel(
+  //       //       RedisKeys.RemainingAckCommandBySubjectCmdId,
+  //       //       intervalCommandForRetryInfo?.subjectCmdId.toString()
+  //       //     );
+
+  //       //     if (intervalCommandForRetryInfo?.message?.body?.Cmd_ID) {
+  //       //       redisUtil.hdel(
+  //       //         RedisKeys.RecentCallInfoTaskByCmdId,
+  //       //         intervalCommandForRetryInfo?.message?.body?.Cmd_ID.toString()
+  //       //       );
+  //       //     }
+  //       //   }
+
+  //       //   // 3) ACK_CALL_INFO 까지 보낸 상태
+  //       //   const ackInCallInfo = await redisUtil.hgetObject<InfoAckInCallByCallIdBody>(
+  //       //     RedisKeys.InfoAckInCallByCallId,
+  //       //     selectedCallId
+  //       //   );
+
+  //       //   if (ackInCallInfo) {
+  //       //     const newCancelCallInfoData: CancelCallInfo = {
+  //       //       Call_ID: selectedCallId,
+  //       //       Call_Quantity: Number(ackInCallInfo.Call_Quantity) || 1,
+  //       //       systemName: `${process.env.MQTT_WMS_TOPIC || 'MW01'}`,
+  //       //     };
+
+  //       //     await checkCancelCallInfo(newCancelCallInfoData);
+
+  //       //     redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, selectedCallId);
+  //       //     redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, ackInCallInfo.Cmd_ID);
+  //       //   }
+  //       // }
+  //       // claude 코드
+  //       if (recentWorkOrderInfo.state === 'beforeWorkOrder') {
+  //         // 1) CALL_INFO 보내기 이전
+  //         const infoCallRequestOnBySerial = await redisUtil.hgetObject<EqpCallStats>(
+  //           RedisKeys.InfoCallRequestOnBySerial,
+  //           facilitySerial
+  //         );
+  //         if (infoCallRequestOnBySerial) {
+  //           redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, facilitySerial);
+  //         }
+
+  //         // 2) RemainingAck 상태
+  //         const remainingCallInfoList =
+  //           (await redisUtil.hgetAllObject<RemainingAckCommand>(RedisKeys.RemainingAckCommandBySubjectCmdId)) || [];
+  //         const facilityRemainingCallInfoList = remainingCallInfoList.filter(
+  //           (remainingCallInfo) => remainingCallInfo?.message?.body?.Caller === facilitySerial
+  //         );
+
+  //         if (facilityRemainingCallInfoList.length > 0) {
+  //           for (let i = 0, length = facilityRemainingCallInfoList.length; i < length; i++) {
+  //             const facilityRemainingCallInfo = facilityRemainingCallInfoList[i];
+  //             const cmdId = facilityRemainingCallInfo?.message?.body?.Cmd_ID || '';
+  //             const subjectCmdId = facilityRemainingCallInfo.subjectCmdId;
+
+  //             redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId.toString());
+  //             removableCmdIds.push(cmdId);
+  //           }
+  //         }
+
+  //         // 3) Interval 상태
+  //         const intervalCallInfoList =
+  //           (await redisUtil.hgetAllObject<RemainingAckCommand>(RedisKeys.IntervalCommandForRetryBySubjectCmdId)) || [];
+  //         const facilityIntervalCallInfoList = intervalCallInfoList.filter(
+  //           (intervalCallInfo) => intervalCallInfo?.message?.body?.Caller === facilitySerial
+  //         );
+
+  //         if (facilityIntervalCallInfoList.length > 0) {
+  //           for (let i = 0, length = facilityIntervalCallInfoList.length; i < length; i++) {
+  //             const facilityIntervalCallInfo = facilityIntervalCallInfoList[i];
+  //             const cmdId = facilityIntervalCallInfo?.message?.body?.Cmd_ID || '';
+  //             const subjectCmdId = facilityIntervalCallInfo.subjectCmdId;
+
+  //             redisUtil.hdel(RedisKeys.IntervalCommandForRetryBySubjectCmdId, subjectCmdId.toString());
+  //             removableCmdIds.push(cmdId);
+  //           }
+  //         }
+
+  //         // 4) Abort 상태
+  //         const abortCallInfoList =
+  //           (await redisUtil.hgetAllObject<AbortedCommandForRetryInfo>(
+  //             RedisKeys.AbortedCommandForRetryBySubjectCmdId
+  //           )) || [];
+  //         const facilityAbortCallInfoList = abortCallInfoList.filter(
+  //           (abortCallInfo) => abortCallInfo?.message?.body?.Caller === facilitySerial
+  //         );
+
+  //         if (facilityAbortCallInfoList.length > 0) {
+  //           for (let i = 0, length = facilityAbortCallInfoList.length; i < length; i++) {
+  //             const facilityAbortCallInfo = facilityAbortCallInfoList[i];
+  //             const cmdId = facilityAbortCallInfo?.message?.body?.Cmd_ID || '';
+  //             const subjectCmdId = facilityAbortCallInfo.subjectCmdId;
+
+  //             redisUtil.hdel(RedisKeys.AbortedCommandForRetryBySubjectCmdId, subjectCmdId.toString());
+  //             removableCmdIds.push(cmdId);
+  //           }
+  //         }
+
+  //         // 5) NG 상태 - removableCmdIds에 없는 것만
+  //         const recentCallInfoList =
+  //           (await redisUtil.hgetAllObject<RecentCallInfo>(RedisKeys.RecentCallInfoTaskByCmdId)) || [];
+  //         const facilityNgCallInfoList = recentCallInfoList.filter(
+  //           (callInfo) => callInfo.caller === facilitySerial && !removableCmdIds.includes(callInfo.cmdId)
+  //         );
+
+  //         for (const ngCallInfo of facilityNgCallInfoList) {
+  //           removableCmdIds.push(ngCallInfo.cmdId);
+  //         }
+
+  //         // 6) ACK_CALL_INFO 받고 포트 배정 대기 중인 CALL_ID
+  //         const infoAckInCallByCallIdList = await redisUtil.hgetAllObject<InfoAckInCallByCallIdBody>(
+  //           RedisKeys.InfoAckInCallByCallId
+  //         );
+  //         const facilityInfoAckInCallList =
+  //           infoAckInCallByCallIdList?.filter((infoAckInCall) => infoAckInCall?.Caller === facilitySerial) || [];
+
+  //         if (facilityInfoAckInCallList.length > 0) {
+  //           for (let i = 0, length = facilityInfoAckInCallList.length; i < length; i++) {
+  //             const facilityInfoAckInCall = facilityInfoAckInCallList[i];
+  //             const ackCallId = facilityInfoAckInCall.CALL_ID;
+
+  //             const newCancelCallInfoData: CancelCallInfo = {
+  //               Call_ID: ackCallId,
+  //               Call_Quantity: Number(facilityInfoAckInCall.Call_Quantity) || 1,
+  //               systemName: `${process.env.MQTT_WMS_TOPIC || 'MW01'}`,
+  //             };
+
+  //             if (!newCancelCallInfoData.Cmd_ID || newCancelCallInfoData.Cmd_ID === '') {
+  //               newCancelCallInfoData.Cmd_ID = generateUUIDNode();
+  //             }
+
+  //             await checkCancelCallInfo(newCancelCallInfoData);
+  //             // InfoAckInCallByCallId 삭제는 ACK_CANCEL_CALL_INFO 단계에서 처리
+  //           }
+  //         }
+  //       }
+
+  //       // 2-3. work order 이후
+  //       // work order 이후에는 있으면 안되지만 있으면 그냥 삭제
+  //     }
+  //   }
+
+  //   const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+  //     facilitySerial: facilitySerial,
+  //     facilityInfo: facilityInfo,
+  //     count: 0,
+  //     workOrderList: [],
+  //   };
+
+  //   redisUtil.hset(
+  //     RedisKeys.RecentWorkOrderListByFacilitySerial,
+  //     facilitySerial,
+  //     JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+  //   );
+  // }
   if (facilityInfo.system === 'WMS' && facilityInfo.type === 'in') {
     // WMS 설비
     // 설비 리셋 후 작업 생길 수 있도록 관련된 Redis 값 컨트롤
@@ -265,127 +509,133 @@ export const checkCallSignalResetWorkOrder = async (
       RedisKeys.RecentWorkOrderListByFacilitySerial,
       facilitySerial
     );
-    // console.log('recentWorkOrderList', recentWorkOrderList);
+    const removableCmdIds: string[] = [];
     const recentWorkOrderCount = recentWorkOrderList?.count || 0;
-    // 2. work order 상태 별 처리
+
+    // 2. work order 상태 별 처리 - trackingLog만
     for (let i = 0; i < recentWorkOrderCount; i++) {
       const recentWorkOrderInfo = recentWorkOrderList?.workOrderList[i];
-
       const selectedCallId = recentWorkOrderInfo?.callId;
 
-      if (selectedCallId) {
-        if (recentWorkOrderInfo.state !== 'beforeRequest') {
-          const trackingLogSubject = 'MISSION_CANCELED';
-          const trackingLogDetail = 'MISSION_CANCELED';
-          const trackingLogState = 'CANCELED';
-          const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
-            callId: selectedCallId,
-            subject: trackingLogSubject,
-            detail: trackingLogDetail,
-            state: trackingLogState,
-            startFacility: null,
-            transferId: null,
-            destFacility: null,
-            assignedRobot: null,
-            value: 'ACS',
-            description: `Work reset by ACS - Call ID ${selectedCallId} cancelled on EQP ${facilitySerial}`,
-            processState: 'CANCELED',
-          };
-          await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', facilitySerial);
-        }
-
-        // 2-1. before request
-        // before request 관련 레디스 값 삭제
-        // before request 데이터는 해당 창고에 CALL을 전송하지도 않고, CALL 판단 이전이기에 트래킹 로그도 기록하지 않음.
-
-        // 2-2. before work order
-        // Call Info를 요청한 상태인지 확인 후 Cancel_Call_Info 요청 후 삭제
-        if (recentWorkOrderInfo.state === 'beforeWorkOrder') {
-          // 1) CALL_INFO 조차 보내기 이전 상태 InfoCallRequestOnBySerial 에 담겨져 있는 상태
-          const infoCallRequestOnBySerial = await redisUtil.hgetObject<EqpCallStats>(
-            RedisKeys.InfoCallRequestOnBySerial,
-            facilitySerial
-          );
-
-          if (infoCallRequestOnBySerial) {
-            redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, facilitySerial);
-          }
-          // 2) CALL_INFO 를 보냈으나 ACK_CALL_INFO 를 받지 못 한 상태
-          // 2-1) RemainingAckCommandBySubjectCmdId 에 머물러 있는 상태
-          const RemainingAckCommandList = await redisUtil.hgetAllObject<RemainingAckCommand>(
-            RedisKeys.RemainingAckCommandBySubjectCmdId
-          );
-          const remainingAckCommandInfo = RemainingAckCommandList?.find(
-            (command) => command?.message?.body?.Call_ID === selectedCallId
-          );
-
-          if (remainingAckCommandInfo) {
-            redisUtil.hdel(
-              RedisKeys.RemainingAckCommandBySubjectCmdId,
-              remainingAckCommandInfo?.subjectCmdId.toString()
-            );
-
-            if (remainingAckCommandInfo?.message?.body?.Cmd_ID) {
-              redisUtil.hdel(
-                RedisKeys.RecentCallInfoTaskByCmdId,
-                remainingAckCommandInfo?.message?.body?.Cmd_ID.toString()
-              );
-            }
-          }
-
-          // 2-2) IntervalCommandForRetryBySubjectCmdId 로 빠진 상태
-          const intervalCommandForRetryList = await redisUtil.hgetAllObject<RemainingAckCommand>(
-            RedisKeys.IntervalCommandForRetryBySubjectCmdId
-          );
-          const intervalCommandForRetryInfo = intervalCommandForRetryList?.find(
-            (command) => command?.message?.body?.Call_ID === selectedCallId
-          );
-
-          if (intervalCommandForRetryInfo) {
-            redisUtil.hdel(
-              RedisKeys.RemainingAckCommandBySubjectCmdId,
-              intervalCommandForRetryInfo?.subjectCmdId.toString()
-            );
-
-            if (intervalCommandForRetryInfo?.message?.body?.Cmd_ID) {
-              redisUtil.hdel(
-                RedisKeys.RecentCallInfoTaskByCmdId,
-                intervalCommandForRetryInfo?.message?.body?.Cmd_ID.toString()
-              );
-            }
-          }
-
-          // 3) ACK_CALL_INFO 까지 보낸 상태
-          const ackInCallInfo = await redisUtil.hgetObject<InfoAckInCallByCallIdBody>(
-            RedisKeys.InfoAckInCallByCallId,
-            selectedCallId
-          );
-
-          if (ackInCallInfo) {
-            const newCancelCallInfoData: CancelCallInfo = {
-              Call_ID: selectedCallId,
-              Call_Quantity: Number(ackInCallInfo.Call_Quantity) || 1,
-              systemName: `${process.env.MQTT_WMS_TOPIC || 'MW01'}`,
-            };
-
-            await checkCancelCallInfo(newCancelCallInfoData);
-
-            redisUtil.hdel(RedisKeys.InfoAckInCallByCallId, selectedCallId);
-            redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, ackInCallInfo.Cmd_ID);
-          }
-        }
-        // 2-3. work order 이후
-        // work order 이후에는 있으면 안되지만 있으면 그냥 삭제
+      if (selectedCallId && recentWorkOrderInfo.state !== 'beforeRequest') {
+        const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+          callId: selectedCallId,
+          subject: 'MISSION_CANCELED',
+          detail: 'MISSION_CANCELED',
+          state: 'CANCELED',
+          startFacility: null,
+          transferId: null,
+          destFacility: null,
+          assignedRobot: null,
+          value: 'ACS',
+          description: `Work reset by ACS - Call ID ${selectedCallId} cancelled on EQP ${facilitySerial}`,
+          processState: 'CANCELED',
+        };
+        await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', facilitySerial);
       }
     }
 
+    // 3. facilitySerial 기준 Redis 정리
+
+    // 3-1. InfoCallRequestOnBySerial 삭제
+    const infoCallRequestOnBySerial = await redisUtil.hgetObject<EqpCallStats>(
+      RedisKeys.InfoCallRequestOnBySerial,
+      facilitySerial
+    );
+    if (infoCallRequestOnBySerial) {
+      redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, facilitySerial);
+    }
+
+    // 3-2. RemainingAck 상태
+    const remainingCallInfoList =
+      (await redisUtil.hgetAllObject<RemainingAckCommand>(RedisKeys.RemainingAckCommandBySubjectCmdId)) || [];
+    const facilityRemainingCallInfoList = remainingCallInfoList.filter(
+      (remainingCallInfo) => remainingCallInfo?.message?.body?.Caller === facilitySerial
+    );
+
+    for (const facilityRemainingCallInfo of facilityRemainingCallInfoList) {
+      const cmdId = facilityRemainingCallInfo?.message?.body?.Cmd_ID || '';
+      const subjectCmdId = facilityRemainingCallInfo.subjectCmdId;
+      redisUtil.hdel(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId.toString());
+      removableCmdIds.push(cmdId);
+    }
+
+    // 3-3. Interval 상태
+    const intervalCallInfoList =
+      (await redisUtil.hgetAllObject<RemainingAckCommand>(RedisKeys.IntervalCommandForRetryBySubjectCmdId)) || [];
+    const facilityIntervalCallInfoList = intervalCallInfoList.filter(
+      (intervalCallInfo) => intervalCallInfo?.message?.body?.Caller === facilitySerial
+    );
+
+    for (const facilityIntervalCallInfo of facilityIntervalCallInfoList) {
+      const cmdId = facilityIntervalCallInfo?.message?.body?.Cmd_ID || '';
+      const subjectCmdId = facilityIntervalCallInfo.subjectCmdId;
+      redisUtil.hdel(RedisKeys.IntervalCommandForRetryBySubjectCmdId, subjectCmdId.toString());
+      removableCmdIds.push(cmdId);
+    }
+
+    // 3-4. Abort 상태
+    const abortCallInfoList =
+      (await redisUtil.hgetAllObject<AbortedCommandForRetryInfo>(RedisKeys.AbortedCommandForRetryBySubjectCmdId)) || [];
+    const facilityAbortCallInfoList = abortCallInfoList.filter(
+      (abortCallInfo) => abortCallInfo?.message?.body?.Caller === facilitySerial
+    );
+
+    for (const facilityAbortCallInfo of facilityAbortCallInfoList) {
+      const cmdId = facilityAbortCallInfo?.message?.body?.Cmd_ID || '';
+      const subjectCmdId = facilityAbortCallInfo.subjectCmdId;
+      redisUtil.hdel(RedisKeys.AbortedCommandForRetryBySubjectCmdId, subjectCmdId.toString());
+      removableCmdIds.push(cmdId);
+    }
+
+    // 3-5. NG 상태 - removableCmdIds에 없는 것만
+    const recentCallInfoList =
+      (await redisUtil.hgetAllObject<RecentCallInfo>(RedisKeys.RecentCallInfoTaskByCmdId)) || [];
+    const facilityNgCallInfoList = recentCallInfoList.filter(
+      (callInfo) => callInfo.caller === facilitySerial && !removableCmdIds.includes(callInfo.cmdId)
+    );
+
+    for (const ngCallInfo of facilityNgCallInfoList) {
+      removableCmdIds.push(ngCallInfo.cmdId);
+    }
+
+    // 3-6. ACK_CALL_INFO 받고 포트 배정 대기 중인 CALL_ID
+    const infoAckInCallByCallIdList = await redisUtil.hgetAllObject<InfoAckInCallByCallIdBody>(
+      RedisKeys.InfoAckInCallByCallId
+    );
+    const facilityInfoAckInCallList =
+      infoAckInCallByCallIdList?.filter((infoAckInCall) => infoAckInCall?.Caller === facilitySerial) || [];
+
+    for (const facilityInfoAckInCall of facilityInfoAckInCallList) {
+      const ackCallId = facilityInfoAckInCall.CALL_ID;
+
+      const newCancelCallInfoData: CancelCallInfo = {
+        Call_ID: ackCallId,
+        Call_Quantity: Number(facilityInfoAckInCall.Call_Quantity) || 1,
+        systemName: `${process.env.MQTT_WMS_TOPIC || 'MW01'}`,
+      };
+
+      if (!newCancelCallInfoData.Cmd_ID || newCancelCallInfoData.Cmd_ID === '') {
+        newCancelCallInfoData.Cmd_ID = generateUUIDNode();
+      }
+
+      await checkCancelCallInfo(newCancelCallInfoData);
+      // InfoAckInCallByCallId 삭제는 ACK_CANCEL_CALL_INFO 단계에서 처리
+    }
+
+    // 4. RecentCallInfoTaskByCmdId 일괄 삭제
+    const setRemovableCmdIds = new Set(removableCmdIds);
+    for (const cmdId of setRemovableCmdIds) {
+      redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
+    }
+
+    // 5. RecentWorkOrderListByFacilitySerial 초기화
     const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
       facilitySerial: facilitySerial,
       facilityInfo: facilityInfo,
       count: 0,
       workOrderList: [],
     };
-
     redisUtil.hset(
       RedisKeys.RecentWorkOrderListByFacilitySerial,
       facilitySerial,

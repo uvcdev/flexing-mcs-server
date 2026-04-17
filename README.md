@@ -1028,4 +1028,8 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## v.3.2.10-ljk
 
 - 콜 취소 ( 창고유형 )
+
   - NG 케이스에 대한 콜 취소가 정상적으로 진행되지 않음 ( 해당 로직 추가 )
+
+- ACS - work reset
+  - ACS에서 work reset 시, WMS 데이터 꼬임 현상 개선
