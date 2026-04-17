@@ -652,7 +652,7 @@ export const useCallCancelUtil = () => {
         if (preWorkOrderListInfo && preWorkOrderListInfo.count > 0) {
           const preWorkOrderCount = preWorkOrderListInfo.count;
           const preWorkOrderList = preWorkOrderListInfo.workOrderList || [];
-          const removableCmdIds = [];
+          const removableCmdIds: string[] = [];
 
           // 0. MCS가 가지고 있는 Call 정보 중 WMS에 Call_Info도 안보낸 정보 확인
           // 해당 정보는 트래킹 로그도 만들기 전 상태라서 정보 삭제만 하면 된다.
@@ -662,12 +662,12 @@ export const useCallCancelUtil = () => {
           const notBeforeRequestWorkOrderCount = notBeforeRequestWorkOrderList.length;
 
           const removeBeforeRequestRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-          {
-            facilitySerial: targetCode,
-            facilityInfo: facilityInfo,
-            count: notBeforeRequestWorkOrderCount,
-            workOrderList: notBeforeRequestWorkOrderList,
-          };
+            {
+              facilitySerial: targetCode,
+              facilityInfo: facilityInfo,
+              count: notBeforeRequestWorkOrderCount,
+              workOrderList: notBeforeRequestWorkOrderList,
+            };
 
           redisUtil.hset(
             RedisKeys.RecentWorkOrderListByFacilitySerial,
@@ -933,6 +933,86 @@ export const useCallCancelUtil = () => {
 
               redisUtil.hdel(RedisKeys.AbortedCommandForRetryBySubjectCmdId, subjectCmdId);
               // redisUtil.hdel(RedisKeys.RecentCallInfoTaskByCmdId, cmdId);
+              removableCmdIds.push(cmdId);
+            }
+          }
+
+          // 1-3. NG로 남아있는 경우 삭제
+          // 1-2까지 RecentCallInfoTaskByCmdId 내용을 모두 삭제하고도 남은 cmd로 찾아내야한다.
+          const recentCallInfoList =
+            (await redisUtil.hgetAllObject<RecentCallInfo>(RedisKeys.RecentCallInfoTaskByCmdId)) || [];
+
+          const targetCodeRecentCallInfoList = recentCallInfoList.filter((callInfo) => callInfo.caller === targetCode);
+
+          const remainTargetCodeRecentCallInfoList = targetCodeRecentCallInfoList.filter(
+            (callInfo) => !removableCmdIds.includes(callInfo.cmdId)
+          );
+
+          if (remainTargetCodeRecentCallInfoList && remainTargetCodeRecentCallInfoList.length > 0) {
+            for (let i = 0, length = remainTargetCodeRecentCallInfoList.length; i < length; i++) {
+              const samePlcNgCallInfo = remainTargetCodeRecentCallInfoList[i];
+              const cmdId = samePlcNgCallInfo?.cmdId || '';
+              const ngCallInfoCallId = samePlcNgCallInfo?.callId || '';
+
+              if (ngCallInfoCallId) {
+                const trackingLogSubject = 'MISSION_CANCELED';
+                const trackingLogDetail = 'MISSION_CANCELED';
+                const trackingLogState = 'CANCELED';
+                const trackingLogUpdateData: TrackingLogRedisUpdateParams = {
+                  callId: ngCallInfoCallId,
+                  subject: trackingLogSubject,
+                  detail: trackingLogDetail,
+                  state: trackingLogState,
+                  startFacility: null,
+                  transferId: null,
+                  destFacility: null,
+                  assignedRobot: null,
+                  value: targetCode,
+                  description: `Call ID ${ngCallInfoCallId} cancellation successful on EQP ${targetCode}`,
+                  processState: 'CANCELED',
+                };
+                await editTrackingLogRedis(trackingLogUpdateData, '', 'SUCCESS', targetCode);
+
+                // workOrder 카운트처리
+                let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+                  RedisKeys.RecentWorkOrderListByFacilitySerial,
+                  targetCode
+                );
+                if (workOrderListInfo) {
+                  const removeWorkOrderByCallId = (targetCallId: string) => {
+                    const workOrderList = workOrderListInfo?.workOrderList || [];
+
+                    // targetCallId와 같은 항목이 있는지 확인
+                    const hasMatchingCallId = workOrderList.some((item) => item.callId === targetCallId);
+
+                    if (hasMatchingCallId) {
+                      workOrderListInfo = {
+                        facilitySerial: targetCode,
+                        facilityInfo: facilityInfo,
+                        count: (workOrderListInfo?.count || 0) - 1,
+                        workOrderList: workOrderList.filter((item) => item.callId !== targetCallId),
+                      };
+                    }
+
+                    return workOrderListInfo;
+                  };
+
+                  const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
+                    removeWorkOrderByCallId(ngCallInfoCallId) ?? {
+                      facilitySerial: targetCode,
+                      facilityInfo: facilityInfo,
+                      count: 0,
+                      workOrderList: [],
+                    };
+
+                  redisUtil.hset(
+                    RedisKeys.RecentWorkOrderListByFacilitySerial,
+                    targetCode,
+                    JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
+                  );
+                }
+              }
+
               removableCmdIds.push(cmdId);
             }
           }

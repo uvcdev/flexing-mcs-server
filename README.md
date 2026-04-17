@@ -1024,3 +1024,8 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - PLC 연결 타입에 따른 에러 처리 로직 개선
   - KEPServerEX 연결 시에만 디바이스 에러 발생 시 처리 스킵
+
+## v.3.2.10-ljk
+
+- 콜 취소 ( 창고유형 )
+  - NG 케이스에 대한 콜 취소가 정상적으로 진행되지 않음 ( 해당 로직 추가 )
