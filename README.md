@@ -1033,3 +1033,8 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - ACS - work reset
   - ACS에서 work reset 시, WMS 데이터 꼬임 현상 개선
+
+## v3.2.11
+
+- approve v3.2.10-ssb
+- approve v3.2.10-ljk
