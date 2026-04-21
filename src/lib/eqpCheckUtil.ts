@@ -265,7 +265,7 @@ export const useEqpCheckUtil = () => {
 
         case 'Dock_Not_Permit':
           console.log(`Changed Dock_Not_Permit`, targetTagInfo.EQ_CODE, targetTagInfo.value);
-          await useDockingUtil().dockingFailed(targetTagInfo);
+          // await useDockingUtil().dockingFailed(targetTagInfo);
           break;
 
         case 'Dock_EQ_Status':
