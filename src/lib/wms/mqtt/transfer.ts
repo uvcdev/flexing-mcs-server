@@ -103,7 +103,7 @@ const transferCancelCompleted = async (wmsName: string, messageMessage: MbsMqttM
   // CALL INFO 추가 로깅
   const cancelTrackingLogSubject = 'TRANSFER';
   const cancelTrackingLogDetail = 'TRANSFER_CANCEL_COMPLETED';
-  const cancelTrackingLogState = 'ABORTED';
+  const cancelTrackingLogState = 'CANCELED';
   const cancelTrackingLogUpdateData: TrackingLogRedisUpdateParams = {
     callId: callId,
     subject: cancelTrackingLogSubject,
@@ -115,6 +115,7 @@ const transferCancelCompleted = async (wmsName: string, messageMessage: MbsMqttM
     assignedRobot: null,
     value: null,
     description: `Received TRANSFER_CANCEL_COMPLETED from WMS(${wmsName}) for Call ID ${callId}`,
+    processState: 'CANCELED',
   };
   await editTrackingLogRedis(cancelTrackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 
@@ -168,7 +169,7 @@ const transferCancelCompleted = async (wmsName: string, messageMessage: MbsMqttM
   // CALLINFO에 대한 ack 초기값 설정
   setRemainingAckCommand(callInfoTopic, wmsName, { header: mqttHeader, body: mqttBody });
 
-  // 2025-09-25 진행 중인 콜은 ACK를 받으면 해당 정보는 새로 기록됨 
+  // 2025-09-25 진행 중인 콜은 ACK를 받으면 해당 정보는 새로 기록됨
   // 진행 중인 infoAckInCallByCallId의 Cmd_ID 변경해주기
   // const infoAckInCallByCallIdData: InfoAckInCallByCallIdBody = {
   //   Cmd_ID: newCmdId,
@@ -299,7 +300,7 @@ const transferAbortCompleted = async (wmsName: string, messageMessage: MbsMqttMe
   // CALLINFO에 대한 ack 초기값 설정
   setRemainingAckCommand(callInfoTopic, wmsName, { header: mqttHeader, body: mqttBody });
 
-  // 2025-09-25 진행 중인 콜은 ACK를 받으면 해당 정보는 새로 기록됨 
+  // 2025-09-25 진행 중인 콜은 ACK를 받으면 해당 정보는 새로 기록됨
   // 진행 중인 infoAckInCallByCallId의 Cmd_ID 변경해주기
   // const infoAckInCallByCallIdData: InfoAckInCallByCallIdBody = {
   //   Cmd_ID: newCmdId,
