@@ -1,5 +1,6 @@
 import { WmsCommandSetting } from '../../models/common/setting';
 import { TrackingLogRedisUpdateParams } from '../../models/common/trackingLog';
+import { makeCallType } from '../kepServerUtil';
 import { logging } from '../logging';
 import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from '../mqttUtil';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
@@ -388,6 +389,14 @@ export const checkIntervalRemainingAckCommand = async () => {
       intervalAckCommand.updatedTime = formatDetailedDateTime(new Date());
       intervalAckCommand.message.header.time = formatDetailedDateTime(new Date());
 
+      // 260421 Interval 재요청 할 때 CallType 정보 갱신
+      if (intervalAckCommand.message.header.subject.includes('CALL_INFO')) {
+        const newMqttBody = intervalAckCommand.message.body;
+        const callType = await makeCallType(newMqttBody.Caller || '');
+        newMqttBody.Call_Type = callType || 'SKID';
+        newMqttBody.Cargo_Type = callType || '';
+      }
+
       redisUtil.hset(
         RedisKeys.RemainingAckCommandBySubjectCmdId,
         intervalAckCommandKey,
@@ -416,6 +425,7 @@ export const checkIntervalRemainingAckCommand = async () => {
           description: `[ACK Retry] Facility ${intervalAckCommand.message.body?.Caller} - Call_ID: ${intervalAckCommand.message.body?.Call_ID}`,
           plcName: null,
           portName: null,
+          callType: intervalAckCommand.message.body?.Cargo_Type || '',
         };
         await editTrackingLogRedis(
           trackingLogUpdateData,

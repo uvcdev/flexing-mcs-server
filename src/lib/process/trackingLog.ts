@@ -434,7 +434,7 @@ export const editTrackingLogRedis = async (
     plcName: infoTrackingLogByCallId.plcName,
     portName: infoTrackingLogByCallId.portName,
     callId: infoTrackingLogByCallId.callId,
-    callType: infoTrackingLogByCallId.callType,
+    callType: trackingLogUpdateData.callType ? trackingLogUpdateData.callType : infoTrackingLogByCallId.callType,
     eqpCallId: infoTrackingLogByCallId.eqpCallId,
     transferId: transferId || infoTrackingLogByCallId.transferId,
     subject: trackingLogUpdateData.subject ? trackingLogUpdateData.subject : infoTrackingLogByCallId.subject,

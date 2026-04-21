@@ -149,8 +149,8 @@ export const checkAbortedCommandForRetry = async () => {
       if (newMqttHeader.subject.includes('CALL_INFO')) {
         const callType = await makeCallType(newMqttBody.Caller || '');
 
-        newMqttBody.Call_Type = callType;
-        newMqttBody.Cargo_Type = callType;
+        newMqttBody.Call_Type = callType || 'SKID';
+        newMqttBody.Cargo_Type = callType || '';
       }
       // 해당 내용 MQTT 재전송
       sendMbsMqtt(
@@ -191,6 +191,7 @@ export const checkAbortedCommandForRetry = async () => {
           description: `[Abort Retry] Facility ${abortedCommandForRetryInfo.message.body?.Caller} - Call_ID: ${abortedCommandForRetryInfo.message.body?.Call_ID}`,
           plcName: null,
           portName: null,
+          callType: abortedCommandForRetryInfo.message.body?.Cargo_Type || '',
         };
         await editTrackingLogRedis(
           trackingLogUpdateData,

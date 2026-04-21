@@ -174,6 +174,7 @@ export const useCallRegisterUtil = () => {
                 processState: 'NORMAL',
                 // ACS에서 작업 할당 후 해당 정보 알 수 있음
                 missionDestination: null,
+                callType: infoPendingMissionWorkOrder.cargoType,
               };
               await editTrackingLogRedis(trackingLogUpdateMissionData, undefined, 'SUCCESS', callInfo.Caller);
             } else {
@@ -298,6 +299,7 @@ export const useCallRegisterUtil = () => {
                       assignedRobot: null,
                       value: null,
                       description: `Call ID ${String(eqpCallId)} responsed`,
+                      callType: callInfo.Cargo_Type,
                     };
                     await editTrackingLogRedis(trackingLogUpdateReqData, undefined, 'SUCCESS', callInfo.Caller);
 
@@ -322,6 +324,7 @@ export const useCallRegisterUtil = () => {
                       assignedRobot: null,
                       value: null,
                       description: `Call ID ${String(eqpCallId)} responsed`,
+                      callType: callInfo.Cargo_Type,
                     };
                     await editTrackingLogRedis(
                       trackingLogUpdateResData,
