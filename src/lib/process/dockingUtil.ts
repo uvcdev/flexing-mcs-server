@@ -695,24 +695,24 @@ export const useDockingUtil = () => {
             // TODO: 수동 도킹 기종(callType) 확인(ACS에서 보내줘야함)
             // callType이 있다면 ? 없다면 ?
             // todo: 250604 Dock_EQ_Status 값 내리기 위해 드라이런용 reset 추가
-            await plcConnectUtil.writeTagValue({
-              targetFacility: paramsSerial,
-              tagInfo: [
-                { tagName: 'Trans_Signal_Reset', value: true },
-                { tagName: 'Dock_Signal_Reset', value: true },
-                { tagName: 'Dock_Request', value: true },
-              ],
-            });
+            // await plcConnectUtil.writeTagValue({
+            //   targetFacility: paramsSerial,
+            //   tagInfo: [
+            //     { tagName: 'Trans_Signal_Reset', value: true },
+            //     { tagName: 'Dock_Signal_Reset', value: true },
+            //     { tagName: 'Dock_Request', value: true },
+            //   ],
+            // });
 
-            setTimeout(() => {
-              plcConnectUtil.writeTagValue({
-                targetFacility: paramsSerial,
-                tagInfo: [
-                  { tagName: 'Dock_Signal_Reset', value: false },
-                  { tagName: 'Trans_Signal_Reset', value: false },
-                ],
-              });
-            }, 500);
+            // setTimeout(() => {
+            //   plcConnectUtil.writeTagValue({
+            //     targetFacility: paramsSerial,
+            //     tagInfo: [
+            //       { tagName: 'Dock_Signal_Reset', value: false },
+            //       { tagName: 'Trans_Signal_Reset', value: false },
+            //     ],
+            //   });
+            // }, 500);
 
             break;
         }
