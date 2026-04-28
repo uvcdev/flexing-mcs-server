@@ -72,6 +72,7 @@ export interface MqttBranchInfoDataFromAcs {
   facilitySerials: Array<string>;
   fromFacilitySerial: string;
   toFacilitySerial: string;
+  createdAt?: number;
 }
 
 export interface MqttMissionOrderAttributes {
@@ -307,4 +308,4 @@ export const receiveBranchInfoFromACS = async (branchInfoMqttMessage: MqttBranch
 };
 
 // 미션 오더 결과를 ACS에 데이터 송신
-export const sendBranchInfoToACS = async (branchInfoMqttMessage: MqttBranchInfoDataFromAcs) => { };
+export const sendBranchInfoToACS = async (branchInfoMqttMessage: MqttBranchInfoDataFromAcs) => {};

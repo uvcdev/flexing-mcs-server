@@ -773,7 +773,7 @@ export const receiveMqtt = (): void => {
                 redisUtil.hset(
                   RedisKeys.InfoMissionOrderByWorkOrderCode,
                   workOrderCode.toString(),
-                  JSON.stringify(messageJson)
+                  JSON.stringify({ ...messageJson, createdAt: Date.now() })
                 );
 
                 // const missionOrderType = await routeMissionOrderMqttMessage(messageJson as MqttBranchInfoDataFromAcs)

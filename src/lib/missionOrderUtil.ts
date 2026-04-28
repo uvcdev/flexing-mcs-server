@@ -36,6 +36,9 @@ export const checkMissionOrder = async () => {
 
     const newFacilityArray = [];
 
+    // create 순서로 정렬 ( FIFO )
+    missionOrderList.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+
     // if (linkedEqpIds && linkedEqpIds.length > 0) {
     if (missionFacilitySerials && missionFacilitySerials.length > 0) {
       // for (let i = 0, length = linkedEqpIds.length; i < length; i++) {
