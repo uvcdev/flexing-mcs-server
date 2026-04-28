@@ -6,6 +6,7 @@ import { useKepServerUtil } from '../kepServerUtil';
 import { separateMqttMessage, MbsMqttMesaage } from '../mqttUtil';
 import { usePlcConnectUtil } from '../plcConnectUtil';
 import { fixMultiCallFacilityStatus } from '../process/commonUtils';
+import { useDockingUtil } from '../process/dockingUtil';
 import { editAbnormalTrackingLogRedis, editTrackingLogRedis } from '../process/trackingLog';
 import { sendAckToWms } from '../process/wmsAck';
 import { MqttBranchInfoDataFromAcs } from '../process/wmsBranch';
@@ -274,7 +275,10 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
           cancelWorkOrderStatus = recentWorkOrderStatus;
         }
 
-        if (!fromFacilityInfo || (fromFacilityInfo?.isActiveCallTrigger === false && toFacilityInfo?.isActiveCallTrigger === false)) {
+        if (
+          !fromFacilityInfo ||
+          (fromFacilityInfo?.isActiveCallTrigger === false && toFacilityInfo?.isActiveCallTrigger === false)
+        ) {
           if (cancelWorkOrderStatus === 'fromWorkOrder') {
             if (fromFacilitySerial) {
               await plcConnectUtil.writeTagValue({
@@ -291,8 +295,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
               });
               await useCallTypeUtil().callTypeResponseReset(fromFacilitySerial);
             }
-          }
-          else if (cancelWorkOrderStatus === 'toWorkOrder') {
+          } else if (cancelWorkOrderStatus === 'toWorkOrder') {
             if (toFacilitySerial) {
               await plcConnectUtil.writeTagValue({
                 targetFacility: toFacilitySerial,
@@ -309,9 +312,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
               await useCallTypeUtil().callTypeResponseReset(toFacilitySerial);
             }
           }
-
-        }
-        else {
+        } else {
           if (cancelWorkOrderStatus !== 'toWorkOrder' && cancelWorkOrderStatus !== 'missionWorkOrder') {
             if (fromFacilitySerial) {
               await plcConnectUtil.writeTagValue({
@@ -349,6 +350,9 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
             }
           }
         }
+      }
+      if (assignTask === 'FMS-CANCELED') {
+        useDockingUtil().dockingCanceled({ CALL_ID: callId });
       }
 
       redisUtil.hdel(RedisKeys.InfoMissionOrderByWorkOrderCode, callId);

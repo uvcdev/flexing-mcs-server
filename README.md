@@ -1038,3 +1038,24 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - approve v3.2.10-ssb
 - approve v3.2.10-ljk
+
+## v3.2.11-ljk
+
+- 트래킹 로그 버그 수정
+
+  - WMS 로직 중 TRANSFER_CANCEL_COMPLETED 에 해당하는 트래킹 로그 변경
+  - Call Type 업데이트 반영 추가
+  - Call Type 변경에 대한 로직 반영
+  - Out Dock / Dock 이벤트 리스너 단계에서 ACS 작업 취소 시, 트래킹 로그 갱신 문제 해결
+
+- WMS
+
+  - Abort / NG / Interval 시점에 CallType 재조회 로직 추가 ( 일반 Retry는 X )
+
+- Dock_Not_Permit
+
+  - Dock 시퀀스 중 Not Permit에 대한 로직 주석
+  - 공유 받은 시퀀스 표로 진행되지 않음 ( 별도 협의도 없음 )
+
+- 미션 결정지 로직
+  - 미션 결정지 판단전에 createdAt 순서로 정렬 ( FIFO 사용 )

@@ -36,6 +36,7 @@ export interface AcsDockingRequestType {
   CALL_TYPE: string;
   CALL_FACILITY: string;
   SAME_PIO_SERIAL: string;
+  RESULT?: string;
 }
 
 export interface AcsDockingRequestResponse extends AcsDockingRequestType {
@@ -77,6 +78,10 @@ export interface AcsDockingDetachType {
 export interface AcsDockingDetachResponse extends AcsDockingDetachType {
   RESULT: string;
   RESULT_MESSAGE: string;
+}
+
+export interface AcsDockingCanceledType {
+  CALL_ID: string;
 }
 
 export const useDockingUtil = () => {
@@ -1127,6 +1132,60 @@ export const useDockingUtil = () => {
     }
   };
 
+  // 작업이 취소 됐을 때, 도킹 요청 혹은 아웃 도킹 요청 Redis 및 설비 신호 값 초기화
+  const dockingCanceled = async (params: AcsDockingCanceledType) => {
+    const callId = params.CALL_ID || '';
+
+    if (!callId) {
+      return;
+    }
+    // dockingRequeset 초기화
+    const dockRequestList = await redisUtil.hgetAllObject<AcsDockingRequestType>(RedisKeys.DockingRequestBySerialId);
+
+    if (dockRequestList && dockRequestList.length > 0) {
+      for (let i = 0, length = dockRequestList.length; i < length; i++) {
+        const dockRequestInfo = dockRequestList[i];
+        if (dockRequestInfo.CALL_ID === callId) {
+          if (!dockRequestInfo?.RESULT) {
+            const facilitySerial = dockRequestInfo.PORT_ID;
+
+            // 1단계) dock_Request redis 지우기
+            redisUtil.hdel(RedisKeys.DockingRequestBySerialId, facilitySerial);
+            // 2단계) 설비 dock request 신호 내리기
+            await plcConnectUtil.writeTagValue({
+              targetFacility: facilitySerial || '',
+              tagInfo: [{ tagName: 'Dock_Request', value: false }],
+            });
+          }
+        }
+      }
+    }
+
+    // outDockingRequeset 초기화
+    const dockOutRequestList = await redisUtil.hgetAllObject<AcsDockingRequestType>(
+      RedisKeys.DockingOutRequestBySerialId
+    );
+
+    if (dockOutRequestList && dockOutRequestList.length > 0) {
+      for (let i = 0, length = dockOutRequestList.length; i < length; i++) {
+        const dockOutRequestInfo = dockOutRequestList[i];
+        if (dockOutRequestInfo.EQP_CALL_ID === callId) {
+          if (!dockOutRequestInfo?.RESULT) {
+            const facilitySerial = dockOutRequestInfo.PORT_ID;
+
+            // 1단계) dock_Out_Request redis 지우기
+            redisUtil.hdel(RedisKeys.DockingOutRequestBySerialId, facilitySerial);
+            // 2단계) 설비 dock out request 신호 내리기
+            await plcConnectUtil.writeTagValue({
+              targetFacility: facilitySerial || '',
+              tagInfo: [{ tagName: 'Dock_Out_Request', value: false }],
+            });
+          }
+        }
+      }
+    }
+  };
+
   return {
     sendAcsDockingRequest,
     sendAcsDockingOutRequest,
@@ -1136,5 +1195,6 @@ export const useDockingUtil = () => {
     dockingComplete,
     sendAcsDockingComplete,
     sendAcsDockingDetach,
+    dockingCanceled,
   };
 };
