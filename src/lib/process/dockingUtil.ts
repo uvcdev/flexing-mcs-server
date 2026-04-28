@@ -903,7 +903,6 @@ export const useDockingUtil = () => {
         targetFacility: params.SERIAL_ID,
         tagInfo: [
           { tagName: 'Dock_Signal_Reset', value: true },
-          { tagName: 'Dock_AMR_Status', value: false },
           { tagName: 'Dock_Request', value: false },
           { tagName: 'Dock_Out_Request', value: false },
         ],
@@ -911,7 +910,10 @@ export const useDockingUtil = () => {
       setTimeout(() => {
         plcConnectUtil.writeTagValue({
           targetFacility: params.SERIAL_ID,
-          tagInfo: [{ tagName: 'Dock_Signal_Reset', value: false }],
+          tagInfo: [
+            { tagName: 'Dock_Signal_Reset', value: false },
+            { tagName: 'Dock_AMR_Status', value: false },
+          ],
         });
       }, 500);
       // 도킹 아웃 요청 켜 있으면 꺼주고 레디스 삭제
