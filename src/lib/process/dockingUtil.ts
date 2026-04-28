@@ -560,6 +560,18 @@ export const useDockingUtil = () => {
         dockingCompleteInfo.RESULT_MESSAGE = '도킹 완료';
         redisUtil.hset(RedisKeys.DockingCompleteBySerialId, facilitySerialId, JSON.stringify(dockingCompleteInfo));
         // 이후 설비도 도킹완료, 도킹허가 내림.
+      } else {
+        // 20260422 도킹요청이 없이 Dock_Request 신호만 켜고 EQ_Status가 on 되었을 때
+        logging.KEPWARE_LOG({
+          action: 'TAG_WRITE',
+          tag: 'Dock_Request',
+          value: null,
+          message: '도킹요청이 없이 Dock_Request 신호만 켜고 EQ_Status가 on 되었을 때',
+        });
+        await plcConnectUtil.writeTagValue({
+          targetFacility: dockingRequestInfo.SERIAL_ID,
+          tagInfo: [{ tagName: 'Dock_Request', value: false }],
+        });
       }
     } catch (error) {
       console.log('🚀 ~ dockingComplete ~ error:', error);

@@ -1039,6 +1039,10 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 - approve v3.2.10-ssb
 - approve v3.2.10-ljk
 
+## v3.2.11-ssb
+
+- Dock_Eq_Status on 일 시, ACS도킹요청 없이도 Dock_Request off 되도록 수정
+
 ## v3.2.11-ljk
 
 - 트래킹 로그 버그 수정
