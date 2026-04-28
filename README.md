@@ -711,3 +711,11 @@ CREATE TABLE public.menu_roles (
 ## v2.2.17
 
 - acsWorkOrderCancel에서 멀티 콜 응답을 지정 사이트에서만 찾도록 변경
+
+## v2.2.17-cyk
+
+- `work-order-cart-cancel` MQTT 토픽 핸들러 추가 (태블릿에서 PLC 없는 작업 취소 시 사용)
+- `acsWorkOrderCartCancel` 함수 추가 (`commonUtils.ts`)
+  - alwaysOn 설비: Call_Request, Call_Response, Call_Robot_Assigned, Call_Response_Count 초기화
+  - trigger 설비: Trans_Signal_Reset ON/OFF 처리
+- `amr.ts` 라우터 export명 `amrRouter` → `router`로 통일

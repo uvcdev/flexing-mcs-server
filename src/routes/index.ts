@@ -17,7 +17,7 @@ import { router as tokenHistoryRouter } from './common/tokenHistory';
 import { router as settingRouter } from './common/setting';
 import { router as alarmEmailRouter } from './common/alarmEmail';
 import { router as mcsAlarmRouter } from './common/mcsAlarm';
-import { amrRouter } from './common/amr';
+import { router as amrRouter } from './common/amr';
 import { router as errorCodeRouter } from './common/errorCode';
 import { router as menuRoleRouter } from './common/menuRole';
 // dashboard

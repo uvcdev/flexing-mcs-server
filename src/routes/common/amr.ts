@@ -22,10 +22,10 @@ import {
 } from 'models/common/amr';
 import { amrService } from '../../service/common/amrService';
 
-export const amrRouter = express.Router();
+export const router = express.Router();
 
 // amr 등록
-amrRouter.post('/', isLoggedIn, async (req: Request<unknown, unknown, AmrInsertParams, unknown>, res: Response) => {
+router.post('/', isLoggedIn, async (req: Request<unknown, unknown, AmrInsertParams, unknown>, res: Response) => {
   const logFormat = makeLogFormat(req);
   const tokenUser = (req as { decoded?: Payload }).decoded;
 
@@ -70,7 +70,7 @@ amrRouter.post('/', isLoggedIn, async (req: Request<unknown, unknown, AmrInsertP
 });
 
 // amr 등록
-amrRouter.post('/upsert', async (req: Request<unknown, unknown, AmrUpsertParams[], unknown>, res: Response) => {
+router.post('/upsert', async (req: Request<unknown, unknown, AmrUpsertParams[], unknown>, res: Response) => {
   const logFormat = makeLogFormat(req);
   const tokenUser = (req as { decoded?: Payload }).decoded;
 
@@ -96,7 +96,7 @@ amrRouter.post('/upsert', async (req: Request<unknown, unknown, AmrUpsertParams[
 });
 
 // amr 리스트 조회
-amrRouter.get('/', isLoggedIn, async (req: Request<unknown, unknown, unknown, AmrSelectListParams>, res: Response) => {
+router.get('/', isLoggedIn, async (req: Request<unknown, unknown, unknown, AmrSelectListParams>, res: Response) => {
   const logFormat = makeLogFormat(req);
   const tokenUser = (req as { decoded?: Payload }).decoded;
 
@@ -135,7 +135,7 @@ amrRouter.get('/', isLoggedIn, async (req: Request<unknown, unknown, unknown, Am
 });
 
 // amr 상세정보 조회
-amrRouter.get(
+router.get(
   '/id/:id',
   isLoggedIn,
   async (req: Request<AmrSelectInfoParams, unknown, unknown, unknown>, res: Response) => {
@@ -178,7 +178,7 @@ amrRouter.get(
 );
 
 // amr 삭제
-amrRouter.delete(
+router.delete(
   '/id/:id',
   isLoggedIn,
   async (req: Request<AmrDeleteParams, unknown, unknown, unknown>, res: Response) => {

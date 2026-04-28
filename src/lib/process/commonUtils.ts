@@ -124,9 +124,9 @@ export const acsWorkOrderCancel = async (messageJson: any) => {
   const isMbs = (process.env.SITE && process.env.SITE === 'MBS');
   const multiCallResetTags = isMbs
     ? [
-        { tagName: 'Call_Response_Multi_1', value: false },
-        { tagName: 'Call_Response_Multi_2', value: false },
-      ]
+      { tagName: 'Call_Response_Multi_1', value: false },
+      { tagName: 'Call_Response_Multi_2', value: false },
+    ]
     : [];
 
   if (selectedWorkOrderInfoState !== 'toWorkOrder') {
@@ -159,4 +159,59 @@ export const acsWorkOrderCancel = async (messageJson: any) => {
     });
     await useCallTypeUtil().callTypeResponseReset(toFacilitySerial);
   }
+};
+
+// 태블릿으로 plc 없는 작업 취소할 때
+export const acsWorkOrderCartCancel = async (messageJson: any) => {
+  const plcConnectUtil = usePlcConnectUtil();
+  const fromFacilitySerial = messageJson?.FromFacility?.serial || '';
+  const toFacilitySerial = messageJson?.ToFacility?.serial || '';
+
+  const fromFacilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+    RedisKeys.InfoFacilityById,
+    fromFacilitySerial
+  );
+  let alwaysOnFacility = fromFacilitySerial;    // LS1O
+  let triggerFacility = toFacilitySerial;       // LE1I
+
+  if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
+    alwaysOnFacility = toFacilitySerial;  // LE1I
+    triggerFacility = fromFacilitySerial; // LS1O
+  }
+  console.log("🚀 ~ alwaysOnFacility, triggerFacility", alwaysOnFacility, triggerFacility)
+  await plcConnectUtil.writeTagValue({
+    targetFacility: alwaysOnFacility,
+    tagInfo: [
+      { tagName: 'Call_Request', value: false },
+      { tagName: 'Call_Response', value: false },
+      { tagName: 'Call_Robot_Assigned', value: false },
+      { tagName: 'Call_Response_Count', value: '0' },
+    ],
+  });
+  // await plcConnectUtil.writeTagValue({
+  //   targetFacility: triggerFacility,
+  //   tagInfo: [
+  //     { tagName: 'Call_Response', value: false },
+  //     { tagName: 'Call_Robot_Assigned', value: false },
+  //     { tagName: 'Call_Response_Count', value: '0' },
+  //     { tagName: 'Dock_Request', value: false },
+  //     { tagName: 'Call_Cancel_Response', value: false },
+  //   ],
+  // });
+
+  await plcConnectUtil.writeTagValue({
+    targetFacility: triggerFacility,
+    tagInfo: [
+      { tagName: 'Trans_Signal_Reset', value: true },
+    ],
+  });
+
+  setTimeout(() => {
+    plcConnectUtil.writeTagValue({
+      targetFacility: triggerFacility,
+      tagInfo: [
+        { tagName: 'Trans_Signal_Reset', value: false },
+      ],
+    });
+  }, 500);
 };

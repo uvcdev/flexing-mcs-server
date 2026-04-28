@@ -30,7 +30,7 @@ import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/w
 import { useDockingUtil } from './process/dockingUtil';
 import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
 import { TagValue, useKepServerUtil } from './kepServerUtil';
-import { acsWorkOrderCancel, routeMissionOrderMqttMessage } from './process/commonUtils';
+import { acsWorkOrderCancel, acsWorkOrderCartCancel } from './process/commonUtils';
 import { FacilityAttributes } from '../models/operation/facility';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { service as facilityService } from '../service/operation/facilityService';
@@ -711,6 +711,24 @@ export const receiveMqtt = (): void => {
 
               logging.MQTT_DEBUG({
                 title: 'imcs message',
+                topic: messageTopic,
+                message: messageJson,
+              });
+
+              try {
+                void itemLogDao.insert(messageJson);
+              } catch (error) {
+                console.log('logging.ITEM_LOG', error);
+              }
+            }
+            //작업지시 cart-cancel 상황
+            if (topicSplit[1] === 'work-order-cart-cancel') {
+              const messageJson = JSON.parse(message);
+
+              await acsWorkOrderCartCancel(messageJson);
+
+              logging.MQTT_DEBUG({
+                title: 'work-order-cart-cancel message',
                 topic: messageTopic,
                 message: messageJson,
               });
