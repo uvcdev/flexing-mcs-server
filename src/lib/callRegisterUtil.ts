@@ -52,8 +52,20 @@ export const useCallRegisterUtil = () => {
       const callRegisterList = await redisUtil.hgetAllObject<TagValue>(RedisKeys.InfoCallRequestOnBySerial);
       if (!callRegisterList) return;
 
-      for (let i = 0, length = callRegisterList.length; i < length; i++) {
-        const targetTagInfo = callRegisterList[i];
+      const facilityPriorityMap = new Map<string, number>();
+      await Promise.all(
+        callRegisterList.map(async (item) => {
+          if (!item.EQ_CODE) return;
+          const facility = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, item.EQ_CODE);
+          facilityPriorityMap.set(item.EQ_CODE, facility?.priority ?? 0);
+        })
+      );
+      const sortedCallRegisterList = callRegisterList
+        .filter((x): x is TagValue => x != null)
+        .sort((a, b) => (facilityPriorityMap.get(b.EQ_CODE) ?? 0) - (facilityPriorityMap.get(a.EQ_CODE) ?? 0));
+
+      for (let i = 0, length = sortedCallRegisterList.length; i < length; i++) {
+        const targetTagInfo = sortedCallRegisterList[i];
         const targetCode = targetTagInfo.EQ_CODE;
         let eqpCallId = targetTagInfo.CALL_ID || '';
         if (!targetCode) continue; // 코드 없으면 처리 불가
@@ -432,11 +444,11 @@ export const useCallRegisterUtil = () => {
                     }
 
                     const newRecentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes =
-                    {
-                      count: workOrderListInfo.count,
+                      {
+                        count: workOrderListInfo.count,
 
-                      workOrderList: workOrderListInfo.workOrderList,
-                    };
+                        workOrderList: workOrderListInfo.workOrderList,
+                      };
 
                     redisUtil.hset(
                       RedisKeys.RecentWorkOrderListByFacilitySerial,
