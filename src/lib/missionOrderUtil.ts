@@ -91,6 +91,12 @@ export const checkMissionOrder = async () => {
         const dockRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Request')) as boolean;
         const CallTypeValue = await makeCallType(targetCode);
         // 콜 카운트 없어도 되나욤 ?
+        // WS11에만 dock_disable 확인
+        if (targetCode === 'WS11') {
+          const dockDisableValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Disable')) as boolean;
+          if (dockDisableValue === true) continue;
+        }
+
         if (
           mcsModeValue === 'auto' &&
           eqAutoValue === true &&
