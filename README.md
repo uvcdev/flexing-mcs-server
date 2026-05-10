@@ -1063,3 +1063,4 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - 미션 결정지 로직
   - 미션 결정지 판단전에 createdAt 순서로 정렬 ( FIFO 사용 )
+  - WS11에만 Dock_Disable 추가
