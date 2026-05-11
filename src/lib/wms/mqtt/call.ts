@@ -519,8 +519,39 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       break;
 
     // hcack = 52 : 재고 없음 실행 예정
-    // 몇 분 뒤에 재요청 할 수 있는 레디스 값 추가
-    case '52':
+    // 몇 분 뒤에도 재시도를 하지 않는 재고 없음
+    case '52': {
+      const infoAckInCallByCallIdData52: InfoAckInCallByCallIdBody = {
+        Cmd_ID: callInfoData.Cmd_ID,
+        CALL_ID: callInfoData.Call_ID,
+        EQP_CALL_ID: callId.slice(-4),
+        Call_Type: callInfoData.Call_Type,
+        Cargo_Type: callInfoData.Cargo_Type,
+        Caller: callInfoData.Caller,
+        Call_Priority: callInfoData.Call_Priority,
+        Call_Quantity: Number(callInfoData.Call_Quantity) || 1,
+        updatedTime: formatDetailedDateTime(new Date()),
+      };
+      redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData52));
+
+      const waitOutofStockTrackingLogSubject = 'ACK_CALL_INFO';
+      const waitOutofStockTrackingLogDetail = 'ACK_CALL_INFO';
+      const waitOutofStockTrackingLogState = 'ABORTED' as TrackingLogState;
+      const waitOutofStockTrackingLogUpdateData: TrackingLogRedisUpdateParams = {
+        callId: callId,
+        subject: waitOutofStockTrackingLogSubject,
+        detail: waitOutofStockTrackingLogDetail,
+        state: waitOutofStockTrackingLogState,
+        startFacility: null,
+        transferId: null,
+        destFacility: null,
+        assignedRobot: null,
+        value: null,
+        description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})-Out of Stock(52)`,
+        processState: 'OUT_OF_STOCK',
+      };
+      await editTrackingLogRedis(waitOutofStockTrackingLogUpdateData, hcack, 'ABORTED', wmsName);
+
       logging.ACTION_ERROR({
         filename: `call.ts - ackCallInfo`,
         error: `[HCACK = ${hcack}] CallId (${callId}) execution planned with pending inventory replenishment - comment : ${ackComment}`,
@@ -529,11 +560,12 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       });
 
       // RecentCallInfoTaskByCmdId 정보 삭제
-      deleteRecentCallInfoTaskByCmdId(cmdId);
+      // deleteRecentCallInfoTaskByCmdId(cmdId);
 
-      await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
+      // await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
+    }
 
     // 정의되지 않은 hcack 수신 오류 발생 후 로깅 처리
     default:
