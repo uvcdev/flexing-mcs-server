@@ -1055,6 +1055,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 - WMS
 
   - Abort / NG / Interval 시점에 CallType 재조회 로직 추가 ( 일반 Retry는 X )
+  - ACK_CALL_INFO 재고 없음 신규 로직 추가 ( case : 52 )
 
 - Dock_Not_Permit
 
