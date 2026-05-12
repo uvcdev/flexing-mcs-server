@@ -5,7 +5,7 @@ WORKDIR /app
 # 노드 패키지 설치
 COPY package*.json src /app/
 COPY plcTagInfo.json src /app/
-RUN npm install -g pnpm && pnpm install
+RUN npm install -g pnpm@9 && pnpm install
 # RUN npm i --save-dev @types/node-schedule
 # 소스코드 빌드
 COPY . .
