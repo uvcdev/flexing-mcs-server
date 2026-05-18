@@ -83,11 +83,17 @@ export const useCallRegisterUtil = () => {
         const plcConnType = process.env.PLC_CONN_TYPE || '';
         if (isError && plcConnType === 'KEP') continue;
 
-        // 필요한 태그 값들 가져오기
-        const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
-        const callPriorityValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Priority')) as boolean;
-        const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
-        const callRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request')) as boolean;
+        // 필요한 태그 값들 가져오기 (KEP: OPC read 1회, CONNECTOR: Redis 병렬)
+        const statusByTag = await plcConnectUtil.batchGetTagValue(targetCode, [
+          'Call_Count',
+          'Call_Priority',
+          'EQ_Auto',
+          'Call_Request',
+        ]);
+        const callCountValue = statusByTag['Call_Count'] as number;
+        const callPriorityValue = statusByTag['Call_Priority'] as boolean;
+        const eqAutoValue = statusByTag['EQ_Auto'] as boolean;
+        const callRequestValue = statusByTag['Call_Request'] as boolean;
         const callType = targetTagInfo.Call_Type;
         const newCallType = await makeCallType(targetCode);
         const newCargoType = newCallType;
@@ -210,22 +216,17 @@ export const useCallRegisterUtil = () => {
                   const plcConnType = process.env.PLC_CONN_TYPE || '';
                   if (isError && plcConnType === 'KEPWARE') continue;
 
-                  const linkedFacilityCallRequestValue = (await plcConnectUtil.getTagValue(
-                    linkedFacilityInfo.serial,
-                    'Call_Request'
-                  )) as boolean;
-                  const linkedFacilityCallResponseValue = (await plcConnectUtil.getTagValue(
-                    linkedFacilityInfo.serial,
-                    'Call_Response'
-                  )) as boolean;
-                  const linkedFacilityEQAutoValue = (await plcConnectUtil.getTagValue(
-                    linkedFacilityInfo.serial,
-                    'EQ_Auto'
-                  )) as boolean;
-                  const linkedFacilityCallCountValue = (await plcConnectUtil.getTagValue(
-                    linkedFacilityInfo.serial,
-                    'Call_Count'
-                  )) as number;
+                  const linkedSerial = linkedFacilityInfo.serial;
+                  const linkedStatusByTag = await plcConnectUtil.batchGetTagValue(linkedSerial, [
+                    'Call_Request',
+                    'Call_Response',
+                    'EQ_Auto',
+                    'Call_Count',
+                  ]);
+                  const linkedFacilityCallRequestValue = linkedStatusByTag['Call_Request'] as boolean;
+                  const linkedFacilityCallResponseValue = linkedStatusByTag['Call_Response'] as boolean;
+                  const linkedFacilityEQAutoValue = linkedStatusByTag['EQ_Auto'] as boolean;
+                  const linkedFacilityCallCountValue = linkedStatusByTag['Call_Count'] as number;
                   const linkedFacilityCallTypeValue = await makeCallType(linkedFacilityInfo?.serial?.toString());
                   if (!linkedFacilityEQAutoValue) continue;
 
@@ -496,8 +497,9 @@ export const useCallRegisterUtil = () => {
     reRegister: string
   ): Promise<string | null> => {
     try {
-      const callTimeYearValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Time_Year')) as string;
-      const callTimeMonthDayValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Time_MonthDay')) as string;
+      const timeByTag = await plcConnectUtil.batchGetTagValue(targetCode, ['Call_Time_Year', 'Call_Time_MonthDay']);
+      const callTimeYearValue = timeByTag['Call_Time_Year'] as string;
+      const callTimeMonthDayValue = timeByTag['Call_Time_MonthDay'] as string;
 
       // callTimeMonthDayValue, generatedCallCountValue 값을 4자릿수로 변환
       const callTimeMonthDayStr = formatToDateCode(Number(callTimeMonthDayValue)).toString();

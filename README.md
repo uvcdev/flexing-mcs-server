@@ -1072,3 +1072,27 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 - approve v3.2.11-ssb
 - approve v3.2.11-ljk
 - Updated 4차출장
+
+## v3.4.0-ssb
+
+- MCS 성능개선
+  - `plcConnectUtil.batchGetTagValue` 추가
+    - 여러 태그를 한 번에 읽기 (KEP: OPC UA read 배치, CONNECTOR: Redis 병렬)
+  - PLC 태그 개별 `getTagValue` 호출을 배치 읽기로 전환
+    - `callRegisterUtil`, `multiCallRegisterUtil`, `callResponseUtil`, `eqpCheckUtil`, `missionOrderUtil`, `commonUtils`(멀티콜 상태 보정) 등
+  - `kepServerUtil.makeCallType` / `callTypeUtil.callTypeResponse`
+    - `Call_Type_01` ~ `Call_Type_10` 배치 읽기
+    - `callTypeResponse`: 문자열 값이 있을 때만 `Call_Type_Response_*` 일괄 쓰기(빈 쓰기 감소)
+
+- `missionOrderUtil.checkMissionOrder`
+  - 미션 주문 목록 `createdAt` 정렬(FIFO)을 처리 루프 진입 전으로 이동
+  - 도킹·콜 관련 태그 일괄 읽기 (WS11만 `Dock_Disable` 포함)
+
+- Recent 작업 목록 MQTT (`commonUtils.sendMqttWorkOrderList`)
+  - `mqttUtil.sendMqttRetain`으로 retain 발송 (구독 직후 브로커가 마지막 메시지 전달)
+  - 설비별 페이로드가 직전과 같으면 재전송 생략
+  - Redis에서 설비 키가 빠진 경우 빈 목록 retain으로 스냅샷 정리
+
+## v3.4.1
+
+- approve v3.4.0-ssb

@@ -16,6 +16,9 @@ export const checkMissionOrder = async () => {
   const missionOrderList =
     (await redisUtil.hgetAllObject<MqttBranchInfoDataFromAcs>(RedisKeys.InfoMissionOrderByWorkOrderCode)) || [];
 
+  // create 순서로 정렬 ( FIFO )
+  missionOrderList.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+
   for (let i = 0, length = missionOrderList.length; i < length; i++) {
     const missionOrderMqttInfo = missionOrderList[i];
     const missionOrderType = await routeMissionOrderMqttMessage(missionOrderMqttInfo);
@@ -36,8 +39,6 @@ export const checkMissionOrder = async () => {
 
     const newFacilityArray = [];
 
-    // create 순서로 정렬 ( FIFO )
-    missionOrderList.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
 
     // if (linkedEqpIds && linkedEqpIds.length > 0) {
     if (missionFacilitySerials && missionFacilitySerials.length > 0) {
@@ -77,23 +78,35 @@ export const checkMissionOrder = async () => {
         const plcConnType = process.env.PLC_CONN_TYPE || '';
         if (isError && plcConnType === 'KEP') continue;
 
-        const eqAutoValue = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Auto')) as boolean;
-        const callRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request')) as boolean;
-        const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
+        const missionDockTagNames = [
+          'EQ_Auto',
+          'Call_Request',
+          'Call_Count',
+          'Dock_AMR_Status',
+          'Call_Response',
+          'Dock_Out_Permit',
+          'Dock_Permit',
+          'Dock_Request',
+          ...(targetCode === 'WS11' ? (['Dock_Disable'] as const) : []),
+        ];
+        const missionDockByTag = await plcConnectUtil.batchGetTagValue(targetCode, missionDockTagNames);
+        const eqAutoValue = missionDockByTag['EQ_Auto'] as boolean;
+        const callRequestValue = missionDockByTag['Call_Request'] as boolean;
+        const callCountValue = missionDockByTag['Call_Count'] as number;
         // 2026.03.27 기준 ) 설비 쪽 데이터가 아닌, AMR 쪽 데이터로 판단 하는 것으로 수정 요청
         // 요청자 : 손새진 책임 매니저님, 성기동 책임 매니저님
         // const dockEqStatusValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_EQ_Status')) as boolean;
-        const dockAmrStatusValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_AMR_Status')) as boolean;
-        const callResponseValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Response')) as boolean;
+        const dockAmrStatusValue = missionDockByTag['Dock_AMR_Status'] as boolean;
+        const callResponseValue = missionDockByTag['Call_Response'] as boolean;
         // const dockDisableValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Disable')) as boolean;
-        const dockOutPermitValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Out_Permit')) as boolean;
-        const dockPermitValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Permit')) as boolean;
-        const dockRequestValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Request')) as boolean;
-        const CallTypeValue = await makeCallType(targetCode);
+        const dockOutPermitValue = missionDockByTag['Dock_Out_Permit'] as boolean;
+        const dockPermitValue = missionDockByTag['Dock_Permit'] as boolean;
+        const dockRequestValue = missionDockByTag['Dock_Request'] as boolean;
+        // const CallTypeValue = await makeCallType(targetCode);
         // 콜 카운트 없어도 되나욤 ?
         // WS11에만 dock_disable 확인
         if (targetCode === 'WS11') {
-          const dockDisableValue = (await plcConnectUtil.getTagValue(targetCode, 'Dock_Disable')) as boolean;
+          const dockDisableValue = missionDockByTag['Dock_Disable'] as boolean;
           if (dockDisableValue === true) continue;
         }
 

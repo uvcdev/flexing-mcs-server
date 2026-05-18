@@ -87,15 +87,14 @@ export const useCallResponseUtil = () => {
         const facilityInfo = facilityInfoList[i];
         const facilityCode = facilityInfo.serial;
         if (facilityCode) {
-          const callRequestValue = (await plcConnectUtil.getTagValue(facilityCode, 'Call_Request')) as boolean;
-          const multiCallFirstValue = (await plcConnectUtil.getTagValue(
-            facilityCode,
-            'Call_Request_Multi_1'
-          )) as boolean;
-          const multiCallSecondValue = (await plcConnectUtil.getTagValue(
-            facilityCode,
-            'Call_Request_Multi_2'
-          )) as boolean;
+          const multiCallReqByTag = await plcConnectUtil.batchGetTagValue(facilityCode, [
+            'Call_Request',
+            'Call_Request_Multi_1',
+            'Call_Request_Multi_2',
+          ]);
+          const callRequestValue = multiCallReqByTag['Call_Request'] as boolean;
+          const multiCallFirstValue = multiCallReqByTag['Call_Request_Multi_1'] as boolean;
+          const multiCallSecondValue = multiCallReqByTag['Call_Request_Multi_2'] as boolean;
           if (!multiCallFirstValue || !callRequestValue) continue;
 
           const workOrderCount = await redisUtil.hget(RedisKeys.InfoWorkOrderCountBySerial, facilityCode || '');

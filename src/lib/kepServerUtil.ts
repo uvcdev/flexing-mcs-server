@@ -170,25 +170,24 @@ export const parseHexWordToAscii = (value: number): string => {
 // call_type 함축 함수
 export const makeCallType = async (value: string): Promise<string> => {
   const plcConnectUtil = usePlcConnectUtil();
-  // if (value < 0 || value > 0xFFFF) {
-  //   throw new Error('0 ~ 65535 사이의 정수를 입력하세요.');
-  // }
-
-  let callType = '';
-
   const targetCode = value;
 
-  for (let i = 1; i <= 10; i++) {
+  const callTypeTagNames = Array.from({ length: 10 }, (_, idx) => {
+    const i = idx + 1;
     const suffix = i < 10 ? `0${i}` : `${i}`;
-    const tag = (await plcConnectUtil.getTagValue(targetCode, `Call_Type_${suffix}`)) as string;
+    return `Call_Type_${suffix}`;
+  });
+
+  const byTag = await plcConnectUtil.batchGetTagValue(targetCode, callTypeTagNames);
+
+  let callType = '';
+  for (const tagName of callTypeTagNames) {
+    const tag = byTag[tagName] as string;
     if (tag) {
       callType += tag;
     }
   }
-  // callType = callType.replace(/[\s]/g, '');
-  callType = callType.trimEnd();
-
-  return callType;
+  return callType.trimEnd();
 };
 
 const isFacilityStatusTag = (tagName: string): boolean => {

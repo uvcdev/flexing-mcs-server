@@ -32,35 +32,45 @@ export const useCallTypeUtil = () => {
   const callTypeResponse = async (targetCode: string) => {
     try {
       if (!targetCode) return;
-      // const targetCode = targetTagInfo.EQ_CODE;
 
-      for (let i = 1; i <= 10; i++) {
+      const readCallTypeNames = Array.from({ length: 10 }, (_, idx) => {
+        const i = idx + 1;
         const suffix = i < 10 ? `0${i}` : `${i}`;
-        const readCallType = `Call_Type_${suffix}`;
+        return `Call_Type_${suffix}`;
+      });
+
+      const byTag = await plcConnectUtil.batchGetTagValue(targetCode, readCallTypeNames);
+      console.log('[callTypeResponse] batchRead', { targetCode, keys: readCallTypeNames.length });
+
+      const plcConnType = process.env.PLC_CONN_TYPE || '';
+      const tagInfo: { tagName: string; value: boolean | string | number }[] = [];
+
+      for (let i = 0; i < readCallTypeNames.length; i++) {
+        const readCallType = readCallTypeNames[i];
+        const suffix = i + 1 < 10 ? `0${i + 1}` : `${i + 1}`;
         const writeCallType = `Call_Type_Response_${suffix}`;
 
-        // 값 읽기
-        const callTypeValue = (await plcConnectUtil.getTagValue(targetCode, readCallType)) as string;
+        const callTypeValue = byTag[readCallType] as string | null;
         if (typeof callTypeValue === 'string') {
-          // const setCallType = callTypeValue.replace(/[\s]/g, '');
           const setCallType = callTypeValue.trimEnd();
-          let callType = '';
-          if (process.env.PLC_CONN_TYPE === 'KEP') {
-            console.log(`setCallType`, setCallType);
+          let callType: string;
+          if (plcConnType === 'KEP') {
             callType = parseAsciiToDecWord(setCallType).toString();
-            console.log(`callType`, callType);
-            console.log(`callType type`, typeof callType);
           } else {
             callType = setCallType;
-            console.log(`callType`, callType);
-            console.log(`callType type`, typeof callType);
           }
-          // 값 쓰기
-          await plcConnectUtil.writeTagValue({
-            targetFacility: targetCode,
-            tagInfo: [{ tagName: writeCallType, value: callType }],
-          });
+          tagInfo.push({ tagName: writeCallType, value: callType });
         }
+      }
+
+      if (tagInfo.length > 0) {
+        console.log('[callTypeResponse] batchWrite', { targetCode, count: tagInfo.length, plcConnType });
+        await plcConnectUtil.writeTagValue({
+          targetFacility: targetCode,
+          tagInfo,
+        });
+      } else {
+        console.log('[callTypeResponse] skipWrite', { targetCode, reason: 'no string Call_Type values' });
       }
     } catch (error) {
       throw error;

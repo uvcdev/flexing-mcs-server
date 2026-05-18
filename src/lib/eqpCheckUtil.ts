@@ -603,10 +603,16 @@ export const useEqpCheckUtil = () => {
       //   useKepServerUtil().updateTagValue(`${targetKey}.${needKeys[i]}`, readDatas[i]);
       // }
       const targetCode = useKepServerUtil().getTagCode(targetKey);
-      const EQCode01Value = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Code_01')) as string;
-      const EQCode02Value = (await plcConnectUtil.getTagValue(targetCode, 'EQ_Code_02')) as string;
-      const callTimeYearValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Time_Year')) as string;
-      const callTimeMonthDayValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Time_MonthDay')) as string;
+      const eqpCallIdByTag = await plcConnectUtil.batchGetTagValue(targetCode, [
+        'EQ_Code_01',
+        'EQ_Code_02',
+        'Call_Time_Year',
+        'Call_Time_MonthDay',
+      ]);
+      const EQCode01Value = eqpCallIdByTag['EQ_Code_01'] as string;
+      const EQCode02Value = eqpCallIdByTag['EQ_Code_02'] as string;
+      const callTimeYearValue = eqpCallIdByTag['Call_Time_Year'] as string;
+      const callTimeMonthDayValue = eqpCallIdByTag['Call_Time_MonthDay'] as string;
 
       // callTimeMonthDay 값을 4자릿수로 변환
       const callTimeMonthDayStr = callTimeMonthDayValue.toString().padStart(4, '0');
