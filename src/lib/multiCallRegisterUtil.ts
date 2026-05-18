@@ -61,10 +61,16 @@ export const useMultiCallRegisterUtil = () => {
           : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
         // 필요한 태그 값들 가져오기
 
-        const callCountValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Count')) as number;
-        const callPriorityValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Priority')) as boolean;
-        const multiCallFirstValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request_Multi_1')) as boolean;
-        const multiCallSecondValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Request_Multi_2')) as boolean;
+        const multiCallStatusByTag = await plcConnectUtil.batchGetTagValue(targetCode, [
+          'Call_Count',
+          'Call_Priority',
+          'Call_Request_Multi_1',
+          'Call_Request_Multi_2',
+        ]);
+        const callCountValue = multiCallStatusByTag['Call_Count'] as number;
+        const callPriorityValue = multiCallStatusByTag['Call_Priority'] as boolean;
+        const multiCallFirstValue = multiCallStatusByTag['Call_Request_Multi_1'] as boolean;
+        const multiCallSecondValue = multiCallStatusByTag['Call_Request_Multi_2'] as boolean;
         const callType = await makeCallType(targetCode);
 
         // // remainCall doesn't need multiCallRegister again
@@ -184,18 +190,15 @@ export const useMultiCallRegisterUtil = () => {
                     continue;
                   }
 
-                  const linkedFacilityCallRequestValue = (await plcConnectUtil.getTagValue(
-                    linkedFacilityInfo?.serial,
-                    'Call_Request'
-                  )) as boolean;
-                  const linkedFacilityCallResponseValue = (await plcConnectUtil.getTagValue(
-                    linkedFacilityInfo?.serial,
-                    'Call_Response'
-                  )) as boolean;
-                  const linkedFacilityCallCountValue = (await plcConnectUtil.getTagValue(
-                    linkedFacilityInfo?.serial,
-                    'Call_Count'
-                  )) as number;
+                  const linkedSerial = linkedFacilityInfo.serial;
+                  const linkedMultiByTag = await plcConnectUtil.batchGetTagValue(linkedSerial, [
+                    'Call_Request',
+                    'Call_Response',
+                    'Call_Count',
+                  ]);
+                  const linkedFacilityCallRequestValue = linkedMultiByTag['Call_Request'] as boolean;
+                  const linkedFacilityCallResponseValue = linkedMultiByTag['Call_Response'] as boolean;
+                  const linkedFacilityCallCountValue = linkedMultiByTag['Call_Count'] as number;
                   const linkedFacilityCallTypeValue = await makeCallType(linkedFacilityInfo?.serial?.toString());
 
                   const eqpCallId = await useCallRegisterUtil().createWorkOrderCode(
@@ -377,8 +380,9 @@ export const useMultiCallRegisterUtil = () => {
     try {
       const targetCode = kepServerUtil.getTagCode(targetKey);
 
-      const callTimeYearValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Time_Year')) as string;
-      const callTimeMonthDayValue = (await plcConnectUtil.getTagValue(targetCode, 'Call_Time_MonthDay')) as string;
+      const multiTimeByTag = await plcConnectUtil.batchGetTagValue(targetCode, ['Call_Time_Year', 'Call_Time_MonthDay']);
+      const callTimeYearValue = multiTimeByTag['Call_Time_Year'] as string;
+      const callTimeMonthDayValue = multiTimeByTag['Call_Time_MonthDay'] as string;
       // callTimeMonthDay 값을 4자릿수로 변환
       const callTimeMonthDayStr = formatToDateCode(Number(callTimeMonthDayValue)).toString();
       const facilityYearMonthDayValue = targetCode + callTimeYearValue + callTimeMonthDayStr;

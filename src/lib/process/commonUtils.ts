@@ -8,7 +8,7 @@ import { usePlcConnectUtil } from '../plcConnectUtil';
 import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { MqttBranchInfoDataFromAcs } from './wmsBranch';
 import { TrackingLogRedisAttributes } from '../../models/common/trackingLog';
-import { MqttTopics, sendMqtt } from '../mqttUtil';
+import { MqttTopics, sendMqttRetain } from '../mqttUtil';
 import { editTrackingLogRedis } from './trackingLog';
 import { EqpCallStats, useCallTypeUtil } from '../callTypeUtil';
 import { RemainingAckCommand } from './wmsAck';
@@ -21,6 +21,12 @@ import { useSmartConnectorUtils } from '../smartConnectorUtils';
 const redisUtil = useRedisUtil();
 const plcConnectUtil = usePlcConnectUtil();
 const smartConnectorUtils = useSmartConnectorUtils();
+
+/** RecentWorkOrderList MQTT: 설비별 직전 전송 페이로드 (변경 시에만 재전송) */
+const lastRecentWorkOrderListPayloadByFacilitySerial = new Map<string, string>();
+
+/** Redis 목록에서 설비가 빠졌을 때 retain 스냅샷을 비우기 위한 페이로드 (일반 빈 목록과 동일 문자열) */
+const EMPTY_RECENT_WORK_ORDER_LIST_JSON = JSON.stringify({ count: 0, callList: [] });
 export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDataFromAcs) => {
   const mode = messageJson.mode;
 
@@ -191,12 +197,16 @@ export const sendMqttWorkOrderList = async () => {
       RedisKeys.RecentWorkOrderListByFacilitySerial
     )) || [];
 
+  const seenFacilitySerials = new Set<string>();
+
   for (let i = 0; i < recentWorkOrderList.length; i++) {
     const facilitySerial = recentWorkOrderList[i].facilitySerial;
     const workOrderCount = recentWorkOrderList[i].count;
     const workOrderList = recentWorkOrderList[i].workOrderList;
 
-    const selectedCallIdList = [];
+    seenFacilitySerials.add(facilitySerial);
+
+    const selectedCallIdList: { callId: string; detail: string }[] = [];
     if (workOrderCount > 0) {
       for (let j = 0; j < workOrderList.length; j++) {
         const callInfo = workOrderList[j];
@@ -215,11 +225,27 @@ export const sendMqttWorkOrderList = async () => {
         });
       }
     }
+    selectedCallIdList.sort((a, b) => (a.callId < b.callId ? -1 : a.callId > b.callId ? 1 : 0));
+
     const recentWorkOrderInfo = {
       count: selectedCallIdList.length,
       callList: selectedCallIdList,
     };
-    sendMqtt(`${MqttTopics.RecentWorkOrderList}/${facilitySerial}`, JSON.stringify(recentWorkOrderInfo));
+    const payload = JSON.stringify(recentWorkOrderInfo);
+    if (lastRecentWorkOrderListPayloadByFacilitySerial.get(facilitySerial) === payload) {
+      continue;
+    }
+    lastRecentWorkOrderListPayloadByFacilitySerial.set(facilitySerial, payload);
+    sendMqttRetain(`${MqttTopics.RecentWorkOrderList}/${facilitySerial}`, payload);
+  }
+
+  const staleFacilitySerials = [...lastRecentWorkOrderListPayloadByFacilitySerial.keys()].filter(
+    (serial) => !seenFacilitySerials.has(serial)
+  );
+  for (const cachedSerial of staleFacilitySerials) {
+    // Redis 해시에서 설비 키가 사라진 경우: retain 토픽에 옛 스냅샷이 남지 않도록 빈 목록으로 갱신 후 캐시 제거
+    sendMqttRetain(`${MqttTopics.RecentWorkOrderList}/${cachedSerial}`, EMPTY_RECENT_WORK_ORDER_LIST_JSON);
+    lastRecentWorkOrderListPayloadByFacilitySerial.delete(cachedSerial);
   }
 };
 
@@ -1128,12 +1154,18 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
   const fromWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'fromWorkOrder');
   const toWorkOrderList = workOrderList.filter((workOrder) => workOrder.state === 'toWorkOrder');
 
+  const callResponseStatusTagNames = ['Call_Count', 'Call_Response', 'Call_Robot_Assigned', 'Call_Response_Count'];
+
   if (toWorkOrderList.length > 0) {
     const callType = await makeCallType(facilitySerial);
-    const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
-    const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
-    const callRobotAssignedValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Robot_Assigned')) as boolean;
-    const callResponseCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response_Count')) as number;
+    const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(
+      facilitySerial,
+      callResponseStatusTagNames
+    );
+    const callCountValue = callResponseStatusByTag['Call_Count'] as number;
+    const callResponseValue = callResponseStatusByTag['Call_Response'] as boolean;
+    const callRobotAssignedValue = callResponseStatusByTag['Call_Robot_Assigned'] as boolean;
+    const callResponseCountValue = callResponseStatusByTag['Call_Response_Count'] as number;
 
     if (callResponseValue === false) {
       await plcConnectUtil.writeTagValue({
@@ -1169,10 +1201,14 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
 
   if (toWorkOrderList.length === 0 && (beforeAssignedAmrWorkOrderList.length > 0 || fromWorkOrderList.length > 0)) {
     const callType = await makeCallType(facilitySerial);
-    const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
-    const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
-    const callRobotAssignedValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Robot_Assigned')) as boolean;
-    const callResponseCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response_Count')) as number;
+    const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(
+      facilitySerial,
+      callResponseStatusTagNames
+    );
+    const callCountValue = callResponseStatusByTag['Call_Count'] as number;
+    const callResponseValue = callResponseStatusByTag['Call_Response'] as boolean;
+    const callRobotAssignedValue = callResponseStatusByTag['Call_Robot_Assigned'] as boolean;
+    const callResponseCountValue = callResponseStatusByTag['Call_Response_Count'] as number;
 
     if (callResponseValue === false) {
       await plcConnectUtil.writeTagValue({
@@ -1199,16 +1235,14 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
   if (facilityInfo.system === 'EQP') {
     if (toWorkOrderList.length === 0 && beforeAssignedAmrWorkOrderList.length === 0 && fromWorkOrderList.length === 0) {
       const callType = await makeCallType(facilitySerial);
-      const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
-      const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
-      const callRobotAssignedValue = (await plcConnectUtil.getTagValue(
+      const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(
         facilitySerial,
-        'Call_Robot_Assigned'
-      )) as boolean;
-      const callResponseCountValue = (await plcConnectUtil.getTagValue(
-        facilitySerial,
-        'Call_Response_Count'
-      )) as number;
+        callResponseStatusTagNames
+      );
+      const callCountValue = callResponseStatusByTag['Call_Count'] as number;
+      const callResponseValue = callResponseStatusByTag['Call_Response'] as boolean;
+      const callRobotAssignedValue = callResponseStatusByTag['Call_Robot_Assigned'] as boolean;
+      const callResponseCountValue = callResponseStatusByTag['Call_Response_Count'] as number;
 
       if (callResponseValue === true) {
         await plcConnectUtil.writeTagValue({
@@ -1244,16 +1278,14 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
       selectedAckCallInfoList.length > 0
     ) {
       const callType = await makeCallType(facilitySerial);
-      const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
-      const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
-      const callRobotAssignedValue = (await plcConnectUtil.getTagValue(
+      const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(
         facilitySerial,
-        'Call_Robot_Assigned'
-      )) as boolean;
-      const callResponseCountValue = (await plcConnectUtil.getTagValue(
-        facilitySerial,
-        'Call_Response_Count'
-      )) as number;
+        callResponseStatusTagNames
+      );
+      const callCountValue = callResponseStatusByTag['Call_Count'] as number;
+      const callResponseValue = callResponseStatusByTag['Call_Response'] as boolean;
+      const callRobotAssignedValue = callResponseStatusByTag['Call_Robot_Assigned'] as boolean;
+      const callResponseCountValue = callResponseStatusByTag['Call_Response_Count'] as number;
 
       if (callResponseValue === false) {
         await plcConnectUtil.writeTagValue({
@@ -1285,16 +1317,14 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
       selectedAckCallInfoList.length === 0
     ) {
       const callType = await makeCallType(facilitySerial);
-      const callCountValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Count')) as number;
-      const callResponseValue = (await plcConnectUtil.getTagValue(facilitySerial, 'Call_Response')) as boolean;
-      const callRobotAssignedValue = (await plcConnectUtil.getTagValue(
+      const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(
         facilitySerial,
-        'Call_Robot_Assigned'
-      )) as boolean;
-      const callResponseCountValue = (await plcConnectUtil.getTagValue(
-        facilitySerial,
-        'Call_Response_Count'
-      )) as number;
+        callResponseStatusTagNames
+      );
+      const callCountValue = callResponseStatusByTag['Call_Count'] as number;
+      const callResponseValue = callResponseStatusByTag['Call_Response'] as boolean;
+      const callRobotAssignedValue = callResponseStatusByTag['Call_Robot_Assigned'] as boolean;
+      const callResponseCountValue = callResponseStatusByTag['Call_Response_Count'] as number;
 
       if (callResponseValue === true) {
         await plcConnectUtil.writeTagValue({

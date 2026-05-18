@@ -164,6 +164,93 @@ export const usePlcConnectUtil = () => {
   };
 
   /**
+   * 여러 태그를 한 번에 읽기 (KEP: OPC UA read 배치, CONNECTOR: Redis 병렬 조회)
+   */
+  const batchGetTagValue = async (
+    targetCode: string,
+    tagNames: string[]
+  ): Promise<Record<string, boolean | number | string | null>> => {
+    const out: Record<string, boolean | number | string | null> = {};
+    if (!plcConnType) {
+      logging.ACTION_ERROR({
+        filename: 'plcConnectUtil.ts-batchGetTagValue',
+        params: { plcConnType },
+        result: null,
+        error: 'PLC Connection Type is not set',
+      });
+      return out;
+    }
+    const names = tagNames.filter(Boolean);
+    if (!targetCode || names.length === 0) {
+      return out;
+    }
+    try {
+      if (plcConnType === 'KEP') {
+        const targetKey = kepServerUtil.getTargetKey(targetCode);
+        await kepServerUtil.updateTagMapValues(targetKey, targetCode, names);
+        for (const tagName of names) {
+          out[tagName] = (opcuaUtil.tagMap.get(`${targetCode}.${tagName}`)?.value ??
+            null) as boolean | number | string | null;
+        }
+        return out;
+      }
+      if (plcConnType === 'CONNECTOR') {
+        await Promise.all(
+          names.map(async (tagName) => {
+            const data = await smartConnectorUtils.getPlcRealtimeTagDataFromRedis(targetCode, tagName);
+            const tagMapValue = smartConnector.tagMap.get(`${targetCode}.${tagName}`);
+            if (!tagMapValue) {
+              logging.ACTION_ERROR({
+                filename: 'plcConnectUtil.ts-batchGetTagValue',
+                params: { targetCode, tagName },
+                result: null,
+                error: 'Tag value is not found',
+              });
+              out[tagName] = null;
+              return;
+            }
+            switch (tagMapValue.DATA_TYPE) {
+              case 'Boolean':
+                out[tagName] = data === 'true' ? true : false;
+                break;
+              case 'UInt16':
+                out[tagName] = Number(data);
+                break;
+              case 'String':
+                out[tagName] = data;
+                break;
+              default:
+                logging.ACTION_ERROR({
+                  filename: 'plcConnectUtil.ts-batchGetTagValue',
+                  params: { targetCode, tagName },
+                  result: null,
+                  error: `Tag data type is not valid: ${tagMapValue.DATA_TYPE}`,
+                });
+                out[tagName] = null;
+            }
+          })
+        );
+        return out;
+      }
+      logging.ACTION_ERROR({
+        filename: 'plcConnectUtil.ts-batchGetTagValue',
+        params: { plcConnType },
+        result: null,
+        error: 'PLC Connection Type is not valid',
+      });
+      return out;
+    } catch (error) {
+      logging.ACTION_ERROR({
+        filename: 'plcConnectUtil.ts-batchGetTagValue',
+        params: { targetCode, tagNames: names },
+        result: null,
+        error: 'Error batch getting tag values: ' + (error as Error).message,
+      });
+      throw error;
+    }
+  };
+
+  /**
    * 태그 읽는 함수
    * @param targetCode 설비 코드
    * @param tagName 태그 이름
@@ -251,5 +338,6 @@ export const usePlcConnectUtil = () => {
     monitorTagData,
     writeTagValue,
     getTagValue,
+    batchGetTagValue,
   };
 };

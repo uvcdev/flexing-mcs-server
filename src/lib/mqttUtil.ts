@@ -1186,6 +1186,27 @@ export const sendMqtt = (subTopic: string, message: string): void => {
   }
 };
 
+/** MQTT 발송(retain=true). 구독 직후 브로커가 마지막 메시지를 내려줄 때 사용 (토픽당 마지막 1통만 유지). */
+export const sendMqttRetain = (subTopic: string, message: string): void => {
+  if (mqttConfig.host !== '') {
+    let sendTopic = topic;
+    if (subTopic) {
+      sendTopic = topic + '/' + subTopic;
+    }
+
+    try {
+      client.publish(sendTopic, message, { qos: 0, retain: true });
+    } catch (err) {
+      logging.MQTT_ERROR({
+        title: 'mqtt send retain error',
+        topic: topic,
+        message: message,
+        error: err,
+      });
+    }
+  }
+};
+
 // wms mqtt 메세지 발송
 export const sendMbsMqtt = (
   systemTopic: string,
