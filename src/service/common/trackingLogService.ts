@@ -65,7 +65,10 @@ export const trackingLogService = {
     });
   },
   // selectList
-  async list(params: TrackingLogSelectListParams, logFormat: LogFormat<unknown>): Promise<SelectedListResult<TrackingLogAttributes>> {
+  async list(
+    params: TrackingLogSelectListParams,
+    logFormat: LogFormat<unknown>
+  ): Promise<SelectedListResult<TrackingLogAttributes>> {
     let result: SelectedListResult<TrackingLogAttributes>;
 
     try {
@@ -85,7 +88,10 @@ export const trackingLogService = {
     });
   },
   // selectInfo
-  async info(params: TrackingLogSelectInfoParams, logFormat: LogFormat<unknown>): Promise<TrackingLogAttributes | null> {
+  async info(
+    params: TrackingLogSelectInfoParams,
+    logFormat: LogFormat<unknown>
+  ): Promise<TrackingLogAttributes | null> {
     let result: TrackingLogAttributes | null;
 
     try {

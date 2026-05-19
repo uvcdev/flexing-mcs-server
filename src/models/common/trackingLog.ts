@@ -1,6 +1,7 @@
 import { Model, DataTypes, WhereOptions, Order, JSON } from 'sequelize';
 import { sequelize } from '../sequelize';
 import { ItemLogAttributes, ItemLogInsertParams } from '../timescale/itemLog';
+import { LeadTimeInfo, SectionLeadTime, SectionLeadTimeDetail } from '../operation/facility';
 
 export interface TrackingLogAttributes {
   id: number;
@@ -22,6 +23,10 @@ export interface TrackingLogAttributes {
   // 컬럼 추가
   missionDestination: string | null; // 미션결정지 도착 위치 명
   processState: TrackingLogProcessState | null; // 물류 로그 동작 상태
+  leadTime?: number | null; // 리드 타임 (초 단위)
+  leadTimeInfo?: Record<string, any> | null;
+  sectionLeadTime?: Record<string, any> | null; // 구간별 리드 타임 (예: { A: 100, B: 200 })
+  subjectTimeLog?: Record<string, any> | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -67,7 +72,16 @@ export type TrackingLogSubjectType =
   | 'TO_COMPLETED'
   | 'AMR_ASSIGNED'
   | 'BRANCH_INFO_REQ'
-  | 'BRANCH_INFO_REP';
+  | 'BRANCH_INFO_REP'
+  | 'MISSION_ORDER_ASSIGNED'
+  | 'MISSION_ORDER_COMPLETED'
+  | 'AMR_UNASSIGNED'
+  | 'AMR_DEPOSIT_COMPLETED'
+  | 'AMR_DEPOSIT_STARTED'
+  | 'CARRIER_TRANSFERRING'
+  | 'AMR_ACQUIRE_COMPLETED'
+  | 'AMR_ACQUIRE_STARTED'
+  | 'MISSION_INITIATED';
 
 // 진행 상태 추가 필요시 추가 적용 예정
 export type TrackingLogState =
@@ -103,6 +117,10 @@ class TrackingLog extends Model implements TrackingLogAttributes {
   public description!: TrackingLogAttributes['description'];
   public missionDestination!: TrackingLogAttributes['missionDestination'];
   public processState!: TrackingLogAttributes['processState'];
+  public leadTime!: TrackingLogAttributes['leadTime'];
+  public leadTimeInfo!: TrackingLogAttributes['leadTimeInfo'];
+  public sectionLeadTime!: TrackingLogAttributes['sectionLeadTime'];
+  public subjectTimeLog!: TrackingLogAttributes['subjectTimeLog'];
   public readonly createdAt!: TrackingLogAttributes['createdAt'];
   public readonly updatedAt!: TrackingLogAttributes['updatedAt'];
   public readonly deletedAt!: TrackingLogAttributes['deletedAt'];
@@ -110,6 +128,7 @@ class TrackingLog extends Model implements TrackingLogAttributes {
 
 const TrackingLogDefaultValue = {
   processState: 'NORMAL',
+  leadTime: 0,
 };
 
 TrackingLog.init(
@@ -171,6 +190,19 @@ TrackingLog.init(
       type: DataTypes.STRING(20),
       defaultValue: TrackingLogDefaultValue.processState,
     },
+    leadTime: {
+      type: DataTypes.INTEGER,
+      defaultValue: TrackingLogDefaultValue.leadTime,
+    },
+    leadTimeInfo: {
+      type: DataTypes.JSONB,
+    },
+    sectionLeadTime: {
+      type: DataTypes.JSONB,
+    },
+    subjectTimeLog: {
+      type: DataTypes.JSONB,
+    },
   },
   {
     sequelize,
@@ -202,6 +234,10 @@ export interface TrackingLogInsertParams {
   description: string | null;
   missionDestination: string | null;
   processState: TrackingLogProcessState | null;
+  leadTime?: number | null;
+  leadTimeInfo?: Record<string, any> | null;
+  sectionLeadTime?: Record<string, any> | null;
+  subjectTimeLog?: Record<string, any> | null;
 }
 
 export interface TrackingLogUpsertParams {
@@ -222,6 +258,10 @@ export interface TrackingLogUpsertParams {
   description?: string | null;
   missionDestination?: string | null;
   processState?: string | null;
+  leadTime?: number | null;
+  leadTimeInfo?: Record<string, any> | null;
+  sectionLeadTime?: Record<string, any> | null;
+  subjectTimeLog?: Record<string, any> | null;
 }
 
 export interface TrackingLogSelectListParams {
@@ -289,6 +329,10 @@ export interface TrackingLogUpdateParams {
   description?: TrackingLogAttributes['description'];
   missionDestination?: TrackingLogAttributes['missionDestination'];
   processState?: TrackingLogAttributes['processState'];
+  leadTime?: TrackingLogAttributes['leadTime'];
+  leadTimeInfo?: TrackingLogAttributes['leadTimeInfo'];
+  sectionLeadTime?: TrackingLogAttributes['sectionLeadTime'];
+  subjectTimeLog?: TrackingLogAttributes['subjectTimeLog'];
 }
 
 // delete
@@ -322,7 +366,82 @@ export interface TrackingLogRedisUpdateParams {
   location?: string;
   // 26.04.04
   callType?: TrackingLogAttributes['callType'];
+  // 26.05.16
+  leadTime?: TrackingLogAttributes['leadTime'];
+  leadTimeInfo?: TrackingLogAttributes['leadTimeInfo'];
+  sectionLeadTime?: TrackingLogAttributes['sectionLeadTime'];
+  subjectTimeLog?: TrackingLogAttributes['subjectTimeLog'];
 }
 /* 인터페이스 정의 끝 */
+
+// lead 타임 관련 추가
+export interface TrackingLogLeadTimeInfo extends LeadTimeInfo {
+  fromAt: string | null;
+  toAt: string | null;
+  durationSec: number | null;
+}
+
+// 각 구간이 동적으로 사용할 수 있어야 함
+// from to (예시) CALL_Request
+export interface TrackingLogSectionLeadTimeDetail extends SectionLeadTimeDetail {
+  fromAt: string | null;
+  toAt: string | null;
+  durationSec: number; // 초 단위
+}
+
+export interface TrackingLogSectionLeadTime {
+  sectionLeadTime: TrackingLogSectionLeadTimeDetail[] | null;
+}
+
+export interface SubjectTimeEntry {
+  st: string | null;
+  ed: string | null;
+}
+
+export type SubjectTimeLog = {
+  [key in TrackingLogSubjectType]?: SubjectTimeEntry;
+};
+
+const trackingLogSubjectTypes: TrackingLogSubjectType[] = [
+  'CALL_CREATED',
+  'CALL_INFO',
+  'CALL_RESPONSE',
+  'ACK_CALL_INFO',
+  'CRANE_ACTIVE',
+  'TRANSFER_COMPLETED',
+  'PORT_ASSIGNED',
+  'WORK_ORDER_CREATED',
+  'CALL_REQUEST',
+  'FROM_DOCKING_REQ',
+  'FROM_DOCKING_PERMIT',
+  'FROM_DOCKING_COMPLETED',
+  'TO_DOCKING_REQ',
+  'TO_DOCKING_PERMIT',
+  'TO_DOCKING_COMPLETED',
+  'FROM_START',
+  'FROM_COMPLETED',
+  'MISSION_DECIDED',
+  'MISSION_START',
+  'MISSION_CANCELED',
+  'MISSION_COMPLETED',
+  'TO_START',
+  'TO_COMPLETED',
+  'AMR_ASSIGNED',
+  'MISSION_ORDER_ASSIGNED',
+  'MISSION_ORDER_COMPLETED',
+  'MISSION_CANCELED',
+  'AMR_UNASSIGNED',
+  'AMR_DEPOSIT_COMPLETED',
+  'AMR_UNASSIGNED',
+  'AMR_DEPOSIT_STARTED',
+  'AMR_DEPOSIT_COMPLETED',
+  'AMR_ACQUIRE_STARTED',
+  'AMR_DEPOSIT_COMPLETED',
+  'CARRIER_TRANSFERRING',
+];
+
+export const defaultSubjectTimeLog: SubjectTimeLog = Object.fromEntries(
+  trackingLogSubjectTypes.map((key) => [key, { st: null, ed: null }])
+) as SubjectTimeLog;
 
 export default TrackingLog;

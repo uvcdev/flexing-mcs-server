@@ -56,6 +56,9 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, FacilityInser
       isActiveCallTrigger: req.body.isActiveCallTrigger,
       priority: req.body.priority,
       isWmsPort: req.body.isWmsPort,
+      leadTime: req.body.leadTime || 0,
+      leadTimeInfo: req.body.leadTimeInfo || { from: 'CALL_CREATED', to: 'MISSION_COMPLETED' },
+      sectionLeadTime: req.body.sectionLeadTime || { sectionLeadTime: [] },
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -225,6 +228,9 @@ router.put(
         generatedCallCount: req.body.generatedCallCount,
         isActiveCallTrigger: req.body.isActiveCallTrigger,
         priority: req.body.priority,
+        leadTime: req.body.leadTime || 0,
+        leadTimeInfo: req.body.leadTimeInfo,
+        sectionLeadTime: req.body.sectionLeadTime || { sectionLeadTime: [] },
       };
       logging.REQUEST_PARAM(logFormat);
 

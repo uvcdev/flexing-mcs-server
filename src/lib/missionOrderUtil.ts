@@ -43,9 +43,9 @@ export const checkMissionOrder = async () => {
     // if (linkedEqpIds && linkedEqpIds.length > 0) {
     if (missionFacilitySerials && missionFacilitySerials.length > 0) {
       // for (let i = 0, length = linkedEqpIds.length; i < length; i++) {
-      for (let i = 0, length = missionFacilitySerials.length; i < length; i++) {
+      for (let j = 0, length = missionFacilitySerials.length; j < length; j++) {
         // const linkedEqpId = linkedEqpIds[i];
-        const linkedEqpSerial = missionFacilitySerials[i];
+        const linkedEqpSerial = missionFacilitySerials[j];
         // const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
         //   RedisKeys.InfoFacilityById,
         //   linkedEqpId.toString() || ''
@@ -61,13 +61,13 @@ export const checkMissionOrder = async () => {
 
       newFacilityArray.sort((a, b) => (b?.priority ?? 0) - (a?.priority ?? 0));
 
-      for (let i = 0; i < newFacilityArray.length; i++) {
+      for (let k = 0; k < newFacilityArray.length; k++) {
         // const linkedEqpId = linkedEqpIds[i];
         // const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
         //   RedisKeys.InfoFacilityById,
         //   linkedEqpId.toString() || ''
         // );
-        const sortLinkedFacilityInfo = newFacilityArray[i];
+        const sortLinkedFacilityInfo = newFacilityArray[k];
 
         const targetCode = sortLinkedFacilityInfo?.serial;
         if (!targetCode) continue;

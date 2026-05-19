@@ -41,6 +41,9 @@ import { router as kepwareRouter } from './kepware/kepware';
 import { router as smartConnectorRouter } from './smartConnector/smartConnector';
 import multer from 'multer';
 import { router as plcConnectorRouter } from './common/plcConnector';
+
+// external
+import { router as mcsTrackingLogRouter } from './external/mcsTrackingLog';
 dotenv.config();
 const uploads = multer();
 const router = express.Router();
@@ -232,4 +235,6 @@ router.use('/kepware', kepwareRouter);
 router.use('/smart-connector', smartConnectorRouter);
 // plc connect
 router.use('/plc-connectors', plcConnectorRouter);
+// external
+router.use('/external/mcs-tracking-log', mcsTrackingLogRouter);
 export { router };

@@ -1,6 +1,7 @@
 import { Model, DataTypes, WhereOptions, Order } from 'sequelize';
 import { sequelize } from '../sequelize';
 import { ZoneAttributes } from './zone';
+import { TrackingLogSubjectType } from '../common/trackingLog';
 
 // 기본 interface
 export interface FacilityAttributes {
@@ -29,6 +30,9 @@ export interface FacilityAttributes {
   isActiveCallTrigger: boolean | null;
   priority: number;
   isWmsPort: boolean | null; // MBS 는 EQP | WMS
+  leadTime: number | null; // 리드 타임 (초 단위)
+  leadTimeInfo: Record<string, any> | null;
+  sectionLeadTime: Record<string, any> | null; // 구간별 리드 타임 (예: { A: 100, B: 200 })
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -77,6 +81,9 @@ class Facility extends Model implements FacilityAttributes {
   public isActiveCallTrigger!: FacilityAttributes['isActiveCallTrigger'];
   public priority!: FacilityAttributes['priority'];
   public isWmsPort!: FacilityAttributes['isWmsPort'];
+  public leadTime!: FacilityAttributes['leadTime'];
+  public leadTimeInfo!: FacilityAttributes['leadTimeInfo'];
+  public sectionLeadTime!: FacilityAttributes['sectionLeadTime'];
   public readonly createdAt!: FacilityAttributes['createdAt'];
   public readonly updatedAt!: FacilityAttributes['updatedAt'];
   public readonly deletedAt!: FacilityAttributes['deletedAt'];
@@ -88,6 +95,7 @@ export const FacilityDefaultValue = {
   cancelType: 'NON_CANCELLABLE',
   mode: 'auto',
   priority: 50,
+  leadTime: 0,
 };
 
 Facility.init(
@@ -185,6 +193,16 @@ Facility.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    leadTime: {
+      type: DataTypes.INTEGER,
+      defaultValue: FacilityDefaultValue.leadTime,
+    },
+    leadTimeInfo: {
+      type: DataTypes.JSONB,
+    },
+    sectionLeadTime: {
+      type: DataTypes.JSONB,
+    },
   },
   {
     sequelize,
@@ -222,6 +240,9 @@ export interface FacilityInsertParams {
   isActiveCallTrigger: boolean;
   priority: number | null;
   isWmsPort: string | null; // EQP | WMS
+  leadTime?: number | null;
+  leadTimeInfo?: Record<string, any> | null;
+  sectionLeadTime?: Record<string, any> | null;
 }
 
 // selectList
@@ -299,6 +320,9 @@ export interface FacilityUpdateParams {
   isActiveCallTrigger?: boolean;
   priority?: number;
   isWmsPort?: string | null; // EQP | WMS
+  leadTime?: number | null;
+  leadTimeInfo?: Record<string, any> | null;
+  sectionLeadTime?: Record<string, any> | null;
 }
 
 // update state
@@ -316,6 +340,60 @@ export interface FacilityDeleteParams {
 export interface OperationModeUpdateParams {
   SERIAL: string;
   OPERATION_MODE: number; // 0: None(normal), 1: Load(supply), 2: Unload(retrieve), 3: Load & Unload(normal)
+}
+
+// sectionLeadTime ( 구간 별 리드 타임 기준 )
+// 미션 진행 구간별 리드타임 (단위: 초)
+// 각 구간 = 인접한 두 단계 사이의 경과 시간
+
+// export interface SectionLeadTime {
+//   a?: number; // a: 콜 발생 → 창고 요청
+//   b?: number; // b: 창고 요청 → 창고 입고
+//   c?: number; // c: 창고 입고 → 콜 응답
+//   d?: number; // d: 콜 응답 → 창고 포트 배정
+//   e?: number; // e: 창고 포트 배정 → 작업지시 생성
+//   f?: number; // f: 작업지시 생성 → AMR 할당
+//   g?: number; // g: AMR 할당 → 작업 시작 (F)
+//   h?: number; // h: 작업 시작 (F) → 노접요청 (F)
+//   i?: number; // i: 노접요청 (F) → 노접허가 (F)
+//   j?: number; // j: 노접허가 (F) → 노접완료 (F)
+//   k?: number; // k: 노접완료 (F) → 작업 완료 (F)
+//   l?: number; // l: 작업 완료 (F) → 작업 시작 (Mission)
+//   m?: number; // m: 작업 시작 (Mission) → 작업 완료 (Mission)
+//   n?: number; // n: 작업 완료 (Mission) → 작업 시작 (T)
+//   o?: number; // o: 작업 시작 (T) → 노접요청 (T)
+//   p?: number; // p: 노접요청 (T) → 노접허가 (T)
+//   q?: number; // q: 노접허가 (T) → 노접완료 (T)
+//   r?: number; // r: 노접완료 (T) → 작업 완료 (T)
+//   s?: number; // s: 작업 완료 (T) → 적층 완료
+// }
+
+// 전체 구간에 대한 리드타임 정보
+export interface LeadTimeInfo {
+  key?: string;
+  from: TrackingLogSubjectType;
+  to: TrackingLogSubjectType;
+}
+
+// 각 구간이 동적으로 사용할 수 있어야 함
+// from to (예시) CALL_Request  TO_COMPLETED
+
+export interface DelayReason {
+  messageKo: string; // 국문 내용
+  messageEn: string; // 영문 내용
+  messageEs: string; // 스페인어 내용
+}
+export interface SectionLeadTimeDetail {
+  key: string;
+  from: TrackingLogSubjectType;
+  to: TrackingLogSubjectType;
+  leadTime: number; // 초 단위
+  delaySource: string[];
+  delayReason: DelayReason;
+}
+
+export interface SectionLeadTime {
+  sectionLeadTime: SectionLeadTimeDetail[] | null;
 }
 
 // include attributes
@@ -344,6 +422,8 @@ export const FacilityAttributesInclude = [
   'isActiveCallTrigger',
   'priority',
   'isWmsPort',
+  'leadTime',
+  'sectionLeadTime',
   'createdAt',
 ];
 

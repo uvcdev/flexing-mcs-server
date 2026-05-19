@@ -236,6 +236,10 @@ export const useRedisUtil = () => {
     if (redisClient) redisClient.hdel(makeKey(key), field);
   };
 
+  const hdelAsync = async (key: string, field: string): Promise<void> => {
+    if (redisClient) await redisClient.hdel(makeKey(key), field);
+  };
+
   /**
    * [SmartConnector용] 특정 Hash의 모든 필드와 값을 객체로 가져옴.
    * @param key Redis 키 (예: "plc_realtime_data:BM3I")
@@ -307,6 +311,7 @@ export const useRedisUtil = () => {
     flushall,
     del,
     hdel,
+    hdelAsync,
     hGetPlcAllTags,
     hSetPlcAllTags,
     hGetPlcTag,

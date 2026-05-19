@@ -660,6 +660,7 @@ export const useDockingUtil = () => {
               { tagName: 'Dock_Request_Force', value: false },
               { tagName: 'Dock_AMR_Status', value: false },
               { tagName: 'Docking_Status', value: '0' },
+              { tagName: 'Dock_Out_Request', value: false },
             ],
           });
           logToConsoleAndFile(`Successfully initialized before retry docking request`, 'green');

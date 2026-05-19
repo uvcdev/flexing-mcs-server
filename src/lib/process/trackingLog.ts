@@ -1,8 +1,12 @@
 import {
+  defaultSubjectTimeLog,
+  SubjectTimeLog,
   TrackingLogInsertParams,
+  TrackingLogLeadTimeInfo,
   TrackingLogProcessState,
   TrackingLogRedisAttributes,
   TrackingLogRedisUpdateParams,
+  TrackingLogSectionLeadTime,
   TrackingLogState,
   TrackingLogSubjectType,
   TrackingLogUpdateParams,
@@ -17,6 +21,8 @@ import { logging } from '../logging';
 import { ItemLogInsertParams, ItemLogSubjectType } from '../../models/timescale/itemLog';
 import { formatDetailedDateTime, isCurrentTimeFasterThanAnyMinutesFromTzString } from '../usefullToolUtil';
 import { sendMqtt } from '../mqttUtil';
+import { FacilityAttributes, LeadTimeInfo } from '../../models/operation/facility';
+import dayjs from 'dayjs';
 
 export interface InitAbnormalTrackingLogParams {
   callId: string;
@@ -67,6 +73,32 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
   //   }
   // }
 
+  const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, facilityCode);
+
+  if (!facilityInfo) {
+  }
+  const trackingLogLeadTime = facilityInfo?.leadTime || 0;
+  const trackingLogLeadTimeInfo: TrackingLogLeadTimeInfo = {
+    ...(facilityInfo?.leadTimeInfo as LeadTimeInfo),
+    fromAt: null,
+    toAt: null,
+    durationSec: null,
+  };
+  calcLeadTime(trackingLogLeadTimeInfo, subject);
+  const trackingLogSectionLeadTime: TrackingLogSectionLeadTime = {
+    sectionLeadTime: Array.isArray(facilityInfo?.sectionLeadTime?.sectionLeadTime)
+      ? facilityInfo?.sectionLeadTime?.sectionLeadTime.map((section: any) => ({
+          ...section,
+          fromAt: null,
+          toAt: null,
+          durationSec: 0,
+        }))
+      : null,
+  };
+  calcSectionLeadTime(trackingLogSectionLeadTime, subject);
+  const subjectTimeLogInfo = { ...defaultSubjectTimeLog };
+  calcSubjectTimeLog(subjectTimeLogInfo, subject);
+
   // tracking Log insert
   const trackingLogInsertParams: TrackingLogInsertParams = {
     code: generateUUIDNode(),
@@ -87,6 +119,10 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     description: null,
     missionDestination: null,
     processState: 'NORMAL',
+    leadTime: trackingLogLeadTime,
+    leadTimeInfo: trackingLogLeadTimeInfo,
+    sectionLeadTime: trackingLogSectionLeadTime,
+    subjectTimeLog: subjectTimeLogInfo,
   };
 
   const trackingLogInsertedResult = await trackingLogDao.insert(trackingLogInsertParams);
@@ -171,6 +207,10 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     processState: trackingLogInsertParams.processState,
     createdDateTime: dateNow,
     updatedDateTime: dateNow,
+    leadTime: trackingLogLeadTime,
+    leadTimeInfo: trackingLogLeadTimeInfo,
+    sectionLeadTime: trackingLogSectionLeadTime,
+    subjectTimeLog: subjectTimeLogInfo,
     itemLogList: itemLogList,
   };
 
@@ -427,6 +467,18 @@ export const editTrackingLogRedis = async (
     }
   }
 
+  // 트래킹 로그 LeadTime 관련 정보 수정
+  const trackingLogLeadTimeInfo = infoTrackingLogByCallId.leadTimeInfo as TrackingLogLeadTimeInfo;
+  if (trackingLogLeadTimeInfo) {
+    calcLeadTime(trackingLogLeadTimeInfo, (trackingLogUpdateData.detail as TrackingLogSubjectType) || '');
+  }
+  const trackingLogSectionLeadTime = infoTrackingLogByCallId.sectionLeadTime as TrackingLogSectionLeadTime;
+  if (trackingLogSectionLeadTime) {
+    calcSectionLeadTime(trackingLogSectionLeadTime, (trackingLogUpdateData.detail as TrackingLogSubjectType) || '');
+  }
+  const subjectTimeLogInfo = infoTrackingLogByCallId.subjectTimeLog as SubjectTimeLog;
+  calcSubjectTimeLog(subjectTimeLogInfo, (trackingLogUpdateData.detail as TrackingLogSubjectType) || '');
+
   // 기존 tracking Log 업데이트
   const trackingLogUpdateParams: TrackingLogUpdateParams = {
     id: infoTrackingLogByCallId.id,
@@ -459,6 +511,9 @@ export const editTrackingLogRedis = async (
     missionDestination: trackingLogUpdateData.missionDestination
       ? trackingLogUpdateData.missionDestination
       : infoTrackingLogByCallId.missionDestination,
+    leadTimeInfo: trackingLogLeadTimeInfo,
+    sectionLeadTime: trackingLogSectionLeadTime,
+    subjectTimeLog: subjectTimeLogInfo,
   };
 
   await trackingLogDao.update(trackingLogUpdateParams);
@@ -519,6 +574,10 @@ export const editTrackingLogRedis = async (
     itemLogList: itemLogList,
     processState: trackingLogUpdateParams?.processState ?? null,
     missionDestination: trackingLogUpdateParams?.missionDestination ?? null,
+    leadTime: infoTrackingLogByCallId.leadTime,
+    leadTimeInfo: trackingLogLeadTimeInfo,
+    sectionLeadTime: trackingLogSectionLeadTime,
+    subjectTimeLog: subjectTimeLogInfo,
   };
 
   // redisUtil.hset(RedisKeys.InfoTrackingLogByFacilityCode, plcName, JSON.stringify(trackingLogRedisBody));
@@ -760,4 +819,51 @@ export const checkTrackingLogCleanup = async () => {
   for (let i = 0, length = trackingLogByCallIdList.length; i < length; i++) {
     const trackingLogInfo = trackingLogByCallIdList[i];
   }
+};
+
+// 트래킹 로그 LeadTime 구하는 함수
+export const calcLeadTime = (leadTimeInfo: TrackingLogLeadTimeInfo, subject: TrackingLogSubjectType): void => {
+  if (!leadTimeInfo) return;
+  const dateNow = formatDetailedDateTime(new Date());
+
+  if (leadTimeInfo.from === subject) {
+    leadTimeInfo.fromAt = dateNow;
+  }
+  if (leadTimeInfo.to === subject) {
+    leadTimeInfo.toAt = dateNow;
+    if (leadTimeInfo.fromAt) {
+      leadTimeInfo.durationSec = dayjs(dateNow).diff(dayjs(leadTimeInfo.fromAt), 'second', true);
+    }
+  }
+};
+
+// 트래킹 로그 SectionLeadTime 구하는 함수
+export const calcSectionLeadTime = (
+  sectionLeadTime: TrackingLogSectionLeadTime,
+  subject: TrackingLogSubjectType
+): void => {
+  if (!sectionLeadTime || !sectionLeadTime.sectionLeadTime) return;
+  const dateNow = formatDetailedDateTime(new Date());
+
+  sectionLeadTime.sectionLeadTime?.forEach((section) => {
+    if (section.from === subject) {
+      section.fromAt = dateNow;
+    }
+    if (section.to === subject) {
+      section.toAt = dateNow;
+      if (section.fromAt) {
+        section.durationSec = dayjs(dateNow).diff(dayjs(section.fromAt), 'second', true);
+      }
+    }
+  });
+};
+
+// 필수 subject 별 Time Log 기록
+export const calcSubjectTimeLog = (subjectTimeLog: SubjectTimeLog, subject: TrackingLogSubjectType): void => {
+  if (!subjectTimeLog || subjectTimeLog[subject] === undefined) return;
+  const dateNow = formatDetailedDateTime(new Date());
+  if (subjectTimeLog[subject].st === null) {
+    subjectTimeLog[subject].st = dateNow;
+  }
+  subjectTimeLog[subject].ed = dateNow;
 };

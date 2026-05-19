@@ -1062,11 +1062,6 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - Dock 시퀀스 중 Not Permit에 대한 로직 주석
   - 공유 받은 시퀀스 표로 진행되지 않음 ( 별도 협의도 없음 )
 
-- 미션 결정지 로직
-  - 미션 결정지 판단전에 createdAt 순서로 정렬 ( FIFO 사용 )
-  - WS11에만 Dock_Disable 추가
-
-
 ## v3.4.0
 
 - approve v3.2.11-ssb
@@ -1076,6 +1071,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## v3.4.0-ssb
 
 - MCS 성능개선
+
   - `plcConnectUtil.batchGetTagValue` 추가
     - 여러 태그를 한 번에 읽기 (KEP: OPC UA read 배치, CONNECTOR: Redis 병렬)
   - PLC 태그 개별 `getTagValue` 호출을 배치 읽기로 전환
@@ -1085,6 +1081,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
     - `callTypeResponse`: 문자열 값이 있을 때만 `Call_Type_Response_*` 일괄 쓰기(빈 쓰기 감소)
 
 - `missionOrderUtil.checkMissionOrder`
+
   - 미션 주문 목록 `createdAt` 정렬(FIFO)을 처리 루프 진입 전으로 이동
   - 도킹·콜 관련 태그 일괄 읽기 (WS11만 `Dock_Disable` 포함)
 
@@ -1096,3 +1093,42 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## v3.4.1
 
 - approve v3.4.0-ssb
+
+## v3.4.2 -ljk
+
+- 미션 결정지 로직
+
+  - 미션 결정지 판단전에 createdAt 순서로 정렬 ( FIFO 사용 )
+  - WS11에만 Dock_Disable 추가
+
+- item table 인덱스 추가 필요
+
+  - 마이그레이션에 추가 필요
+
+  ```sql
+  CREATE INDEX idx_item_log_tracking_log_id ON item_log (tracking_log_id);
+  ```
+
+- 설비 관리에 leadTime 관련 내용 추가
+
+```sql
+  ALTER TABLE public.facilities ADD lead_time int4 NULL;
+  ALTER TABLE public.facilities ADD lead_time_info jsonb NULL;
+  ALTER TABLE public.facilities ADD section_lead_time jsonb NULL;
+```
+
+- 트래킹 로그에 leadTime 관련 내용 추가
+
+```sql
+  ALTER TABLE public.tracking_logs ADD lead_time int4 DEFAULT 0 NULL;
+  ALTER TABLE public.tracking_logs ADD lead_time_info jsonb NULL;
+  ALTER TABLE public.tracking_logs ADD section_lead_time jsonb NULL;
+  ALTER TABLE public.tracking_logs ADD subject_time_log jsonb NULL;
+```
+
+- WMS '재고 없음' 상태에 대한 로직 수정
+
+  - crane 액션 관련 tracking log 및 call response 로직 수정
+
+- Docking 시퀀스
+  - Dock 요청 전, Out_Request 초기화
