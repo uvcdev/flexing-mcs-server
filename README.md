@@ -1132,3 +1132,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - Docking 시퀀스
   - Dock 요청 전, Out_Request 초기화
+
+## v3.4.2
+
+- approve v3.4.1-ljk
