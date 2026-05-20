@@ -1136,3 +1136,8 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## v3.4.2
 
 - approve v3.4.1-ljk
+
+## v3.4.2-ssb
+
+- Docking 시퀀스
+  - 도킹허가 중복 수신 시 재응답·트래킹로그 중복 갱신 방지 (`dockingStart`)
