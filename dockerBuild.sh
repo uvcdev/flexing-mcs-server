@@ -1,7 +1,7 @@
 #!/bin/bash
 DOCKER_USER_NAME=uvclab
 DOCKER_IMAGE_NAME=flexing-mcs-server
-DOCKER_IMAGE_TAG=3.4.2
+DOCKER_IMAGE_TAG=3.4.2-ssb
 SAVE_DIR=../images
 
 docker build -t $DOCKER_USER_NAME/$DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG .

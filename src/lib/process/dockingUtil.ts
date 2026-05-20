@@ -132,6 +132,16 @@ export const useDockingUtil = () => {
         return;
       }
 
+      // 20260520 도킹허가가 기존에 왔었는지 체크
+      if (dockingRequestInfo.RESULT === 'True') {
+        logging.ACTION_ERROR({
+          filename: `src/lib/process/dockingUtil.ts-dockingStart`,
+          params: targetTagInfo,
+          result: 'Docking permit already received',
+          error: 'Docking permit already received',
+        });
+        return;
+      }
       const dockingResponse: AcsDockingRequestResponse = {
         ...dockingRequestInfo,
         RESULT: 'True',
