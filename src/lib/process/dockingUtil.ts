@@ -83,6 +83,11 @@ export interface AcsDockingDetachResponse extends AcsDockingDetachType {
 export interface AcsDockingCanceledType {
   CALL_ID: string;
 }
+export interface AcsChargerDockingCanceledType {
+  WORKER_ID: string;
+  REPORT_ID: string;
+  CANCEL_TYPE: 'cancelled' | 'aborted';
+}
 
 export const useDockingUtil = () => {
   const redisUtil = useRedisUtil();
@@ -1156,7 +1161,7 @@ export const useDockingUtil = () => {
   };
 
   // 작업이 취소 됐을 때, 도킹 요청 혹은 아웃 도킹 요청 Redis 및 설비 신호 값 초기화
-  const dockingCanceled = async (params: AcsDockingCanceledType) => {
+  const workOrderDockingCanceled = async (params: AcsDockingCanceledType) => {
     const callId = params.CALL_ID || '';
 
     if (!callId) {
@@ -1209,6 +1214,41 @@ export const useDockingUtil = () => {
     }
   };
 
+  // 충전이 취소 됐을 때, 도킹 요청 혹은 아웃 도킹 요청 Redis 및 설비 신호 값 초기화
+  const dockingCanceled = async (params: AcsChargerDockingCanceledType) => {
+    const workerId = params.WORKER_ID;
+    const reportId = params.REPORT_ID;
+    const cancelType = params.CANCEL_TYPE;
+
+    if (!reportId || !cancelType) {
+      return;
+    }
+    // dockingRequeset 초기화
+    const dockRequestList = await redisUtil.hgetAllObject<AcsDockingRequestType>(RedisKeys.DockingRequestBySerialId);
+
+    if (dockRequestList && dockRequestList.length > 0) {
+      for (let i = 0, length = dockRequestList.length; i < length; i++) {
+        const dockRequestInfo = dockRequestList[i];
+        if (dockRequestInfo.REPORT_ID === reportId) {
+          if (cancelType === 'aborted' || !dockRequestInfo?.RESULT) {
+            const facilitySerial = dockRequestInfo.PORT_ID;
+
+            // 1단계) dock_Request redis 지우기
+            redisUtil.hdel(RedisKeys.DockingRequestBySerialId, facilitySerial);
+            // 2단계) 설비 dock request 신호 내리기
+            await plcConnectUtil.writeTagValue({
+              targetFacility: facilitySerial || '',
+              tagInfo: [{ tagName: 'Dock_Request', value: false }],
+            });
+          }
+        }
+      }
+    }
+
+    // outDockingRequeset 초기화
+    // 나중에 필요하면 추가 ( 위와 동일 )
+  };
+
   return {
     sendAcsDockingRequest,
     sendAcsDockingOutRequest,
@@ -1218,6 +1258,7 @@ export const useDockingUtil = () => {
     dockingComplete,
     sendAcsDockingComplete,
     sendAcsDockingDetach,
+    workOrderDockingCanceled,
     dockingCanceled,
   };
 };

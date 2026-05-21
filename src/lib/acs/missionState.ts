@@ -351,9 +351,9 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
           }
         }
       }
-      if (assignTask === 'FMS-CANCELED') {
-        useDockingUtil().dockingCanceled({ CALL_ID: callId });
-      }
+      // if (assignTask === 'FMS-CANCELED') {
+      //   useDockingUtil().workOrderDockingCanceled({ CALL_ID: callId });
+      // }
 
       redisUtil.hdel(RedisKeys.InfoMissionOrderByWorkOrderCode, callId);
     } else if (state === 'MISSION_FAILED') {

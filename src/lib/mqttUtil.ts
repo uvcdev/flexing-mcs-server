@@ -27,7 +27,7 @@ import { acsAlarmState } from './acs/alarmState';
 import { acsAckMissionCommand } from './acs/ackMissionCommand';
 import { wmsOnline } from './wms/mqtt/online';
 import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/wmsBranch';
-import { useDockingUtil } from './process/dockingUtil';
+import { AcsChargerDockingCanceledType, useDockingUtil } from './process/dockingUtil';
 import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
 import { TagValue, useKepServerUtil } from './kepServerUtil';
 import { acsWorkOrderCancel, checkCallSignalResetWorkOrder, checkSpBsWorkType } from './process/commonUtils';
@@ -1056,6 +1056,18 @@ export const receiveMqtt = (): void => {
             if (topicSplit.length === 2 && topicSplit[1] === 'edit-sp-bs-work-type') {
               const messageJson = JSON.parse(message);
               await checkSpBsWorkType(messageJson);
+            }
+            // ACS에서 취소 시, Dock 신호 리셋
+            //작업지시 cancel 상황
+            if (topicSplit[1] === 'docking-cancel') {
+              const messageJson: AcsChargerDockingCanceledType = JSON.parse(message);
+              await useDockingUtil().dockingCanceled(messageJson);
+
+              logging.MQTT_DEBUG({
+                title: 'mcs message: docking-cancel',
+                topic: messageTopic,
+                message: messageJson,
+              });
             }
           }
 

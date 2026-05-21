@@ -1141,3 +1141,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - Docking 시퀀스
   - 도킹허가 중복 수신 시 재응답·트래킹로그 중복 갱신 방지 (`dockingStart`)
+
+## v3.4.2-ljk
+
+- cancel / abort dock 신호 초기화
