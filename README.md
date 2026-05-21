@@ -1145,3 +1145,8 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## v3.4.2-ljk
 
 - cancel / abort dock 신호 초기화
+
+## v3.4.3
+
+- approve v3.4.2-ssb
+- approve v3.4.2-ljk
