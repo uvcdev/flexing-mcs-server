@@ -832,7 +832,7 @@ export const calcLeadTime = (leadTimeInfo: TrackingLogLeadTimeInfo, subject: Tra
   if (leadTimeInfo.to === subject) {
     leadTimeInfo.toAt = dateNow;
     if (leadTimeInfo.fromAt) {
-      leadTimeInfo.durationSec = dayjs(dateNow).diff(dayjs(leadTimeInfo.fromAt), 'second', true);
+      leadTimeInfo.durationSec = dayjs(dateNow).diff(dayjs(leadTimeInfo.fromAt), 'second');
     }
   }
 };
@@ -852,7 +852,7 @@ export const calcSectionLeadTime = (
     if (section.to === subject) {
       section.toAt = dateNow;
       if (section.fromAt) {
-        section.durationSec = dayjs(dateNow).diff(dayjs(section.fromAt), 'second', true);
+        section.durationSec = dayjs(dateNow).diff(dayjs(section.fromAt), 'second');
       }
     }
   });
