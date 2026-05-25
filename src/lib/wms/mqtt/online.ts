@@ -11,7 +11,7 @@ const online = (wmsName: string, messageMessage: MbsMqttMesaage) => {
 
   // WMS Online이 확인 되면 WMS와 동기화 로직 진행
   // 의문점 1 -> 창고 쪽에 있는 데이터로만 맞추는게 맞나 ... ?
-  sendReqPortStateList();
+  sendReqPortStateList(true);
 
   // sendCallInfoList();
 };

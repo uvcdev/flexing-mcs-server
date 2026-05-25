@@ -201,7 +201,7 @@ export const processMcs = async () => {
 // 동기화 함수
 export const syncWithWms = () => {
   try {
-    sendReqPortStateList();
+    sendReqPortStateList(true);
 
     // sendCallInfoList();
   } catch (error) {

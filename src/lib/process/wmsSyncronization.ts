@@ -1,4 +1,5 @@
-import { makeMbsMqttHeader, MbsMqttBody, sendMbsMqtt } from '../mqttUtil';
+import { CheckPortPresenceRequestType, makeMbsMqttHeader, MbsMqttBody, MbsMqttHeader, sendMbsMqtt } from '../mqttUtil';
+import { RedisKeys, useRedisUtil } from '../redisUtil';
 import { setRemainingAckCommand } from './wmsAck';
 
 const wmsName = process.env.WMS_LIST?.split(',')[0];
@@ -10,7 +11,19 @@ export interface SendCallInfoListBody extends MbsMqttBody {
   Cmd_ID: string;
 }
 
-export const sendReqPortStateList = () => {
+export interface CheckPortPresenceListMatchParams {
+  cmdId: string;
+  mqttHeader: MbsMqttHeader;
+  mqttBody: SendReqPortStateListBody;
+  checkPortPresenceStatusMatchParams: CheckPortPresenceRequestType | undefined;
+}
+
+const redisUtil = useRedisUtil();
+
+export const sendReqPortStateList = (
+  isSyncronization: boolean,
+  checkPortPresenceStatusMatchParams?: CheckPortPresenceRequestType
+) => {
   const topic = 'PORT';
   const subject = 'REQ_PORT_STATE_LIST';
 
@@ -19,6 +32,21 @@ export const sendReqPortStateList = () => {
   const mqttBody: SendReqPortStateListBody = {
     Cmd_ID: mqttHeader.id,
   };
+
+  if (!isSyncronization && checkPortPresenceStatusMatchParams) {
+    const CheckPortPresenceListMatchParams: CheckPortPresenceListMatchParams = {
+      cmdId: mqttBody.Cmd_ID,
+      mqttHeader: mqttHeader,
+      mqttBody: mqttBody,
+      checkPortPresenceStatusMatchParams: checkPortPresenceStatusMatchParams,
+    };
+
+    redisUtil.hset(
+      RedisKeys.CheckPortPresenceListMatchByCmdId,
+      CheckPortPresenceListMatchParams.cmdId,
+      JSON.stringify(CheckPortPresenceListMatchParams)
+    );
+  }
 
   sendMbsMqtt(topic, mqttHeader, mqttBody, wmsName);
 };

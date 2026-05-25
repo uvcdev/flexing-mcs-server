@@ -4,7 +4,7 @@ import { EqpCallStats } from '../callRemoveUtil';
 import { generateUUIDNode } from '../hashUtil';
 import { makeCallType } from '../kepServerUtil';
 import { logging } from '../logging';
-import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from '../mqttUtil';
+import { CheckPortPresenceRequestType, makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from '../mqttUtil';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
 import {
   formatDetailedDateTime,
@@ -15,6 +15,7 @@ import { InfoAckInCallByCallIdBody } from '../wms/mqtt/call';
 import { editTrackingLogRedis } from './trackingLog';
 import { setRemainingAckCommand } from './wmsAck';
 import { CallInfoBody } from './wmsCallInfo';
+import { sendReqPortStateList } from './wmsSyncronization';
 
 const redisUtil = useRedisUtil();
 
@@ -280,4 +281,9 @@ export const checkCancelCallInfo = async (cancelCallInfo: CancelCallInfo) => {
 
   // InfoCancelCallByCallId 정보 삭제
   redisUtil.hdel(RedisKeys.InfoCancelCallByCallId, cancelCallInfo.Call_ID);
+};
+
+// 리프트 상태 점검
+export const checkPortPresenceStatusMatch = async (messageJosn: CheckPortPresenceRequestType) => {
+  sendReqPortStateList(true, messageJosn);
 };

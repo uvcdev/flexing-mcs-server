@@ -41,6 +41,7 @@ import { timestampToDate } from '../lib/usefullToolUtil';
 import { initSmartConnectorMqtt } from './smartConnectorMqttUtil';
 import { usePlcConnectUtil } from './plcConnectUtil';
 import { useCallTypeUtil } from './callTypeUtil';
+import { checkPortPresenceStatusMatch } from './process/wmsCommon';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -153,6 +154,30 @@ export interface MbsMqttMesaage {
   header: MbsMqttHeader;
   body: MbsMqttBody;
 }
+
+// acs/wms/check-lift
+export type CheckPortPresenceRequestType = {
+  ZONE_ID: string;
+  PORT_ID: string;
+  CALL_ID: string;
+  EXC_CLS: 'AUTO' | 'MANUAL';
+  WORKER_ID: string;
+  REPORT_ID: string;
+  INSTRUCTION_ID: string;
+};
+
+// mcs/wms/check-lift
+export type CheckPortPresenceResponseType = {
+  ZONE_ID: string;
+  PORT_ID: string;
+  CALL_ID: string;
+  EXC_CLS: 'AUTO' | 'MANUAL';
+  WORKER_ID: string;
+  REPORT_ID: string;
+  INSTRUCTION_ID: string;
+  RESULT: 'True' | 'False'; // "True" 또는 "False" 값을 가질 수 있음
+  RESULT_MESSAGE: string;
+};
 
 // broker에 접속될 클라이언트 아이디(unique필요)
 const clientId = 'mcs_' + Math.random().toString(16).substr(2, 8);
@@ -1062,6 +1087,16 @@ export const receiveMqtt = (): void => {
             if (topicSplit[1] === 'docking-cancel') {
               const messageJson: AcsChargerDockingCanceledType = JSON.parse(message);
               await useDockingUtil().dockingCanceled(messageJson);
+
+              logging.MQTT_DEBUG({
+                title: 'mcs message: docking-cancel',
+                topic: messageTopic,
+                message: messageJson,
+              });
+            }
+            if (topicSplit[1] === 'wms' && topicSplit[2] === 'check-lift') {
+              const messageJson: CheckPortPresenceRequestType = JSON.parse(message);
+              await checkPortPresenceStatusMatch(messageJson);
 
               logging.MQTT_DEBUG({
                 title: 'mcs message: docking-cancel',
