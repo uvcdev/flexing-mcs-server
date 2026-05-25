@@ -1162,3 +1162,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - 무한 재시도
 
 - WMS 자재 검증 로직 추가
+
+## 3.4.4
+
+- approve v3.4.3-ljk
