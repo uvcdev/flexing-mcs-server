@@ -325,7 +325,7 @@ export const opcuaUtil = {
   async initKepserverex(): Promise<void> {
     try {
       // KEPServerEx에 연결 (최대 10회, 5초마다 연결시도)
-      await this.connectToKepserverex(10, 5000);
+      await this.connectToKepserverex(Infinity, 10000);
 
       // Session 생성
       await this.createSession();

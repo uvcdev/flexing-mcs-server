@@ -1154,4 +1154,8 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## v3.4.3-ljk
 
 - 트래킹 로그
+
   - leadTime 시간 연산 시, 소수점 없이 초까지 표현
+
+- Kepware 연결 제한 삭제
+  - 무한 재시도
