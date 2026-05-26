@@ -1172,3 +1172,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 - 아웃 도킹
   - 트래킹 로그에 Out 도킹 내용 추가
   - dockingUtil의 이상한 데이터 모두 정리
+
+## 3.4.5
+
+- approve v3.4.4-ljk
