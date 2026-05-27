@@ -364,6 +364,8 @@ const ackReqPortStateList = async (
         RESULT_MESSAGE: '자재 일치',
       };
       sendMqtt(`wms/check-lift/${liftPortSerial}`, JSON.stringify(checkPortPresenceResponseParams));
+
+      redisUtil.hdel(RedisKeys.CheckPortPresenceListMatchByCmdId, cmdId);
     } else {
       const checkPortPresenceResponseParams: CheckPortPresenceResponseType = {
         ...checkPortPresenceListMatchInfo.checkPortPresenceStatusMatchParams,
@@ -371,6 +373,8 @@ const ackReqPortStateList = async (
         RESULT_MESSAGE: '자재 불일치',
       };
       sendMqtt(`wms/check-lift/${liftPortSerial}`, JSON.stringify(checkPortPresenceResponseParams));
+
+      redisUtil.hdel(RedisKeys.CheckPortPresenceListMatchByCmdId, cmdId);
 
       // 자재 불일치 시, 동기화 로직 재 요청
       sendReqPortStateList(true);
