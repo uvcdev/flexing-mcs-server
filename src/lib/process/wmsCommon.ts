@@ -285,5 +285,5 @@ export const checkCancelCallInfo = async (cancelCallInfo: CancelCallInfo) => {
 
 // 리프트 상태 점검
 export const checkPortPresenceStatusMatch = async (messageJosn: CheckPortPresenceRequestType) => {
-  sendReqPortStateList(true, messageJosn);
+  sendReqPortStateList(false, messageJosn);
 };
