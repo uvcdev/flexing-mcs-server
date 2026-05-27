@@ -1177,6 +1177,11 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - approve v3.4.4-ljk
 
-## 3.4.5-a
+## 3.4.5-ljk
 
 - port 검증 mqtt 수정
+- port 검증 cmdId / 조건 / hdel 추가
+
+## 3.4.6
+
+- approve v3.4.5-ljk
