@@ -52,7 +52,7 @@ interface PortPresenceStateInfo {
 }
 
 interface PortPresenceStateListBody {
-  cmdId: string;
+  Cmd_ID: string;
   PortList: Array<PortPresenceStateInfo>;
 }
 
@@ -315,7 +315,7 @@ const ackReqPortStateList = async (
 ) => {
   console.log('catch wmsAckReqPortStateList');
 
-  const cmdId = messageBody.cmdId;
+  const cmdId = messageBody.Cmd_ID;
   const portStatusList = messageBody.PortList || [];
 
   const checkPortPresenceListMatchInfo = await redisUtil.hgetObject<CheckPortPresenceListMatchParams>(
