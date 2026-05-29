@@ -30,7 +30,7 @@ import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/w
 import { useDockingUtil } from './process/dockingUtil';
 import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
 import { TagValue, useKepServerUtil } from './kepServerUtil';
-import { acsWorkOrderCancel, acsWorkOrderCartCancel } from './process/commonUtils';
+import { acsWorkOrderCancel, acsWorkOrderCartCancel, acsWorkOrderCartRecovery } from './process/commonUtils';
 import { FacilityAttributes } from '../models/operation/facility';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { service as facilityService } from '../service/operation/facilityService';
@@ -738,6 +738,18 @@ export const receiveMqtt = (): void => {
               } catch (error) {
                 console.log('logging.ITEM_LOG', error);
               }
+            }
+            // xGenRecovery cascade: from 설비만 PLC 리셋 (to 설비는 작업 살아있어야 함)
+            if (topicSplit[1] === 'work-order-cart-recovery') {
+              const messageJson = JSON.parse(message);
+
+              await acsWorkOrderCartRecovery(messageJson);
+
+              logging.MQTT_DEBUG({
+                title: 'work-order-cart-recovery message',
+                topic: messageTopic,
+                message: messageJson,
+              });
             }
             // AMR 미션 결정지 도착
             if (topicSplit.length === 3 && topicSplit[1] === 'mission-order') {

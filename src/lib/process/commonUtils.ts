@@ -89,8 +89,7 @@ export const routeMissionOrderMqttMessage = async (messageJson: MqttBranchInfoDa
 };
 
 // EQP 도킹 실행 시키는 함수 ( 파트장님이 원하는 위치로 옮기셔도 될 것 같습니다 ! )
-export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => { };
-
+export const setEqpMissionOrder = (messageJson: MqttBranchInfoDataFromAcs) => {};
 
 export const acsWorkOrderCancel = async (messageJson: any) => {
   const plcConnectUtil = usePlcConnectUtil();
@@ -121,12 +120,12 @@ export const acsWorkOrderCancel = async (messageJson: any) => {
   const selectedWorkOrderInfo = workOrderList.find((workOrderInfo) => workOrderInfo.callId === canceledWorkOrderCallId);
   const selectedWorkOrderInfoState = selectedWorkOrderInfo?.state;
 
-  const isMbs = (process.env.SITE && process.env.SITE === 'MBS');
+  const isMbs = process.env.SITE && process.env.SITE === 'MBS';
   const multiCallResetTags = isMbs
     ? [
-      { tagName: 'Call_Response_Multi_1', value: false },
-      { tagName: 'Call_Response_Multi_2', value: false },
-    ]
+        { tagName: 'Call_Response_Multi_1', value: false },
+        { tagName: 'Call_Response_Multi_2', value: false },
+      ]
     : [];
 
   if (selectedWorkOrderInfoState !== 'toWorkOrder') {
@@ -171,14 +170,14 @@ export const acsWorkOrderCartCancel = async (messageJson: any) => {
     RedisKeys.InfoFacilityById,
     fromFacilitySerial
   );
-  let alwaysOnFacility = fromFacilitySerial;    // LS1O
-  let triggerFacility = toFacilitySerial;       // LE1I
+  let alwaysOnFacility = fromFacilitySerial; // LS1O
+  let triggerFacility = toFacilitySerial; // LE1I
 
   if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
-    alwaysOnFacility = toFacilitySerial;  // LE1I
+    alwaysOnFacility = toFacilitySerial; // LE1I
     triggerFacility = fromFacilitySerial; // LS1O
   }
-  console.log("🚀 ~ alwaysOnFacility, triggerFacility", alwaysOnFacility, triggerFacility)
+  console.log('🚀 ~ alwaysOnFacility, triggerFacility', alwaysOnFacility, triggerFacility);
   await plcConnectUtil.writeTagValue({
     targetFacility: alwaysOnFacility,
     tagInfo: [
@@ -201,17 +200,30 @@ export const acsWorkOrderCartCancel = async (messageJson: any) => {
 
   await plcConnectUtil.writeTagValue({
     targetFacility: triggerFacility,
-    tagInfo: [
-      { tagName: 'Trans_Signal_Reset', value: true },
-    ],
+    tagInfo: [{ tagName: 'Trans_Signal_Reset', value: true }],
   });
 
   setTimeout(() => {
     plcConnectUtil.writeTagValue({
       targetFacility: triggerFacility,
-      tagInfo: [
-        { tagName: 'Trans_Signal_Reset', value: false },
-      ],
+      tagInfo: [{ tagName: 'Trans_Signal_Reset', value: false }],
     });
   }, 500);
+};
+
+// xGenRecovery cascade: from 설비만 PLC 리셋. to 설비는 cascade로 살아있어야 하므로 절대 건드리지 않음
+export const acsWorkOrderCartRecovery = async (messageJson: any) => {
+  const plcConnectUtil = usePlcConnectUtil();
+  const fromFacilitySerial = messageJson?.FromFacility?.serial || '';
+  if (!fromFacilitySerial) return;
+
+  await plcConnectUtil.writeTagValue({
+    targetFacility: fromFacilitySerial,
+    tagInfo: [
+      { tagName: 'Call_Request', value: false },
+      { tagName: 'Call_Response', value: false },
+      { tagName: 'Call_Robot_Assigned', value: false },
+      { tagName: 'Call_Response_Count', value: '0' },
+    ],
+  });
 };
