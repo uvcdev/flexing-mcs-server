@@ -63,7 +63,7 @@ export const sendAckToWms = (topic: string, subject: string, ackBody: MbsMqttBod
 
 // Set remainingAckCommand
 // MCS에서 WMS으로 보내는 MQTT 정보들에 대한 데이터 관리
-export const setRemainingAckCommand = (
+export const setRemainingAckCommand = async (
   systemTopic: string,
   systemName: string,
   mqttMessage: MbsMqttMesaage,
@@ -108,7 +108,11 @@ export const setRemainingAckCommand = (
     deletedData: deletedData || {},
   };
 
-  redisUtil.hset(RedisKeys.RemainingAckCommandBySubjectCmdId, subjectCmdId, JSON.stringify(remainingAckCommand));
+  await redisUtil.hsetAsync(
+    RedisKeys.RemainingAckCommandBySubjectCmdId,
+    subjectCmdId,
+    JSON.stringify(remainingAckCommand)
+  );
 };
 
 // WMS에서 MCS로 들어온 데이터들에 대한 관리

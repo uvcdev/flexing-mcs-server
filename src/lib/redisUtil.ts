@@ -163,6 +163,11 @@ export const useRedisUtil = () => {
       const result = redisClient.hset(makeKey(key), field, value);
     }
   };
+  const hsetAsync = async (key: string, field: string, value: string): Promise<void> => {
+    if (redisClient) {
+      await redisClient.hset(makeKey(key), field, value);
+    }
+  };
 
   const hget = async (key: string, field: string): Promise<string | null> => {
     if (!redisClient) return null;
@@ -305,6 +310,7 @@ export const useRedisUtil = () => {
     hkeys,
     set,
     hset,
+    hsetAsync,
     get,
     hget,
     hgetObject,

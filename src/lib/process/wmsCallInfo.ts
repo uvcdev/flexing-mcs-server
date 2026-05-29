@@ -102,14 +102,14 @@ const sendCallInfoToWms = async (callInfo: CallInfoBody, systemName: string) => 
 
   const mqttHeader = makeMbsMqttHeader(subject);
   const mqttBody: MbsMqttBody = callInfoData;
+  // CALLINFO에 대한 ack 초기값 설정
+  await setRemainingAckCommand(topic, systemName, { header: mqttHeader, body: mqttBody });
+
   // CALLINFO MQTT 데이터 전송
   sendMbsMqtt(topic, mqttHeader, mqttBody, systemName);
 
   // CALLINFO 보내고 나서 해당 redis 값 삭제
   deleteInfoInCallByCallId(callInfoData.Call_ID);
-
-  // CALLINFO에 대한 ack 초기값 설정
-  setRemainingAckCommand(topic, systemName, { header: mqttHeader, body: mqttBody });
 
   // Recent call info task 기록
   const recentCallInfoTaskParams: RecentCallInfo = {

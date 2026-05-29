@@ -1186,3 +1186,8 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - approve v3.4.5-ljk
 - processMcs 사이클·단계별 성능 로그 제거
+
+## 3.4.6-ljk
+
+- WMS 인터페이스
+  - remain 데이터 remain 되는 문제 해결
