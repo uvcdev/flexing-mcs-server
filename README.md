@@ -1185,3 +1185,4 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## 3.4.6
 
 - approve v3.4.5-ljk
+- processMcs 사이클·단계별 성능 로그 제거
