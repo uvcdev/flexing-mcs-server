@@ -1191,3 +1191,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - WMS 인터페이스
   - remain 데이터 remain 되는 문제 해결
+
+## 3.4.7
+
+- approve v.3.4.6-ljk
