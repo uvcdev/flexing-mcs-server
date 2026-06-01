@@ -719,3 +719,7 @@ CREATE TABLE public.menu_roles (
   - alwaysOn 설비: Call_Request, Call_Response, Call_Robot_Assigned, Call_Response_Count 초기화
   - trigger 설비: Trans_Signal_Reset ON/OFF 처리
 - `amr.ts` 라우터 export명 `amrRouter` → `router`로 통일
+
+## v2.2.18
+
+- acsWorkOrderRecovery 로직 추가
