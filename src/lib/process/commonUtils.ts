@@ -212,6 +212,7 @@ export const acsWorkOrderCartCancel = async (messageJson: any) => {
 };
 
 // xGenRecovery cascade: from 설비만 PLC 리셋. to 설비는 cascade로 살아있어야 하므로 절대 건드리지 않음
+// recent_work_order_list_by_facility_serial 갱신
 export const acsWorkOrderCartRecovery = async (messageJson: any) => {
   const plcConnectUtil = usePlcConnectUtil();
   const fromFacilitySerial = messageJson?.FromFacility?.serial || '';
@@ -226,4 +227,30 @@ export const acsWorkOrderCartRecovery = async (messageJson: any) => {
       { tagName: 'Call_Response_Count', value: '0' },
     ],
   });
+
+  const oldCallId = messageJson?.oldCallId || '';
+  const newCallId = messageJson?.newCallId || '';
+  if (!oldCallId || !newCallId) return;
+
+  const serial = oldCallId.slice(0, 4);
+  const workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+    RedisKeys.RecentWorkOrderListByFacilitySerial,
+    serial
+  );
+  if (!workOrderListInfo) return;
+
+  // 옛날 callId가 남아있으면 제거하고, 새 callId 추가
+  const workOrderList = (workOrderListInfo.workOrderList || []).filter((item) => item.callId !== oldCallId);
+  if (!workOrderList.some((item) => item.callId === newCallId)) {
+    workOrderList.push({ callId: newCallId, state: 'workOrder' });
+  }
+
+  redisUtil.hset(
+    RedisKeys.RecentWorkOrderListByFacilitySerial,
+    serial,
+    JSON.stringify({
+      count: workOrderList.length,
+      workOrderList,
+    })
+  );
 };
