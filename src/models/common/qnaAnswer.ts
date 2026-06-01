@@ -6,7 +6,7 @@ export interface QnaAnswerAttributes {
   id: number;
   questionId: number;
   userId: number;
-  content: string;
+  content: string | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -39,7 +39,7 @@ QnaAnswer.init(
     },
     content: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true,
     },
   },
   {
@@ -56,14 +56,14 @@ QnaAnswer.init(
 export interface QnaAnswerInsertParams {
   questionId: number;
   userId: number;
-  content: string;
+  content?: string | null;
   fileIds?: number[] | null;
 }
 
 // update
 export interface QnaAnswerUpdateParams {
   id?: number;
-  content?: string;
+  content?: string | null;
   fileIds?: number[] | null;
 }
 

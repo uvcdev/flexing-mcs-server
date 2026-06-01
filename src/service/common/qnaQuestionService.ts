@@ -145,7 +145,7 @@ const service = {
       const questionId = params.id || 0;
 
       // 1. 해당 질문에 속한 답변 id들 조회 (답변 파일 조인 삭제용)
-      const answerIds = await qnaQuestionDao.selectAnswerIdsByQuestionId(questionId);
+      const answerIds = await qnaQuestionDao.selectAnswerIdsByQuestionId(questionId, transaction);
 
       // 2. 답변 파일 조인 hard delete (각 answerId별로 deleteForce 호출)
       for (const answerId of answerIds) {
