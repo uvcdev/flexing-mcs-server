@@ -6,7 +6,7 @@ export interface QnaQuestionAttributes {
   id: number;
   userId: number;
   title: string;
-  content: string;
+  content: string | null;
   type: string | null;
   isNotice: boolean;
   createdAt: Date;
@@ -43,7 +43,7 @@ QnaQuestion.init(
     },
     content: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true,
     },
     type: {
       type: DataTypes.STRING(50),
@@ -69,7 +69,7 @@ QnaQuestion.init(
 export interface QnaQuestionInsertParams {
   userId: number;
   title: string;
-  content: string;
+  content?: string | null;
   type?: string | null;
   isNotice?: boolean;
   fileIds?: number[] | null;
@@ -102,7 +102,7 @@ export interface QnaQuestionSelectInfoParams {
 export interface QnaQuestionUpdateParams {
   id?: number;
   title?: string;
-  content?: string;
+  content?: string | null;
   type?: string | null;
   isNotice?: boolean;
   fileIds?: number[] | null;

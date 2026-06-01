@@ -165,13 +165,7 @@ const dao = {
     silent = false
   ): Promise<UpdatedResult> {
     return new Promise((resolve, reject) => {
-      const setParams: { title?: string; content?: string; type?: string | null; isNotice?: boolean } = {};
-      if (params.title !== undefined) setParams.title = params.title;
-      if (params.content !== undefined) setParams.content = params.content;
-      if (params.type !== undefined) setParams.type = params.type;
-      if (params.isNotice !== undefined) setParams.isNotice = params.isNotice;
-
-      QnaQuestion.update(setParams, { where: { id: params.id }, transaction, silent })
+      QnaQuestion.update(params, { where: { id: params.id }, transaction, silent })
         .then(([updated]) => {
           resolve({ updatedCount: updated });
         })
@@ -197,11 +191,15 @@ const dao = {
     });
   },
   // 질문에 속한 답변 id 목록 조회 (삭제 시 답변 파일 조인 cascade를 위해 사용)
-  selectAnswerIdsByQuestionId(questionId: number): Promise<number[]> {
+  selectAnswerIdsByQuestionId(
+    questionId: number,
+    transaction: Transaction | undefined = undefined
+  ): Promise<number[]> {
     return new Promise((resolve, reject) => {
       QnaAnswer.findAll({
         where: { questionId },
         attributes: ['id'],
+        transaction,
       })
         .then((rows) => {
           resolve(rows.map((row) => ((row as unknown) as { id: number }).id));

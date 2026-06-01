@@ -27,10 +27,7 @@ const dao = {
   },
   update(params: QnaAnswerUpdateParams, transaction: Transaction | undefined = undefined): Promise<UpdatedResult> {
     return new Promise((resolve, reject) => {
-      const setParams: { content?: string } = {};
-      if (params.content !== undefined) setParams.content = params.content;
-
-      QnaAnswer.update(setParams, { where: { id: params.id }, transaction })
+      QnaAnswer.update(params, { where: { id: params.id }, transaction })
         .then(([updated]) => {
           resolve({ updatedCount: updated });
         })

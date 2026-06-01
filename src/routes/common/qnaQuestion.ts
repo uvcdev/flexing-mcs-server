@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import * as express from 'express';
 import { Request, Response } from 'express';
 import { isLoggedIn } from '../../lib/middleware';
@@ -30,7 +29,7 @@ router.post(
     req: Request<
       unknown,
       unknown,
-      { title: string; content: string; type?: string | null; fileIds?: number[]; isNotice?: boolean },
+      { title: string; content?: string | null; type?: string | null; fileIds?: number[]; isNotice?: boolean },
       unknown
     >,
     res: Response
@@ -43,7 +42,7 @@ router.post(
       const params: QnaQuestionInsertParams = {
         userId: tokenUser?.id ?? 0,
         title: req.body.title,
-        content: req.body.content,
+        content: req.body.content ?? null,
         type: req.body.type ?? null,
         isNotice: req.body.isNotice ?? false,
         fileIds: Array.isArray(req.body.fileIds) ? req.body.fileIds.map((v) => Number(v)) : null,
@@ -59,8 +58,8 @@ router.post(
 
         return res.status(resJson.status).json(resJson);
       }
-      if (!params.title || !params.content) {
-        const err = new ErrorClass(resCode.BAD_REQUEST_NOTNULL, 'Not allowed null (title, content)');
+      if (!params.title) {
+        const err = new ErrorClass(resCode.BAD_REQUEST_NOTNULL, 'Not allowed null (title)');
 
         const resJson = resError(err);
         logging.RESPONSE_DATA(logFormat, resJson);
@@ -98,9 +97,7 @@ router.get(
       // 요청 파라미터
       const params: QnaQuestionSelectListParams = {
         title: req.query.title,
-        types: req.query.types
-          ? ((req.query.types as unknown) as string).split(',').filter((type) => type !== '')
-          : null,
+        types: req.query.types ? (req.query.types as unknown as string).split(',').filter((type) => type !== '') : null,
         userId: req.query.userId ? Number(req.query.userId) : null,
         createdAtFrom: req.query.createdAtFrom ? new Date(req.query.createdAtFrom) : null,
         createdAtTo: req.query.createdAtTo ? new Date(req.query.createdAtTo) : null,
@@ -179,7 +176,7 @@ router.put(
     req: Request<
       QnaQuestionUpdateParams,
       unknown,
-      { title?: string; content?: string; type?: string | null; fileIds?: number[] | null; isNotice?: boolean },
+      { title?: string; content?: string | null; type?: string | null; fileIds?: number[] | null; isNotice?: boolean },
       unknown
     >,
     res: Response
@@ -199,8 +196,8 @@ router.put(
           req.body.fileIds === undefined
             ? undefined
             : req.body.fileIds === null
-            ? null
-            : req.body.fileIds.map((v) => Number(v)),
+              ? null
+              : req.body.fileIds.map((v) => Number(v)),
       };
       logging.REQUEST_PARAM(logFormat);
 

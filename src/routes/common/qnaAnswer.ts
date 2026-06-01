@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import * as express from 'express';
 import { Request, Response } from 'express';
 import { isLoggedIn } from '../../lib/middleware';
@@ -11,11 +10,7 @@ import {
   ErrorClass,
 } from '../../lib/resUtil';
 import { Payload } from '../../lib/tokenUtil';
-import {
-  QnaAnswerInsertParams,
-  QnaAnswerUpdateParams,
-  QnaAnswerDeleteParams,
-} from '../../models/common/qnaAnswer';
+import { QnaAnswerInsertParams, QnaAnswerUpdateParams, QnaAnswerDeleteParams } from '../../models/common/qnaAnswer';
 import { service as qnaAnswerService } from '../../service/common/qnaAnswerService';
 
 const router = express.Router();
@@ -25,7 +20,7 @@ router.post(
   '/',
   isLoggedIn,
   async (
-    req: Request<unknown, unknown, { questionId: number; content: string; fileIds?: number[] }, unknown>,
+    req: Request<unknown, unknown, { questionId: number; content?: string | null; fileIds?: number[] }, unknown>,
     res: Response
   ) => {
     const logFormat = makeLogFormat(req);
@@ -36,7 +31,7 @@ router.post(
       const params: QnaAnswerInsertParams = {
         questionId: Number(req.body.questionId),
         userId: tokenUser?.id ?? 0,
-        content: req.body.content,
+        content: req.body.content ?? null,
         fileIds: Array.isArray(req.body.fileIds) ? req.body.fileIds.map((v) => Number(v)) : null,
       };
       logging.REQUEST_PARAM(logFormat);
@@ -52,14 +47,6 @@ router.post(
       }
       if (!params.questionId || isNaN(params.questionId)) {
         const err = new ErrorClass(resCode.BAD_REQUEST_INVALID, 'Invalid value (questionId: number)');
-
-        const resJson = resError(err);
-        logging.RESPONSE_DATA(logFormat, resJson);
-
-        return res.status(resJson.status).json(resJson);
-      }
-      if (!params.content) {
-        const err = new ErrorClass(resCode.BAD_REQUEST_NOTNULL, 'Not allowed null (content)');
 
         const resJson = resError(err);
         logging.RESPONSE_DATA(logFormat, resJson);
@@ -90,7 +77,7 @@ router.put(
   '/id/:id',
   isLoggedIn,
   async (
-    req: Request<QnaAnswerUpdateParams, unknown, { content?: string; fileIds?: number[] | null }, unknown>,
+    req: Request<QnaAnswerUpdateParams, unknown, { content?: string | null; fileIds?: number[] | null }, unknown>,
     res: Response
   ) => {
     const logFormat = makeLogFormat(req);
@@ -105,8 +92,8 @@ router.put(
           req.body.fileIds === undefined
             ? undefined
             : req.body.fileIds === null
-            ? null
-            : req.body.fileIds.map((v) => Number(v)),
+              ? null
+              : req.body.fileIds.map((v) => Number(v)),
       };
       logging.REQUEST_PARAM(logFormat);
 
