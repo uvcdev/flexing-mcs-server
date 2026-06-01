@@ -1195,3 +1195,61 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## 3.4.7
 
 - approve v.3.4.6-ljk
+
+## 3.4.7-lsk
+
+- qna 게시판 추가
+  ```sql
+    CREATE TABLE public.qna_questions (
+      id serial4 NOT NULL,
+      user_id int4 NOT NULL,
+      title varchar(200) NOT NULL,
+      "content" text NOT NULL,
+      is_notice bool DEFAULT false NOT NULL,
+      "type" varchar(50) NULL,
+      created_at timestamptz NOT NULL,
+      updated_at timestamptz NOT NULL,
+      deleted_at timestamptz NULL,
+      CONSTRAINT qna_questions_pkey PRIMARY KEY (id),
+      CONSTRAINT qna_questions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+    CREATE TABLE public.qna_question_file_joins (
+      id serial4 NOT NULL,
+      question_id int4 NOT NULL,
+      file_id int4 NOT NULL,
+      created_at timestamptz NOT NULL,
+      updated_at timestamptz NOT NULL,
+      deleted_at timestamptz NULL,
+      CONSTRAINT qna_question_file_joins_pkey PRIMARY KEY (id),
+      CONSTRAINT qna_question_file_joins_question_id_file_id_key UNIQUE (question_id, file_id),
+      CONSTRAINT qna_question_file_joins_file_id_fkey FOREIGN KEY (file_id) REFERENCES public.files(id) ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT qna_question_file_joins_question_id_fkey FOREIGN KEY (question_id) REFERENCES public.qna_questions(id) ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+    CREATE TABLE public.qna_answers (
+      id serial4 NOT NULL,
+      question_id int4 NOT NULL,
+      user_id int4 NOT NULL,
+      "content" text NOT NULL,
+      created_at timestamptz NOT NULL,
+      updated_at timestamptz NOT NULL,
+      deleted_at timestamptz NULL,
+      CONSTRAINT qna_answers_pkey PRIMARY KEY (id),
+      CONSTRAINT qna_answers_question_id_fkey FOREIGN KEY (question_id) REFERENCES public.qna_questions(id) ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT qna_answers_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+    CREATE TABLE public.qna_answer_file_joins (
+      id serial4 NOT NULL,
+      answer_id int4 NOT NULL,
+      file_id int4 NOT NULL,
+      created_at timestamptz NOT NULL,
+      updated_at timestamptz NOT NULL,
+      deleted_at timestamptz NULL,
+      CONSTRAINT qna_answer_file_joins_answer_id_file_id_key UNIQUE (answer_id, file_id),
+      CONSTRAINT qna_answer_file_joins_pkey PRIMARY KEY (id),
+      CONSTRAINT qna_answer_file_joins_answer_id_fkey FOREIGN KEY (answer_id) REFERENCES public.qna_answers(id) ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT qna_answer_file_joins_file_id_fkey FOREIGN KEY (file_id) REFERENCES public.files(id) ON DELETE CASCADE ON UPDATE CASCADE
+    );
+  ```
