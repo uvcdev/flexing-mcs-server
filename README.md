@@ -1195,3 +1195,8 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## 3.4.7
 
 - approve v.3.4.6-ljk
+
+## v3.4.7-ljk
+
+- Out Dock 관련 Reset 내용 임시 주석
+- calcSubjectTimeLog 관련 코드 주석 ( 에러 방지 )

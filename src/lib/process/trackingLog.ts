@@ -862,8 +862,9 @@ export const calcSectionLeadTime = (
 export const calcSubjectTimeLog = (subjectTimeLog: SubjectTimeLog, subject: TrackingLogSubjectType): void => {
   if (!subjectTimeLog || subjectTimeLog[subject] === undefined) return;
   const dateNow = formatDetailedDateTime(new Date());
-  if (subjectTimeLog[subject].st === null) {
-    subjectTimeLog[subject].st = dateNow;
+  const target = subjectTimeLog[subject]!;
+  if (target.st === null) {
+    target.st = dateNow;
   }
-  subjectTimeLog[subject].ed = dateNow;
+  target.ed = dateNow;
 };

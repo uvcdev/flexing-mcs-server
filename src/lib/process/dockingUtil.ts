@@ -1285,8 +1285,29 @@ export const useDockingUtil = () => {
       }
     }
 
+    // out Dock Reset 은 필요 없을 것으로 예상 하오나, 필요시 재 추가
+    // 26.06.11
     // outDockingRequeset 초기화
-    // 나중에 필요하면 추가 ( 위와 동일 )
+    // const dockOutRequestList = await redisUtil.hgetAllObject<AcsDockingRequestType>(
+    //   RedisKeys.DockingOutRequestBySerialId
+    // );
+
+    // if (dockOutRequestList && dockOutRequestList.length > 0) {
+    //   for (let i = 0, length = dockOutRequestList.length; i < length; i++) {
+    //     const dockOutRequestInfo = dockOutRequestList[i];
+    //     if (dockOutRequestInfo.REPORT_ID === reportId) {
+    //       if (cancelType === 'aborted' || !dockOutRequestInfo?.RESULT) {
+    //         const facilitySerial = dockOutRequestInfo.PORT_ID; // 1단계) dock_Out_Request redis 지우기
+
+    //         redisUtil.hdel(RedisKeys.DockingOutRequestBySerialId, facilitySerial); // 2단계) 설비 dock Out request 신호 내리기
+    //         await plcConnectUtil.writeTagValue({
+    //           targetFacility: facilitySerial || '',
+    //           tagInfo: [{ tagName: 'Dock_Out_Request', value: false }],
+    //         });
+    //       }
+    //     }
+    //   }
+    // }
   };
 
   return {
