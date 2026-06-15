@@ -19,8 +19,6 @@ import { router as alarmEmailRouter } from './common/alarmEmail';
 import { router as mcsAlarmRouter } from './common/mcsAlarm';
 import { amrRouter } from './common/amr';
 import { router as errorCodeRouter } from './common/errorCode';
-import { router as qnaQuestionRouter } from './common/qnaQuestion';
-import { router as qnaAnswerRouter } from './common/qnaAnswer';
 // dashboard
 import { router as dailyStatisticRouter } from './dashboard/dailyStatistic';
 import { router as monthlyStatisticRouter } from './dashboard/monthlyStatistic';
@@ -216,8 +214,6 @@ router.use('/alarm-emails', alarmEmailRouter);
 router.use('/mcs-alarms', mcsAlarmRouter);
 router.use('/amrs', amrRouter);
 router.use('/error-codes', errorCodeRouter);
-router.use('/qna-questions', qnaQuestionRouter);
-router.use('/qna-answers', qnaAnswerRouter);
 // dashboard
 router.use('/daily-statistics', dailyStatisticRouter);
 router.use('/monthly-statistics', monthlyStatisticRouter);

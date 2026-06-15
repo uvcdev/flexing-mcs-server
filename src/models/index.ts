@@ -10,10 +10,6 @@ import AlarmEmail from './common/alarmEmail';
 import McsAlarm from './common/mcsAlarm';
 import Amr from './common/amr';
 import ErrorCode from './common/errorCode';
-import QnaQuestion from './common/qnaQuestion';
-import QnaAnswer from './common/qnaAnswer';
-import QnaQuestionFileJoin from './common/qnaQuestionFileJoin';
-import QnaAnswerFileJoin from './common/qnaAnswerFileJoin';
 
 // dashboard
 import DailyStatistic from './dashboard/dailyStatistic';
@@ -46,10 +42,6 @@ const db = {
   McsAlarm,
   Amr,
   ErrorCode,
-  QnaQuestion,
-  QnaAnswer,
-  QnaQuestionFileJoin,
-  QnaAnswerFileJoin,
   /* dashboard */
   DailyStatistic,
   MonthlyStatistic,
@@ -91,25 +83,3 @@ WorkOrder.belongsTo(Facility, { foreignKey: { name: 'fromFacilityId' }, onDelete
 WorkOrder.belongsTo(Facility, { foreignKey: { name: 'toFacilityId' }, onDelete: 'SET NULL', as: 'ToFacility' });
 WorkOrder.belongsTo(Item, { foreignKey: { name: 'itemId' }, onDelete: 'SET NULL', as: 'Item' });
 WorkOrder.belongsTo(Amr, { foreignKey: { name: 'fromAmrId' }, onDelete: 'SET NULL', as: 'Amr' });
-
-/* Q&A */
-User.hasMany(QnaQuestion, { foreignKey: 'userId' });
-User.hasMany(QnaAnswer, { foreignKey: 'userId' });
-
-QnaQuestion.belongsTo(User, { foreignKey: 'userId' });
-QnaQuestion.hasMany(QnaAnswer, { foreignKey: 'questionId', as: 'Answers' });
-QnaQuestion.belongsToMany(File, {
-  through: QnaQuestionFileJoin,
-  foreignKey: 'questionId',
-  otherKey: 'fileId',
-  as: 'Files',
-});
-
-QnaAnswer.belongsTo(User, { foreignKey: 'userId' });
-QnaAnswer.belongsTo(QnaQuestion, { foreignKey: 'questionId' });
-QnaAnswer.belongsToMany(File, {
-  through: QnaAnswerFileJoin,
-  foreignKey: 'answerId',
-  otherKey: 'fileId',
-  as: 'Files',
-});
