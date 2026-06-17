@@ -1,8 +1,13 @@
-import { TrackingLogAttributes, TrackingLogRedisUpdateParams, TrackingLogState } from '../../models/common/trackingLog';
+import {
+  TrackingLogAttributes,
+  TrackingLogRedisAttributes,
+  TrackingLogRedisUpdateParams,
+  TrackingLogState,
+} from '../../models/common/trackingLog';
 import { FacilityAttributes } from '../../models/operation/facility';
 import { RecentWorkOrderListByFacilitySerialAttributes } from '../../models/operation/workOrder';
 import { useCallTypeUtil } from '../callTypeUtil';
-import { useKepServerUtil } from '../kepServerUtil';
+import { deleteAmrName, useKepServerUtil } from '../kepServerUtil';
 import { separateMqttMessage, MbsMqttMesaage } from '../mqttUtil';
 import { usePlcConnectUtil } from '../plcConnectUtil';
 import { fixMultiCallFacilityStatus } from '../process/commonUtils';
@@ -62,6 +67,8 @@ export interface MissionFailed {
   mission: string;
 }
 
+const redisUtil = useRedisUtil();
+
 const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
   try {
     // console.log('catch acs missionState');
@@ -80,6 +87,11 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     const missionDestination = missionStateBody.missionDestination || '';
     let assignTask = (missionStateBody.assign.task as TrackingLogState) || '';
     let assignState = 'PROCESSING' as TrackingLogState;
+
+    const callIdTrackingLogInfo = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
+      RedisKeys.InfoTrackingLogByCallId,
+      callId
+    );
 
     if (
       state === 'AMR_DEPOSIT_COMPLETED' ||
@@ -122,8 +134,8 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     }
 
     // workOrder Count down
-    const redisUtil = useRedisUtil();
-    const facilitySerial = callId.slice(0, 4) ?? '';
+    // const facilitySerial = callId.slice(0, 4) ?? '';
+    const facilitySerial = (callIdTrackingLogInfo?.plcName || callId.slice(0, 4)) ?? '';
     let recentWorkOrderStatus = '';
 
     if (assignState === 'COMPLETED' || assignState === 'CANCELED') {
@@ -228,6 +240,28 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
             JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
           );
         }
+      }
+    }
+
+    if (state === 'FROM_COMPLETED') {
+      const trackingLogFromFacilitySerial = callIdTrackingLogInfo?.startFacility || '';
+      if (trackingLogFromFacilitySerial) {
+        // FROM_COMPLETE에서 지워주긴 하지만 혹시 몰라서 추가함
+        // await deleteAmrName(trackingLogFromFacilitySerial, assignAmrName);
+      }
+    }
+
+    // AMR 할당 풀어줄 때 FROM / TO 설비 둘 다 조회해서 있으면 지워줌
+    if (state === 'AMR_UNASSIGNED') {
+      const trackingLogFromFacilitySerial = callIdTrackingLogInfo?.startFacility || '';
+      const trackingLogToFacilitySerial = callIdTrackingLogInfo?.destFacility || '';
+
+      if (trackingLogFromFacilitySerial) {
+        // FROM_COMPLETE에서 지워주긴 하지만 혹시 몰라서 추가함
+        // await deleteAmrName(trackingLogFromFacilitySerial, assignAmrName);
+      }
+      if (trackingLogToFacilitySerial) {
+        // await deleteAmrName(trackingLogToFacilitySerial, assignAmrName);
       }
     }
 

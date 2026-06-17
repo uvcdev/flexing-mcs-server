@@ -1200,3 +1200,10 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - Out Dock 관련 Reset 내용 임시 주석
 - calcSubjectTimeLog 관련 코드 주석 ( 에러 방지 )
+
+- Kepserver 설정 변경
+
+  - 접속 끊어졌을 시, 무한 재시도
+
+- 설비에 작업으로 오고 있는 AMR 표시
+  - 함수 / 위치는 완료 했으나 DB 영역에 대한 수정은 필요함

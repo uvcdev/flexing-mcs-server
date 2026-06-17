@@ -29,7 +29,7 @@ import { wmsOnline } from './wms/mqtt/online';
 import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/wmsBranch';
 import { AcsChargerDockingCanceledType, useDockingUtil } from './process/dockingUtil';
 import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
-import { TagValue, useKepServerUtil } from './kepServerUtil';
+import { resetAmrName, TagValue, useKepServerUtil, writeAmrName } from './kepServerUtil';
 import { acsWorkOrderCancel, checkCallSignalResetWorkOrder, checkSpBsWorkType } from './process/commonUtils';
 import { FacilityAttributes } from '../models/operation/facility';
 import { RedisKeys, useRedisUtil } from './redisUtil';
@@ -480,6 +480,8 @@ export const receiveMqtt = (): void => {
               const targetFacility = messageJson.facilityName.substring(0, 4);
 
               if (state === 'AMR_ARRIVED') {
+                const assignedAmrName = messageJson?.amrName || '';
+
                 await plcConnectUtil.writeTagValue({
                   targetFacility: messageJson.facilitySerial,
                   tagInfo: [
@@ -487,6 +489,9 @@ export const receiveMqtt = (): void => {
                     // { tagName: 'Call_Response', value: true },
                   ],
                 });
+
+                // 2026-06-11
+                // await writeAmrName(messageJson.facilitySerial, assignedAmrName);
               }
 
               // 작업 완료
@@ -1065,6 +1070,9 @@ export const receiveMqtt = (): void => {
                 ],
               });
               await useCallTypeUtil().callTypeResponseReset(facilitySerial);
+
+              // ACS에서 Call_Signal_Reset 시, 오고 있는 AMR 정보 삭제
+              // await resetAmrName(facilitySerial);
 
               if (facilityInfo.isActiveCallTrigger === true) {
                 await checkCallSignalResetWorkOrder(messageTopic, messageJson, facilityInfo);
