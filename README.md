@@ -1206,4 +1206,9 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - 접속 끊어졌을 시, 무한 재시도
 
 - 설비에 작업으로 오고 있는 AMR 표시
+
   - 함수 / 위치는 완료 했으나 DB 영역에 대한 수정은 필요함
+
+- BS 공급 라인
+  - BS 공급 라인 미션 오더 적용
+  - BS 미션 결정지 로직 추가
