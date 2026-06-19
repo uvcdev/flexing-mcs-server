@@ -38,7 +38,6 @@ type TrackingLogRow = TrackingLogAttributes & {
 router.get('/', async (req: Request<unknown, unknown, unknown, TrackingLogQueryString>, res: Response) => {
   const logFormat = makeLogFormat(req);
 
-  console.log('????????????????');
   try {
     // 요청 파라미터
     const params: TrackingLogSelectListParams = {
@@ -66,7 +65,6 @@ router.get('/', async (req: Request<unknown, unknown, unknown, TrackingLogQueryS
       return res.status(resJson.status).json(resJson);
     }
 
-    console.log('params', params);
     // 1. trackingLog 리스트 조회
     const trackingResult = await trackingLogService.list(params, logFormat);
 

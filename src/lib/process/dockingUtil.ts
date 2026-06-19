@@ -1003,7 +1003,6 @@ export const useDockingUtil = () => {
         for (const facilityInfo of usageFacilitylist) {
           if (facilityInfo.type === 'in') {
             // Docking_Status PLC 쓰기
-            console.log('??', facilityInfo.serial, 'Docking_Status');
             await plcConnectUtil.writeTagValue({
               targetFacility: facilityInfo.serial || '',
               tagInfo: [{ tagName: 'Docking_Status', value: '1' }],

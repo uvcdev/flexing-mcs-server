@@ -242,7 +242,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
 
       logging.ACTION_INFO({
-        filename: `call.ts - ackBranchInfoReq`,
+        filename: `call.ts - ackCallInfo`,
         error: `[HCACK = ${hcack}] CallId (${callId}) Command executed successfully - comment : ${ackComment}`,
         params: null,
         result: true,

@@ -1142,7 +1142,7 @@ export const receiveMqtt = (): void => {
         }
         // MBS
         const mbsTopicSplit = messageTopic.split('-');
-        if (mbsTopicSplit) {
+        if (mbsTopicSplit.length > 1) {
           const systemTopic = mbsTopicSplit[0];
           const subTopic = mbsTopicSplit[1];
           const message = messageOrg.toString();

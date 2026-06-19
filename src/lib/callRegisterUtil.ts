@@ -124,7 +124,7 @@ export const useCallRegisterUtil = () => {
 
           // 작업 생성 트리거 판단
           if (facilityInfo?.isActiveCallTrigger === true) {
-            if (facilityInfo?.isMissionOrderCapable) {
+            if (facilityInfo?.isMissionOrderCapable && facilityInfo?.type === 'out') {
               // ======= 미션결정 작업지시 (설비기준 회수) =======
               // const eqpCallId = (await createWorkOrderCode(targetKey, facilityInfo, targetTagInfo.reRegister)) || '';
               callInfo.CALL_ID = eqpCallId;

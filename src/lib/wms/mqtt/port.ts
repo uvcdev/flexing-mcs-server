@@ -193,6 +193,15 @@ const portPresenceStatus = async (
         cmdId: cmdId,
       };
 
+      const triggerFacilitySerial = infoAckInCallByCallId.Caller || '';
+      const triggerFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        triggerFacilitySerial
+      );
+      if (triggerFacilityInfo && triggerFacilityInfo.isMissionOrderCapable && triggerFacilityInfo.type === 'in') {
+        infoPendingWorkOrder.isManualMissionOrder = true;
+      }
+
       // pending workOrder 레디스 정보 저장
       const reinboundIfPortAssignedForFacilityCancelByCallId = await redisUtil.hget(
         RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId,
