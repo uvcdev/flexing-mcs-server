@@ -5,7 +5,7 @@ import { generateUUIDNode } from '../../hashUtil';
 import { logging } from '../../logging';
 import {
   separateMqttMessage,
-  MbsMqttMesaage,
+  MbsMqttMessage,
   MbsMqttBody,
   makeMbsMqttHeader,
   sendMbsMqtt,
@@ -69,7 +69,7 @@ export interface InfoAckInCallByCallIdBody extends EqpCallStatsForAck {
   updatedTime: string;
 }
 
-const callRequest = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
+const callRequest = async (wmsName: string, subject: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsCallRequest');
   // set Data
   const callRequestBody = messageMessage.body as CallRequestBody;
@@ -1146,7 +1146,7 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
   }
 };
 
-export const wmsCall = async (wmsName: string, messageJson: MbsMqttMesaage) => {
+export const wmsCall = async (wmsName: string, messageJson: MbsMqttMessage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)

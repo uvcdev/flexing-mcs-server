@@ -1219,4 +1219,8 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - 트래킹 로그 특정 구역 리드타임은 제외하고 계산할 수 있도록 함
 
 - WMS 별도 로깅 추가
+
   - function : 'WMS_MQTT_LOG'
+
+- 오타 수정
+  - MbsMqttMesaage -> MbsMqttMessage

@@ -3,7 +3,7 @@ import { PendingWorkOrderAttributes } from '../../../models/operation/workOrder'
 import { useCallTypeUtil } from '../../callTypeUtil';
 import { useKepServerUtil } from '../../kepServerUtil';
 import { logging } from '../../logging';
-import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, sendMqtt } from '../../mqttUtil';
+import { separateMqttMessage, MbsMqttMessage, MbsMqttBody, sendMqtt } from '../../mqttUtil';
 import { editTrackingLogRedis } from '../../process/trackingLog';
 import { deleteRemainingAckCommand, RemainingAckCommand, setReceivedAckCommand } from '../../process/wmsAck';
 import {
@@ -42,12 +42,12 @@ interface BranchInfoRepBody extends MbsMqttBody {
   CarrierList: Array<BranchInfoRepCarrierInfo>;
 }
 
-export interface InfoBranchCallAttributes extends BranchInfoReqBody, DeletedBranchInfoReq { }
+export interface InfoBranchCallAttributes extends BranchInfoReqBody, DeletedBranchInfoReq {}
 
 const branchInfoRep = async (
   wmsName: string,
   subject: string,
-  messageMessage: MbsMqttMesaage,
+  messageMessage: MbsMqttMessage,
   messageBody: BranchInfoRepBody
 ) => {
   // 1. 필요한 데이터 세팅
@@ -507,7 +507,7 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
   }
 };
 
-export const wmsBranch = (wmsName: string, messageJson: MbsMqttMesaage) => {
+export const wmsBranch = (wmsName: string, messageJson: MbsMqttMessage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   if (subject === 'BRANCH_INFO_REP') {

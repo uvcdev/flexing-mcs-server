@@ -8,7 +8,7 @@ import { FacilityAttributes } from '../../models/operation/facility';
 import { RecentWorkOrderListByFacilitySerialAttributes } from '../../models/operation/workOrder';
 import { useCallTypeUtil } from '../callTypeUtil';
 import { deleteAmrName, useKepServerUtil } from '../kepServerUtil';
-import { separateMqttMessage, MbsMqttMesaage } from '../mqttUtil';
+import { separateMqttMessage, MbsMqttMessage } from '../mqttUtil';
 import { usePlcConnectUtil } from '../plcConnectUtil';
 import { fixMultiCallFacilityStatus } from '../process/commonUtils';
 import { useDockingUtil } from '../process/dockingUtil';
@@ -69,7 +69,7 @@ export interface MissionFailed {
 
 const redisUtil = useRedisUtil();
 
-const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
+const missionState = async (acsName: string, messageJson: MbsMqttMessage) => {
   try {
     // console.log('catch acs missionState');
     const kepServerUtil = useKepServerUtil();
@@ -402,7 +402,7 @@ const allMissionState = (acsName: string) => {
   console.log('catch acs allMissionState');
 };
 
-const missionCompleted = (acsName: string, messageJson: MbsMqttMesaage) => {
+const missionCompleted = (acsName: string, messageJson: MbsMqttMessage) => {
   console.log('catch acs missionCompleted');
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
   // acs 물류 로그 저장
@@ -414,7 +414,7 @@ const missionCompleted = (acsName: string, messageJson: MbsMqttMesaage) => {
   sendAckToWms(topic, subject, ackBody, acsName);
 };
 
-const missionFailed = (acsName: string, messageJson: MbsMqttMesaage) => {
+const missionFailed = (acsName: string, messageJson: MbsMqttMessage) => {
   console.log('catch acs missionFailed');
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
   // acs 물류 로그 저장
@@ -426,7 +426,7 @@ const missionFailed = (acsName: string, messageJson: MbsMqttMesaage) => {
   sendAckToWms(topic, subject, ackBody, acsName);
 };
 
-export const acsMissionState = (acsName: string, messageJson: MbsMqttMesaage) => {
+export const acsMissionState = (acsName: string, messageJson: MbsMqttMessage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)

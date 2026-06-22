@@ -150,7 +150,7 @@ export interface MbsMqttBody {
   [key: string]: any;
 }
 
-export interface MbsMqttMesaage {
+export interface MbsMqttMessage {
   header: MbsMqttHeader;
   body: MbsMqttBody;
 }
@@ -1277,7 +1277,7 @@ export const sendMbsMqtt = (
     }
     sendTopic = sendTopic + '-' + systemTopic;
 
-    const sendMessageObj: MbsMqttMesaage = {
+    const sendMessageObj: MbsMqttMessage = {
       header: header,
       body: body,
     };
@@ -1314,7 +1314,7 @@ export const makeMbsMqttHeader = (subject: string): MbsMqttHeader => {
   };
 };
 
-export const separateMqttMessage = (messageJson: MbsMqttMesaage) => {
+export const separateMqttMessage = (messageJson: MbsMqttMessage) => {
   const messageId = messageJson.header.id;
   const subject = messageJson.header.subject;
   const messageBody = messageJson.body;

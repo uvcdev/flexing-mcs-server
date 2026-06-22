@@ -1,6 +1,6 @@
 import { TrackingLogRedisAttributes, TrackingLogRedisUpdateParams } from '../../../models/common/trackingLog';
 import { logging } from '../../logging';
-import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody } from '../../mqttUtil';
+import { separateMqttMessage, MbsMqttMessage, MbsMqttBody } from '../../mqttUtil';
 import { usePlcConnectUtil } from '../../plcConnectUtil';
 import { editTrackingLogRedis } from '../../process/trackingLog';
 import { setReceivedAckCommand } from '../../process/wmsAck';
@@ -29,7 +29,7 @@ export interface ForkActiveBody extends MbsMqttBody {
   ForkAction: 'PICKUP' | 'UNLOAD';
 }
 
-const craneActive = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
+const craneActive = async (wmsName: string, subject: string, messageMessage: MbsMqttMessage) => {
   // console.log('catch wms CraneActive');
   const transferId = messageMessage.body.TransferID || null;
   const cmdId = messageMessage.body.Cmd_ID || null;
@@ -101,7 +101,7 @@ const craneActive = async (wmsName: string, subject: string, messageMessage: Mbs
   }
 };
 
-const craneIdle = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
+const craneIdle = async (wmsName: string, subject: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wms CraneIdle');
 
   const messageBody = messageMessage.body as CraneIdleBody;
@@ -153,7 +153,7 @@ const craneIdle = async (wmsName: string, subject: string, messageMessage: MbsMq
   await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 };
 
-const craneForkActive = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
+const craneForkActive = async (wmsName: string, subject: string, messageMessage: MbsMqttMessage) => {
   // console.log('catch wms CraneIdle');
 
   const messageBody = messageMessage.body as ForkActiveBody;
@@ -205,7 +205,7 @@ const craneForkActive = async (wmsName: string, subject: string, messageMessage:
   await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 };
 
-export const wmsCrane = async (wmsName: string, messageJson: MbsMqttMesaage) => {
+export const wmsCrane = async (wmsName: string, messageJson: MbsMqttMessage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)

@@ -1,6 +1,6 @@
 import { clearAlarm, ClearAlarmParams, RegAlarmParams } from './../../alarmUtil';
 import { regAlarm } from '../../alarmUtil';
-import { separateMqttMessage, MbsMqttMesaage } from '../../mqttUtil';
+import { separateMqttMessage, MbsMqttMessage } from '../../mqttUtil';
 import { setReceivedAckCommand } from '../../process/wmsAck';
 
 const systemTopic = 'ALARM';
@@ -18,7 +18,7 @@ export interface AlarmMessageBody {
 
 // AlarmID : AlarmID List 는 다솜 시스템에서 공유할 예정 - 우선 string
 
-const alarmReport = async (wmsName: string, suject: string, messageMessage: MbsMqttMesaage) => {
+const alarmReport = async (wmsName: string, suject: string, messageMessage: MbsMqttMessage) => {
   // console.log('catch wms AlarmReport');
 
   const alarmMessageBody = messageMessage.body as AlarmMessageBody;
@@ -49,7 +49,7 @@ const alarmReport = async (wmsName: string, suject: string, messageMessage: MbsM
   await regAlarm(regAlarmParams);
 };
 
-const alarmClear = (wmsName: string, suject: string, messageMessage: MbsMqttMesaage) => {
+const alarmClear = (wmsName: string, suject: string, messageMessage: MbsMqttMessage) => {
   // console.log('catch wms AlarmClear');
 
   const alarmMessageBody = messageMessage.body as AlarmMessageBody;
@@ -74,7 +74,7 @@ const alarmClear = (wmsName: string, suject: string, messageMessage: MbsMqttMesa
   clearAlarm(regAlarmParams);
 };
 
-export const wmsAlarm = (wmsName: string, messageJson: MbsMqttMesaage) => {
+export const wmsAlarm = (wmsName: string, messageJson: MbsMqttMessage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
