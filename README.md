@@ -1218,14 +1218,14 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
   - 트래킹 로그 특정 구역 리드타임은 제외하고 계산할 수 있도록 함
 
-- WMS 별도 로깅 추가
-
-  - function : 'WMS_MQTT_LOG'
-
 - 오타 수정
 
   - MbsMqttMesaage -> MbsMqttMessage
 
-- WMS 재시도 로직 수정
-  - 포트 미 배정시, 재시도 로직 제거
-  - 26-06-17 모비스 박창대 매니저님 요청
+- WMS
+  - WMS 별도 로깅 추가
+    - function : 'WMS_MQTT_LOG'
+  - WMS 재시도 로직 수정
+    - 포트 미 배정시, 재시도 로직 제거
+    - 26-06-17 모비스 박창대 매니저님 요청
+  - '재고 없음' 이후 물류 상태 데이터 미갱신 버그 수정

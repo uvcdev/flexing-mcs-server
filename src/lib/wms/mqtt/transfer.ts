@@ -78,6 +78,7 @@ const transferInitiated = async (wmsName: string, subject: string, messageMessag
     assignedRobot: null,
     value: null,
     description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`,
+    processState: 'NORMAL',
   };
   await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 };
