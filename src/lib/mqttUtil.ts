@@ -1158,10 +1158,10 @@ export const receiveMqtt = (): void => {
               //   message: messageJson,
               // });
             }
-          } else if (mbsTopicSplit.length === 3) {
+          } else if (mbsTopicSplit.length === 3 && wmsList.includes(systemTopic)) {
             const logicTopic = mbsTopicSplit[2];
-            logging.MQTT_LOG({
-              title: `${mbsTopicSplit} ${logicTopic}`,
+            logging.WMS_MQTT_LOG({
+              title: `${mbsTopicSplit[1]}-${logicTopic}`,
               topic: messageTopic,
               message: messageJson,
             });
@@ -1285,10 +1285,17 @@ export const sendMbsMqtt = (
 
     try {
       client.publish(sendTopic, sendMessage);
+      if (sendTopic.split('-').length > 2) {
+        logging.WMS_MQTT_LOG({
+          title: `${sendTopic}`,
+          topic: sendTopic,
+          message: sendMessageObj,
+        });
+      }
     } catch (err) {
       logging.MQTT_ERROR({
         title: 'mqtt send to wms error',
-        topic: topic,
+        topic: sendTopic,
         message: sendMessage,
         error: err,
       });
