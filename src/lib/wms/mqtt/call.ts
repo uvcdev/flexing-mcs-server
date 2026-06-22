@@ -393,7 +393,8 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: false,
       });
 
-      await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
+      // 재시도 51 제외 재시도 부분 주석
+      // await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 

@@ -415,7 +415,7 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
         result: false,
       });
 
-      await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
+      // await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 
@@ -491,7 +491,7 @@ const ackBranchInfoReq = async (wmsName: string, subject: string, messageBody: a
         result: false,
       });
 
-      await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
+      // await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 
