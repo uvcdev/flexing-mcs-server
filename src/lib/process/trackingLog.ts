@@ -83,6 +83,14 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     fromAt: null,
     toAt: null,
     durationSec: null,
+    excludedDurationSec: null,
+    exclude:
+      (facilityInfo?.leadTimeInfo as LeadTimeInfo)?.exclude?.map((item) => ({
+        ...item,
+        fromAt: null,
+        toAt: null,
+        excludedDurationSec: null,
+      })) ?? null,
   };
   calcLeadTime(trackingLogLeadTimeInfo, subject);
   const trackingLogSectionLeadTime: TrackingLogSectionLeadTime = {
@@ -834,6 +842,26 @@ export const calcLeadTime = (leadTimeInfo: TrackingLogLeadTimeInfo, subject: Tra
     if (leadTimeInfo.fromAt) {
       leadTimeInfo.durationSec = dayjs(dateNow).diff(dayjs(leadTimeInfo.fromAt), 'second');
     }
+  }
+
+  // exclude 구간 처리
+  if (leadTimeInfo.exclude) {
+    for (const excludeItem of leadTimeInfo.exclude) {
+      if (excludeItem.from === subject) {
+        excludeItem.fromAt = dateNow;
+      }
+      if (excludeItem.to === subject) {
+        excludeItem.toAt = dateNow;
+        if (excludeItem.fromAt) {
+          excludeItem.excludedDurationSec = dayjs(dateNow).diff(dayjs(excludeItem.fromAt), 'second');
+        }
+      }
+    }
+
+    // excludedDurationSec 합산
+    leadTimeInfo.excludedDurationSec = leadTimeInfo.exclude.reduce((acc, item) => {
+      return acc + (item.excludedDurationSec ?? 0);
+    }, 0);
   }
 };
 

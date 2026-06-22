@@ -1210,5 +1210,9 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - 함수 / 위치는 완료 했으나 DB 영역에 대한 수정은 필요함
 
 - BS 공급 라인
+
   - BS 공급 라인 미션 오더 적용
   - BS 미션 결정지 로직 추가
+
+- 트래킹 로그 ( BS 멀티콜 반영 )
+  - 트래킹 로그 특정 구역 리드타임은 제외하고 계산할 수 있도록 함

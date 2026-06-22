@@ -368,11 +368,18 @@ export interface OperationModeUpdateParams {
 //   s?: number; // s: 작업 완료 (T) → 적층 완료
 // }
 
+// 리드타임 제외 구간
+export interface LeadTimeExcludeInfo {
+  from: TrackingLogSubjectType;
+  to: TrackingLogSubjectType;
+}
+
 // 전체 구간에 대한 리드타임 정보
 export interface LeadTimeInfo {
   key?: string;
   from: TrackingLogSubjectType;
   to: TrackingLogSubjectType;
+  exclude?: LeadTimeExcludeInfo[] | null;
 }
 
 // 각 구간이 동적으로 사용할 수 있어야 함
