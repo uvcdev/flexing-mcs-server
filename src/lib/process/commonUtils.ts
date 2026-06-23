@@ -1158,10 +1158,7 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
 
   if (toWorkOrderList.length > 0) {
     const callType = await makeCallType(facilitySerial);
-    const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(
-      facilitySerial,
-      callResponseStatusTagNames
-    );
+    const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(facilitySerial, callResponseStatusTagNames);
     const callCountValue = callResponseStatusByTag['Call_Count'] as number;
     const callResponseValue = callResponseStatusByTag['Call_Response'] as boolean;
     const callRobotAssignedValue = callResponseStatusByTag['Call_Robot_Assigned'] as boolean;
@@ -1201,10 +1198,7 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
 
   if (toWorkOrderList.length === 0 && (beforeAssignedAmrWorkOrderList.length > 0 || fromWorkOrderList.length > 0)) {
     const callType = await makeCallType(facilitySerial);
-    const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(
-      facilitySerial,
-      callResponseStatusTagNames
-    );
+    const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(facilitySerial, callResponseStatusTagNames);
     const callCountValue = callResponseStatusByTag['Call_Count'] as number;
     const callResponseValue = callResponseStatusByTag['Call_Response'] as boolean;
     const callRobotAssignedValue = callResponseStatusByTag['Call_Robot_Assigned'] as boolean;
@@ -1235,10 +1229,7 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
   if (facilityInfo.system === 'EQP') {
     if (toWorkOrderList.length === 0 && beforeAssignedAmrWorkOrderList.length === 0 && fromWorkOrderList.length === 0) {
       const callType = await makeCallType(facilitySerial);
-      const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(
-        facilitySerial,
-        callResponseStatusTagNames
-      );
+      const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(facilitySerial, callResponseStatusTagNames);
       const callCountValue = callResponseStatusByTag['Call_Count'] as number;
       const callResponseValue = callResponseStatusByTag['Call_Response'] as boolean;
       const callRobotAssignedValue = callResponseStatusByTag['Call_Robot_Assigned'] as boolean;
@@ -1278,10 +1269,7 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
       selectedAckCallInfoList.length > 0
     ) {
       const callType = await makeCallType(facilitySerial);
-      const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(
-        facilitySerial,
-        callResponseStatusTagNames
-      );
+      const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(facilitySerial, callResponseStatusTagNames);
       const callCountValue = callResponseStatusByTag['Call_Count'] as number;
       const callResponseValue = callResponseStatusByTag['Call_Response'] as boolean;
       const callRobotAssignedValue = callResponseStatusByTag['Call_Robot_Assigned'] as boolean;
@@ -1317,10 +1305,7 @@ export const fixMultiCallFacilityStatus = async (facilitySerial: string) => {
       selectedAckCallInfoList.length === 0
     ) {
       const callType = await makeCallType(facilitySerial);
-      const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(
-        facilitySerial,
-        callResponseStatusTagNames
-      );
+      const callResponseStatusByTag = await plcConnectUtil.batchGetTagValue(facilitySerial, callResponseStatusTagNames);
       const callCountValue = callResponseStatusByTag['Call_Count'] as number;
       const callResponseValue = callResponseStatusByTag['Call_Response'] as boolean;
       const callRobotAssignedValue = callResponseStatusByTag['Call_Robot_Assigned'] as boolean;
@@ -1359,6 +1344,50 @@ export const fixMultiCallFacilityStatusList = async () => {
 
     if (facilityInfo.isActiveCallTrigger === true && facilityInfo.type === 'in') {
       fixMultiCallFacilityStatus(String(facilityInfo?.serial));
+    }
+  }
+};
+
+interface MarkerOccupancyParams {
+  map: string;
+  workerId: string | null;
+  status: 'occupied' | 'empty';
+  resourceId: string;
+  id: string;
+  type: string;
+  facilitySerial: string;
+  amrName: string;
+}
+
+// 현재는 가상 설비의 마커 점유 상태만 기록함
+export const setMarkerOccupancy = async (payload: MarkerOccupancyParams) => {
+  const markerFacilitySerial = payload.facilitySerial;
+
+  redisUtil.hset(RedisKeys.MarkerOccupancyByVirtualFacilitySerial, markerFacilitySerial, JSON.stringify(payload));
+
+  const markerFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+    RedisKeys.InfoFacilityBySerial,
+    markerFacilitySerial
+  );
+
+  const RecentWorkOrderListByFacilityInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+    RedisKeys.RecentWorkOrderListByFacilitySerial,
+    markerFacilitySerial
+  );
+  if (markerFacilityInfo) {
+    if (!RecentWorkOrderListByFacilityInfo) {
+      // 해당 정보가 없을 경우 신규 등록
+      const recentWorkOrderListByFacilitySerialParams: RecentWorkOrderListByFacilitySerialAttributes = {
+        facilitySerial: markerFacilitySerial,
+        facilityInfo: markerFacilityInfo,
+        count: 0,
+        workOrderList: [],
+      };
+      redisUtil.hset(
+        RedisKeys.RecentWorkOrderListByFacilitySerial,
+        markerFacilitySerial,
+        JSON.stringify(recentWorkOrderListByFacilitySerialParams)
+      );
     }
   }
 };

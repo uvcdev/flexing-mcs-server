@@ -1223,9 +1223,20 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - MbsMqttMesaage -> MbsMqttMessage
 
 - WMS
+
   - WMS 별도 로깅 추가
     - function : 'WMS_MQTT_LOG'
   - WMS 재시도 로직 수정
     - 포트 미 배정시, 재시도 로직 제거
     - 26-06-17 모비스 박창대 매니저님 요청
   - '재고 없음' 이후 물류 상태 데이터 미갱신 버그 수정
+
+- 설비 관리
+
+  - isVirtual 컬럼 추가
+
+  ```sql
+    ALTER TABLE public.facilities ADD is_virtual bool DEFAULT false NULL;
+  ```
+
+- 마커 점유 Redis 값 저장
