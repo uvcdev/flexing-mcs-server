@@ -59,6 +59,7 @@ router.post('/', isLoggedIn, async (req: Request<unknown, unknown, FacilityInser
       leadTime: req.body.leadTime || 0,
       leadTimeInfo: req.body.leadTimeInfo || { from: 'CALL_CREATED', to: 'MISSION_COMPLETED' },
       sectionLeadTime: req.body.sectionLeadTime || { sectionLeadTime: [] },
+      isVirtual: req.body.isVirtual || false,
     };
     logging.REQUEST_PARAM(logFormat);
 
@@ -231,6 +232,7 @@ router.put(
         leadTime: req.body.leadTime || 0,
         leadTimeInfo: req.body.leadTimeInfo,
         sectionLeadTime: req.body.sectionLeadTime || { sectionLeadTime: [] },
+        isVirtual: req.body.isVirtual || false,
       };
       logging.REQUEST_PARAM(logFormat);
 

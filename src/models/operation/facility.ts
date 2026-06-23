@@ -33,6 +33,7 @@ export interface FacilityAttributes {
   leadTime: number | null; // 리드 타임 (초 단위)
   leadTimeInfo: Record<string, any> | null;
   sectionLeadTime: Record<string, any> | null; // 구간별 리드 타임 (예: { A: 100, B: 200 })
+  isVirtual: boolean | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -84,6 +85,7 @@ class Facility extends Model implements FacilityAttributes {
   public leadTime!: FacilityAttributes['leadTime'];
   public leadTimeInfo!: FacilityAttributes['leadTimeInfo'];
   public sectionLeadTime!: FacilityAttributes['sectionLeadTime'];
+  public isVirtual!: FacilityAttributes['isVirtual'];
   public readonly createdAt!: FacilityAttributes['createdAt'];
   public readonly updatedAt!: FacilityAttributes['updatedAt'];
   public readonly deletedAt!: FacilityAttributes['deletedAt'];
@@ -96,6 +98,7 @@ export const FacilityDefaultValue = {
   mode: 'auto',
   priority: 50,
   leadTime: 0,
+  isVirtual: false,
 };
 
 Facility.init(
@@ -203,6 +206,10 @@ Facility.init(
     sectionLeadTime: {
       type: DataTypes.JSONB,
     },
+    isVirtual: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: FacilityDefaultValue.isVirtual,
+    },
   },
   {
     sequelize,
@@ -243,6 +250,7 @@ export interface FacilityInsertParams {
   leadTime?: number | null;
   leadTimeInfo?: Record<string, any> | null;
   sectionLeadTime?: Record<string, any> | null;
+  isVirtual?: boolean;
 }
 
 // selectList
@@ -323,6 +331,7 @@ export interface FacilityUpdateParams {
   leadTime?: number | null;
   leadTimeInfo?: Record<string, any> | null;
   sectionLeadTime?: Record<string, any> | null;
+  isVirtual?: boolean;
 }
 
 // update state
@@ -431,6 +440,7 @@ export const FacilityAttributesInclude = [
   'isWmsPort',
   'leadTime',
   'sectionLeadTime',
+  'isVirtual',
   'createdAt',
 ];
 
