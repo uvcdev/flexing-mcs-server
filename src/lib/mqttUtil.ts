@@ -1176,15 +1176,16 @@ export const receiveMqtt = (): void => {
               //   message: messageJson,
               // });
             }
-          } else if (mbsTopicSplit.length === 3 && wmsList.includes(systemTopic)) {
+          } else if (mbsTopicSplit.length === 3) {
             const logicTopic = mbsTopicSplit[2];
-            logging.WMS_MQTT_LOG({
-              title: `${mbsTopicSplit[1]}-${logicTopic}`,
-              topic: messageTopic,
-              message: messageJson,
-            });
+
             // WMS에서 오는 메세지 처리
             if (wmsList.includes(systemTopic)) {
+              logging.WMS_MQTT_LOG({
+                title: `${mbsTopicSplit[1]}-${logicTopic}`,
+                topic: messageTopic,
+                message: messageJson,
+              });
               if (logicTopic === 'CALL') {
                 await wmsCall(systemTopic, messageJson);
               } else if (logicTopic === 'TRANSFER') {
@@ -1205,6 +1206,11 @@ export const receiveMqtt = (): void => {
             }
             // ACS에서 오는 메세지 처리
             else if (acsList.includes(systemTopic)) {
+              logging.MQTT_LOG({
+                title: `${mbsTopicSplit} ${logicTopic}`,
+                topic: messageTopic,
+                message: messageJson,
+              });
               if (logicTopic === 'PAYLOAD_STATE') {
                 acsPayloadState(systemTopic, messageJson);
               } else if (logicTopic === 'MISSION_STATE') {

@@ -1240,3 +1240,10 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   ```
 
 - 마커 점유 Redis 값 저장
+
+- SP20 신규 로직 개발
+  - SP20 가상 설비 사용
+  - 마커 점유 상태로 콜 관리
+  - STACK 창고 -> SP20 설비 작업지시 생성 성공
+  - 가상 설비 데이터는 PLC Data Read / Write 미진행
+  - CALL CHECK / CALL REGISTER 적용

@@ -5,6 +5,7 @@ import { SendSmartConnectorMqttMessage, useSmartConnectorUtils } from './smartCo
 import { initializeSmartConnectorEventsHandlers } from '../events/smartConnectorEventsHandlers';
 import { logging } from './logging';
 import smartConnector from '../models/smartConnector/smartConnector';
+import { FacilityAttributes } from '../models/operation/facility';
 
 export interface PlcWriteDataParams {
   targetFacility: string;
@@ -128,6 +129,13 @@ export const usePlcConnectUtil = () => {
       });
       throw new Error('PLC Connection Type is not set');
     }
+    const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+      RedisKeys.InfoFacilityBySerial,
+      params.targetFacility
+    );
+    if (facilityInfo?.isVirtual === true) {
+      return;
+    }
     try {
       if (plcConnType === 'KEP') {
         const writeDatas = await kepServerUtil.makeWriteDatas({
@@ -180,6 +188,14 @@ export const usePlcConnectUtil = () => {
       });
       return out;
     }
+    const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+      RedisKeys.InfoFacilityBySerial,
+      targetCode
+    );
+    if (facilityInfo?.isVirtual === true) {
+      return out;
+    }
+
     const names = tagNames.filter(Boolean);
     if (!targetCode || names.length === 0) {
       return out;
@@ -189,8 +205,11 @@ export const usePlcConnectUtil = () => {
         const targetKey = kepServerUtil.getTargetKey(targetCode);
         await kepServerUtil.updateTagMapValues(targetKey, targetCode, names);
         for (const tagName of names) {
-          out[tagName] = (opcuaUtil.tagMap.get(`${targetCode}.${tagName}`)?.value ??
-            null) as boolean | number | string | null;
+          out[tagName] = (opcuaUtil.tagMap.get(`${targetCode}.${tagName}`)?.value ?? null) as
+            | boolean
+            | number
+            | string
+            | null;
         }
         return out;
       }
@@ -265,6 +284,13 @@ export const usePlcConnectUtil = () => {
         result: null,
         error: 'PLC Connection Type is not set',
       });
+      return null;
+    }
+    const facilityInfo = await useRedisUtil().hgetObject<FacilityAttributes>(
+      RedisKeys.InfoFacilityBySerial,
+      targetCode
+    );
+    if (facilityInfo?.isVirtual === true) {
       return null;
     }
     try {

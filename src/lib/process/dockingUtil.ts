@@ -462,9 +462,9 @@ export const useDockingUtil = () => {
 
     try {
       // 어떤 설비인지 추출하고 그 설비의 도킹완료redis데이터 추출
-      const targetKey = targetTagInfo.TAGGROUP
-        ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
-        : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
+      // const targetKey = targetTagInfo.TAGGROUP
+      //   ? `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}.${targetTagInfo.TAGGROUP}`
+      //   : `${targetTagInfo.CHANNEL}.${targetTagInfo.DEVICE}`;
 
       const facilitySerialId = targetTagInfo.EQ_CODE;
       const dockingCompleteInfo = await redisUtil.hgetObject<AcsDockingCompleteResponse>(

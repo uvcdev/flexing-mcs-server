@@ -1348,7 +1348,7 @@ export const fixMultiCallFacilityStatusList = async () => {
   }
 };
 
-interface MarkerOccupancyParams {
+export interface MarkerOccupancyParams {
   map: string;
   workerId: string | null;
   status: 'occupied' | 'empty';
