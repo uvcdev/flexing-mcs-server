@@ -82,8 +82,8 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     ...(facilityInfo?.leadTimeInfo as LeadTimeInfo),
     fromAt: null,
     toAt: null,
-    durationSec: 0,
-    excludedSec: 0,
+    durationSec: null,
+    excludedSec: null,
     exclude:
       (facilityInfo?.leadTimeInfo as LeadTimeInfo)?.exclude?.map((item) => ({
         ...item,
