@@ -393,7 +393,7 @@ export interface TrackingLogLeadTimeInfo extends LeadTimeInfo {
   fromAt: string | null;
   toAt: string | null;
   durationSec: number | null;
-  excludedDurationSec: number | null;
+  excludedSec: number | null;
   exclude?: TrackingLogLeadTimeExcludeInfo[] | null;
 }
 

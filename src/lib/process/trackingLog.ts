@@ -82,8 +82,8 @@ export const initTrackingLogRedis = async (callInfo: EqpCallStats) => {
     ...(facilityInfo?.leadTimeInfo as LeadTimeInfo),
     fromAt: null,
     toAt: null,
-    durationSec: null,
-    excludedDurationSec: null,
+    durationSec: 0,
+    excludedSec: 0,
     exclude:
       (facilityInfo?.leadTimeInfo as LeadTimeInfo)?.exclude?.map((item) => ({
         ...item,
@@ -859,7 +859,7 @@ export const calcLeadTime = (leadTimeInfo: TrackingLogLeadTimeInfo, subject: Tra
     }
 
     // excludedDurationSec 합산
-    leadTimeInfo.excludedDurationSec = leadTimeInfo.exclude.reduce((acc, item) => {
+    leadTimeInfo.excludedSec = leadTimeInfo.exclude.reduce((acc, item) => {
       return acc + (item.excludedDurationSec ?? 0);
     }, 0);
   }
