@@ -13,6 +13,7 @@ import { useWorkOrderStatsUtil } from './workOrderUtil';
 import { imcsTrackingLogging, imcsWcsPortTrackingLogging, imcsWorkOrderTrackingLogging, PortAssignParams } from './imcsTrackingLogUtil';
 import { fixTrackingLogList, sendTrackingLogListMqtt } from './trackingLogUtil';
 import { acsDockingTrackingLogging, acsTrackingLogging } from './acsTrackingLogUtil';
+import { getRootDiskUsagePercent } from './diskUtil';
 
 // mqtt접속 환경
 type MqttConfig = {
@@ -122,6 +123,19 @@ if (mqttConfig.host !== '') {
       await fixTrackingLogList()
     } catch (error) {
       console.log("🚀 ~ setInterval ~ error:", error)
+    }
+  }, 1000);
+
+  // 1초마다 서버 디스크 사용률(루트 파티션 '/') ACS로 발행
+  // MQTT_TOPIC=mcs 접두어가 붙어 최종 토픽은 'mcs/disk'가 된다. (ACS가 구독하는 토픽)
+  setInterval(async () => {
+    try {
+      const percent = await getRootDiskUsagePercent();
+      if (percent !== null) {
+        sendMqtt('disk', percent);
+      }
+    } catch (error) {
+      console.log("🚀 ~ disk publish ~ error:", error)
     }
   }, 1000);
 }
