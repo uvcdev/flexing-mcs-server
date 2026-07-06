@@ -1,6 +1,6 @@
 {
   "name": "flexing-mcs-server",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -65,6 +65,7 @@
     "swagger-autogen": "^2.23.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.3",
+    "systeminformation": "^5.31.9",
     "typescript": "^5.4.2",
     "uuid": "^8.3.2",
     "web-push": "^3.6.7",

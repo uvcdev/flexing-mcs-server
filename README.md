@@ -109,38 +109,49 @@ ALTER TABLE public.work_orders ADD to_end_date timestamptz NULL;
 - 모비스 로그 조회 api 추가 (라우터 `itemLog`, `itemLogService`)
 
 ## v0.0.8-b
+
 - 모비스 로그 층 정보 입력을 위한 컬럼 추가
+
 ```sql
 ALTER TABLE public.item_logs ADD floor varchar(10) NULL;
 ```
 
 ## v0.0.9
+
 - 버전승인: `v0.0.8-b`
 - 설비 테이블 층 컬럼 필수값 적용
+
 ```sql
 ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 ```
+
 - 설비 등록할 때 ACS 층별 분기 적용
   - process.env.FIRST_ACS_RESTAPI_HOST
   - process.env.SECOND_ACS_RESTAPI_HOST
 
 ## v0.0.9-a
+
 - 버전승인: `v0.0.9`
 
 ## v0.0.9-b
+
 - 버전승인: `v0.0.9-a`
 - `imcs/mcs/recallworkorder` mqttUtil 추가
 
 ## v0.0.9-c
+
 - `acs/recallworkorder` 변경
 
 ## v0.1.0
+
 - `WROK_STATUS`작업 상태 로깅 추가
 
 ## v0.1.1
+
 - `workOrderService.stateCheckAndEdit` code 값 예외처리
 
 ## v0.1.1-ljk
+
 - Detail Log Table 기본 기능 및 구조 생성
 - Tracking Log Table 기본 기능 및 구조 생성
 - route 정보 , model 정보 추가 - [MCS Call 이력 조회 및 관리] 서버 작업 완료
@@ -149,4 +160,20 @@ ALTER TABLE public.facilities ALTER COLUMN floor SET NOT NULL;
 - Tracking Log 관련 비정상 시나리오 해결
 
 ## v0.1.2-ljk
+
 - 포트 배정 로직 추가
+
+## v0.2.0
+
+- 서버 디스크 사용률 MQTT 발송 추가
+  - `diskUtil.getRootDiskUsagePercent()` 신설 (루트 파티션 `/` 사용률 %, `systeminformation` 사용)
+  - `mqttUtil`에서 1초 주기로 `mcs/disk` 토픽에 정수 문자열로 발행 (ACS 구독)
+  - 컨테이너 환경에서는 overlay가 호스트 루트 디스크를 반영하므로 `/`를 기준으로 측정, Windows 등 로컬 환경에서는 첫 번째 드라이브로 폴백
+- 의존성 추가: `systeminformation`
+- 패키지 매니저 일원화 (pnpm)
+  - `package-lock.json` 제거, `pnpm-lock.yaml` 만 유지
+- Docker 빌드 개편
+  - `Dockerfile` 멀티스테이지 구성으로 정리, `pnpm@10 install --frozen-lockfile` 로 재현 가능한 빌드
+  - 최종 이미지에는 `package.json`, `build/`, `node_modules/`, `src/swagger.json` 만 포함
+  - `.dockerignore` 추가 (`node_modules`, `build`, `obfuscated`, `.git`, `.env`, `*.log`)
+  - `dockerBuild.sh` 이미지 태그 `0.2.0` 으로 갱신

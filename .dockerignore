@@ -1,0 +1,6 @@
+node_modules
+build
+obfuscated
+.git
+.env
+*.log
