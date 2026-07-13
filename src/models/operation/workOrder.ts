@@ -383,11 +383,15 @@ export interface PendingWorkOrderAttributes {
   cargoType?: string;
   cmdId?: string;
   // mode?: 'AUTO' | 'MANUAL';
+  isPrimaryOrder?: boolean;
+  isCancelOrder?: boolean;
+  targetAmrCode?: string | null;
 }
 
 export interface RecentWorkOrderInfoByFacilitySerialAttributes {
   callId: string;
   state?: string; // 'beforeRequest' | 'beforeWorkOrder' | 'workOrder' | 'fromWorkOrder' | 'toWorkOrder' | 'missionWorkOrder'
+  amrCode?: string;
 }
 
 export interface RecentWorkOrderListByFacilitySerialAttributes {

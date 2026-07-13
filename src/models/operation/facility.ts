@@ -9,7 +9,7 @@ export interface FacilityAttributes {
   facilityGroupId: number;
   code: string;
   name: string;
-  system: 'WMS' | 'EQP';
+  system: 'WMS' | 'EQP' | 'PRI'; // WMS: 창고 , EQP: 설비 , PRI: 주성 (SP21, SP41 - Primary)
   state: string | null;
   type: 'in' | 'out';
   serial: string | null;

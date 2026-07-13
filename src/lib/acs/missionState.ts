@@ -50,6 +50,7 @@ export interface MissionStateBody {
   toFacilitySerial?: string;
   assign: {
     robot: string;
+    robotCode?: string;
     task: string;
   };
 }
@@ -103,6 +104,8 @@ const missionState = async (acsName: string, messageJson: MbsMqttMessage) => {
     } else if (state === 'MISSION_CANCELED') {
       // assignState = 'ABORTED';
       assignState = 'CANCELED';
+    } else if (state === 'MISSION_FAILED') {
+      assignState = 'ERROR';
     }
     // 물류 로그 저장
     const trackingLogSubject = 'MISSION_STATE';
@@ -219,6 +222,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMessage) => {
             if (workOrderListInfo.workOrderList[i].callId === callId) {
               if (state === 'AMR_ASSIGNED') {
                 workOrderListInfo.workOrderList[i].state = 'fromWorkOrder';
+                workOrderListInfo.workOrderList[i].amrCode = missionStateBody?.assign?.robotCode || '';
               } else if (state === 'CARRIER_TRANSFERRING') {
                 workOrderListInfo.workOrderList[i].state = 'toWorkOrder';
               } else if (state === 'MISSION_ORDER_ASSIGNED') {

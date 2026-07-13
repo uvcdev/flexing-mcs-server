@@ -1356,7 +1356,8 @@ export interface MarkerOccupancyParams {
   id: string;
   type: string;
   facilitySerial: string;
-  amrName: string;
+  // amrName: string;
+  // amrCode: string;
 }
 
 // 현재는 가상 설비의 마커 점유 상태만 기록함

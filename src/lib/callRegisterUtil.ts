@@ -479,6 +479,193 @@ export const useCallRegisterUtil = () => {
                     /////////// 250916
                   }
                   // } else if (facilityInfo?.linkedEqpIds && facilityInfo?.linkedEqpIds.length > 1) {
+                } else if (
+                  facilityInfo?.linkedEqpIds &&
+                  facilityInfo?.linkedEqpIds.length > 0 &&
+                  facilityInfo.system === 'PRI'
+                ) {
+                  // 주성 - 위성 로직
+                  const linkedEqpList = await Promise.all(
+                    facilityInfo.linkedEqpIds.map((id) =>
+                      redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityById, id.toString())
+                    )
+                  );
+                  // null 제거 + priority 정렬 (내림차순)
+                  const sortedLinkedEqpList = linkedEqpList
+                    .filter((x): x is FacilityAttributes => x != null)
+                    .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+
+                  for (const sortedLinkedEqpInfo of sortedLinkedEqpList) {
+                    const linkedEqpId = sortedLinkedEqpInfo.id;
+                    const linkedFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+                      RedisKeys.InfoFacilityById,
+                      linkedEqpId.toString() || ''
+                    );
+
+                    // 설비 정보 여부 확인
+                    if (!linkedFacilityInfo) {
+                      continue;
+                    }
+                    if (!linkedFacilityInfo.serial || linkedFacilityInfo.mode === 'manual') {
+                      continue;
+                    }
+                    // 가상 설비 여부 확인
+                    // 가상 설비가 아니라면 continue
+                    if (!linkedFacilityInfo.isVirtual) {
+                      continue;
+                    }
+
+                    const linkedSerial = linkedFacilityInfo.serial;
+
+                    const markerOccupancyInfo = await redisUtil.hgetObject<MarkerOccupancyParams>(
+                      RedisKeys.MarkerOccupancyByVirtualFacilitySerial,
+                      linkedSerial
+                    );
+                    if (!markerOccupancyInfo) {
+                      continue;
+                    }
+                    // 도킹 중인 AMR이 있는 경우
+                    if (markerOccupancyInfo.status === 'occupied') {
+                      // 도킹 중인 AMR에 작업지시 할당 필요
+                      callInfo.CALL_ID = eqpCallId;
+                      const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+                        callId: String(eqpCallId),
+                        eqpName: callInfo.Caller,
+                        portName: linkedFacilityInfo?.serial,
+                        type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
+                        isMissionOrder: false,
+                        callPriority: callInfo.Call_Priority,
+                        callType: newCallType || 'SKID',
+                        cargoType: newCargoType || '',
+                        fromFacilityName:
+                          (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
+                        toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,
+                        alwaysCallCount: 0,
+                        triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
+                        isPrimaryOrder: true,
+                        isCancelOrder: false,
+                        targetAmrCode: markerOccupancyInfo.workerId,
+                      };
+                      // 작업지시 예정 레디스 저장
+                      redisUtil.hset(
+                        RedisKeys.InfoPendingWorkOrderByCallId,
+                        String(eqpCallId),
+                        JSON.stringify(infoPendingWorkOrder)
+                      );
+                      // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
+                      await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
+
+                      // 콜 응답 쓰기
+                      await plcConnectUtil.writeTagValue({
+                        targetFacility: facilityInfo.serial || '',
+                        tagInfo: [
+                          { tagName: 'Call_Response', value: true },
+                          { tagName: 'Call_Response_Count', value: String(infoPendingWorkOrder.triggerCallCount) },
+                        ],
+                      });
+                      await useCallTypeUtil().callTypeResponse(facilityInfo.serial || '');
+
+                      const trackingLogSubject = 'CALL_RESPONSE';
+                      const trackingLogDetail = 'CALL_RESPONSE';
+                      const trackingLogState = 'PROCESSING';
+                      const trackingLogUpdateReqData: TrackingLogRedisUpdateParams = {
+                        callId: String(eqpCallId),
+                        subject: trackingLogSubject,
+                        detail: trackingLogDetail,
+                        state: trackingLogState,
+                        startFacility: callInfo.Caller,
+                        transferId: null,
+                        destFacility: linkedFacilityInfo?.serial,
+                        assignedRobot: null,
+                        value: null,
+                        description: `Call ID ${String(eqpCallId)} responsed`,
+                        callType: callInfo.Cargo_Type,
+                      };
+                      await editTrackingLogRedis(trackingLogUpdateReqData, undefined, 'SUCCESS', callInfo.Caller);
+                    }
+                    // 도킹 중인 AMR이 없는 경우
+                    // markerOccupancyInfo.status === 'empty'
+                    else {
+                      const linkedFacilityRecentWorkOrderInfo =
+                        await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
+                          RedisKeys.RecentWorkOrderListByFacilitySerial,
+                          linkedSerial
+                        );
+
+                      // console.log('linkedFacilityRecentWorkOrderInfo', linkedFacilityRecentWorkOrderInfo);
+
+                      if (linkedFacilityRecentWorkOrderInfo) {
+                        const toWorkOrderInfo = linkedFacilityRecentWorkOrderInfo.workOrderList.find(
+                          (workOrder) => workOrder.state === 'toWorkOrder'
+                        );
+                        if (toWorkOrderInfo) {
+                          // 도킹 중인 AMR에 작업지시 할당 필요
+                          callInfo.CALL_ID = eqpCallId;
+                          const taskAmrCode = toWorkOrderInfo.amrCode || '';
+                          const infoPendingWorkOrder: PendingWorkOrderAttributes = {
+                            callId: String(eqpCallId),
+                            eqpName: callInfo.Caller,
+                            portName: linkedFacilityInfo?.serial,
+                            type: facilityInfo?.type === 'in' ? 'IN' : 'OUT',
+                            isMissionOrder: false,
+                            callPriority: callInfo.Call_Priority,
+                            callType: newCallType || 'SKID',
+                            cargoType: newCargoType || '',
+                            fromFacilityName:
+                              (facilityInfo?.type === 'in' ? linkedFacilityInfo?.serial : callInfo.Caller) || '',
+                            toFacilityName: facilityInfo?.type === 'in' ? callInfo.Caller : linkedFacilityInfo?.serial,
+                            alwaysCallCount: 0,
+                            triggerCallCount: callInfo.TRIGGER_CALL_COUNT,
+                            isPrimaryOrder: true,
+                            isCancelOrder: true,
+                            targetAmrCode: taskAmrCode,
+                          };
+                          // 작업지시 예정 레디스 저장
+                          redisUtil.hset(
+                            RedisKeys.InfoPendingWorkOrderByCallId,
+                            String(eqpCallId),
+                            JSON.stringify(infoPendingWorkOrder)
+                          );
+                          // Call_Request ON으로 인해 작업생성까지 완료했기때문에 더이상 판단 필요 없음
+                          await redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
+
+                          // 콜 응답 쓰기
+                          await plcConnectUtil.writeTagValue({
+                            targetFacility: facilityInfo.serial || '',
+                            tagInfo: [
+                              { tagName: 'Call_Response', value: true },
+                              { tagName: 'Call_Response_Count', value: String(infoPendingWorkOrder.triggerCallCount) },
+                            ],
+                          });
+                          await useCallTypeUtil().callTypeResponse(facilityInfo.serial || '');
+
+                          const trackingLogSubject = 'CALL_RESPONSE';
+                          const trackingLogDetail = 'CALL_RESPONSE';
+                          const trackingLogState = 'PROCESSING';
+                          const trackingLogUpdateReqData: TrackingLogRedisUpdateParams = {
+                            callId: String(eqpCallId),
+                            subject: trackingLogSubject,
+                            detail: trackingLogDetail,
+                            state: trackingLogState,
+                            startFacility: callInfo.Caller,
+                            transferId: null,
+                            destFacility: linkedFacilityInfo?.serial,
+                            assignedRobot: null,
+                            value: null,
+                            description: `Call ID ${String(eqpCallId)} responsed`,
+                            callType: callInfo.Cargo_Type,
+                          };
+                          await editTrackingLogRedis(trackingLogUpdateReqData, undefined, 'SUCCESS', callInfo.Caller);
+                        }
+                        // to로 가기전 ( from 작업 / 창고 응답 전) 상태는 대기한다. - continue
+                        else {
+                          continue;
+                        }
+                      } else {
+                        continue;
+                      }
+                    }
+                  }
                 } else {
                   // 설비 - 창고 로직
                   // 설비 테이블에 어떤 창고와 통신을 해야한다는 창고를 등록하고

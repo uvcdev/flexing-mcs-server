@@ -1217,6 +1217,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 - 트래킹 로그 ( BS 멀티콜 반영 )
 
   - 트래킹 로그 특정 구역 리드타임은 제외하고 계산할 수 있도록 함
+  - Mission Fail => error 타입으로 변경
 
 - 오타 수정
 
@@ -1247,3 +1248,4 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - STACK 창고 -> SP20 설비 작업지시 생성 성공
   - 가상 설비 데이터는 PLC Data Read / Write 미진행
   - CALL CHECK / CALL REGISTER 적용
+  - PRI 타입 (SP21) 작업 생성 시, 동작 조건 확인
