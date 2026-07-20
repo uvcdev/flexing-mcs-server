@@ -1,22 +1,21 @@
-import { separateMqttMessage, MbsMqttMesaage } from "../mqttUtil"
+import { separateMqttMessage, MbsMqttMessage } from '../mqttUtil';
 
 const alarmReport = (acsName: string) => {
-  console.log('catch acs alarmReport')
-}
+  console.log('catch acs alarmReport');
+};
 
 const alarmClear = (acsName: string) => {
-  console.log('catch acs alarmClear')
-}
+  console.log('catch acs alarmClear');
+};
 
-
-export const acsAlarmState = (acsName: string, messageJson: MbsMqttMesaage) => {
-  const { messageId, subject, messageBody } = separateMqttMessage(messageJson)
+export const acsAlarmState = (acsName: string, messageJson: MbsMqttMessage) => {
+  const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)
 
   if (subject === 'ALARM_REPORT') {
-    alarmReport(acsName)
+    alarmReport(acsName);
   } else if (subject === 'ALARM_CLEAR') {
-    alarmClear(acsName)
+    alarmClear(acsName);
   }
-}
+};

@@ -4,7 +4,7 @@ import { PendingWorkOrderAttributes } from '../../../models/operation/workOrder'
 import { logging } from '../../logging';
 import {
   separateMqttMessage,
-  MbsMqttMesaage,
+  MbsMqttMessage,
   makeMbsMqttHeader,
   MbsMqttBody,
   sendMqtt,
@@ -64,7 +64,7 @@ export type rePortCreateWorkOrderParams = {
 const portPresenceStatus = async (
   wmsName: string,
   subject: string,
-  messageMessage: MbsMqttMesaage,
+  messageMessage: MbsMqttMessage,
   messageBody: PortPresenceStatusBody
 ) => {
   console.log('catch wmsPortPresenceStatust');
@@ -193,6 +193,15 @@ const portPresenceStatus = async (
         cmdId: cmdId,
       };
 
+      const triggerFacilitySerial = infoAckInCallByCallId.Caller || '';
+      const triggerFacilityInfo = await redisUtil.hgetObject<FacilityAttributes>(
+        RedisKeys.InfoFacilityBySerial,
+        triggerFacilitySerial
+      );
+      if (triggerFacilityInfo && triggerFacilityInfo.isMissionOrderCapable && triggerFacilityInfo.type === 'in') {
+        infoPendingWorkOrder.isManualMissionOrder = true;
+      }
+
       // pending workOrder 레디스 정보 저장
       const reinboundIfPortAssignedForFacilityCancelByCallId = await redisUtil.hget(
         RedisKeys.ReinboundIfPortAssignedForFacilityCancelByCallId,
@@ -310,7 +319,7 @@ const portPresenceStatus = async (
 const ackReqPortStateList = async (
   wmsName: string,
   subject: string,
-  messageMessage: MbsMqttMesaage,
+  messageMessage: MbsMqttMessage,
   messageBody: PortPresenceStateListBody
 ) => {
   console.log('catch wmsAckReqPortStateList');
@@ -571,7 +580,7 @@ const ackReqPortStateList = async (
   }
 };
 
-export const wmsPort = (wmsName: string, messageJson: MbsMqttMesaage) => {
+export const wmsPort = (wmsName: string, messageJson: MbsMqttMessage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)

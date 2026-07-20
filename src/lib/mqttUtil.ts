@@ -29,8 +29,13 @@ import { wmsOnline } from './wms/mqtt/online';
 import { MqttBranchInfoDataFromAcs, receiveBranchInfoFromACS } from './process/wmsBranch';
 import { AcsChargerDockingCanceledType, useDockingUtil } from './process/dockingUtil';
 import { sendAcsHeartbeat } from './heartbeat/sendHeartbeat';
-import { TagValue, useKepServerUtil } from './kepServerUtil';
-import { acsWorkOrderCancel, checkCallSignalResetWorkOrder, checkSpBsWorkType } from './process/commonUtils';
+import { resetAmrName, TagValue, useKepServerUtil, writeAmrName } from './kepServerUtil';
+import {
+  acsWorkOrderCancel,
+  checkCallSignalResetWorkOrder,
+  checkSpBsWorkType,
+  setMarkerOccupancy,
+} from './process/commonUtils';
 import { FacilityAttributes } from '../models/operation/facility';
 import { RedisKeys, useRedisUtil } from './redisUtil';
 import { service as facilityService } from '../service/operation/facilityService';
@@ -150,7 +155,7 @@ export interface MbsMqttBody {
   [key: string]: any;
 }
 
-export interface MbsMqttMesaage {
+export interface MbsMqttMessage {
   header: MbsMqttHeader;
   body: MbsMqttBody;
 }
@@ -480,6 +485,8 @@ export const receiveMqtt = (): void => {
               const targetFacility = messageJson.facilityName.substring(0, 4);
 
               if (state === 'AMR_ARRIVED') {
+                const assignedAmrName = messageJson?.amrName || '';
+
                 await plcConnectUtil.writeTagValue({
                   targetFacility: messageJson.facilitySerial,
                   tagInfo: [
@@ -487,6 +494,9 @@ export const receiveMqtt = (): void => {
                     // { tagName: 'Call_Response', value: true },
                   ],
                 });
+
+                // 2026-06-11
+                // await writeAmrName(messageJson.facilitySerial, assignedAmrName);
               }
 
               // 작업 완료
@@ -1066,6 +1076,9 @@ export const receiveMqtt = (): void => {
               });
               await useCallTypeUtil().callTypeResponseReset(facilitySerial);
 
+              // ACS에서 Call_Signal_Reset 시, 오고 있는 AMR 정보 삭제
+              // await resetAmrName(facilitySerial);
+
               if (facilityInfo.isActiveCallTrigger === true) {
                 await checkCallSignalResetWorkOrder(messageTopic, messageJson, facilityInfo);
               } else {
@@ -1106,6 +1119,19 @@ export const receiveMqtt = (): void => {
             }
           }
 
+          // marker_occupancy
+          if (topicSplit.length === 3 && topicSplit[1] === 'marker_occupancy') {
+            // const markerFacilitySerial = topicSplit[2];
+            const messageJson = JSON.parse(message);
+            await setMarkerOccupancy(messageJson);
+
+            logging.MQTT_DEBUG({
+              title: 'mcs message: docking-cancel',
+              topic: messageTopic,
+              message: messageJson,
+            });
+          }
+
           // mcs에서 오는 메세지 처리
           if (serverTopic === 'mcs') {
             try {
@@ -1134,7 +1160,7 @@ export const receiveMqtt = (): void => {
         }
         // MBS
         const mbsTopicSplit = messageTopic.split('-');
-        if (mbsTopicSplit) {
+        if (mbsTopicSplit.length > 1) {
           const systemTopic = mbsTopicSplit[0];
           const subTopic = mbsTopicSplit[1];
           const message = messageOrg.toString();
@@ -1152,13 +1178,14 @@ export const receiveMqtt = (): void => {
             }
           } else if (mbsTopicSplit.length === 3) {
             const logicTopic = mbsTopicSplit[2];
-            logging.MQTT_LOG({
-              title: `${mbsTopicSplit} ${logicTopic}`,
-              topic: messageTopic,
-              message: messageJson,
-            });
+
             // WMS에서 오는 메세지 처리
             if (wmsList.includes(systemTopic)) {
+              logging.WMS_MQTT_LOG({
+                title: `${mbsTopicSplit[1]}-${logicTopic}`,
+                topic: messageTopic,
+                message: messageJson,
+              });
               if (logicTopic === 'CALL') {
                 await wmsCall(systemTopic, messageJson);
               } else if (logicTopic === 'TRANSFER') {
@@ -1179,6 +1206,11 @@ export const receiveMqtt = (): void => {
             }
             // ACS에서 오는 메세지 처리
             else if (acsList.includes(systemTopic)) {
+              logging.MQTT_LOG({
+                title: `${mbsTopicSplit} ${logicTopic}`,
+                topic: messageTopic,
+                message: messageJson,
+              });
               if (logicTopic === 'PAYLOAD_STATE') {
                 acsPayloadState(systemTopic, messageJson);
               } else if (logicTopic === 'MISSION_STATE') {
@@ -1269,7 +1301,7 @@ export const sendMbsMqtt = (
     }
     sendTopic = sendTopic + '-' + systemTopic;
 
-    const sendMessageObj: MbsMqttMesaage = {
+    const sendMessageObj: MbsMqttMessage = {
       header: header,
       body: body,
     };
@@ -1277,10 +1309,17 @@ export const sendMbsMqtt = (
 
     try {
       client.publish(sendTopic, sendMessage);
+      if (sendTopic.split('-').length > 2) {
+        logging.WMS_MQTT_LOG({
+          title: `${sendTopic}`,
+          topic: sendTopic,
+          message: sendMessageObj,
+        });
+      }
     } catch (err) {
       logging.MQTT_ERROR({
         title: 'mqtt send to wms error',
-        topic: topic,
+        topic: sendTopic,
         message: sendMessage,
         error: err,
       });
@@ -1299,7 +1338,7 @@ export const makeMbsMqttHeader = (subject: string): MbsMqttHeader => {
   };
 };
 
-export const separateMqttMessage = (messageJson: MbsMqttMesaage) => {
+export const separateMqttMessage = (messageJson: MbsMqttMessage) => {
   const messageId = messageJson.header.id;
   const subject = messageJson.header.subject;
   const messageBody = messageJson.body;

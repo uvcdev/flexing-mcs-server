@@ -1,9 +1,14 @@
-import { TrackingLogAttributes, TrackingLogRedisUpdateParams, TrackingLogState } from '../../models/common/trackingLog';
+import {
+  TrackingLogAttributes,
+  TrackingLogRedisAttributes,
+  TrackingLogRedisUpdateParams,
+  TrackingLogState,
+} from '../../models/common/trackingLog';
 import { FacilityAttributes } from '../../models/operation/facility';
 import { RecentWorkOrderListByFacilitySerialAttributes } from '../../models/operation/workOrder';
 import { useCallTypeUtil } from '../callTypeUtil';
-import { useKepServerUtil } from '../kepServerUtil';
-import { separateMqttMessage, MbsMqttMesaage } from '../mqttUtil';
+import { deleteAmrName, useKepServerUtil } from '../kepServerUtil';
+import { separateMqttMessage, MbsMqttMessage } from '../mqttUtil';
 import { usePlcConnectUtil } from '../plcConnectUtil';
 import { fixMultiCallFacilityStatus } from '../process/commonUtils';
 import { useDockingUtil } from '../process/dockingUtil';
@@ -45,6 +50,7 @@ export interface MissionStateBody {
   toFacilitySerial?: string;
   assign: {
     robot: string;
+    robotCode?: string;
     task: string;
   };
 }
@@ -62,7 +68,9 @@ export interface MissionFailed {
   mission: string;
 }
 
-const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
+const redisUtil = useRedisUtil();
+
+const missionState = async (acsName: string, messageJson: MbsMqttMessage) => {
   try {
     // console.log('catch acs missionState');
     const kepServerUtil = useKepServerUtil();
@@ -81,6 +89,11 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     let assignTask = (missionStateBody.assign.task as TrackingLogState) || '';
     let assignState = 'PROCESSING' as TrackingLogState;
 
+    const callIdTrackingLogInfo = await redisUtil.hgetObject<TrackingLogRedisAttributes>(
+      RedisKeys.InfoTrackingLogByCallId,
+      callId
+    );
+
     if (
       state === 'AMR_DEPOSIT_COMPLETED' ||
       state === 'AMR_UNASSIGNED' ||
@@ -91,6 +104,8 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     } else if (state === 'MISSION_CANCELED') {
       // assignState = 'ABORTED';
       assignState = 'CANCELED';
+    } else if (state === 'MISSION_FAILED') {
+      assignState = 'ERROR';
     }
     // 물류 로그 저장
     const trackingLogSubject = 'MISSION_STATE';
@@ -122,8 +137,8 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
     }
 
     // workOrder Count down
-    const redisUtil = useRedisUtil();
-    const facilitySerial = callId.slice(0, 4) ?? '';
+    // const facilitySerial = callId.slice(0, 4) ?? '';
+    const facilitySerial = (callIdTrackingLogInfo?.plcName || callId.slice(0, 4)) ?? '';
     let recentWorkOrderStatus = '';
 
     if (assignState === 'COMPLETED' || assignState === 'CANCELED') {
@@ -207,6 +222,7 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
             if (workOrderListInfo.workOrderList[i].callId === callId) {
               if (state === 'AMR_ASSIGNED') {
                 workOrderListInfo.workOrderList[i].state = 'fromWorkOrder';
+                workOrderListInfo.workOrderList[i].amrCode = missionStateBody?.assign?.robotCode || '';
               } else if (state === 'CARRIER_TRANSFERRING') {
                 workOrderListInfo.workOrderList[i].state = 'toWorkOrder';
               } else if (state === 'MISSION_ORDER_ASSIGNED') {
@@ -228,6 +244,28 @@ const missionState = async (acsName: string, messageJson: MbsMqttMesaage) => {
             JSON.stringify(newRecentWorkOrderListByFacilitySerialParams)
           );
         }
+      }
+    }
+
+    if (state === 'FROM_COMPLETED') {
+      const trackingLogFromFacilitySerial = callIdTrackingLogInfo?.startFacility || '';
+      if (trackingLogFromFacilitySerial) {
+        // FROM_COMPLETE에서 지워주긴 하지만 혹시 몰라서 추가함
+        // await deleteAmrName(trackingLogFromFacilitySerial, assignAmrName);
+      }
+    }
+
+    // AMR 할당 풀어줄 때 FROM / TO 설비 둘 다 조회해서 있으면 지워줌
+    if (state === 'AMR_UNASSIGNED') {
+      const trackingLogFromFacilitySerial = callIdTrackingLogInfo?.startFacility || '';
+      const trackingLogToFacilitySerial = callIdTrackingLogInfo?.destFacility || '';
+
+      if (trackingLogFromFacilitySerial) {
+        // FROM_COMPLETE에서 지워주긴 하지만 혹시 몰라서 추가함
+        // await deleteAmrName(trackingLogFromFacilitySerial, assignAmrName);
+      }
+      if (trackingLogToFacilitySerial) {
+        // await deleteAmrName(trackingLogToFacilitySerial, assignAmrName);
       }
     }
 
@@ -368,7 +406,7 @@ const allMissionState = (acsName: string) => {
   console.log('catch acs allMissionState');
 };
 
-const missionCompleted = (acsName: string, messageJson: MbsMqttMesaage) => {
+const missionCompleted = (acsName: string, messageJson: MbsMqttMessage) => {
   console.log('catch acs missionCompleted');
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
   // acs 물류 로그 저장
@@ -380,7 +418,7 @@ const missionCompleted = (acsName: string, messageJson: MbsMqttMesaage) => {
   sendAckToWms(topic, subject, ackBody, acsName);
 };
 
-const missionFailed = (acsName: string, messageJson: MbsMqttMesaage) => {
+const missionFailed = (acsName: string, messageJson: MbsMqttMessage) => {
   console.log('catch acs missionFailed');
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
   // acs 물류 로그 저장
@@ -392,7 +430,7 @@ const missionFailed = (acsName: string, messageJson: MbsMqttMesaage) => {
   sendAckToWms(topic, subject, ackBody, acsName);
 };
 
-export const acsMissionState = (acsName: string, messageJson: MbsMqttMesaage) => {
+export const acsMissionState = (acsName: string, messageJson: MbsMqttMessage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)

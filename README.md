@@ -1195,3 +1195,57 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## 3.4.7
 
 - approve v.3.4.6-ljk
+
+## v3.4.7-ljk
+
+- Out Dock 관련 Reset 내용 임시 주석
+- calcSubjectTimeLog 관련 코드 주석 ( 에러 방지 )
+
+- Kepserver 설정 변경
+
+  - 접속 끊어졌을 시, 무한 재시도
+
+- 설비에 작업으로 오고 있는 AMR 표시
+
+  - 함수 / 위치는 완료 했으나 DB 영역에 대한 수정은 필요함
+
+- BS 공급 라인
+
+  - BS 공급 라인 미션 오더 적용
+  - BS 미션 결정지 로직 추가
+
+- 트래킹 로그 ( BS 멀티콜 반영 )
+
+  - 트래킹 로그 특정 구역 리드타임은 제외하고 계산할 수 있도록 함
+  - Mission Fail => error 타입으로 변경
+
+- 오타 수정
+
+  - MbsMqttMesaage -> MbsMqttMessage
+
+- WMS
+
+  - WMS 별도 로깅 추가
+    - function : 'WMS_MQTT_LOG'
+  - WMS 재시도 로직 수정
+    - 포트 미 배정시, 재시도 로직 제거
+    - 26-06-17 모비스 박창대 매니저님 요청
+  - '재고 없음' 이후 물류 상태 데이터 미갱신 버그 수정
+
+- 설비 관리
+
+  - isVirtual 컬럼 추가
+
+  ```sql
+    ALTER TABLE public.facilities ADD is_virtual bool DEFAULT false NULL;
+  ```
+
+- 마커 점유 Redis 값 저장
+
+- SP20 신규 로직 개발
+  - SP20 가상 설비 사용
+  - 마커 점유 상태로 콜 관리
+  - STACK 창고 -> SP20 설비 작업지시 생성 성공
+  - 가상 설비 데이터는 PLC Data Read / Write 미진행
+  - CALL CHECK / CALL REGISTER 적용
+  - PRI 타입 (SP21) 작업 생성 시, 동작 조건 확인

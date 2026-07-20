@@ -5,7 +5,7 @@ import {
 } from '../../../models/common/trackingLog';
 import { generateUUIDNode } from '../../hashUtil';
 import { logging } from '../../logging';
-import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody, sendMbsMqtt, makeMbsMqttHeader } from '../../mqttUtil';
+import { separateMqttMessage, MbsMqttMessage, MbsMqttBody, sendMbsMqtt, makeMbsMqttHeader } from '../../mqttUtil';
 import { editTrackingLogRedis } from '../../process/trackingLog';
 import { CheckRetryCallInfoByCallIdParams, setReceivedAckCommand, setRemainingAckCommand } from '../../process/wmsAck';
 import { deleteInfoAckInCallByCallId } from '../../process/wmsCallInfo';
@@ -49,7 +49,7 @@ export interface TransferAbortCompletedBody extends MbsMqttBody {
   ResultCode: string;
 }
 
-const transferInitiated = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
+const transferInitiated = async (wmsName: string, subject: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wms TRANSFER_INITIATED');
 
   const callId = messageMessage.body.Call_ID;
@@ -78,12 +78,13 @@ const transferInitiated = async (wmsName: string, subject: string, messageMessag
     assignedRobot: null,
     value: null,
     description: `Call ID ${callId} received ACK_CALL_INFO from WMS(${wmsName})`,
+    processState: 'NORMAL',
   };
   await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 };
 
 // TransferCancelCompleted는 창고에서는 응답을 기다리지 않고 바로 처리한다.
-const transferCancelCompleted = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const transferCancelCompleted = async (wmsName: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsTransferCancelCompleted');
 
   const transferCancelCompletedBody = messageMessage.body as TransferCancelCompletedBody;
@@ -216,7 +217,7 @@ const transferCancelCompleted = async (wmsName: string, messageMessage: MbsMqttM
 };
 
 // TransferAbortCompleted는 창고가 MCS의 응답을 받은 이후에 진행한다.
-const transferAbortCompleted = async (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const transferAbortCompleted = async (wmsName: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsTransferAbortCompleted');
 
   const transferCancelCompletedBody = messageMessage.body as TransferAbortCompletedBody;
@@ -346,7 +347,7 @@ const transferAbortCompleted = async (wmsName: string, messageMessage: MbsMqttMe
   await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 };
 
-const transferPaused = (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const transferPaused = (wmsName: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsTransferPaused');
 
   const callId: string = 'TODO transfer CALL ID';
@@ -354,7 +355,7 @@ const transferPaused = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 };
 
-const transferResumed = (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const transferResumed = (wmsName: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsTransferResumed');
 
   const callId: string = 'TODO transfer CALL ID';
@@ -362,7 +363,7 @@ const transferResumed = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 };
 
-const transferCompleted = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
+const transferCompleted = async (wmsName: string, subject: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsTransferCompleted');
 
   const messageBody = messageMessage.body as TransferCompletedBody;
@@ -579,7 +580,7 @@ const transferCompleted = async (wmsName: string, subject: string, messageMessag
   }
 };
 
-export const wmsTransfer = async (wmsName: string, messageJson: MbsMqttMesaage) => {
+export const wmsTransfer = async (wmsName: string, messageJson: MbsMqttMessage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)

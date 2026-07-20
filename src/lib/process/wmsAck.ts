@@ -2,7 +2,7 @@ import { WmsCommandSetting } from '../../models/common/setting';
 import { TrackingLogRedisUpdateParams } from '../../models/common/trackingLog';
 import { makeCallType } from '../kepServerUtil';
 import { logging } from '../logging';
-import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from '../mqttUtil';
+import { makeMbsMqttHeader, MbsMqttBody, MbsMqttMessage, sendMbsMqtt } from '../mqttUtil';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
 import {
   formatDetailedDateTime,
@@ -34,7 +34,7 @@ export interface RemainingAckCommand {
   updatedTime: string; // 업데이트 되는 시간
   systemTopic: string; // systemTopic : CALL, PORT ...
   systemName: string;
-  message: MbsMqttMesaage;
+  message: MbsMqttMessage;
   deletedData?: DeletedData;
 }
 
@@ -43,7 +43,7 @@ export interface ReceivedAckCommand {
   callId: string;
   systemTopic: string; // systemTopic : CALL, PORT ...
   systemName: string;
-  message: MbsMqttMesaage;
+  message: MbsMqttMessage;
 }
 
 export interface CheckRetryCallInfoByCallIdParams {
@@ -66,7 +66,7 @@ export const sendAckToWms = (topic: string, subject: string, ackBody: MbsMqttBod
 export const setRemainingAckCommand = async (
   systemTopic: string,
   systemName: string,
-  mqttMessage: MbsMqttMesaage,
+  mqttMessage: MbsMqttMessage,
   deletedData?: DeletedData
 ) => {
   const cmdId = mqttMessage.body.Cmd_ID || null;
@@ -120,7 +120,7 @@ export const setReceivedAckCommand = (
   systemTopic: string,
   systemName: string,
   callId: string,
-  mqttMessage: MbsMqttMesaage
+  mqttMessage: MbsMqttMessage
 ) => {
   const cmdId = mqttMessage.body.Cmd_ID || null;
   const subject = mqttMessage.header.subject || '';

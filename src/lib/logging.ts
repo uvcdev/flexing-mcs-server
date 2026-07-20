@@ -640,6 +640,23 @@ export const logging = {
       console.log('logging.MQTT_LOG', error);
     }
   },
+  WMS_MQTT_LOG(mqttLog: MqttLogFormat): void {
+    try {
+      const logLevel = 'info';
+
+      void logDao.insert({
+        facilityCode: null,
+        facilityName: null,
+        amrCode: null,
+        amrName: null,
+        logLevel: logLevel,
+        function: 'WMS_MQTT_LOG',
+        data: mqttLog,
+      });
+    } catch (error) {
+      console.log('logging.WMS_MQTT_LOG', error);
+    }
+  },
   MQTT_DEBUG(mqttLog: MqttLogFormat): void {
     try {
       const logLevel = 'debug';
@@ -742,7 +759,7 @@ export const logging = {
         data: logFormat,
       });
     } catch (error) {
-      console.log('logging.MQTT_LOG', error);
+      console.log('logging.WS_ERROR', error);
     }
   },
   ACTION_INFO(actionLog: ActionLog): void {
@@ -792,10 +809,10 @@ export const logging = {
         error:
           actionLog.error instanceof Error
             ? {
-              message: actionLog.error.message,
-              stack: actionLog.error.stack,
-              name: actionLog.error.name,
-            }
+                message: actionLog.error.message,
+                stack: actionLog.error.stack,
+                name: actionLog.error.name,
+              }
             : actionLog.error,
       };
 

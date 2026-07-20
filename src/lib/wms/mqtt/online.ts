@@ -1,10 +1,10 @@
-import { separateMqttMessage, MbsMqttMesaage } from '../../mqttUtil';
+import { separateMqttMessage, MbsMqttMessage } from '../../mqttUtil';
 import { setReceivedAckCommand } from '../../process/wmsAck';
 import { sendCallInfoList, sendReqPortStateList } from '../../process/wmsSyncronization';
 
 const systemTopic = 'ONLINE';
 
-const online = (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const online = (wmsName: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wms online');
   const callId = '';
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
@@ -16,7 +16,7 @@ const online = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   // sendCallInfoList();
 };
 
-export const wmsOnline = (wmsName: string, messageJson: MbsMqttMesaage) => {
+export const wmsOnline = (wmsName: string, messageJson: MbsMqttMessage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)

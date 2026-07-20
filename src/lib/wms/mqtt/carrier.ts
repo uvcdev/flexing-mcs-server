@@ -4,7 +4,7 @@ import {
   TrackingLogState,
 } from '../../../models/common/trackingLog';
 import { logging } from '../../logging';
-import { separateMqttMessage, MbsMqttMesaage, MbsMqttBody } from '../../mqttUtil';
+import { separateMqttMessage, MbsMqttMessage, MbsMqttBody } from '../../mqttUtil';
 import { editTrackingLogRedis } from '../../process/trackingLog';
 import { setReceivedAckCommand } from '../../process/wmsAck';
 import { RecentCallInfo } from '../../process/wmsCommon';
@@ -43,7 +43,7 @@ type IDReadStatusType =
   | '3' // Mismatch  -> 어떤 상황에 미스매칭이지 ?
   | '4'; // 화물 없음
 
-const carrierTransferring = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
+const carrierTransferring = async (wmsName: string, subject: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsCallRequest');
   const messageBody = messageMessage.body as CarrierTransferringBody;
   const cmdId = messageBody.Cmd_ID || '';
@@ -93,7 +93,7 @@ const carrierTransferring = async (wmsName: string, subject: string, messageMess
   await editTrackingLogRedis(trackingLogUpdateData, undefined, 'SUCCESS', wmsName);
 };
 
-const carrierIdread = (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const carrierIdread = (wmsName: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsAckCallInfo');
   const callId: string = 'TODO Carrier CALL ID';
 
@@ -153,13 +153,13 @@ const carrierIdread = (wmsName: string, messageMessage: MbsMqttMesaage) => {
   }
 };
 
-const carrierWaitin = (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const carrierWaitin = (wmsName: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsAckCancelCallInfo');
   const callId: string = 'TODO Carrier CALL ID';
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 };
 
-const carrierWaitout = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
+const carrierWaitout = async (wmsName: string, subject: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsAckReqCallInfoList');
   const messageBody = messageMessage.body as CarrierWaitOutBody;
   const cmdId = messageBody.Cmd_ID || '';
@@ -296,31 +296,31 @@ const carrierWaitout = async (wmsName: string, subject: string, messageMessage: 
   }
 };
 
-const carrierStored = (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const carrierStored = (wmsName: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsAckReqCallInfoList');
   const callId: string = 'TODO Carrier CALL ID';
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 };
 
-const carrierRemoved = (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const carrierRemoved = (wmsName: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsAckReqCallInfoList');
   const callId: string = 'TODO Carrier CALL ID';
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 };
 
-const carrierInstallCompleted = (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const carrierInstallCompleted = (wmsName: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsAckReqCallInfoList');
   const callId: string = 'TODO Carrier CALL ID';
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 };
 
-const carrierRemoveCompleted = (wmsName: string, messageMessage: MbsMqttMesaage) => {
+const carrierRemoveCompleted = (wmsName: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsAckReqCallInfoList');
   const callId: string = 'TODO Carrier CALL ID';
   setReceivedAckCommand(systemTopic, wmsName, callId, messageMessage);
 };
 
-export const wmsCarrier = (wmsName: string, messageJson: MbsMqttMesaage) => {
+export const wmsCarrier = (wmsName: string, messageJson: MbsMqttMessage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)

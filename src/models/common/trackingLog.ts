@@ -1,7 +1,7 @@
 import { Model, DataTypes, WhereOptions, Order, JSON } from 'sequelize';
 import { sequelize } from '../sequelize';
 import { ItemLogAttributes, ItemLogInsertParams } from '../timescale/itemLog';
-import { LeadTimeInfo, SectionLeadTime, SectionLeadTimeDetail } from '../operation/facility';
+import { LeadTimeExcludeInfo, LeadTimeInfo, SectionLeadTime, SectionLeadTimeDetail } from '../operation/facility';
 
 export interface TrackingLogAttributes {
   id: number;
@@ -381,11 +381,20 @@ export interface TrackingLogRedisUpdateParams {
 }
 /* 인터페이스 정의 끝 */
 
+// 리드타임 제외 구간 추가
+export interface TrackingLogLeadTimeExcludeInfo extends LeadTimeExcludeInfo {
+  fromAt: string | null;
+  toAt: string | null;
+  excludedDurationSec: number | null;
+}
+
 // lead 타임 관련 추가
 export interface TrackingLogLeadTimeInfo extends LeadTimeInfo {
   fromAt: string | null;
   toAt: string | null;
   durationSec: number | null;
+  excludedSec: number | null;
+  exclude?: TrackingLogLeadTimeExcludeInfo[] | null;
 }
 
 // 각 구간이 동적으로 사용할 수 있어야 함

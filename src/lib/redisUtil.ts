@@ -93,6 +93,8 @@ export enum RedisKeys {
   TempForCallCancelResponseReset = 'temp_for_call_cancel_response_reset', // to작업중 facility cancel 발생 시 해당 설비의 콜응답 PLC 초기화를 위한 임시키
   // 2026.05.22 - WMS 자재검증
   CheckPortPresenceListMatchByCmdId = 'check_port_presence_list_match_by_cmd_id', // 들려는 자재와 창고 자재가 같은지 검증
+  // 2026.06.23 - 가상 설비 마커 점유 상태
+  MarkerOccupancyByVirtualFacilitySerial = 'marker_occupancy_by_virtual_facility_serial', // 가상 설비의 마커 점유 상태
 }
 export enum RedisSettingKeys {
   // AmrSetting = 'amrSetting', // amr(로봇) 충전 관련 설정

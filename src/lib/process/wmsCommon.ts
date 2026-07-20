@@ -4,7 +4,7 @@ import { EqpCallStats } from '../callRemoveUtil';
 import { generateUUIDNode } from '../hashUtil';
 import { makeCallType } from '../kepServerUtil';
 import { logging } from '../logging';
-import { CheckPortPresenceRequestType, makeMbsMqttHeader, MbsMqttBody, MbsMqttMesaage, sendMbsMqtt } from '../mqttUtil';
+import { CheckPortPresenceRequestType, makeMbsMqttHeader, MbsMqttBody, MbsMqttMessage, sendMbsMqtt } from '../mqttUtil';
 import { RedisKeys, RedisSettingKeys, useRedisUtil } from '../redisUtil';
 import {
   formatDetailedDateTime,
@@ -29,7 +29,7 @@ export interface AbortedCommandForRetryInfo {
   messageTopic: string;
   messageSubject: string;
   createdTime: string;
-  message: MbsMqttMesaage;
+  message: MbsMqttMessage;
 }
 
 export interface RecentCallInfo {
@@ -63,7 +63,7 @@ export const setAbortedCommandForRetry = async (
   systemName: string,
   subject: string,
   messageTopic: string,
-  mqttMessage: MbsMqttMesaage
+  mqttMessage: MbsMqttMessage
 ) => {
   const newMqttBody = { ...mqttMessage.body };
 

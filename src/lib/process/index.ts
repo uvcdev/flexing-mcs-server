@@ -75,8 +75,9 @@ export const processMcs = async () => {
     // Aborted 된 작업 재전송 여부 확인
     await checkAbortedCommandForRetry();
 
+    // 26-06-17 모비스 박창대 매니저님 요청으로 해당 로직 주석
     // checkCallInfoOnPortTimeout : ACK_CALL_INFO를 받았지만, PORT 배정이 오래동안 안되면 재요청
-    await checkCallInfoOnPortTimeout();
+    // await checkCallInfoOnPortTimeout();
 
     // 콜 취소 요청 들어 왔을 때 처리 로직
     // cancel call 재정의

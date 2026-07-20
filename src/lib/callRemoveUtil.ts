@@ -1,6 +1,6 @@
 import { TrackingLogRedisAttributes } from '../models/common/trackingLog';
 import { CancelWorkOrderRequestType } from './callCancelUtil';
-import { makeCallType, TagValue, useKepServerUtil } from './kepServerUtil';
+import { makeCallType, resetAmrName, TagValue, useKepServerUtil } from './kepServerUtil';
 import { logging, makeLogFormat, RequestLog } from './logging';
 import { sendMqtt } from './mqttUtil';
 import opcuaUtil from './opcuaUtil';
@@ -47,6 +47,13 @@ export const useCallRemoveUtil = () => {
       // 250916 remove remain
       // redisUtil.hdel(RedisKeys.InfoRemainCallById, targetCode);
       // redisUtil.hdel(RedisKeys.InfoCallRequestOnBySerial, targetCode);
+
+      // 2026-06-11
+      // 배출부 설비면, Call_Request가 내려갈 때 Call_Robot_Name 리셋
+      // const facilityInfo = await redisUtil.hgetObject<FacilityAttributes>(RedisKeys.InfoFacilityBySerial, targetCode);
+      // if (facilityInfo && facilityInfo.type === 'out') {
+      //   await resetAmrName(targetCode);   // 멀티콜 생각하면 delete 사용 해야하는게 맞음 ... ( 그럼 콜 내려갈 때로 보면 안됨 )
+      // }
     } catch (error) {
       console.error('Error in callRemove:', error);
     }

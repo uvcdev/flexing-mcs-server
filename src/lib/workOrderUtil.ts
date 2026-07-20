@@ -57,6 +57,10 @@ export type McsWorkOrderRequestType = {
   // 추가 ... 11월 19일 이준규 - 콜 타입 없는 경우를 위한 CargoType 추가
   CARGO_TYPE: string;
   CMD_ID: string | null;
+  // 추가 ... 2026.06.30 - SP2 라인 신규 로직 적용
+  IS_PRIMARY_ORDER: string;
+  IS_CANCEL_ORDER: string;
+  TARGET_AMR_CODE: string;
 };
 
 export type McsPendingWorkOrderRequestType = {
@@ -76,6 +80,9 @@ export type McsPendingWorkOrderRequestType = {
   // mode?: 'AUTO' | 'MANUAL';
   cargoType: string;
   cmdId?: string;
+  isPrimaryOrder?: boolean;
+  isCancelOrder?: boolean;
+  targetAmrCode?: string | null;
 };
 
 export const useWorkOrderUtil = () => {
@@ -107,6 +114,10 @@ export const useWorkOrderUtil = () => {
             TRIGGER_CALL_COUNT: workOrder.triggerCallCount,
             CARGO_TYPE: workOrder.cargoType,
             CMD_ID: workOrder.cmdId || null,
+            // 2026-06-30
+            IS_PRIMARY_ORDER: workOrder.isPrimaryOrder === true ? 'true' : 'false',
+            IS_CANCEL_ORDER: workOrder.isCancelOrder === true ? 'true' : 'false',
+            TARGET_AMR_CODE: workOrder.targetAmrCode || '',
           };
           const message = JSON.stringify(params);
           const messageJson = JSON.parse(message);
@@ -220,7 +231,7 @@ export const useWorkOrderUtil = () => {
         targetObject.averageDuration = targetObject.totalDuration / targetObject.totalCompleted;
       }
       sendStats();
-    } catch (error) { }
+    } catch (error) {}
   };
   const setInitStats = (workOrder: WorkOrderAttributesDeep) => {
     try {
@@ -324,7 +335,7 @@ export const useWorkOrderUtil = () => {
           }
         }
       }
-    } catch (error) { }
+    } catch (error) {}
   };
   const initStats = async () => {
     dailyWorkOrderStats.Facility = {};

@@ -5,7 +5,7 @@ import { generateUUIDNode } from '../../hashUtil';
 import { logging } from '../../logging';
 import {
   separateMqttMessage,
-  MbsMqttMesaage,
+  MbsMqttMessage,
   MbsMqttBody,
   makeMbsMqttHeader,
   sendMbsMqtt,
@@ -69,7 +69,7 @@ export interface InfoAckInCallByCallIdBody extends EqpCallStatsForAck {
   updatedTime: string;
 }
 
-const callRequest = async (wmsName: string, subject: string, messageMessage: MbsMqttMesaage) => {
+const callRequest = async (wmsName: string, subject: string, messageMessage: MbsMqttMessage) => {
   console.log('catch wmsCallRequest');
   // set Data
   const callRequestBody = messageMessage.body as CallRequestBody;
@@ -242,7 +242,7 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
       redisUtil.hset(RedisKeys.InfoAckInCallByCallId, callId, JSON.stringify(infoAckInCallByCallIdData));
 
       logging.ACTION_INFO({
-        filename: `call.ts - ackBranchInfoReq`,
+        filename: `call.ts - ackCallInfo`,
         error: `[HCACK = ${hcack}] CallId (${callId}) Command executed successfully - comment : ${ackComment}`,
         params: null,
         result: true,
@@ -393,7 +393,8 @@ const ackCallInfo = async (wmsName: string, subject: string, messageBody: ackCal
         result: false,
       });
 
-      await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
+      // 재시도 51 제외 재시도 부분 주석
+      // await setAbortedCommandForRetry(wmsName, prefixSubject, systemTopic, remainingCommandInfo.message);
 
       break;
 
@@ -1146,7 +1147,7 @@ const ackReqCallInfoList = async (wmsName: string, subject: string, messageBody:
   }
 };
 
-export const wmsCall = async (wmsName: string, messageJson: MbsMqttMesaage) => {
+export const wmsCall = async (wmsName: string, messageJson: MbsMqttMessage) => {
   const { messageId, subject, messageBody } = separateMqttMessage(messageJson);
 
   // console.log('messageId', messageId, 'subject', subject, 'messageBody', messageBody)

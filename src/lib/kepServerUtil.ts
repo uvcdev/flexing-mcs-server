@@ -199,7 +199,6 @@ const kepwareStatusIntervalTime = Number(process.env.HEARTBEAT_INTERVAL_TIME) ||
 const normalMonitorConcurrency = Number(process.env.KEP_MONITOR_CONCURRENCY || 4);
 const cooldownRetryIntervalMs = Number(process.env.KEP_MONITOR_COOLDOWN_MS || 30000);
 
-
 export const useKepServerUtil = () => {
   const redisUtil = useRedisUtil();
   const site = process.env.SITE || 'MBS';
@@ -911,4 +910,67 @@ export const useKepServerUtil = () => {
     updateTagMapValues,
     isDeviceError,
   };
+};
+
+// 해당 설비에 오고 있는 AMR 명 기록
+export const writeAmrName = async (facilitySerial: string, assignedAmrName: string) => {
+  const plcConnectUtil = usePlcConnectUtil();
+  const amrNumber = parseInt(assignedAmrName.replace(/[^0-9]/g, ''), 10);
+  if (isNaN(amrNumber)) return;
+
+  // 태그명은 변경 예정
+  const tagNames = ['Call_Robot_Name1', 'Call_Robot_Name2', 'Call_Robot_Name3'];
+  const tagValues = await plcConnectUtil.batchGetTagValue(facilitySerial, tagNames);
+
+  const name1 = tagValues['Call_Robot_Name1'] as number;
+  const name2 = tagValues['Call_Robot_Name2'] as number;
+
+  let targetTag: string;
+
+  // 1 있으면 2에 쓰고 2도 있으면 3에쓰고 1,2,3 다 있으면 그냥 3에 씀
+  if (!name1) {
+    targetTag = 'Call_Robot_Name1';
+  } else if (!name2) {
+    targetTag = 'Call_Robot_Name2';
+  } else {
+    targetTag = 'Call_Robot_Name3';
+  }
+
+  await plcConnectUtil.writeTagValue({
+    targetFacility: facilitySerial,
+    tagInfo: [{ tagName: targetTag, value: amrNumber }],
+  });
+};
+
+// 해당 설비에 오고 있던 AMR 명 삭제
+// 1,2,3 중에 assignedAmrName 이랑 같은 값 있으면 0으로 변경
+export const deleteAmrName = async (facilitySerial: string, assignedAmrName: string) => {
+  const plcConnectUtil = usePlcConnectUtil();
+  const amrNumber = parseInt(assignedAmrName.replace(/[^0-9]/g, ''), 10);
+  if (isNaN(amrNumber)) return;
+
+  const tagNames = ['Call_Robot_Name1', 'Call_Robot_Name2', 'Call_Robot_Name3'];
+  const tagValues = await plcConnectUtil.batchGetTagValue(facilitySerial, tagNames);
+
+  const tagsToReset = tagNames.filter((tag) => (tagValues[tag] as number) === amrNumber);
+
+  if (tagsToReset.length === 0) return;
+
+  await plcConnectUtil.writeTagValue({
+    targetFacility: facilitySerial,
+    tagInfo: tagsToReset.map((tag) => ({ tagName: tag, value: 0 })),
+  });
+};
+
+export const resetAmrName = async (facilitySerial: string) => {
+  const plcConnectUtil = usePlcConnectUtil();
+
+  await plcConnectUtil.writeTagValue({
+    targetFacility: facilitySerial,
+    tagInfo: [
+      { tagName: 'Call_Robot_Name1', value: 0 },
+      { tagName: 'Call_Robot_Name2', value: 0 },
+      { tagName: 'Call_Robot_Name3', value: 0 },
+    ],
+  });
 };

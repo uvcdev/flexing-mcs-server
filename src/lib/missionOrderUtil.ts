@@ -39,7 +39,6 @@ export const checkMissionOrder = async () => {
 
     const newFacilityArray = [];
 
-
     // if (linkedEqpIds && linkedEqpIds.length > 0) {
     if (missionFacilitySerials && missionFacilitySerials.length > 0) {
       // for (let i = 0, length = linkedEqpIds.length; i < length; i++) {
@@ -110,23 +109,46 @@ export const checkMissionOrder = async () => {
           if (dockDisableValue === true) continue;
         }
 
-        if (
-          mcsModeValue === 'auto' &&
-          eqAutoValue === true &&
-          callRequestValue === true &&
-          // callCountValue > 0 &&
-          // dockEqStatusValue === false &&
-          dockAmrStatusValue === false &&
-          callResponseValue === false &&
-          // dockDisableValue === false &&
-          dockOutPermitValue === false &&
-          dockPermitValue === false &&
-          dockRequestValue === false
-          // &&
-          // (sortLinkedFacilityInfo?.system === 'WMS' ||
-          //   missionOrderMqttInfo.mode === 'manual' ||
-          //   CallTypeValue === missionOrderMqttInfo.callType)
-        ) {
+        let isMissionAvailable = false;
+
+        // BS 공급 포트 미션 결정지인 경우
+        if (sortLinkedFacilityInfo.isMissionOrderCapable === true && sortLinkedFacilityInfo.type === 'in') {
+          const dockingStatusValue = (await plcConnectUtil.getTagValue(targetCode, 'Docking_Status')) as number;
+
+          if (
+            mcsModeValue === 'auto' &&
+            eqAutoValue === true &&
+            dockingStatusValue === 0 &&
+            dockPermitValue === false &&
+            dockRequestValue === false
+          ) {
+            isMissionAvailable = true;
+          }
+        }
+        // 일반 유형일때
+        else {
+          if (
+            mcsModeValue === 'auto' &&
+            eqAutoValue === true &&
+            callRequestValue === true &&
+            // callCountValue > 0 &&
+            // dockEqStatusValue === false &&
+            dockAmrStatusValue === false &&
+            callResponseValue === false &&
+            // dockDisableValue === false &&
+            dockOutPermitValue === false &&
+            dockPermitValue === false &&
+            dockRequestValue === false
+            // &&
+            // (sortLinkedFacilityInfo?.system === 'WMS' ||
+            //   missionOrderMqttInfo.mode === 'manual' ||
+            //   CallTypeValue === missionOrderMqttInfo.callType)
+          ) {
+            isMissionAvailable = true;
+          }
+        }
+
+        if (isMissionAvailable) {
           const missionOrderMqttMessage = {
             EQP_CALL_ID: missionOrderMqttInfo.missionOrderCode.slice(-4),
             TYPE: 'MISSION',
