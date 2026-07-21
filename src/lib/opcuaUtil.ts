@@ -30,6 +30,7 @@ export const opcuaUtil = {
   client: OPCUAClient.create(kepserverConfig.clientOptions),
   session: null as ClientSession | null,
   subscription: null as ClientSubscription | null,
+  eventsRegistered: false,
   eqpCheckUtil: useEqpCheckUtil(),
   allTagNodeIds: new Map<string, MonitorTag>(),
   tagMap: new Map<string, TagValue>(),
@@ -51,13 +52,17 @@ export const opcuaUtil = {
   //   }
   // },
   async connectToKepserverex(maxRetries = Infinity, retryInterval = 5000): Promise<void> {
+    // 연결 이벤트 리스너는 client 객체당 딱 한 번만 등록한다.
+    // (재시도 루프 안에서 등록하면 재시도할 때마다 리스너가 쌓여 로그 폭증 + 메모리 누수 발생)
+    if (!this.eventsRegistered) {
+      registerClientEvents(this.client);
+      this.eventsRegistered = true;
+    }
+
     let attempt = 0;
 
     while (attempt < maxRetries) {
       try {
-        // 연결 이벤트 등록
-        registerClientEvents(this.client);
-
         // KEPServerEX에 연결 시도
         await this.client.connect(kepserverConfig.endpointUrl);
 
@@ -114,7 +119,8 @@ export const opcuaUtil = {
       // Subscription 이벤트 등록
       registerSubscriptionEvents(this.subscription);
     } catch (error) {
-      logToConsoleAndFile(`Failed to Create Session: ${error}`, 'red');
+      logToConsoleAndFile(`Failed to Create Subscription: ${error}`, 'red');
+      throw error; // 재시도 루프(initKepserverex)가 실패를 인지하도록 전파
     }
   },
 
@@ -323,28 +329,46 @@ export const opcuaUtil = {
   },
 
   async initKepserverex(): Promise<void> {
-    try {
-      // KEPServerEx에 연결 (최대 10회, 5초마다 연결시도)
-      await this.connectToKepserverex(Infinity, 10000);
+    // 1) 연결: connectionStrategy.maxRetry === -1 이라 client.connect() 자체가
+    //    Kepware가 올라올 때까지 무한 재시도한다. (붙을 때까지 여기서 대기 후 반환)
+    await this.connectToKepserverex(Infinity, 10000);
 
-      // Session 생성
-      await this.createSession();
+    // 2) 세션·구독 구성: 연결 성공 이후 단계가 하나라도 실패하면 부분 상태를 리셋하고
+    //    "완전히 성공할 때까지" 통째로 재시도한다.
+    //    (예: 이중화 페일오버로 Kepware가 막 올라와 포트는 열렸지만 아직 세션 생성이
+    //     안 되는 구간. 여기서 한 번 실패하고 멈추면 구독(=콜 처리 경로)이 안 살아난다.
+    //     connect는 무한 재시도했지만 그 다음 단계가 1회성이었던 것이 기존 버그였다.)
+    const setupRetryIntervalMs = 5000;
+    while (true) {
+      try {
+        // Session 생성 (createSession은 실패 시 session=null로 두므로 null 체크로 감지)
+        await this.createSession();
+        if (!this.session) throw new Error('세션 생성 실패 (session is null)');
 
-      // Subscription 생성
-      await this.createSubscription();
+        // Subscription 생성
+        await this.createSubscription();
+        if (!this.subscription) throw new Error('구독 생성 실패 (subscription is null)');
 
-      // 모니터링 할 노드 목록 불러오기
-      const subscriptionNodes = this.loadTagsAndCreateSubscriptionNodes();
+        // 모니터링 할 노드 등록 + 'changed' 이벤트 바인딩 (콜 처리 경로 완성)
+        const subscriptionNodes = this.loadTagsAndCreateSubscriptionNodes();
+        await this.monitorSubscriptionNodes(subscriptionNodes);
 
-      // 모니터링 할 노드 등록하고 'on.change' 이벤트 등록하기
-      await this.monitorSubscriptionNodes(subscriptionNodes);
+        if (process.env.POPULATE_PLC_INIT === 'true') {
+          await this.populatePlcInit();
+        }
 
-      if (process.env.POPULATE_PLC_INIT === 'true') {
-        await this.populatePlcInit();
+        logToConsoleAndFile('KEPServerEX 초기화 완료 (session/subscription/monitor)', 'green');
+        return; // 모든 단계 성공 시에만 종료
+      } catch (error) {
+        logToConsoleAndFile(
+          `KEPServerEX 세션/구독 구성 실패, ${setupRetryIntervalMs / 1000}초 후 재시도: ${error}`,
+          'red'
+        );
+        // 부분 상태 리셋: 다음 재시도에서 createSession/createSubscription 가드를 통과하도록
+        this.session = null;
+        this.subscription = null;
+        await new Promise((resolve) => setTimeout(resolve, setupRetryIntervalMs));
       }
-    } catch (error) {
-      logToConsoleAndFile(`Error during initKepserverex: ${error}`, 'red');
-      throw error;
     }
   },
 };
