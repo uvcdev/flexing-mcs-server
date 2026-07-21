@@ -1249,3 +1249,18 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - 가상 설비 데이터는 PLC Data Read / Write 미진행
   - CALL CHECK / CALL REGISTER 적용
   - PRI 타입 (SP21) 작업 생성 시, 동작 조건 확인
+
+## v3.4.7-ssb
+
+- KEPWARE(OPC UA) 연결/재연결 안정화
+
+  - 연결 이벤트 리스너 중복 등록 수정 (`connectToKepserverex`)
+    - 재시도마다 `registerClientEvents`가 등록되어 로그 폭증/메모리 누수 발생하던 것을 client당 1회만 등록하도록 변경
+  - `initKepserverex` 세션·구독 구성 재시도 추가
+    - 연결 성공 이후 세션/구독 구성이 1회 실패하면 전체 중단되던 문제 수정
+    - 성공할 때까지 재시도 (이중화 페일오버로 Kepware가 늦게 떠도 정상 연결)
+  - `createSubscription` 실패 시 에러 전파
+
+- 파일 로깅(`logs/output.txt`) 제거
+  - `console.log`(stdout) + 컨테이너 로그 로테이션으로 대체
+  - 로테이션 없는 무한 증가 및 동기 쓰기 문제 제거
