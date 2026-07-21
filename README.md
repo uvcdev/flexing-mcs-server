@@ -1264,3 +1264,9 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 - 파일 로깅(`logs/output.txt`) 제거
   - `console.log`(stdout) + 컨테이너 로그 로테이션으로 대체
   - 로테이션 없는 무한 증가 및 동기 쓰기 문제 제거
+ 
+## v3.4.8
+
+- approve v.3.4.7-ljk
+- approve v.3.4.7-ssb
+
