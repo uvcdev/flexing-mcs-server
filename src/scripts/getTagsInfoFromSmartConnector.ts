@@ -97,7 +97,8 @@ const smartConnectorSyncMqtt = async () => {
       tagName.includes('Count') ||
       tagName.includes('Station_Product_Status') ||
       tagName.includes('EQ_Operation_Mode') ||
-      tagName.includes('Docking_Status')
+      tagName.includes('Docking_Status') ||
+      tagName.includes('Multi_Call_AMR')
     );
   };
   const generateFinalTagJson = async (facilityData: FacilityData): Promise<Tag[]> => {

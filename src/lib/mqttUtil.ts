@@ -496,7 +496,7 @@ export const receiveMqtt = (): void => {
                 });
 
                 // 2026-06-11
-                // await writeAmrName(messageJson.facilitySerial, assignedAmrName);
+                await writeAmrName(messageJson.facilitySerial, assignedAmrName);
               }
 
               // 작업 완료
@@ -1077,7 +1077,7 @@ export const receiveMqtt = (): void => {
               await useCallTypeUtil().callTypeResponseReset(facilitySerial);
 
               // ACS에서 Call_Signal_Reset 시, 오고 있는 AMR 정보 삭제
-              // await resetAmrName(facilitySerial);
+              await resetAmrName(facilitySerial);
 
               if (facilityInfo.isActiveCallTrigger === true) {
                 await checkCallSignalResetWorkOrder(messageTopic, messageJson, facilityInfo);

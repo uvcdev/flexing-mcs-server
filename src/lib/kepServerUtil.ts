@@ -919,21 +919,28 @@ export const writeAmrName = async (facilitySerial: string, assignedAmrName: stri
   if (isNaN(amrNumber)) return;
 
   // 태그명은 변경 예정
-  const tagNames = ['Call_Robot_Name1', 'Call_Robot_Name2', 'Call_Robot_Name3'];
+  const tagNames = ['Multi_Call_AMR_1', 'Multi_Call_AMR_2', 'Multi_Call_AMR_3'];
   const tagValues = await plcConnectUtil.batchGetTagValue(facilitySerial, tagNames);
 
-  const name1 = tagValues['Call_Robot_Name1'] as number;
-  const name2 = tagValues['Call_Robot_Name2'] as number;
+  const name1 = tagValues['Multi_Call_AMR_1'] as number;
+  const name2 = tagValues['Multi_Call_AMR_2'] as number;
+  const name3 = tagValues['Multi_Call_AMR_3'] as number;
+
+  // 이미 동일한 값이 기록되어 있으면 쓰기 생략
+  if ([name1, name2, name3].includes(amrNumber)) {
+    // console.log('이미 동일한 AMR 번호가 기록되어 있어 write 생략:', amrNumber);
+    return;
+  }
 
   let targetTag: string;
 
   // 1 있으면 2에 쓰고 2도 있으면 3에쓰고 1,2,3 다 있으면 그냥 3에 씀
   if (!name1) {
-    targetTag = 'Call_Robot_Name1';
+    targetTag = 'Multi_Call_AMR_1';
   } else if (!name2) {
-    targetTag = 'Call_Robot_Name2';
+    targetTag = 'Multi_Call_AMR_2';
   } else {
-    targetTag = 'Call_Robot_Name3';
+    targetTag = 'Multi_Call_AMR_3';
   }
 
   await plcConnectUtil.writeTagValue({
@@ -949,7 +956,7 @@ export const deleteAmrName = async (facilitySerial: string, assignedAmrName: str
   const amrNumber = parseInt(assignedAmrName.replace(/[^0-9]/g, ''), 10);
   if (isNaN(amrNumber)) return;
 
-  const tagNames = ['Call_Robot_Name1', 'Call_Robot_Name2', 'Call_Robot_Name3'];
+  const tagNames = ['Multi_Call_AMR_1', 'Multi_Call_AMR_2', 'Multi_Call_AMR_3'];
   const tagValues = await plcConnectUtil.batchGetTagValue(facilitySerial, tagNames);
 
   const tagsToReset = tagNames.filter((tag) => (tagValues[tag] as number) === amrNumber);
@@ -968,9 +975,9 @@ export const resetAmrName = async (facilitySerial: string) => {
   await plcConnectUtil.writeTagValue({
     targetFacility: facilitySerial,
     tagInfo: [
-      { tagName: 'Call_Robot_Name1', value: 0 },
-      { tagName: 'Call_Robot_Name2', value: 0 },
-      { tagName: 'Call_Robot_Name3', value: 0 },
+      { tagName: 'Multi_Call_AMR_1', value: 0 },
+      { tagName: 'Multi_Call_AMR_2', value: 0 },
+      { tagName: 'Multi_Call_AMR_3', value: 0 },
     ],
   });
 };

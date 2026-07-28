@@ -249,9 +249,14 @@ const missionState = async (acsName: string, messageJson: MbsMqttMessage) => {
 
     if (state === 'FROM_COMPLETED') {
       const trackingLogFromFacilitySerial = callIdTrackingLogInfo?.startFacility || '';
+      const fromFacilitySerial = missionStateBody?.fromFacilitySerial || '';
       if (trackingLogFromFacilitySerial) {
         // FROM_COMPLETE에서 지워주긴 하지만 혹시 몰라서 추가함
-        // await deleteAmrName(trackingLogFromFacilitySerial, assignAmrName);
+        await deleteAmrName(trackingLogFromFacilitySerial, assignAmrName);
+      } else {
+        if (fromFacilitySerial) {
+          await deleteAmrName(fromFacilitySerial, assignAmrName);
+        }
       }
     }
 
@@ -259,13 +264,23 @@ const missionState = async (acsName: string, messageJson: MbsMqttMessage) => {
     if (state === 'AMR_UNASSIGNED') {
       const trackingLogFromFacilitySerial = callIdTrackingLogInfo?.startFacility || '';
       const trackingLogToFacilitySerial = callIdTrackingLogInfo?.destFacility || '';
+      const fromFacilitySerial = missionStateBody?.fromFacilitySerial || '';
+      const toFacilitySerial = missionStateBody?.toFacilitySerial || '';
 
       if (trackingLogFromFacilitySerial) {
         // FROM_COMPLETE에서 지워주긴 하지만 혹시 몰라서 추가함
-        // await deleteAmrName(trackingLogFromFacilitySerial, assignAmrName);
+        await deleteAmrName(trackingLogFromFacilitySerial, assignAmrName);
+      } else {
+        if (fromFacilitySerial) {
+          await deleteAmrName(fromFacilitySerial, assignAmrName);
+        }
       }
       if (trackingLogToFacilitySerial) {
-        // await deleteAmrName(trackingLogToFacilitySerial, assignAmrName);
+        await deleteAmrName(trackingLogToFacilitySerial, assignAmrName);
+      } else {
+        if (toFacilitySerial) {
+          await deleteAmrName(toFacilitySerial, assignAmrName);
+        }
       }
     }
 
@@ -275,8 +290,8 @@ const missionState = async (acsName: string, messageJson: MbsMqttMessage) => {
         const canceledWorkOrderCallId = normalCallId || '';
         const workState = missionStateBody.workState || '';
         const workMode = missionStateBody.mode || '';
-        const fromFacilitySerial = missionStateBody.fromFacilitySerial || '';
-        const toFacilitySerial = missionStateBody.toFacilitySerial || '';
+        const fromFacilitySerial = missionStateBody?.fromFacilitySerial || '';
+        const toFacilitySerial = missionStateBody?.toFacilitySerial || '';
 
         // const trackingLogInfo = await redisUtil.hgetObject<TrackingLogAttributes>(
         //   RedisKeys.InfoTrackingLogByCallId,
@@ -297,6 +312,14 @@ const missionState = async (acsName: string, messageJson: MbsMqttMessage) => {
 
         let alwaysOnFacility = fromFacilitySerial;
         let triggerFacility = toFacilitySerial;
+
+        //workOrderCancel 시, 오고 있는 AMR 삭제하는 로직 추가
+        if (fromFacilityInfo) {
+          await deleteAmrName(fromFacilityInfo?.serial || '', assignAmrName);
+        }
+        if (toFacilityInfo) {
+          await deleteAmrName(toFacilityInfo?.serial || '', assignAmrName);
+        }
 
         // if (fromFacilityInfo?.linkedEqpIds && fromFacilityInfo?.linkedEqpIds?.length > 0) {
         //   alwaysOnFacility = toFacilitySerial;
