@@ -1339,3 +1339,8 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   - Multi_Call_AMR_1, Multi_Call_AMR_2, Multi_Call_AMR_3 반영
   - write, delete, reset 기능 개선
   - 자동 작업 / 수동 작업 내용 반영
+
+## 3.5.1
+
+- approve 3.5.0-ljk
+- approve 3.5.0-lsk
