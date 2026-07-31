@@ -1118,7 +1118,7 @@ export const useCallCancelUtil = () => {
 
           // 3. 진행 중인 작업 지시 확인
           // console.log('facilityInfo?.system', facilityInfo?.system);
-          if (facilityInfo?.system === 'WMS') {
+          if (facilityInfo?.system === 'WMS' || facilityInfo?.system === 'PRI') {
             let workOrderListInfo = await redisUtil.hgetObject<RecentWorkOrderListByFacilitySerialAttributes>(
               RedisKeys.RecentWorkOrderListByFacilitySerial,
               targetCode

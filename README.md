@@ -1373,3 +1373,9 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## 3.5.2
 
 - approve 3.5.1-ssb
+
+## 3.5.2-ssb
+
+- 콜 취소 시 진행 중인 작업 지시 확인 대상에 PRI 추가 (`callCancelUtil`)
+  - 기존 `WMS`만 처리하던 조건을 `WMS` 또는 `PRI` 로 확장
+  - PRI(주성-위성) 설비도 콜 취소 시 진행 중인 작업 지시가 함께 취소되도록 반영
