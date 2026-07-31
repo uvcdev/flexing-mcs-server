@@ -1344,3 +1344,32 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - approve 3.5.0-ljk
 - approve 3.5.0-lsk
+
+## 3.5.1-ssb
+
+- PRI(주성-위성) 로직에서 연결 설비 수동 모드 제외 조건 제거 (`callRegisterUtil`)
+
+  - 가상 설비(SP20 등)가 수동 모드여도 마커 점유 기준으로 콜 판단 진행
+
+- 디스크 사용률 체크 기능 추가 (ACS `diskUtil` 동일 이식)
+
+  - `diskUtil` 신규 : Linux `df -P` / Windows `statfs`, 실패 시 `null` 반환
+  - `serverUtil.ServerStatus` 에 `mcsRootDiskUsage`, `mcsVolumeDiskUsage` 추가
+    - 기존 `server/status` 토픽 payload에 필드만 추가
+  - `scheduleUtil.makeUpdateDiskUsageInterval` 신규
+    - 상태 전송(1초)마다 df 호출하지 않도록 별도 주기로 갱신 후 캐싱
+  - `SCHEDULER_SERVER_STATUS=true` 일 때만 동작
+
+- .env 추가 (DB 변경 없음)
+
+  ```
+  DISK_CHECK_TIME=30
+  DISK_ROOT_CHECK_PATH=/
+  DISK_VOLUME_CHECK_PATH=/app/uploads
+  ```
+
+  - `/app/uploads` 볼륨 마운트가 없으면 root 사용률이 volume 값으로 보고됨
+
+## 3.5.2
+
+- approve 3.5.1-ssb

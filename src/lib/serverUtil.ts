@@ -2,6 +2,7 @@
 import { MqttTopics, sendMqtt } from './mqttUtil';
 import os from 'os';
 import { cpu, mem } from 'node-os-utils';
+import { getRootDiskUsagePercent, getVolumeDiskUsagePercent } from './diskUtil';
 
 export type ServerStatus = {
   // mcs: boolean;
@@ -16,6 +17,9 @@ export type ServerStatus = {
   // realOrderGroupId: number | null;
   ramUsage: string;
   cpuUsage: string;
+  // 디스크 사용률(%). 조회 실패·경로 없음 시 null (판단 보류)
+  mcsRootDiskUsage: number | null;
+  mcsVolumeDiskUsage: number | null;
 };
 
 const serverStatus: ServerStatus = {
@@ -31,6 +35,8 @@ const serverStatus: ServerStatus = {
   // realOrderGroupId: null,
   ramUsage: '00',
   cpuUsage: '00',
+  mcsRootDiskUsage: null,
+  mcsVolumeDiskUsage: null,
 };
 // const checkTimes = {
 //   mcs: (process.env.SERVER_STATUS_CHECK_TIME_MCS && Number(process.env.SERVER_STATUS_CHECK_TIME_MCS)) || 10,
@@ -55,7 +61,19 @@ export const useServerUtil = () => {
     const cpuUsage = await getCPUUsage();
     serverStatus.ramUsage = ramUsage;
     serverStatus.cpuUsage = cpuUsage;
+    // 디스크 사용률은 별도 주기(updateDiskUsage)에서 갱신된 캐시값을 그대로 싣는다.
+    // 상태 전송 주기(1초)마다 df 프로세스를 fork하면 낭비이므로 여기서 조회하지 않는다.
     sendMqtt(MqttTopics.ServerStatus, JSON.stringify(serverStatus));
+  };
+
+  // 디스크 사용률 갱신(캐싱). 실패 시 null이 들어가며 예외를 던지지 않는다.
+  const updateDiskUsage = async () => {
+    const [rootDiskUsage, volumeDiskUsage] = await Promise.all([
+      getRootDiskUsagePercent(),
+      getVolumeDiskUsagePercent(),
+    ]);
+    serverStatus.mcsRootDiskUsage = rootDiskUsage;
+    serverStatus.mcsVolumeDiskUsage = volumeDiskUsage;
   };
   // const setStatusTime = (type: 'mcs' | 'fms' | 'db' | 'dryrun' | 'startOfDay' | 'endOfDay', time: Date | null) => {
   //   if (type === 'mcs') {
@@ -107,5 +125,5 @@ export const useServerUtil = () => {
   };
 
 
-  return { getStatus, sendStatus, getRAMUsage, getCPUUsage };
+  return { getStatus, sendStatus, getRAMUsage, getCPUUsage, updateDiskUsage };
 };

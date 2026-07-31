@@ -506,7 +506,7 @@ export const useCallRegisterUtil = () => {
                     if (!linkedFacilityInfo) {
                       continue;
                     }
-                    if (!linkedFacilityInfo.serial || linkedFacilityInfo.mode === 'manual') {
+                    if (!linkedFacilityInfo.serial) {
                       continue;
                     }
                     // 가상 설비 여부 확인
