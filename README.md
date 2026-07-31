@@ -1369,3 +1369,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
   ```
 
   - `/app/uploads` 볼륨 마운트가 없으면 root 사용률이 volume 값으로 보고됨
+
+## 3.5.2
+
+- approve 3.5.1-ssb

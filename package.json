@@ -1,6 +1,6 @@
 {
   "name": "flexing-mcs-server",
-  "version": "3.5.1-ssb",
+  "version": "3.5.2",
   "description": "",
   "main": "index.js",
   "scripts": {
