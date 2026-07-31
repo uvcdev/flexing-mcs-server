@@ -19,7 +19,11 @@ import swaggerJson from '../src/swagger.json';
 
 import * as process from 'process';
 import { service as workOrderService } from './service/operation/workOrderService';
-import { makeinitDailyWorkOrderstatsScheduleSet, makeSendServerStatusInterval } from './lib/scheduleUtil';
+import {
+  makeinitDailyWorkOrderstatsScheduleSet,
+  makeSendServerStatusInterval,
+  makeUpdateDiskUsageInterval,
+} from './lib/scheduleUtil';
 
 import { logToConsoleAndFile } from './lib/logging';
 
@@ -256,6 +260,8 @@ if (env === 'development') {
 }
 try {
   if (process.env.SCHEDULER_SERVER_STATUS === 'true') {
+    // 디스크 사용률은 초 단위로 변하지 않으므로 상태 전송(1초)과 별도 주기로 갱신 후 캐싱
+    makeUpdateDiskUsageInterval({ second: Number(process.env.DISK_CHECK_TIME || 30) });
     makeSendServerStatusInterval({ second: Number(process.env.SERVER_STATUS_CHECK_TIME || 1) });
   }
   if (process.env.SHCEDULER_DAILY_WORK_ORDER_STATS === 'true') {

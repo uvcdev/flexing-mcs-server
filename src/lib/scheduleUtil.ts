@@ -25,6 +25,14 @@ export const makeSendServerStatusInterval = (params: { second: number }): void =
   }, params.second * 1000);
 };
 
+// 디스크 사용률 갱신 인터벌 (상태 전송 주기와 분리 — df 프로세스 fork 낭비 방지)
+export const makeUpdateDiskUsageInterval = (params: { second: number }): void => {
+  void useServerUtil().updateDiskUsage();
+  setInterval(() => {
+    void useServerUtil().updateDiskUsage();
+  }, params.second * 1000);
+};
+
 export const makeinitDailyWorkOrderstatsScheduleSet = (params: {
   hour: number;
   minute: number;
