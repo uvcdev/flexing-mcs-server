@@ -291,7 +291,7 @@ export const useDockingUtil = () => {
         RedisKeys.InfoTrackingLogByCallId,
         trackingLogCallId
       );
-      if (infoTrackingLogByCallId) {
+      if (infoTrackingLogByCallId && infoTrackingLogByCallId.state !== 'CANCELED') {
         const trackingLogSubject =
           infoTrackingLogByCallId.startFacility === dockingOutRequestInfo.SERIAL_ID
             ? 'AMR_DEPOSIT_OUT_PERMIT'
@@ -853,7 +853,7 @@ export const useDockingUtil = () => {
               RedisKeys.InfoTrackingLogByCallId,
               trackingLogCallId
             );
-            if (infoTrackingLogByCallId) {
+            if (infoTrackingLogByCallId && infoTrackingLogByCallId.state !== 'CANCELED') {
               const trackingLogSubject =
                 infoTrackingLogByCallId.startFacility === paramsSerial ? 'AMR_DEPOSIT_OUT_REQ' : 'AMR_ACQUIRE_OUT_REQ';
               const trackingLogDetail =
@@ -1070,7 +1070,7 @@ export const useDockingUtil = () => {
         RedisKeys.InfoTrackingLogByCallId,
         trackingLogCallId
       );
-      if (infoTrackingLogByCallId) {
+      if (infoTrackingLogByCallId && infoTrackingLogByCallId.state !== 'CANCELED') {
         // const trackingLogSubject =
         //   infoTrackingLogByCallId.startFacility === dockingParams.PORT_ID
         //     ? 'FROM_DOCKING_COMPLETED'
