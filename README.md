@@ -1388,3 +1388,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 
 - Out Tracking Log 관련
   - Out_Req/Permit/Complete 관련 트래킹 로그 '진행 중' 오기 관련 개선
+
+## 3.5.4
+
+- approve 3.5.3-ljk
