@@ -1,0 +1,133 @@
+프로그램 명,,,로그 조회,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-LOG-001,,,,,,,,,,
+Subject,로그 목록 조회,,,,,,,,,,
+Description,로그 목록을 조회한다.,,,,,,,,,,
+Type,GET,,,,,,,,,,
+Url,/api/logs,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+facilityCode,O,string,설비 코드 like 검색,,,,,,,,
+facilityName,O,string,설비 이름 like 검색,,,,,,,,
+amrCode,O,string,AMR 코드 like 검색,,,,,,,,
+amrName,O,string,AMR 이름 like 검색,,,,,,,,
+logLevel,O,string,로그 레벨 검색,,,,"logLevel 공통코드
+- debug : 디버그
+- info : 정보
+- warning : 경고
+- error : 에러",,,,
+function,O,string,기능(함수) 명 like 검색,,,,,,,,
+createdAtFrom,O,date,등록일 검색 시작일시,,,,,,,,
+createdAtTo,O,date,등록일 검색 종료일시,,,,,,,,
+data,O,json,로그 상세 데이터 검색 ( JSON 문자열 ),,,,,,,,
+limit,O,number,조회 건수,,,,,,,,
+offset,O,number,조회 시작 위치,,,,,,,,
+order,O,string,정렬 기준,,,,,,,,
+e.g.,"{
+  ""facilityCode"": ""260625-FAC-0001"",
+  ""amrCode"": ""260625-AMR-0001"",
+  ""logLevel"": ""error"",
+  ""function"": ""callRegister"",
+  ""createdAtFrom"": ""2026-06-25 00:00:00"",
+  ""createdAtTo"": ""2026-06-25 23:59:59"",
+  ""limit"": 10,
+  ""offset"": 0
+ }",,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Searched list successfully"",
+  ""data"": {
+      ""count"": 1,
+      ""rows"": [
+        {
+          ""id"": 1,
+          ""itemCode"": ""260625-ITM-0001"",
+          ""facilityCode"": ""260625-FAC-0001"",
+          ""facilityName"": ""설비 1"",
+          ""amrCode"": ""260625-AMR-0001"",
+          ""amrName"": ""AMR 1"",
+          ""logLevel"": ""error"",
+          ""function"": ""callRegister"",
+          ""key"": ""260625-WOR-0001"",
+          ""data"": {
+              ""message"": ""콜 등록 실패""
+           },
+          ""createdAt"": ""2026-06-25T01:00:00.000Z""
+        }
+      ]
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-LOG-002,,,,,,,,,,
+Subject,로그 정보 조회,,,,,,,,,,
+Description,로그 정보를 조회한다.,,,,,,,,,,
+Type,GET,,,,,,,,,,
+Url,/api/logs/id/:id,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+id,M,number,로그 id,,,,,,,,
+e.g.,{ },,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Selected data successfully"",
+  ""data"": {
+       ""id"": 1,
+       ""itemCode"": ""260625-ITM-0001"",
+       ""facilityCode"": ""260625-FAC-0001"",
+       ""facilityName"": ""설비 1"",
+       ""amrCode"": ""260625-AMR-0001"",
+       ""amrName"": ""AMR 1"",
+       ""logLevel"": ""error"",
+       ""function"": ""callRegister"",
+       ""key"": ""260625-WOR-0001"",
+       ""data"": {
+           ""message"": ""콜 등록 실패""
+        },
+       ""createdAt"": ""2026-06-25T01:00:00.000Z""
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-LOG-003,,,,,,,,,,
+Subject,로그 목록 다운로드,,,,,,,,,,
+Description,조회 조건에 해당하는 로그 목록을 CSV 파일로 다운로드한다.,,,,,,,,,,
+Type,GET,,,,,,,,,,
+Url,/api/logs/download,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+logLevel,O,string,로그 레벨 검색,,,,,,,,
+function,O,string,기능(함수) 명 like 검색,,,,,,,,
+createdAtFrom,O,date,등록일 검색 시작일시,,,,,,,,
+createdAtTo,O,date,등록일 검색 종료일시,,,,,,,,
+limit,O,number,조회 건수,,,,,,,,
+offset,O,number,조회 시작 위치,,,,,,,,
+e.g.,"{
+  ""logLevel"": ""error"",
+  ""function"": ""callRegister"",
+  ""createdAtFrom"": ""2026-06-25 00:00:00"",
+  ""createdAtTo"": ""2026-06-25 23:59:59""
+ }",,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+-,-,file,"CSV 파일 스트림 ( Content-Type : text/csv )
+파일명 : logs-{시작일}~{종료일}.txt
+조회 조건이 없는 경우 : logs-total.txt",,,,,,,,
+e.g.,"id,createdAt,facilityCode,facilityName,amrCode,amrName,logLevel,function,data
+1,2026-06-25 01:00:00,260625-FAC-0001,설비 1,260625-AMR-0001,AMR 1,error,callRegister,""{""""message"""":""""콜 등록 실패""""}""",,,,,,,,,,

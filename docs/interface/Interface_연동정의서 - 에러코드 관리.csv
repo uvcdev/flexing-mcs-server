@@ -1,0 +1,254 @@
+프로그램 명,,,에러코드 관리,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-ERC-001,,,,,,,,,,
+Subject,에러코드 정보 등록,,,,,,,,,,
+Description,에러코드 정보를 등록한다.,,,,,,,,,,
+Type,POST,,,,,,,,,,
+Url,/api/error-codes,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,"에러 코드
+( errorFrom + code 조합으로 중복 불가 )",,,,,,,,
+errorFrom,M,string,에러 발생 위치 ( default : ETC ),,,,"errorFrom 공통코드
+- WMS : 창고 관련 에러
+- FAC : 설비 관련 에러
+- MCS : MCS 서버 관련 에러
+- ACS : ACS 서버 관련 에러
+- ETC : 이외의 에러",,,,
+messageKo,O,string,국문 에러 내용,,,,,,,,
+messageEn,O,string,영문 에러 내용,,,,,,,,
+messageEs,O,string,스페인어 에러 내용,,,,,,,,
+errorLevel,O,string,에러 레벨 ( default : error ),,,,"errorLevel 공통코드
+- info : 정보
+- warning : 경고
+- error : 에러",,,,
+e.g.,"{
+  ""code"": ""E0001"",
+  ""errorFrom"": ""FAC"",
+  ""messageKo"": ""설비 통신 오류"",
+  ""messageEn"": ""Facility communication error"",
+  ""messageEs"": ""Error de comunicación de la instalación"",
+  ""errorLevel"": ""error""
+ }",,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Inserted data successfully"",
+  ""data"": {
+      ""insertedId"": 1
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-ERC-002,,,,,,,,,,
+Subject,에러코드 정보 목록 조회,,,,,,,,,,
+Description,에러코드 정보 목록을 조회한다.,,,,,,,,,,
+Type,GET,,,,,,,,,,
+Url,/api/error-codes,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+ids,O,string,"에러코드 id in 검색 ( 콤마 구분 )
+ex) 1,2,3",,,,,,,,
+code,O,string,에러 코드 like 검색,,,,,,,,
+errorFrom,O,string,에러 발생 위치 in 검색,,,,,,,,
+errorLevel,O,string,에러 레벨 in 검색,,,,,,,,
+limit,O,number,조회 건수,,,,,,,,
+offset,O,number,조회 시작 위치,,,,,,,,
+e.g.,"{
+  ""code"": ""E0001"",
+  ""errorFrom"": ""FAC"",
+  ""errorLevel"": ""error"",
+  ""limit"": 10,
+  ""offset"": 0
+ }",,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Searched list successfully"",
+  ""data"": {
+      ""count"": 1,
+      ""rows"": [
+        {
+          ""id"": 1,
+          ""code"": ""E0001"",
+          ""errorFrom"": ""FAC"",
+          ""messageKo"": ""설비 통신 오류"",
+          ""messageEn"": ""Facility communication error"",
+          ""messageEs"": ""Error de comunicación de la instalación"",
+          ""errorLevel"": ""error"",
+          ""createdAt"": ""2026-06-25T01:00:00.000Z"",
+          ""updatedAt"": ""2026-06-25T01:00:00.000Z""
+        }
+      ]
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-ERC-003,,,,,,,,,,
+Subject,에러 발생 위치 목록 조회,,,,,,,,,,
+Description,등록된 에러코드의 에러 발생 위치( errorFrom ) 목록을 조회한다.,,,,,,,,,,
+Type,GET,,,,,,,,,,
+Url,/api/error-codes/error-froms,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+-,-,-,요청 파라미터 없음,,,,,,,,
+e.g.,{ },,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Searched list successfully"",
+  ""data"": {
+      ""count"": 5,
+      ""rows"": [
+        { ""errorFrom"": ""WMS"" },
+        { ""errorFrom"": ""FAC"" },
+        { ""errorFrom"": ""MCS"" },
+        { ""errorFrom"": ""ACS"" },
+        { ""errorFrom"": ""ETC"" }
+      ]
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-ERC-004,,,,,,,,,,
+Subject,에러코드 정보 조회 ( id ),,,,,,,,,,
+Description,id 로 에러코드 정보를 조회한다.,,,,,,,,,,
+Type,GET,,,,,,,,,,
+Url,/api/error-codes/id/:id,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+id,M,number,에러코드 id,,,,,,,,
+e.g.,{ },,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Selected data successfully"",
+  ""data"": {
+       ""id"": 1,
+       ""code"": ""E0001"",
+       ""errorFrom"": ""FAC"",
+       ""messageKo"": ""설비 통신 오류"",
+       ""messageEn"": ""Facility communication error"",
+       ""messageEs"": ""Error de comunicación de la instalación"",
+       ""errorLevel"": ""error""
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-ERC-005,,,,,,,,,,
+Subject,에러코드 정보 조회 ( code ),,,,,,,,,,
+Description,에러 코드로 에러코드 정보를 조회한다.,,,,,,,,,,
+Type,GET,,,,,,,,,,
+Url,/api/error-codes/code/:code,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,에러 코드,,,,,,,,
+e.g.,{ },,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Selected data successfully"",
+  ""data"": {
+       ""id"": 1,
+       ""code"": ""E0001"",
+       ""errorFrom"": ""FAC"",
+       ""messageKo"": ""설비 통신 오류"",
+       ""messageEn"": ""Facility communication error"",
+       ""messageEs"": ""Error de comunicación de la instalación"",
+       ""errorLevel"": ""error""
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-ERC-006,,,,,,,,,,
+Subject,에러코드 정보 수정,,,,,,,,,,
+Description,에러코드 정보를 수정한다.,,,,,,,,,,
+Type,PUT,,,,,,,,,,
+Url,/api/error-codes/id/:id,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,O,string,에러 코드,,,,,,,,
+errorFrom,O,string,에러 발생 위치,,,,,,,,
+messageKo,O,string,국문 에러 내용,,,,,,,,
+messageEn,O,string,영문 에러 내용,,,,,,,,
+messageEs,O,string,스페인어 에러 내용,,,,,,,,
+errorLevel,O,string,에러 레벨,,,,,,,,
+e.g.,"{
+  ""code"": ""E0001"",
+  ""errorFrom"": ""FAC"",
+  ""messageKo"": ""설비 통신 오류 ( 수정 )"",
+  ""messageEn"": ""Facility communication error"",
+  ""messageEs"": ""Error de comunicación de la instalación"",
+  ""errorLevel"": ""warning""
+ }",,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Updated data successfully"",
+  ""data"": {
+      ""updatedCount"": 1
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-ERC-007,,,,,,,,,,
+Subject,에러코드 정보 삭제,,,,,,,,,,
+Description,에러코드 정보를 삭제한다.,,,,,,,,,,
+Type,DELETE,,,,,,,,,,
+Url,/api/error-codes/id/:id,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+id,M,number,에러코드 id,,,,,,,,
+e.g.,{ },,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Deleted data successfully"",
+  ""data"": {
+      ""deletedCount"": 1
+   }
+}",,,,,,,,,,

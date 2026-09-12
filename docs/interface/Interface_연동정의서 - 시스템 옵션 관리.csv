@@ -1,0 +1,195 @@
+프로그램 명,,,시스템 옵션 관리,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-SET-001,,,,,,,,,,
+Subject,시스템 옵션 정보 등록,,,,,,,,,,
+Description,시스템 옵션 정보를 등록한다.,,,,,,,,,,
+Type,POST,,,,,,,,,,
+Url,/api/settings,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+system,M,string,"시스템 구분 ( default : WCS )",,,,,,,,
+type,M,string,옵션 타입 ( 중복 불가 ),,,,"Type 예시
+- wmsCommandSetting : WMS 통신 관련 설정
+- languageSetting : 언어 설정
+- dryrunSetting : 드라이런 모드 설정",,,,
+data,O,json,옵션 상세 데이터 ( JSON ),,,,,,,,
+e.g.,"{
+  ""system"": ""WCS"",
+  ""type"": ""wmsCommandSetting"",
+  ""data"": {
+      ""timeoutTimeSeconds"": 30,
+      ""retryCount"": 3,
+      ""retryTimeLimit"": 60,
+      ""retryCycleInterval"": 5,
+      ""retryWaitTimeMinutes"": 5,
+      ""portRetryTimeoutMinutes"": 15
+   }
+ }",,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Inserted data successfully"",
+  ""data"": {
+      ""insertedId"": 1
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-SET-002,,,,,,,,,,
+Subject,시스템 옵션 정보 목록 조회,,,,,,,,,,
+Description,시스템 옵션 정보 목록을 조회한다.,,,,,,,,,,
+Type,GET,,,,,,,,,,
+Url,/api/settings,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+ids,O,string,"시스템 옵션 id in 검색 ( 콤마 구분 )
+ex) 1,2,3",,,,,,,,
+system,O,string,시스템 구분 like 검색,,,,,,,,
+type,O,string,옵션 타입 like 검색,,,,,,,,
+limit,O,number,조회 건수,,,,,,,,
+offset,O,number,조회 시작 위치,,,,,,,,
+e.g.,"{
+  ""system"": ""WCS"",
+  ""type"": ""wmsCommandSetting"",
+  ""limit"": 10,
+  ""offset"": 0
+ }",,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Searched list successfully"",
+  ""data"": {
+      ""count"": 1,
+      ""rows"": [
+        {
+          ""id"": 1,
+          ""system"": ""WCS"",
+          ""type"": ""wmsCommandSetting"",
+          ""data"": {
+              ""timeoutTimeSeconds"": 30,
+              ""retryCount"": 3,
+              ""retryTimeLimit"": 60,
+              ""retryCycleInterval"": 5,
+              ""retryWaitTimeMinutes"": 5,
+              ""portRetryTimeoutMinutes"": 15
+           },
+          ""createdAt"": ""2026-06-25T01:00:00.000Z"",
+          ""updatedAt"": ""2026-06-25T01:00:00.000Z""
+        }
+      ]
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-SET-003,,,,,,,,,,
+Subject,시스템 옵션 정보 조회,,,,,,,,,,
+Description,시스템 옵션 정보를 조회한다.,,,,,,,,,,
+Type,GET,,,,,,,,,,
+Url,/api/settings/id/:id,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+id,M,number,시스템 옵션 id,,,,,,,,
+e.g.,{ },,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Selected data successfully"",
+  ""data"": {
+       ""id"": 1,
+       ""system"": ""WCS"",
+       ""type"": ""wmsCommandSetting"",
+       ""data"": {
+           ""timeoutTimeSeconds"": 30,
+           ""retryCount"": 3,
+           ""retryTimeLimit"": 60,
+           ""retryCycleInterval"": 5,
+           ""retryWaitTimeMinutes"": 5,
+           ""portRetryTimeoutMinutes"": 15
+        },
+       ""createdAt"": ""2026-06-25T01:00:00.000Z"",
+       ""updatedAt"": ""2026-06-25T01:00:00.000Z""
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-SET-004,,,,,,,,,,
+Subject,시스템 옵션 정보 수정,,,,,,,,,,
+Description,시스템 옵션 정보를 수정한다.,,,,,,,,,,
+Type,PUT,,,,,,,,,,
+Url,/api/settings/id/:id,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+system,M,string,시스템 구분,,,,,,,,
+type,M,string,옵션 타입,,,,,,,,
+data,O,json,옵션 상세 데이터 ( JSON ),,,,,,,,
+e.g.,"{
+  ""system"": ""WCS"",
+  ""type"": ""wmsCommandSetting"",
+  ""data"": {
+      ""timeoutTimeSeconds"": 60,
+      ""retryCount"": 5,
+      ""retryTimeLimit"": 120,
+      ""retryCycleInterval"": 10,
+      ""retryWaitTimeMinutes"": 10,
+      ""portRetryTimeoutMinutes"": 30
+   }
+ }",,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Updated data successfully"",
+  ""data"": {
+      ""updatedCount"": 1
+   }
+}",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Function Id,FNT-SET-005,,,,,,,,,,
+Subject,시스템 옵션 정보 삭제,,,,,,,,,,
+Description,시스템 옵션 정보를 삭제한다.,,,,,,,,,,
+Type,DELETE,,,,,,,,,,
+Url,/api/settings/id/:id,,,,,,,,,,
+Request Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+id,M,number,시스템 옵션 id,,,,,,,,
+e.g.,{ },,,,,,,,,,
+Response Body,,,,,,,,,,,
+Parameter,Mandatory/Optional,Type,Description,,,,,,,,
+code,M,string,코드,,,,,,,,
+status,M,string,HTTP 상태 코드,,,,,,,,
+message,M,string,메시지,,,,,,,,
+data,M,string,Response 결과,,,,,,,,
+e.g.,"{
+  ""code"": ""SUCCESS"",
+  ""status"": ""200"",
+  ""message"": ""Deleted data successfully"",
+  ""data"": {
+      ""deletedCount"": 1
+   }
+}",,,,,,,,,,
