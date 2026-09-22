@@ -46,6 +46,8 @@ import { router as plcConnectorRouter } from './common/plcConnector';
 
 // external
 import { router as mcsTrackingLogRouter } from './external/mcsTrackingLog';
+// [DEMO] 로봇허브 시연 — 콜 찌꺼기 점검·정리 (RH_DEMO_API=true 일 때만 동작)
+import { router as rhDemoCallsRouter } from './external/rhDemoCalls';
 dotenv.config();
 const uploads = multer();
 const router = express.Router();
@@ -241,4 +243,5 @@ router.use('/smart-connector', smartConnectorRouter);
 router.use('/plc-connectors', plcConnectorRouter);
 // external
 router.use('/external/mcs-tracking-log', mcsTrackingLogRouter);
+router.use('/external/rh-demo', rhDemoCallsRouter);
 export { router };

@@ -8,6 +8,51 @@ import { sendSmartConnectorHeartbeat } from './heartbeat/sendHeartbeat';
 import smartConnector from '../models/smartConnector/smartConnector';
 import { wordToAscii } from './smartConnectorUtils';
 import { FacilityAttributes } from '../models/operation/facility';
+
+/**
+ * SmartConnector 토픽 규칙.
+ *
+ * ★ 현장에 규칙이 **두 가지** 있다. 둘 다 받는다.
+ *   MBS 형식   데이터 `smartConnector/facility/{설비}/data`
+ *              쓰기   `smartConnector/{설비}/control/request` · 결과 `smartConnector/{설비}/control/result`
+ *   UNT 형식   데이터 `smartConnector/{설비}/data`
+ *              쓰기   `smartConnector/control/request`        · 결과 `smartConnector/control/result`
+ *   (UNT·HGP·RH 시뮬레이터 프로필이 UNT 형식이다. 설비는 페이로드의 DEVICE_ID 로 가린다)
+ * ★ 받는 쪽은 두 형식을 모두 알아본다. 겹치는 토픽이 없어서 설정이 필요 없다.
+ * ★ 보내는 쪽은 하나를 골라야 한다 — `SMART_CONNECTOR_CONTROL_TOPIC` 으로 정한다.
+ *   `{facilityName}` 을 넣으면 설비별로 보낸다. 없으면 기존 MBS 형식이다 (회귀 없음).
+ */
+const CONTROL_TOPIC_TEMPLATE =
+  process.env.SMART_CONNECTOR_CONTROL_TOPIC || 'smartConnector/{facilityName}/control/request';
+
+/** 쓰기 요청을 보낼 토픽. 최초 요청과 재전송이 **반드시 같은 토픽**을 써야 한다 */
+export const smartConnectorControlTopic = (deviceId: string): string =>
+  CONTROL_TOPIC_TEMPLATE.replace('{facilityName}', deviceId);
+
+/** 주기 데이터 토픽이면 설비 이름을, 아니면 null 을 준다 (두 형식 모두) */
+const parseDataTopic = (topicSplit: string[]): string | null => {
+  if (topicSplit[0] !== 'smartConnector') return null;
+  // MBS 형식: smartConnector/facility/{설비}/data
+  if (topicSplit.length === 4 && topicSplit[1] === 'facility' && topicSplit[3] === 'data') return topicSplit[2];
+  // UNT 형식: smartConnector/{설비}/data
+  // ★ `control` 은 설비 이름이 될 수 없다 — 쓰기 결과 토픽과 헷갈리지 않게 막는다
+  if (topicSplit.length === 3 && topicSplit[2] === 'data' && topicSplit[1] !== 'control') return topicSplit[1];
+  return null;
+};
+
+/** 쓰기 결과 토픽인가 (두 형식 모두) */
+const isControlResultTopic = (topicSplit: string[]): boolean =>
+  topicSplit[0] === 'smartConnector' &&
+  ((topicSplit.length === 4 && topicSplit[2] === 'control' && topicSplit[3] === 'result') ||
+    (topicSplit.length === 3 && topicSplit[1] === 'control' && topicSplit[2] === 'result'));
+
+/**
+ * 쓰기 결과가 성공인가.
+ * ★ 커넥터마다 값이 다르다 — 실장비는 문자열 `'TRUE'`, 시뮬레이터는 불리언 `true` 를 보낸다.
+ *   문자열만 비교하면 성공한 쓰기를 전부 실패로 보고 세 번 재전송한다 (실제로 겪었다).
+ */
+const isWriteSuccess = (result: unknown): boolean =>
+  result === true || (typeof result === 'string' && result.toUpperCase() === 'TRUE');
 interface SmartConnectorEventPayload {
   facilityName: string;
   tag: string;
@@ -28,6 +73,15 @@ interface SmartConnectorEventPayload {
 
 // mqttUtil.ts에서 initializeSmartConnectorMqtt 호출 시 전달받은 client를 저장
 let mqttClient: MqttClient | null = null;
+/**
+ * 메시지 처리기를 이미 붙인 클라이언트.
+ * ★ initSmartConnectorMqtt 는 MQTT **연결될 때마다** 불린다 (mqttUtil 의 client.on('connect') 안).
+ *   그때마다 client.on('message') 를 또 붙이면 재연결 한 번에 처리기가 둘이 되어 모든 태그 메시지를
+ *   두 번 처리한다 — 같은 변화가 이력에 두 번 쌓이고(PK 중복 에러 · 에러 없는 중복 행 약 10%),
+ *   태그 변경 이벤트(콜 감지)도 두 번 발생한다 (2026-09-21 실제로 겪었다).
+ *   구독은 연결마다 다시 걸고, 처리기는 클라이언트당 한 번만 붙인다.
+ */
+let boundClient: MqttClient | null = null;
 
 /**
  * MQTT로 받은 TAGS 배열을 { [key: string]: string } 형태의 객체로 변환합니다.
@@ -164,22 +218,20 @@ export const initSmartConnectorMqtt = (client: MqttClient) => {
       });
     }
   });
-  // 2. 메시지 수신 시 처리할 로직
+  // 2. 메시지 수신 시 처리할 로직 — 클라이언트당 한 번만 붙인다 (재연결마다 쌓이지 않게)
+  if (boundClient === client) return;
+  boundClient = client;
   client.on('message', async (topic, message) => {
     const topicSplit = topic.split('/');
-    // 주기적으로 받는 PLC 데이터 처리
-    if (
-      topicSplit.length === 4 &&
-      topicSplit[0] === 'smartConnector' &&
-      topicSplit[1] === 'facility' &&
-      topicSplit[3] === 'data'
-    ) {
+    // 주기적으로 받는 PLC 데이터 처리 (MBS·UNT 두 형식)
+    const topicDeviceId = parseDataTopic(topicSplit);
+    if (topicDeviceId !== null) {
       try {
         const payload = JSON.parse(message.toString());
         const deviceId = payload.DEVICE_ID;
         const tags = payload.TAGS;
 
-        if (deviceId !== topicSplit[2]) {
+        if (deviceId !== topicDeviceId) {
           logging.MQTT_ERROR({
             title: 'smartConnector Message Error',
             topic,
@@ -237,21 +289,16 @@ export const initSmartConnectorMqtt = (client: MqttClient) => {
     }
 
     // 쓰기 요청 응답 처리
-    if (
-      topicSplit.length === 4 &&
-      topicSplit[0] === 'smartConnector' &&
-      topicSplit[2] === 'control' &&
-      topicSplit[3] === 'result'
-    ) {
+    if (isControlResultTopic(topicSplit)) {
       try {
         logging.MQTT_LOG({
           title: 'smartConnector Write Result',
           topic,
           message: message.toString(),
         });
-        const payload: { WRITE_ID: string; RESULT: string } = JSON.parse(message.toString());
+        const payload: { WRITE_ID: string; RESULT: string | boolean } = JSON.parse(message.toString());
         const writeId = payload.WRITE_ID;
-        const isSuccess = payload.RESULT === 'TRUE';
+        const isSuccess = isWriteSuccess(payload.RESULT);
         if (isSuccess) {
           redisUtil.hdel(RedisKeys.SmartConnectorWriteTag, writeId);
         } else {
@@ -273,7 +320,9 @@ export const initSmartConnectorMqtt = (client: MqttClient) => {
           if (writeMessage && writeMessage.COUNT < 3) {
             const sendMessageString = JSON.stringify({ ...writeMessage, COUNT: writeMessage.COUNT + 1 });
             redisUtil.hset(RedisKeys.SmartConnectorWriteTag, writeId, sendMessageString);
-            sendMqttToSmartConnector(`smartConnector/${writeMessage.DEVICE_ID}/control`, sendMessageString);
+            // ★ 최초 요청과 같은 토픽으로 보낸다. 예전에는 `/control` 로 보내서
+            //   커넥터가 재전송을 한 번도 받지 못했다
+            sendMqttToSmartConnector(smartConnectorControlTopic(writeMessage.DEVICE_ID), sendMessageString);
           }
         }
       } catch (err) {

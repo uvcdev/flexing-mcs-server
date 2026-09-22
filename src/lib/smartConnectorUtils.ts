@@ -1,5 +1,5 @@
 import { RedisKeys, useRedisUtil } from './redisUtil';
-import { initSmartConnectorMqtt, sendMqttToSmartConnector } from './smartConnectorMqttUtil';
+import { initSmartConnectorMqtt, sendMqttToSmartConnector, smartConnectorControlTopic } from './smartConnectorMqttUtil';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import path from 'path';
@@ -277,7 +277,7 @@ export const useSmartConnectorUtils = () => {
    */
   const setTagDataArrayToSmartConnector = async (messages: SendSmartConnectorMqttMessage[]) => {
     for (const message of messages) {
-      const topic = `smartConnector/${message.facilityName}/control/request`;
+      const topic = smartConnectorControlTopic(message.facilityName);
       const tagMapValue = smartConnector.tagMap.get(`${message.facilityName}.${message.tag}`);
       if (!tagMapValue) {
         logging.ACTION_ERROR({
@@ -316,7 +316,7 @@ export const useSmartConnectorUtils = () => {
    * });
    */
   const setTagDataToSmartConnector = async (params: WriteDataParams) => {
-    const topic = `smartConnector/${params.targetFacility}/control/request`;
+    const topic = smartConnectorControlTopic(params.targetFacility);
     const sendMessage: SmartConnectorWriteTag = {
       WRITE_ID: uuidv4(),
       DEVICE_ID: params.targetFacility,

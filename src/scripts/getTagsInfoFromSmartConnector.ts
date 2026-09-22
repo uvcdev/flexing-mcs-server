@@ -38,7 +38,8 @@ interface FacilityData {
 const mqttConfig: MqttConfig = {
   host: process.env.MQTT_HOST || '',
   port: Number(process.env.MQTT_PORT || '1883'),
-  topic: 'smartConnector/facility',
+  // MBS 형식(smartConnector/facility/...)과 UNT 형식(smartConnector/{설비}/data)을 모두 받으려고 루트를 구독한다
+  topic: 'smartConnector',
 };
 
 const clientId = 'init_smart_connector_sync_' + Math.random().toString(16).substr(2, 8);
@@ -140,13 +141,17 @@ const smartConnectorSyncMqtt = async () => {
 
   client.on('message', async (messageTopic, messageOrg) => {
     const topicSplit = messageTopic.split('/');
-    if (
-      topicSplit.length === 4 &&
-      topicSplit[0] === 'smartConnector' &&
-      topicSplit[1] === 'facility' &&
-      topicSplit[3] === 'data'
-    ) {
-      const deviceId = topicSplit[2];
+    // MBS 형식: smartConnector/facility/{설비}/data · UNT 형식: smartConnector/{설비}/data
+    const deviceIdFromTopic =
+      topicSplit[0] !== 'smartConnector'
+        ? null
+        : topicSplit.length === 4 && topicSplit[1] === 'facility' && topicSplit[3] === 'data'
+        ? topicSplit[2]
+        : topicSplit.length === 3 && topicSplit[2] === 'data' && topicSplit[1] !== 'control'
+        ? topicSplit[1]
+        : null;
+    if (deviceIdFromTopic !== null) {
+      const deviceId = deviceIdFromTopic;
       const facilityData: FacilityData = JSON.parse(messageOrg.toString());
       // console.log('Received tags from smartConnector', deviceId, facilityData);
       if (processedFacilityList.has(deviceId)) {
