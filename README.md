@@ -1396,3 +1396,7 @@ ADD COLUMN IF NOT EXISTS is_check_call_type boolean DEFAULT false NULL;
 ## 3.5.4-ljk
 
 - CT11 반입 미션 결정시, dockAmrStatusValue / dockOutPermitValue 조건 제외
+
+## 3.5.5
+
+- approve 3.5.4-ljk
