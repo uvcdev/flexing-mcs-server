@@ -30,3 +30,6 @@ uploads
 
 # plc settings
 plcTagInfo.json
+
+# bkit
+.bkit

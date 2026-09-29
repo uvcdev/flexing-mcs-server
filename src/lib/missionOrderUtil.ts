@@ -109,6 +109,9 @@ export const checkMissionOrder = async () => {
           if (dockDisableValue === true) continue;
         }
 
+        // CT11은 Dock_AMR_Status, Dock_Out_Permit 판단 제외
+        const skipDockAmrCheck = targetCode === 'CT11';
+
         let isMissionAvailable = false;
 
         // BS 공급 포트 미션 결정지인 경우
@@ -133,10 +136,10 @@ export const checkMissionOrder = async () => {
             callRequestValue === true &&
             // callCountValue > 0 &&
             // dockEqStatusValue === false &&
-            dockAmrStatusValue === false &&
+            (skipDockAmrCheck || dockAmrStatusValue === false) &&
             callResponseValue === false &&
             // dockDisableValue === false &&
-            dockOutPermitValue === false &&
+            (skipDockAmrCheck || dockOutPermitValue === false) &&
             dockPermitValue === false &&
             dockRequestValue === false
             // &&
